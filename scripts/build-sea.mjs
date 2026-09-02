@@ -217,6 +217,13 @@ const bundleOrder = []; // completed wrapper source strings, dependency-first
 let moduleCounter = 0;
 const inProgress = new Set();
 
+// A checkout made with core.autocrlf (the default on Windows) hands the bundler CRLF
+// sources. Every match below anchors on "\n" -- the shebang strip, the import and export
+// rewrites -- so normalise once on read. The bundle is written with LF on every platform.
+function readSource(filePath) {
+  return readFileSync(filePath, 'utf8').replace(/\r\n?/g, '\n');
+}
+
 function bundleModule(filePath) {
   const existing = bundled.get(filePath);
   if (existing) return { varName: existing, cyclic: inProgress.has(filePath) };
@@ -224,7 +231,7 @@ function bundleModule(filePath) {
   const varName = `__mod_${moduleCounter++}`;
   bundled.set(filePath, varName); // set before recursing to guard against cycles
   inProgress.add(filePath);
-  let src = readFileSync(filePath, 'utf8');
+  let src = readSource(filePath);
 
   src = src.replace(/import\.meta\.url/g, "require('node:url').pathToFileURL(__filename).toString()");
 
@@ -297,7 +304,7 @@ function bundleEntry() {
     );
   }
 
-  let src = readFileSync(ENTRY, 'utf8');
+  let src = readSource(ENTRY);
   src = src.replace(/^#!.*\n/, ''); // drop the shebang; not valid mid-file
   src = src.replace(/import\.meta\.url/g, "require('node:url').pathToFileURL(__filename).toString()");
 
