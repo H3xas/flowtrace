@@ -1,6 +1,6 @@
 {
   "name": "flowtrace-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Trace an API route through the code that serves it, overlay the test evidence that covers it, and turn a diff into the specs that must run.",
   "type": "module",
   "license": "MIT",

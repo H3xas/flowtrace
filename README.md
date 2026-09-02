@@ -265,7 +265,7 @@ project publishes the rounds it loses with the same prominence as the ones it wi
 
 Semantic versioning, from `0.x` — the CLI surface may still change between minor versions.
 What changed in each one is in [CHANGELOG.md](CHANGELOG.md).
-The current release is `0.1.0`; its source repository is
+The current release is `0.1.1`; its source repository is
 [H3xas/flowtrace](https://github.com/H3xas/flowtrace).
 
 The single-file build inlines the module graph itself and supports only relative imports,
