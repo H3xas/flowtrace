@@ -1,0 +1,79 @@
+{
+  "out": "out",
+  "scout": {
+    "bin": "devscout"
+  },
+  "aliases": [
+    { "from": "catalog/", "to": "inventory/" }
+  ],
+  "sinks": {
+    "db": ["/DataAccess/", "Repository", "Store"],
+    "writePrefixes": ["Insert", "Update", "Upsert", "Save", "Delete", "Remove", "Create", "Add"],
+    "readPrefixes": ["Get", "Find", "Fetch", "Load", "Read", "List", "Query", "Search", "Exists", "Count"]
+  },
+  "caseId": {
+    "calls": ["tms.id"]
+  },
+  "scaffold": {
+    "specRoot": "tests",
+    "specSuffix": ".spec.ts",
+    "workerRoot": "tests/workers",
+    "importAliases": {
+      "fixtures": "./fixtures",
+      "utils": "./utils",
+      "features": "./features",
+      "generated": "./generated"
+    },
+    "roles": {
+      "default": "admin",
+      "denied": "denied",
+      "member": "member"
+    },
+    "contextFactory": {
+      "store": "ApiClientFactory",
+      "instance": false,
+      "instanceVariable": "apiClients",
+      "method": "get",
+      "as": "Roles",
+      "api": "Api.base",
+      "fixtures": ["session"],
+      "variable": "ctx"
+    },
+    "caseIdPlaceholder": "test.info().annotations.push({ type: 'case-id', description: 'TODO' })",
+    "worker": {
+      "module": "worker",
+      "client": "MessageClient",
+      "method": "publish",
+      "builder": "buildMessage"
+    },
+    "clientClassTemplate": "{Feature}Client",
+    "unresolvedRejectStatus": [400, 404],
+    "okStatus": 200
+  },
+  "repos": [
+    {
+      "id": "api",
+      "kind": "backend",
+      "root": "../shop-api",
+      "role": ["api"],
+      "exclude": ["**/*.Tests", "**/*.IntegrationTests"],
+      "scout": true
+    },
+    {
+      "id": "app",
+      "kind": "mobile",
+      "root": "../shop-app",
+      "exclude": ["**/*.stories.ts", "coverage"],
+      "featureRoots": ["src/app/features"],
+      "cypress": {
+        "e2e": "cypress/e2e/checkout",
+        "support": "cypress/support/checkout"
+      }
+    },
+    {
+      "id": "e2e",
+      "kind": "playwright",
+      "root": "../shop-e2e"
+    }
+  ]
+}

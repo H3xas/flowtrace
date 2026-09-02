@@ -1,0 +1,44 @@
+{
+  "sealed": "2026-08-25",
+  "protocol": "docs/benchmarks/agentic.md",
+  "corpus": {
+    "id": "eshoponweb",
+    "source": "https://github.com/dotnet-architecture/eShopOnWeb",
+    "sha": "4da8212117e87d808d4bbc7da6286fd2147ce606"
+  },
+  "hash": "sha256, one file at a time, hex digest as printed by `shasum -a 256`",
+  "verification": "every truth path hand-verified against the local clone at the pinned sha before sealing; corrections noted per ticket where the draft path was off",
+  "tickets": [
+    {
+      "id": "BT-01",
+      "ticket_file": "BT-01-ticket.md",
+      "ticket_sha256": "be643c8bda55d257c32ab4575adfcc230f5f25c165ccbc29c78e7b5357c0a915",
+      "truth_file": "BT-01-truth.md",
+      "truth_sha256": "49b2300b7d0d65ceb48e5a66f95df6455516272fa219ea5c721a4b4a1a1f5c86"
+    },
+    {
+      "id": "BT-02",
+      "ticket_file": "BT-02-ticket.md",
+      "ticket_sha256": "054b40dc7a8d0d9a997d4cd5fce8d0b5790c8606084114e466117868fd07c51e",
+      "truth_file": "BT-02-truth.md",
+      "truth_sha256": "a48351873be4653e1992e5337c2d564a0b05bd89efac885f5ff6862578bf06dc"
+    },
+    {
+      "id": "BT-03",
+      "ticket_file": "BT-03-ticket.md",
+      "ticket_sha256": "721b7bccea93360a2b2a9f4db1ba66615973ccefc8b49cf28354266635dedff9",
+      "truth_file": "BT-03-truth.md",
+      "truth_sha256": "1d4211359efcef337ea4a933a07dc320f1772a01b76b63730ba7dc8f510b2804"
+    },
+    {
+      "id": "BT-04",
+      "ticket_file": "BT-04-ticket.md",
+      "ticket_sha256": "89efd1dfa28259d4ff29427392f6c9167917830d382cb3bd3470d4a894db611b",
+      "truth_file": "BT-04-truth.md",
+      "truth_sha256": "9acc8f84f6364638ff1b81630dc825d242100a1f20bcb93c1a88227bfd2b966d"
+    }
+  ],
+  "preregistration_file": "preregistration.md",
+  "preregistration_sha256": "7b7995e0cd9861fcf43141efbbfc934bdce0e7f1bc7e5b425be6b95d918fb137",
+  "note": "BT-01..BT-04 statements were authored by reading the pinned corpus directly rather than sourced from eShopOnWeb's public issue tracker, so they do not meet the 'Real — filed by someone other than this project' bullet in the Tickets section of agentic.md as written. Covered by the 2026-08-25 ticket-sourcing waiver added to agentic.md: maintainer-authored tickets are permitted in place of externally-filed issues for run 1, disclosed in any results that use them. Externally-filed sourcing remains preferred from the next run."
+}

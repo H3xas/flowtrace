@@ -1,0 +1,17 @@
+# flowtrace benchmark corpus lock
+#
+# One line per pinned corpus. A published benchmark number is comparable only to another
+# number produced at the same shas, so this file is the anchor every results document's
+# environment block must agree with. Changing a pin starts a new, non-comparable run.
+#
+# Columns: id  source  ref  sha  licence
+# Fields are whitespace-separated; "-" means not applicable.
+
+demo-shop   examples/demo-shop                                 -     -                                         MIT
+eshoponweb  https://github.com/dotnet-architecture/eShopOnWeb  main  4da8212117e87d808d4bbc7da6286fd2147ce606  MIT
+
+# demo-shop is bundled in this repository; its "pin" is the repository's own commit at run
+# time, which the results document records alongside the shas above.
+#
+# eshoponweb pin proposed 2026-08-24: the head of the default branch (main) at that date,
+# committed 2025-01-13. Re-pin only deliberately, and never mid-run.

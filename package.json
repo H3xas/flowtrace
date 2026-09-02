@@ -1,0 +1,34 @@
+{
+  "name": "flowtrace-cli",
+  "version": "0.1.0",
+  "description": "Trace an API route through the code that serves it, overlay the test evidence that covers it, and turn a diff into the specs that must run.",
+  "type": "module",
+  "license": "MIT",
+  "repository": "https://github.com/H3xas/flowtrace",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "flowtrace": "bin/flowtrace.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "areas",
+    "docs",
+    "examples",
+    "!examples/*/out",
+    "flowtrace.config.example.json",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "tracing",
+    "coverage",
+    "test-selection",
+    "static-analysis",
+    "aspnet",
+    "playwright"
+  ]
+}

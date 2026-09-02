@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Benchmark corpora are third-party repositories cloned at the pins in bench/corpus.lock; they are gitignored, never shipped, and their contents (including any keys they carry upstream) are not this project's to scan."
+paths = ['''bench/corpora/''']

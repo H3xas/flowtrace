@@ -1,0 +1,7 @@
+# checkout — every route the demo shop's cart and checkout flow reaches.
+# Format and selection rules: areas/README.md.
+GET catalog/v1/products
+GET catalog/v1/products/*
+GET orders/v1/cart
+POST orders/v1/cart/items
+POST orders/v1/checkout

@@ -1,0 +1,42 @@
+node_modules/
+
+# Machine-local repository roots; never tracked.
+flowtrace.config.json
+# ...except the worked example's, whose paths are all inside this repository.
+!examples/**/flowtrace.config.json
+
+# Command output.
+out/
+examples/*/out/
+
+# Benchmark corpora are cloned at the pins in bench/corpus.lock, never vendored.
+bench/corpora/
+bench/*.config.json
+
+# The test suite lives outside this repository. These two lines are a backstop:
+# the directory form excludes everything beneath them, so a copy dropped here is
+# never staged and a later `!test/...` line cannot re-include a file. The public
+# verification is the worked example under examples/, which CI runs end to end.
+test/
+fixtures/
+
+# Single-executable build artefacts.
+dist/
+sea-config.json
+*.blob
+*.tgz
+
+# Assistant and private tooling; never published.
+.claude/
+.claude*
+CLAUDE.md
+CLAUDE.local.md
+MEMORY.md
+WORKTREE.md
+AGENTS.md
+AGENTS.override.md
+.codex/
+.conductor/
+PUBLISH-RUNBOOK.md
+.local-npm-feed/
+.DS_Store
