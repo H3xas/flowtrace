@@ -4,12 +4,30 @@ flowtrace reads one file, `flowtrace.config.json`, from the working directory â€
 wherever `--config <path>` points. It holds the only machine-specific thing flowtrace
 needs: where the repositories are.
 
+## Where the file lives
+
 Every path in the file resolves relative to **the file itself**, so a configuration file
-that sits beside the checkouts it names works from any working directory.
+that sits beside the checkouts it names works from any working directory. The simplest
+layout is a workspace directory holding the checkouts, with the file next to them:
+
+```
+workspace/
+  flowtrace.config.json      "root": "shop-api", "root": "shop-e2e"
+  areas/                     area files, committed
+  out/                       written by flowtrace, never committed
+  shop-api/
+  shop-e2e/
+```
+
+A monorepo works the same way with the file at its root and each `root` naming a
+sub-directory, as the worked example under `examples/demo-shop` does. Do not point a `root`
+at the directory that holds `out`: `scaffold` and `cases` refuse to write inside a configured
+repository.
 
 A configuration file naming absolute checkout paths is a machine-local file. Keep it out of
-version control (the shipped `.gitignore` already does) and commit
-`flowtrace.config.example.json` instead.
+version control (the shipped `.gitignore` already does) and commit an example instead.
+`flowtrace.config.example.json` at the repository root shows every key filled in, with the
+checkouts named as siblings of the file.
 
 ## Top level
 
@@ -62,7 +80,7 @@ with the optional `cypress` object:
 {
   "id": "mobile",
   "kind": "mobile",
-  "root": "/path/to/mobile-checkout",
+  "root": "shop-app",
   "cypress": {
     "e2e": "cypress/e2e/checkout",
     "support": "cypress/support/checkout"

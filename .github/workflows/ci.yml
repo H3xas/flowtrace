@@ -39,3 +39,6 @@ jobs:
 
       - name: No machine paths in the tree
         run: bash scripts/path-check.sh
+
+      - name: Documentation matches the CLI and links resolve
+        run: node scripts/docs-check.mjs
