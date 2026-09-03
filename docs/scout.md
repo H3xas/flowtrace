@@ -34,7 +34,7 @@ location.
 Then mark the repositories the index covers:
 
 ```json
-{ "id": "api", "kind": "backend", "root": "../shop-api", "scout": true }
+{ "id": "api", "kind": "backend", "root": "shop-api", "scout": true }
 ```
 
 Only a repository with `scout: true` is ever consulted.

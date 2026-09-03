@@ -42,14 +42,28 @@ install flowtrace *or* something else, not to sell flowtrace.
    Setup cost is its own line and is never amortised into a query time. A run that voids a
    task's seal publishes the void.
 
+## Scorecard so far
+
+eShopOnWeb corpus, sha-pinned; full tables, per-cell verdicts and the integrity caveats are
+in [results/2026-08.md](results/2026-08.md).
+
+| round | result | verdict |
+| --- | --- | --- |
+| Deterministic pipeline | facts, walks and `span` reconcile on the pinned corpus | measured; peer matrix not yet run |
+| Agentic — 4 sealed tickets, 2 models, tool / no-tool / no-code arms | tool arms 8/8 correct, baseline arms 8/8 correct, no-code control 0/4 | **no advantage shown this run** — correctness and token cost both flat against the baseline; only the no-code floor separated |
+
+One run per cell is an anecdote with a number attached, and is published as exactly that. The
+negative finding stays on the board until the 5-run protocol confirms or retires it — this
+project publishes the rounds it loses with the same prominence as the ones it wins.
+
 ## What is here, and why nothing more
 
-This repository keeps a deliberately small reference set: [concepts](../concepts.md),
-[configuration](../configuration.md), [the fact schema](../fact-schema.md),
-[scout](../scout.md), [the area format](../../areas/README.md), the CHANGELOG, and
-`flowtrace --help`, which is the most detailed of the lot.
+The reference set outside this directory is deliberately small and is listed in
+[../README.md](../README.md): getting started, the agent page, concepts, the command
+reference (`flowtrace --help`, verbatim), configuration, the fact schema, scout, the area
+format, and the CHANGELOG.
 
-**`docs/benchmarks/` is the only place that documentation set is allowed to grow.** A
-measurement needs its method, its peers and its environment written down or it cannot be
-checked; nothing else added here would be checkable in the same way. New prose that is not a
+**`docs/benchmarks/` is where measurements go, and the only place they go.** A measurement
+needs its method, its peers and its environment written down or it cannot be checked;
+nothing else added here would be checkable in the same way. New prose that is not a
 benchmark belongs in one of the reference documents above, or in `--help`.

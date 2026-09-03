@@ -54,7 +54,7 @@
     {
       "id": "api",
       "kind": "backend",
-      "root": "../shop-api",
+      "root": "shop-api",
       "role": ["api"],
       "exclude": ["**/*.Tests", "**/*.IntegrationTests"],
       "scout": true
@@ -62,7 +62,7 @@
     {
       "id": "app",
       "kind": "mobile",
-      "root": "../shop-app",
+      "root": "shop-app",
       "exclude": ["**/*.stories.ts", "coverage"],
       "featureRoots": ["src/app/features"],
       "cypress": {
@@ -73,7 +73,7 @@
     {
       "id": "e2e",
       "kind": "playwright",
-      "root": "../shop-e2e"
+      "root": "shop-e2e"
     }
   ]
 }
