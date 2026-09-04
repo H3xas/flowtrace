@@ -36,6 +36,16 @@ and CI fails when it drifts or when a relative link in any document does not res
 configuration names its checkouts as siblings of the file (`shop-api`) rather than parents of
 it (`../shop-api`), matching the worked example's layout.
 
+The configuration validator now accepts the two `scaffold` fields the scaffold already read
+and defaulted. `poll` — `timeoutMs`, a positive integer, and `intervalsMs`, a non-empty list
+of positive integers — bounds the read-back a generated test polls for after an
+asynchronous write. `importAliases.caseId` names the module a reporter-calling
+`caseIdPlaceholder` imports its reporter from. Before, a configuration setting either field
+did not load at all, and a placeholder that called a reporter produced a spec that could not
+compile because its import was unreachable from configuration. With neither field set,
+generated output is unchanged. Configuration reference: `poll` and `importAliases.caseId`
+under `scaffold`.
+
 ## 0.1.1
 
 Release pipeline only; the CLI is unchanged. The single-file build normalises line endings

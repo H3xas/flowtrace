@@ -232,6 +232,7 @@ objects may override only the entries they need.
 | `importAliases.utils` | string | module that exports the API factory, API base and roles |
 | `importAliases.features` | string | module prefix for feature client imports |
 | `importAliases.generated` | string | module prefix for generated helpers |
+| `importAliases.caseId` | string | module that exports the reporter the case-id placeholder calls; unset by default |
 | `roles.default` | string | role used for an ordinary successful request |
 | `roles.denied` | string | role used for an unauthorised or forbidden request |
 | `roles.member` | string | additional member-role vocabulary available to the harness |
@@ -244,6 +245,8 @@ objects may override only the entries they need.
 | `contextFactory.fixtures` | string[] | Playwright fixtures destructured by each generated test |
 | `contextFactory.variable` | string | local variable that receives the request context |
 | `caseIdPlaceholder` | string | statement left where a case id must be supplied |
+| `poll.timeoutMs` | number | whole wait, in milliseconds, of a generated read-back poll; a positive integer |
+| `poll.intervalsMs` | number[] | delays, in milliseconds, between successive poll attempts; a non-empty list of positive integers |
 | `worker.module` | string | module that exports the worker-publish client |
 | `worker.client` | string | worker-publish client class |
 | `worker.method` | string | client method that publishes the message |
@@ -252,7 +255,20 @@ objects may override only the entries they need.
 | `unresolvedRejectStatus` | number[] | accepted status choices when a rejection status is unresolved |
 | `okStatus` | number | expected status for a successful request or read-back |
 
-See `flowtrace.config.example.json` for every key with the built-in values filled in.
+`caseIdPlaceholder` is the statement every generated test carries where a case id must be
+supplied. The built-in one is a Playwright annotation and needs nothing imported. A
+placeholder that calls a reporter instead — `tms.id('TODO')`, say — needs that reporter
+imported, or the generated spec does not compile: set `importAliases.caseId` to the module
+that exports it, and every generated spec then opens with an import of the placeholder's
+leading identifier from that module. The two are read together; the alias alone emits
+nothing, and a reporter-calling placeholder without the alias leaves the import for you to add.
+
+`poll` bounds the read-back a generated test performs after a write that lands
+asynchronously — a worker-processed message, a sink-fed effect — and is emitted into the
+spec as `POLL_TIMEOUT_MS` and `POLL_INTERVALS_MS`. Either entry may be set on its own.
+
+See `flowtrace.config.example.json` for every key with the built-in values filled in;
+`importAliases.caseId` is the one key it leaves out, because its built-in value is unset.
 
 ## Worked example
 
