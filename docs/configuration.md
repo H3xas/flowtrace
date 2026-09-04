@@ -397,14 +397,16 @@ See `flowtrace.config.example.json` for every key with the built-in values fille
 ## `split`
 
 ```json
-"split": { "ticketPrefix": "TICKET-0000" }
+"split": { "ticketPrefix": "#0000" }
 ```
 
 Optional. `ticketPrefix` is written in front of every commit subject `split` drafts, separated
-by one space, and the emitted script's header then says to replace it with the real id. With
-no `split` object, or no `ticketPrefix`, a drafted subject is a plain Conventional Commit
-(`feat(orders): add orders client`) and nothing has to be replaced. The value must be a
-non-empty string without whitespace.
+by one space (`#0000 feat(orders): add orders client`), and the emitted script's header then
+says to replace it with the real id. Use whatever token your tracker convention puts first —
+an issue reference as above, or a project key with a placeholder number. With no `split`
+object, or no `ticketPrefix`, a drafted subject is a plain Conventional Commit
+(`feat(orders): add orders client`) and nothing has to be replaced; that is the default. The
+value must be a non-empty string without whitespace.
 
 ## Worked example
 
