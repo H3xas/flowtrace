@@ -1,0 +1,48 @@
+{
+  "id": "01-status-only",
+  "packet": "01-status-only.packet.json",
+  "shape": "one executing test asserts a 200 and nothing else; both seeds are confirmed at route",
+  "rule": "a status that every non-failing seed of the route answers with confirms that the request reached the route and promotes nothing",
+  "expect": {
+    "seeds": {
+      "6a3d57e8": "route",
+      "c87ccc19": "route"
+    },
+    "upgrades": 0,
+    "confirmed": 2,
+    "rejections": {}
+  },
+  "verdict": {
+    "route": "GET catalog/v1/products",
+    "reader": "reference",
+    "packetHash": "b8e5e6885cc8",
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "6a3d57e8",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/catalog.spec.ts",
+            "test": "lists the products of a category",
+            "line": 6,
+            "reason": "the request carries a category, so the guard that answers 400 is not exercised, and the one test that would exercise it is skipped"
+          }
+        ]
+      },
+      {
+        "id": "U2",
+        "key": "c87ccc19",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/catalog.spec.ts",
+            "test": "lists the products of a category",
+            "line": 6,
+            "reason": "a 200 shows the listing answered; nothing in the test reads the body the repository lookup fills"
+          }
+        ]
+      }
+    ]
+  }
+}

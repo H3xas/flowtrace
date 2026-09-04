@@ -18,4 +18,9 @@ test.describe('orders/v1/checkout', () => {
     expect(response.status()).toBe(200);
     expect(await response.json()).toHaveProperty('items');
   });
+
+  test.skip('rejects a cart item with no quantity', async ({ request }) => {
+    const response = await request.post('orders/v1/cart/items', { data: { productId: 'sku_demo' } });
+    expect(response.status()).toBe(400);
+  });
 });

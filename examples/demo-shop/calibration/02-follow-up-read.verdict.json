@@ -1,7 +1,7 @@
 {
   "id": "02-follow-up-read",
   "packet": "02-follow-up-read.packet.json",
-  "shape": "a follow-up read whose body assertion observes the state the route serves; the seed reaches path",
+  "shape": "the executing test asserts a body field the read serves; the seed is promoted to path",
   "rule": "an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect",
   "expect": {
     "seeds": {
@@ -25,7 +25,7 @@
             "spec": "tests/checkout.spec.ts",
             "test": "lists the cart",
             "line": 19,
-            "reason": "the test reads the cart back and asserts a field of its body, which only this route's read produces"
+            "reason": "toHaveProperty('items') observes the cart the handler returned, which only this read produces"
           }
         ]
       }

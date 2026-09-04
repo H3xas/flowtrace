@@ -1,7 +1,12 @@
-# 07-missing-evidence
+# 07 · an upgrade with nothing cited
 
-`GET orders/v1/cart` · an upgrade claimed with no evidence entry; rejected as missing-evidence and the seed stays route.
+Packet: `GET orders/v1/cart` — one seed; one executing test.
+Reference: the seed stays at `route`; the entry refused as `missing-evidence`.
 
-Rule: an accepted upgrade needs at least one evidence entry.
+The verdict claims `path` for the same seed 02 promotes, with an empty `evidence` list. An
+upgrade is a claim about a specific test, and a claim that cites nothing cannot be checked,
+so the merge refuses it and the seed keeps its mechanical level. A confirmation at the
+current level may go uncited; an upgrade may not.
 
-The same read as the follow-up-read entry, promoted to `path` without citing anything. An upgrade is a claim about a test, and a claim with no evidence entry cannot be checked, so the merge rejects it as `missing-evidence` and the seed keeps its `route` floor. Confirmations may go uncited; upgrades may not.
+A reader that reads the cart packet properly writes 02, not this. The entry pins that the
+merge still demands a citation, and is reproduced by copying the reference verdict as it is.

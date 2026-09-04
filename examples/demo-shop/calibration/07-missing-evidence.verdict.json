@@ -1,8 +1,8 @@
 {
   "id": "07-missing-evidence",
   "packet": "07-missing-evidence.packet.json",
-  "shape": "an upgrade claimed with no evidence entry; rejected as missing-evidence and the seed stays route",
-  "rule": "an accepted upgrade needs at least one evidence entry",
+  "shape": "path is claimed with no evidence entry; the merge refuses the upgrade and the seed stays at route",
+  "rule": "an upgrade must cite at least one evidence entry; only a confirmation may cite none",
   "expect": {
     "seeds": {
       "b52bb585": "route"

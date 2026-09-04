@@ -1,7 +1,17 @@
-# 03-disposition-status
+# 03 · a status that maps to one guard
 
-`POST orders/v1/checkout` · an asserted status that maps to exactly one guard; that seed reaches disposition, the others stay route.
+Packet: `POST orders/v1/checkout` — three seeds; two executing tests.
+Reference: U1 promoted to `disposition`, U2 and U3 confirmed at `route`; one upgrade, two
+confirmations.
 
-Rule: an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion.
+The second test posts a body with no payment token and asserts a 400. On this route exactly
+one guard returns 400 — the missing-token check U1 takes — so the assertion pins that branch
+outcome and meets the packet's `disposition` rule.
 
-Tempting wrong level: `route` for U1, because a status assertion usually proves only that the request ran. Here the asserted status is `400`, and exactly one guard on this route answers it — the missing-token check the seed takes. The `disposition` rule ("an asserted status that maps to exactly one error_return, validation or guard") applies to that seed alone. U2 and U3 are confirmed at `route`.
+The first test posts a valid token and asserts a 200. A 200 is what both remaining seeds
+answer with, so it does not separate the declined order (U2, which needs a repository refusal
+no test arranges) from the completed order (U3, whose saved order and published message are
+never observed). Both stay at `route`.
+
+The trap is symmetric: reading the 400 as just a status leaves U1 under-read, and reading the
+200 as effect evidence over-reads U3.

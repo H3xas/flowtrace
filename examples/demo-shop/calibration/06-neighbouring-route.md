@@ -1,7 +1,12 @@
-# 06-neighbouring-route
+# 06 · a verdict for the route next door
 
-`POST orders/v1/checkout` · a verdict written against a neighbouring route; the merge has no such route and rejects it.
+Packet: `POST orders/v1/checkout` — three seeds; two executing tests.
+Reference: every seed stays at `route`; the file refused once as `unknown-id`.
 
-Rule: a verdict is merged into the route it names, and a route the packet does not hold is unknown.
+The verdict is a correct reading of the cart route — the one 02 accepts — filed against the
+checkout packet. The merge looks up the route the verdict names in the report built from this
+packet, finds no such route, and refuses the whole file before it reads a single seed.
+Nothing about the cart read reaches the checkout seeds.
 
-The packet is the checkout route; the verdict answers for the cart route beside it — a correct reading of the wrong packet. The merge looks the verdict's route up in the report it was handed, finds nothing, and rejects the whole file as `unknown-id`. Evidence naming a neighbouring route never reaches this route's seeds.
+As with 05, no reader produces this from the packet; it pins that evidence never leaks
+across routes. Reproduce it by copying the reference verdict as it is.

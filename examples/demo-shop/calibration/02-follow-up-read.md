@@ -1,7 +1,13 @@
-# 02-follow-up-read
+# 02 · a follow-up read observed
 
-`GET orders/v1/cart` · a follow-up read whose body assertion observes the state the route serves; the seed reaches path.
+Packet: `GET orders/v1/cart` — one seed; one executing test.
+Reference: the seed is promoted to `path`; one upgrade.
 
-Rule: an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect.
+The test reads the cart and, after the status check, asserts that the body has an `items`
+property. The body is what this read serves and nothing else on the route produces it, so
+the assertion observes the path itself rather than the fact that a request arrived. That is
+the packet's `path` rule met on its first clause.
 
-The route has one seed: the read itself. Its candidate test asserts the status and then a field of the response body (`items`). A body field is something this path produces and a status is not, so the `path` rule ("an assertion on a response field only produced on that path") applies and the merge accepts one upgrade. A reader that stops at `route` here is under-reading.
+A reader that stops at `route` here has under-read: the status line alone would justify
+that, but the test does not stop at the status line. The merge accepts the upgrade because
+the entry names the seed by its key, carries the packet's hash and cites the test.

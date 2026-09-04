@@ -1,7 +1,7 @@
 {
   "id": "03-disposition-status",
   "packet": "03-disposition-status.packet.json",
-  "shape": "an asserted status that maps to exactly one guard; that seed reaches disposition, the others stay route",
+  "shape": "an asserted 400 maps to exactly one guard; that seed is promoted to disposition and the other two are confirmed at route",
   "rule": "an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion",
   "expect": {
     "seeds": {
@@ -27,7 +27,7 @@
             "spec": "tests/checkout.spec.ts",
             "test": "rejects a checkout with no payment token",
             "line": 13,
-            "reason": "the test sends no payment token and asserts 400, the status only the missing-token guard answers"
+            "reason": "the request omits paymentToken and the test asserts 400, which only the missing-token guard returns"
           }
         ]
       },
@@ -40,7 +40,7 @@
             "spec": "tests/checkout.spec.ts",
             "test": "places an order when the cart holds an item",
             "line": 8,
-            "reason": "no test makes the order be refused; the 403 branch is not distinguished by any assertion"
+            "reason": "the 403 branch needs a declined order, and no test arranges one"
           }
         ]
       },
@@ -53,7 +53,7 @@
             "spec": "tests/checkout.spec.ts",
             "test": "places an order when the cart holds an item",
             "line": 8,
-            "reason": "a 200 assertion names no field the order write alone produces"
+            "reason": "a 200 shows the checkout completed; the saved order and the published message are not observed"
           }
         ]
       }

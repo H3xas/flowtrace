@@ -12,7 +12,7 @@
           "spec": "tests/checkout.spec.ts",
           "test": "lists the cart",
           "line": 19,
-          "reason": "a body field assertion on the cart read"
+          "reason": "a body assertion on the cart read"
         }
       ]
     }

@@ -1,19 +1,19 @@
 {
-  "route": "GET catalog/v1/products",
-  "routeRef": "GET catalog/v1/products",
-  "file": "src/Controllers/CatalogController.cs",
-  "line": 17,
-  "packetHash": "b8e5e6885cc8",
+  "route": "POST orders/v1/cart/items",
+  "routeRef": "POST orders/v1/cart/items",
+  "file": "src/Controllers/OrdersController.cs",
+  "line": 24,
+  "packetHash": "03a02656e326",
   "seeds": [
     {
       "id": "U1",
-      "key": "6a3d57e8",
+      "key": "d94ea2d1",
       "dispositions": [
         {
           "kind": "error_return",
-          "line": 20,
+          "line": 27,
           "disposition": "taken",
-          "text": "if (string.IsNullOrEmpty(category))"
+          "text": "if (request == null || request.Quantity <= 0)"
         }
       ],
       "kind": "reject",
@@ -25,39 +25,41 @@
     },
     {
       "id": "U2",
-      "key": "c87ccc19",
+      "key": "26ff9125",
       "dispositions": [
         {
           "kind": "error_return",
-          "line": 20,
+          "line": 27,
           "disposition": "not-taken",
-          "text": "if (string.IsNullOrEmpty(category))"
+          "text": "if (request == null || request.Quantity <= 0)"
         }
       ],
       "kind": "effect",
-      "outcomes": [],
-      "reads": 1
+      "outcomes": [
+        "db OrderRepository.UpsertCartItem"
+      ],
+      "reads": 0
     }
   ],
   "candidates": [
     {
       "repo": "e2e",
-      "spec": "tests/catalog.spec.ts",
-      "test": "rejects a listing with no category",
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a cart item with no quantity",
       "skipped": true,
       "match": "exact",
       "intercepts": [
         {
-          "verb": "GET",
-          "pattern": "catalog/v1/products",
-          "line": 10
+          "verb": "POST",
+          "pattern": "orders/v1/cart/items",
+          "line": 23
         }
       ],
       "excerpt": {
-        "file": "tests/catalog.spec.ts",
-        "startLine": 9,
-        "endLine": 12,
-        "text": "  test.skip('rejects a listing with no category', async ({ request }) => {\n    const response = await request.get('catalog/v1/products');\n    expect(response.status()).toBe(400);\n  });"
+        "file": "tests/checkout.spec.ts",
+        "startLine": 22,
+        "endLine": 25,
+        "text": "  test.skip('rejects a cart item with no quantity', async ({ request }) => {\n    const response = await request.post('orders/v1/cart/items', { data: { productId: 'sku_demo' } });\n    expect(response.status()).toBe(400);\n  });"
       }
     }
   ],

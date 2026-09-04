@@ -1,18 +1,31 @@
 {
-  "route": "GET catalog/v1/products",
+  "route": "POST orders/v1/cart/items",
   "reader": "reference",
-  "packetHash": "b8e5e6885cc8",
+  "packetHash": "03a02656e326",
   "seeds": [
     {
       "id": "U1",
-      "key": "6a3d57e8",
-      "level": "disposition",
+      "key": "d94ea2d1",
+      "level": "skipped",
       "evidence": [
         {
-          "spec": "tests/catalog.spec.ts",
-          "test": "rejects a listing with no category",
-          "line": 11,
-          "reason": "the skipped test asserts 400, the status only the missing-category guard answers"
+          "spec": "tests/checkout.spec.ts",
+          "test": "rejects a cart item with no quantity",
+          "line": 24,
+          "reason": "the test would pin the 400 guard, but it is skipped and has not run"
+        }
+      ]
+    },
+    {
+      "id": "U2",
+      "key": "26ff9125",
+      "level": "skipped",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "rejects a cart item with no quantity",
+          "line": 24,
+          "reason": "no executing test reaches the route, so the cart write is unobserved"
         }
       ]
     }
