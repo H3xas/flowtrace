@@ -123,6 +123,7 @@ rules that keep the tool's honesty intact in the agent's answer.
 | `join` | which client calls reach which server routes, and which do not? |
 | `render` | write the joined route report and one flow page per called route. |
 | `trace` | what actually runs when this route is called — branches, services, database writes, published messages, consumers? |
+| `routes-of` | I hold a grep hit, a stack frame or a message name — which entry routes run through it? |
 | `cover` | which distinguishable ways through this feature's routes does a test actually pin down? |
 | `affected` | I changed these files — which specs must run, and which affected routes have no test at all? |
 | `scaffold` | write a starting spec for each gap. |
@@ -175,6 +176,8 @@ published as exactly that.
   worked example under `examples/demo-shop`, which CI runs end to end on every push.
 - `span --from-component` covers the `web` repository kind only. A mobile-kind name is
   refused with its reason rather than answered partially.
+- `routes-of` searches extracted facts only. Its literal mode is exact and allowlisted; it
+  does not scan source, expand a concrete URL into a template, or use the optional code index.
 
 ## Contributing
 

@@ -1,0 +1,10 @@
+{
+  "sealed": "2026-08-30",
+  "kind": "harness-correction",
+  "preregistration_file": "preregistration.md",
+  "preregistration_sha256": "718e9a6897e70e4ae22e879e379268d6b5dc416368f347e226208725a64b06e0",
+  "prompt_file": "../prompt.md",
+  "prompt_sha256": "84f8fb22a2bcd3733e27c136e42581c3491664762ca9933fd54f0135e820b6cb",
+  "truth_file": "../truth.json",
+  "truth_sha256": "64d2ec81d862091e8041429be4faf1a0888e0ef49469869cbd040bbd41017f8c"
+}

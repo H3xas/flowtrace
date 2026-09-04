@@ -1,0 +1,78 @@
+{
+  "sealed": "2026-08-30",
+  "authority": "exhaustive fact-only forward walk of every route in the named corpus",
+  "answers": [
+    {
+      "name": "body-line",
+      "resolution": {
+        "repo": "eshop",
+        "kind": "method",
+        "ref": "OrderController.Detail",
+        "file": "Web/Controllers/OrderController.cs",
+        "line": 32
+      },
+      "routes": [
+        {
+          "repo": "eshop",
+          "route": "GET order/detail/*",
+          "file": "Web/Controllers/OrderController.cs",
+          "line": 31
+        }
+      ]
+    },
+    {
+      "name": "repository-symbol",
+      "resolution": {
+        "repo": "api",
+        "kind": "method",
+        "ref": "OrderRepository.SaveOrder",
+        "file": "src/DataAccess/OrderRepository.cs",
+        "line": 18
+      },
+      "routes": [
+        {
+          "repo": "api",
+          "route": "POST orders/v1/checkout",
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "name": "publish-key",
+      "resolution": {
+        "repo": "api",
+        "kind": "message-key",
+        "ref": "publish.message=\"OrderPlacedMessage\"",
+        "file": "src/Services/OrderService.cs",
+        "line": 43
+      },
+      "routes": [
+        {
+          "repo": "api",
+          "route": "POST orders/v1/checkout",
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "name": "route-template",
+      "resolution": {
+        "repo": "api",
+        "kind": "route-template",
+        "ref": "route.template=\"orders/v1/checkout\"",
+        "file": "src/Controllers/OrdersController.cs",
+        "line": 36
+      },
+      "routes": [
+        {
+          "repo": "api",
+          "route": "POST orders/v1/checkout",
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 36
+        }
+      ]
+    }
+  ]
+}

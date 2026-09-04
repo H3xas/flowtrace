@@ -4,7 +4,17 @@ Semantic versioning from `0.x`: the CLI surface may still change between minor v
 
 ## Unreleased
 
-Documentation only; the CLI is unchanged. The README is now an entry page and the
+New verb `routes-of <file:line | symbol | literal>`, the reverse of `trace`. It resolves a
+repository-relative file and line, an exact method symbol or an exact allowlisted literal to
+one fact, then reports every entry route whose complete fact-only forward walk passes through
+it: one shortest `repo:file:line` witness per route, the count of further paths, and the
+route's existing seeds and test evidence. Unresolved or ambiguous input exits `2` and lists
+the candidates; a walk that reaches its node budget exits `4` and returns no partial set.
+`--json` is deterministic and carries `schemaVersion: 1`. The pre-registered agentic round
+for the verb is published under `docs/benchmarks/results/2026-08-routes-of.md`; both tool
+cells failed harness integrity, so it establishes no advantage in either direction.
+
+The README is now an entry page and the
 step-by-step tour moved to `docs/getting-started.md`, which takes a first-time reader — a person
 or an AI agent — from install to a first answer about their own repositories, with the
 expected output at every step. `docs/agent-guide.md` states how an agent sets the tool up, what

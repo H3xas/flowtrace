@@ -115,3 +115,24 @@ judgment it cannot make, cached so `skeleton` can quote it instead of guessing.
 not repository-relative with forward slashes, or a `line` that is not a positive integer.
 `validateFacts(array)` checks a whole set and reports the first bad entry by index and type.
 Both live in `lib/facts.js`; an extractor cannot emit a malformed fact by accident.
+
+## Reverse-resolution fields
+
+`routes-of` adds no fact types and never scans source. Literal mode searches this complete
+allowlist:
+
+| meaning | fact field |
+|---|---|
+| route template | `route.template`, `gateway_call.template` |
+| method-call target | `method_call.calledMethod` |
+| publish or consume key | `publish.message`, `consume.message` |
+| spec-evidence string | `cypress_test.test`, `pw_test.test` |
+
+Route-template fields use the same route normalizer as `join`; all other fields compare the
+whole string exactly. Substrings, regular expressions, fuzzy matches, concrete URLs standing
+in for parameterised templates, metadata fields and raw file contents do not resolve.
+
+The forward walker carries the identity and `repo:file:line` of these source facts on the
+edges they create. That edge provenance is how reverse membership for a call, publish,
+consume or gateway literal is proved. A spec title joins through the existing route-evidence
+index instead; it remains route-level evidence and does not claim that the queried point ran.

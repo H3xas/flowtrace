@@ -40,8 +40,10 @@ Before answering what a route does, what a change reaches, or which tests cover 
 1. `flowtrace extract && flowtrace join` — refresh the facts. Takes seconds. Facts behind
    HEAD make `affected` exit 4; re-run this rather than reasoning around it.
 2. `flowtrace trace "<VERB template>" --seeds` — what runs, and the distinct outcomes.
-3. `flowtrace cover --area areas/<name>.txt` — which of those outcomes a test already pins.
-4. `flowtrace affected --diff <base>...HEAD --area areas/<name>.txt --json` — the specs to
+3. `flowtrace routes-of "<file:line | Class.Method | literal>"` — the other direction: which
+   entry routes run through a point you already hold, such as a grep hit or a stack frame.
+4. `flowtrace cover --area areas/<name>.txt` — which of those outcomes a test already pins.
+5. `flowtrace affected --diff <base>...HEAD --area areas/<name>.txt --json` — the specs to
    run. Exit 0: a list; 3: nothing affected; 4: widened, run the whole suite, reason on
    stderr; 2: usage; 1: refusal.
 
@@ -60,6 +62,7 @@ the rest is stateless:
 | refresh what the repositories say | `flowtrace extract` then `flowtrace join` | source, then `out/facts/` |
 | what does this route run, and what can it do | `flowtrace trace "<key>" --seeds --json` | facts |
 | what does this screen or component reach | `flowtrace trace <ComponentName> --expand` | facts |
+| which entry routes run through this file line, method or literal | `flowtrace routes-of "<point>" --json` | facts |
 | which outcomes do tests already pin | `flowtrace cover --area <file> --json` | facts |
 | which specs must run for this diff | `flowtrace affected --diff <range> --area <file> --json` | facts + `git diff` |
 | which `dotnet test` filter covers this diff | `flowtrace affected --diff <range> --area <file> --dotnet-filter` | facts + `git diff` |
@@ -68,7 +71,8 @@ the rest is stateless:
 | draft the missing cases for a person | `flowtrace cases --area <file> --dry-run` | facts |
 | one page for a tester | `flowtrace span "<key>"` | facts |
 
-`--json` exists on `trace`, `cover`, `affected`, `surface`, `skeleton` and `readiness`;
+`--json` exists on `trace`, `routes-of`, `cover`, `affected`, `surface`, `skeleton` and
+`readiness`;
 `trace --area <file>` emits one JSON array for a list of keys. The terminal form is for
 showing a person; the JSON form is for deciding. Field lists per command are in
 [cli.md](cli.md).
@@ -81,6 +85,11 @@ An agent relaying its output keeps that rule intact by observing the following.
 - **A route key is `<VERB> <template>`**, quoted, exactly as the facts declare it. When a
   start does not match, the tool says so and exits `2`; do not retry with a guessed key,
   list the keys instead (getting-started, step 3.4).
+- **`routes-of` answers with a route set only when it is complete.** An ambiguous point
+  lists its candidates and exits `2`; pick one by `Class.Method` or `--repo`, do not guess.
+  Exit `4` means a walk hit its node budget and no partial set was returned. A route in
+  the set carries route-level evidence; the tool says, and you should repeat, that this
+  does not prove a test executed the point itself.
 - **`unresolved` and `graph: unavailable` are answers.** They mark the point where facts ran
   out. Report the hop as unknown; do not describe what "probably" lies past it.
 - **`[unknown: x ← unresolved]` on a seed** means the branch condition could not be traced

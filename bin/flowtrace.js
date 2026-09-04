@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * flowtrace command line: extract | join | render | trace | span | surface | skeleton |
+ * flowtrace command line: extract | join | render | trace | routes-of | span | surface | skeleton |
  * cover | affected | scaffold | cases | readiness | all.
  */
 
@@ -27,6 +27,7 @@ import * as renderHtmlModule from '../lib/render-html.js';
 import * as renderSpanHtmlModule from '../lib/render-span-html.js';
 import * as renderTreeModule from '../lib/render-tree.js';
 import * as renderTreeHtmlModule from '../lib/render-tree-html.js';
+import * as routesOfModule from '../lib/routes-of.js';
 import * as runtimeCoverModule from '../lib/runtime-cover.js';
 import * as scaffoldModule from '../lib/scaffold.js';
 import * as scoutModule from '../lib/scout.js';
@@ -41,8 +42,8 @@ import * as webExtractor from '../lib/extract/web.js';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
-  'extract', 'join', 'render', 'trace', 'span', 'surface', 'skeleton', 'cover', 'affected', 'scaffold', 'cases',
-  'readiness', 'all',
+  'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover',
+  'affected', 'scaffold', 'cases', 'readiness', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
 const USAGE = [
@@ -53,6 +54,7 @@ const USAGE = [
   '  join      join the fact sets into out/flow.json',
   '  render    write out/report.md and one out/flows/<route>.md per called route',
   '  trace     walk one start to its sinks and print the tree',
+  '  routes-of list every entry route whose complete walk passes through one point',
   '  span      write one outcome-first HTML page for one entry route, for a QA reader',
   '  surface   derive where the state one entry route changes can be read back',
   '  skeleton  emit one spec skeleton from a derived assertion surface',
@@ -64,9 +66,18 @@ const USAGE = [
   '  all       extract, then join, then render',
   '',
   'options:',
-  '  --repo <id>      extract, or resolve a trace start, in this repository only',
+  '  --repo <id>      scope extraction or point/start resolution to one repository',
   '  --config <path>  use this configuration file instead of ./flowtrace.config.json',
   '  -h, --help       show this message',
+  '',
+  'routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]',
+  '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
+  '  an exact allowlisted literal. --symbol and --literal force one mode and never fall',
+  '  back. --repo scopes point resolution only; originating routes remain cross-repository.',
+  '  A resolved point with no routes exits 0. Unresolved or ambiguous input exits 2 and',
+  '  returns no route set. An incomplete forward walk exits 4 and returns no partial set.',
+  '  JSON output is deterministic and carries schemaVersion 1; neither renderer claims',
+  '  that route-level test evidence proves execution of the resolved point.',
   '',
   'trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]',
   '            [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]',
@@ -461,6 +472,8 @@ function parseArgs(argv) {
     stub: false,
     maxSpecs: undefined,
     maxLines: undefined,
+    symbol: false,
+    literal: false,
   };
   const positional = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -563,6 +576,10 @@ function parseArgs(argv) {
       options.graph = true;
     } else if (argument === '--json') {
       options.json = true;
+    } else if (argument === '--symbol') {
+      options.symbol = true;
+    } else if (argument === '--literal') {
+      options.literal = true;
     } else if (argument === '--mermaid') {
       options.mermaid = true;
     } else if (argument === '--html' || argument.startsWith('--html=')) {
@@ -654,6 +671,7 @@ function parseArgs(argv) {
   options.command = positional[0];
   if (
     options.command === 'trace' ||
+    options.command === 'routes-of' ||
     options.command === 'span' ||
     options.command === 'surface' ||
     options.command === 'skeleton'
@@ -1020,6 +1038,34 @@ async function runTrace(config, options) {
     }),
   );
   return 0;
+}
+
+async function runRoutesOf(config, options) {
+  const factSets = loadFactSets(config);
+  warnStaleFacts(factSets, config.repos);
+  const mode = options.symbol ? 'symbol' : options.literal ? 'literal' : undefined;
+  const report = routesOfModule.routesOf(factSets, options.start, {
+    mode,
+    repo: options.repo,
+    maxNodes: options.maxNodes,
+    aliases: config.aliases,
+    sinks: config.sinks,
+    repos: config.repos,
+  });
+  const exitCode =
+    report.verdict === 'incomplete'
+      ? 4
+      : report.verdict === 'unresolved' || report.verdict === 'ambiguous'
+        ? 2
+        : 0;
+  if (options.json) {
+    log(JSON.stringify(report, null, 2));
+  } else {
+    const output = routesOfModule.renderRoutesOf(report);
+    if (exitCode === 0) log(output);
+    else process.stderr.write(`flowtrace: ${output}\n`);
+  }
+  return exitCode;
 }
 
 /**
@@ -1713,6 +1759,21 @@ async function main() {
   if (options.command === 'trace' && !options.start && !options.area) {
     return usage('trace requires a start, or --area <file>');
   }
+  if (options.command === 'routes-of' && !options.start) {
+    return usage('routes-of requires a point');
+  }
+  if (options.symbol && options.literal) {
+    return usage('--symbol and --literal are mutually exclusive');
+  }
+  if ((options.symbol || options.literal) && options.command !== 'routes-of') {
+    return usage('--symbol and --literal are routes-of options');
+  }
+  if (options.command === 'routes-of' && options.graph) {
+    return usage('routes-of is fact-only and does not accept --graph');
+  }
+  if (options.command === 'routes-of' && options.depth) {
+    return usage('routes-of is exhaustive and does not accept --depth');
+  }
   if (options.command === 'span' && options.start && options.fromComponent) {
     return usage('span accepts a route key or --from-component <name>, not both');
   }
@@ -1760,6 +1821,9 @@ async function main() {
   try {
     if (options.command === 'trace') {
       return await runTrace(config, options);
+    }
+    if (options.command === 'routes-of') {
+      return await runRoutesOf(config, options);
     }
     if (options.command === 'span') {
       return await runSpan(config, options);
