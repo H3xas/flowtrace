@@ -1,0 +1,46 @@
+{
+  "route": "POST orders/v1/checkout",
+  "reader": "reference",
+  "packetHash": "f30adbc292a8",
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "5a6423a0",
+      "level": "disposition",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "rejects a checkout with no payment token",
+          "line": 13,
+          "reason": "the test sends no payment token and asserts 400, the status only the missing-token guard answers"
+        }
+      ]
+    },
+    {
+      "id": "U2",
+      "key": "ca37457e",
+      "level": "route",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "places an order when the cart holds an item",
+          "line": 8,
+          "reason": "no test makes the order be refused; the 403 branch is not distinguished by any assertion"
+        }
+      ]
+    },
+    {
+      "id": "U3",
+      "key": "31ba2067",
+      "level": "route",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "places an order when the cart holds an item",
+          "line": 8,
+          "reason": "a 200 assertion names no field the order write alone produces"
+        }
+      ]
+    }
+  ]
+}

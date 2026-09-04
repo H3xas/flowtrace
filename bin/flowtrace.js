@@ -15,6 +15,7 @@ import {
 
 import * as affectedModule from '../lib/affected.js';
 import * as assertionSurfaceModule from '../lib/assertion-surface.js';
+import * as calibrateModule from '../lib/calibrate.js';
 import * as casesModule from '../lib/cases.js';
 import * as componentSpanModule from '../lib/component-span.js';
 import * as coverModule from '../lib/cover.js';
@@ -49,7 +50,7 @@ import * as webExtractor from '../lib/extract/web.js';
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
   'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover',
-  'affected', 'scaffold', 'cases', 'readiness', 'split', 'all',
+  'affected', 'scaffold', 'cases', 'readiness', 'split', 'calibrate', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
 const USAGE = [
@@ -70,6 +71,7 @@ const USAGE = [
   '  cases     write a human-readable case sheet per route for the seeds no test reaches',
   '  readiness render an area inventory\'s readiness sheet from the existing facts',
   '  split     turn a branch diff into ordered, checked commit slices',
+  '  calibrate check a reader\'s verdicts against a golden set before trusting them',
   '  all       extract, then join, then render',
   '',
   'options:',
@@ -444,6 +446,18 @@ const USAGE = [
   '  is refused inside any configured repository. `split` runs no mutating git command:',
   '  the emitted script is inert text until a person runs it. Exit 0 a script was written,',
   '  1 a slice failed its own check (the script still names it), 3 the diff was empty.',
+  'calibrate --golden <dir> --verdicts <dir> [--json]',
+  '  Pins a reader — a person, a script, an agent that writes `cover --verdicts` files —',
+  '  against a golden set: one <id>.packet.json per entry beside an <id>.verdict.json',
+  '  stating the reference verdict and the outcome the merge must produce for it (seed',
+  '  levels, rejection reasons, upgrade and confirmation counts). Every <id>.verdict.json',
+  '  under --verdicts is merged through exactly the path `cover --verdicts` uses, and each',
+  '  golden packet is reported as agreed or as a list of disagreements naming the seed,',
+  '  what was expected, what the merge produced and the rule the entry quotes. A missing',
+  '  verdict and a verdict naming no golden packet are disagreements too. Exit 0 every',
+  '  packet agrees, 1 any disagreement, 2 usage. --json emits { golden, agreed, disagreed }',
+  '  in golden-id order with no timestamp. The package ships a golden set built from its',
+  '  worked example under examples/demo-shop/calibration, with reference verdicts beside it.',
   '',
   'readiness --areas <file> [--md <out>] [--json] [--repo <id>]',
   '  Turns an external area inventory into a per-area readiness sheet, entirely from',
@@ -518,6 +532,7 @@ function parseArgs(argv) {
     md: undefined,
     packets: undefined,
     verdicts: undefined,
+    golden: undefined,
     runtime: undefined,
     seedKeys: [],
     maxLevel: undefined,
@@ -738,6 +753,10 @@ function parseArgs(argv) {
       const value = argument.startsWith('--out=') ? argument.slice('--out='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--out requires a path');
       options.out = value;
+    } else if (argument === '--golden' || argument.startsWith('--golden=')) {
+      const value = argument.startsWith('--golden=') ? argument.slice('--golden='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--golden requires a directory');
+      options.golden = value;
     } else if (argument === '--verdicts' || argument.startsWith('--verdicts=')) {
       const value = argument.startsWith('--verdicts=') ? argument.slice('--verdicts='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--verdicts requires a directory');
@@ -880,6 +899,35 @@ async function runSplit(config, options) {
   log(renderSplit(result));
   log(`  -> ${display(target)} — nothing has run: read it, then run it yourself`);
   return result.exit;
+}
+
+/**
+ * Calibration reads two directories and no facts: the golden set and a reader's verdicts.
+ * A verdict file may be the reader's own document or a golden-style one carrying the
+ * reader's document under `verdict`; the golden id is the file name either way.
+ */
+async function runCalibrate(config, options) {
+  const { calibrate, loadGolden } = calibrateModule;
+  const { readVerdicts } = packetsModule;
+  const goldenDir = resolve(options.golden);
+  const verdictsDir = resolve(options.verdicts);
+  const golden = loadGolden(goldenDir);
+  if (!existsSync(verdictsDir)) throw new Error(`no verdicts directory at ${display(verdictsDir)}`);
+  const verdicts = readVerdicts(verdictsDir).map(({ file, doc }) => ({
+    id: basename(file, '.verdict.json'),
+    verdict: doc && doc.verdict && typeof doc.verdict === 'object' ? doc.verdict : doc,
+  }));
+  const result = calibrate(verdicts, { golden });
+  const exitCode = result.disagreed.length === 0 ? 0 : 1;
+  if (options.json) {
+    log(JSON.stringify({ golden: golden.map((entry) => entry.id), agreed: result.agreed, disagreed: result.disagreed }, null, 2));
+    return exitCode;
+  }
+  log(`calibrate ${plural(golden.length, 'golden packet')}: ${result.agreed.length} agreed, ${plural(result.disagreed.length, 'disagreement')}`);
+  for (const item of result.disagreed) {
+    log(`  ${item.id} ${item.seed ? `#${item.seed}` : '-'} expected ${item.expected}, got ${item.got}${item.rule ? ` — ${item.rule}` : ''}`);
+  }
+  return exitCode;
 }
 
 function sanitiseKey(key) {
@@ -2147,6 +2195,9 @@ async function main() {
   if (options.command === 'cases' && !options.area) {
     return usage('cases requires --area <file|name>');
   }
+  if (options.command === 'calibrate' && (!options.golden || !options.verdicts)) {
+    return usage('calibrate requires --golden <dir> and --verdicts <dir>');
+  }
   if (options.command === 'readiness' && !options.areas) {
     return usage('readiness requires --areas <file>');
   }
@@ -2186,6 +2237,9 @@ async function main() {
     }
     if (options.command === 'split') {
       return await runSplit(config, options);
+    }
+    if (options.command === 'calibrate') {
+      return await runCalibrate(config, options);
     }
     if (options.command === 'readiness') {
       return await runReadiness(config, options);

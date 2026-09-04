@@ -1,0 +1,121 @@
+{
+  "route": "POST orders/v1/checkout",
+  "routeRef": "POST orders/v1/checkout",
+  "file": "src/Controllers/OrdersController.cs",
+  "line": 36,
+  "packetHash": "f30adbc292a8",
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "5a6423a0",
+      "dispositions": [
+        {
+          "kind": "error_return",
+          "line": 39,
+          "disposition": "taken",
+          "text": "if (request == null || string.IsNullOrEmpty(request.PaymentToken))"
+        }
+      ],
+      "kind": "reject",
+      "response": "400 BadRequest",
+      "outcomes": [
+        "→ 400 BadRequest"
+      ],
+      "reads": 0
+    },
+    {
+      "id": "U2",
+      "key": "ca37457e",
+      "dispositions": [
+        {
+          "kind": "error_return",
+          "line": 39,
+          "disposition": "not-taken",
+          "text": "if (request == null || string.IsNullOrEmpty(request.PaymentToken))"
+        },
+        {
+          "kind": "error_return",
+          "line": 45,
+          "disposition": "taken",
+          "text": "if (!placed)"
+        }
+      ],
+      "kind": "reject",
+      "response": "403 Forbidden",
+      "outcomes": [
+        "→ 403 Forbidden"
+      ],
+      "reads": 0
+    },
+    {
+      "id": "U3",
+      "key": "31ba2067",
+      "dispositions": [
+        {
+          "kind": "error_return",
+          "line": 39,
+          "disposition": "not-taken",
+          "text": "if (request == null || string.IsNullOrEmpty(request.PaymentToken))"
+        },
+        {
+          "kind": "error_return",
+          "line": 45,
+          "disposition": "not-taken",
+          "text": "if (!placed)"
+        }
+      ],
+      "kind": "effect",
+      "outcomes": [
+        "db OrderRepository.SaveOrder",
+        "⇝ OrderPlacedMessage"
+      ],
+      "reads": 0
+    }
+  ],
+  "candidates": [
+    {
+      "repo": "e2e",
+      "spec": "tests/checkout.spec.ts",
+      "test": "places an order when the cart holds an item",
+      "skipped": false,
+      "match": "exact",
+      "intercepts": [
+        {
+          "verb": "POST",
+          "pattern": "orders/v1/checkout",
+          "line": 5
+        }
+      ],
+      "excerpt": {
+        "file": "tests/checkout.spec.ts",
+        "startLine": 4,
+        "endLine": 9,
+        "text": "  test('places an order when the cart holds an item', async ({ request }) => {\n    const response = await request.post('orders/v1/checkout', {\n      data: { paymentToken: 'tok_demo' },\n    });\n    expect(response.status()).toBe(200);\n  });"
+      }
+    },
+    {
+      "repo": "e2e",
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a checkout with no payment token",
+      "skipped": false,
+      "match": "exact",
+      "intercepts": [
+        {
+          "verb": "POST",
+          "pattern": "orders/v1/checkout",
+          "line": 12
+        }
+      ],
+      "excerpt": {
+        "file": "tests/checkout.spec.ts",
+        "startLine": 11,
+        "endLine": 14,
+        "text": "  test('rejects a checkout with no payment token', async ({ request }) => {\n    const response = await request.post('orders/v1/checkout', { data: {} });\n    expect(response.status()).toBe(400);\n  });"
+      }
+    }
+  ],
+  "rules": {
+    "path": "an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect",
+    "disposition": "an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion"
+  }
+}

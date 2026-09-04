@@ -26,6 +26,7 @@ commands:
   cases     write a human-readable case sheet per route for the seeds no test reaches
   readiness render an area inventory's readiness sheet from the existing facts
   split     turn a branch diff into ordered, checked commit slices
+  calibrate check a reader's verdicts against a golden set before trusting them
   all       extract, then join, then render
 
 options:
@@ -400,6 +401,18 @@ split [--diff <range>] [--staged] [--max-specs N] [--max-lines N] [--out <script
   is refused inside any configured repository. `split` runs no mutating git command:
   the emitted script is inert text until a person runs it. Exit 0 a script was written,
   1 a slice failed its own check (the script still names it), 3 the diff was empty.
+calibrate --golden <dir> --verdicts <dir> [--json]
+  Pins a reader — a person, a script, an agent that writes `cover --verdicts` files —
+  against a golden set: one <id>.packet.json per entry beside an <id>.verdict.json
+  stating the reference verdict and the outcome the merge must produce for it (seed
+  levels, rejection reasons, upgrade and confirmation counts). Every <id>.verdict.json
+  under --verdicts is merged through exactly the path `cover --verdicts` uses, and each
+  golden packet is reported as agreed or as a list of disagreements naming the seed,
+  what was expected, what the merge produced and the rule the entry quotes. A missing
+  verdict and a verdict naming no golden packet are disagreements too. Exit 0 every
+  packet agrees, 1 any disagreement, 2 usage. --json emits { golden, agreed, disagreed }
+  in golden-id order with no timestamp. The package ships a golden set built from its
+  worked example under examples/demo-shop/calibration, with reference verdicts beside it.
 
 readiness --areas <file> [--md <out>] [--json] [--repo <id>]
   Turns an external area inventory into a per-area readiness sheet, entirely from

@@ -1,0 +1,43 @@
+{
+  "route": "POST orders/v1/checkout",
+  "reader": "reference",
+  "packetHash": "000000000000",
+  "seeds": [
+    {
+      "id": "U1",
+      "level": "disposition",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "rejects a checkout with no payment token",
+          "line": 13,
+          "reason": "a 400 assertion the missing-token guard alone answers"
+        }
+      ]
+    },
+    {
+      "id": "U2",
+      "level": "route",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "places an order when the cart holds an item",
+          "line": 8,
+          "reason": "not distinguished"
+        }
+      ]
+    },
+    {
+      "id": "U3",
+      "level": "route",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "places an order when the cart holds an item",
+          "line": 8,
+          "reason": "status only"
+        }
+      ]
+    }
+  ]
+}

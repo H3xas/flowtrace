@@ -1,0 +1,62 @@
+{
+  "id": "01-status-assert-only",
+  "packet": "01-status-assert-only.packet.json",
+  "shape": "a 200 status assertion on the request and nothing else; every seed stays at route",
+  "rule": "a verdict naming the seed's current level is a confirmation, not an upgrade: the reader looked and chose not to promote",
+  "expect": {
+    "seeds": {
+      "5a6423a0": "route",
+      "ca37457e": "route",
+      "31ba2067": "route"
+    },
+    "upgrades": 0,
+    "confirmed": 3,
+    "rejections": {}
+  },
+  "verdict": {
+    "route": "POST orders/v1/checkout",
+    "reader": "reference",
+    "packetHash": "f30adbc292a8",
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "5a6423a0",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "places an order when the cart holds an item",
+            "line": 8,
+            "reason": "the test sends a payment token, so the missing-token branch this seed takes is never set up"
+          }
+        ]
+      },
+      {
+        "id": "U2",
+        "key": "ca37457e",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "places an order when the cart holds an item",
+            "line": 8,
+            "reason": "nothing in the test makes the order be refused, and a 200 assertion says nothing about the 403 branch"
+          }
+        ]
+      },
+      {
+        "id": "U3",
+        "key": "31ba2067",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "places an order when the cart holds an item",
+            "line": 8,
+            "reason": "a 200 status is what every non-rejecting seed answers; it names no field the order write alone produces"
+          }
+        ]
+      }
+    ]
+  }
+}

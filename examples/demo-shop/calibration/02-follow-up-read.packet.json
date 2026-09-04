@@ -1,0 +1,43 @@
+{
+  "route": "GET orders/v1/cart",
+  "routeRef": "GET orders/v1/cart",
+  "file": "src/Controllers/OrdersController.cs",
+  "line": 17,
+  "packetHash": "1fb4d4c81530",
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "b52bb585",
+      "dispositions": [],
+      "kind": "effect",
+      "outcomes": [],
+      "reads": 1
+    }
+  ],
+  "candidates": [
+    {
+      "repo": "e2e",
+      "spec": "tests/checkout.spec.ts",
+      "test": "lists the cart",
+      "skipped": false,
+      "match": "exact",
+      "intercepts": [
+        {
+          "verb": "GET",
+          "pattern": "orders/v1/cart",
+          "line": 17
+        }
+      ],
+      "excerpt": {
+        "file": "tests/checkout.spec.ts",
+        "startLine": 16,
+        "endLine": 20,
+        "text": "  test('lists the cart', async ({ request }) => {\n    const response = await request.get('orders/v1/cart');\n    expect(response.status()).toBe(200);\n    expect(await response.json()).toHaveProperty('items');\n  });"
+      }
+    }
+  ],
+  "rules": {
+    "path": "an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect",
+    "disposition": "an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion"
+  }
+}

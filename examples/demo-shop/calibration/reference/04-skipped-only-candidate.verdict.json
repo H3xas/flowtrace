@@ -1,0 +1,20 @@
+{
+  "route": "GET catalog/v1/products",
+  "reader": "reference",
+  "packetHash": "b8e5e6885cc8",
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "6a3d57e8",
+      "level": "disposition",
+      "evidence": [
+        {
+          "spec": "tests/catalog.spec.ts",
+          "test": "rejects a listing with no category",
+          "line": 11,
+          "reason": "the skipped test asserts 400, the status only the missing-category guard answers"
+        }
+      ]
+    }
+  ]
+}

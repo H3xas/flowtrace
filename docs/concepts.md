@@ -111,6 +111,18 @@ route's route-level evidence, and nothing is promoted to `path` without an asser
 actually distinguishes one seed from another. flowtrace never reports a coverage percentage
 it cannot point at a fact for.
 
+### Calibrating a reader
+
+`cover --packets <dir>` writes one packet per route: the seeds, the candidate tests and
+their excerpts, and the two rules a promotion needs. A reader answers with one verdict
+file per packet, and `cover --verdicts <dir>` merges those verdicts back, moving a seed
+forward only when the merge accepts the claim. `flowtrace calibrate --golden <dir>
+--verdicts <dir>` runs a reader's verdicts for a fixed golden set through that same merge
+and reports, per packet, whether the levels, rejections and counts came out as the set's
+reference says. A reader whose judgment drifts fails calibration before it moves a number.
+The package ships a golden set built from the worked example under
+`examples/demo-shop/calibration`.
+
 ## Areas
 
 An **area** is a fixed list of route keys — the denominator of a coverage run, written by

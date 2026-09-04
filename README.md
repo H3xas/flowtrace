@@ -142,6 +142,7 @@ rules that keep the tool's honesty intact in the agent's answer.
 | `cases` | write a plain-English case sheet for each gap, for a person to judge. |
 | `readiness` | per feature area: routes reached, sinks by class, seeds by reachability. |
 | `split` | how should this branch split into reviewable commits, and is each slice green on its own? |
+| `calibrate` | does the reader whose verdicts move my coverage numbers still read the way it did? |
 | `span` | one self-contained page per route, outcome first — what can happen, which outcomes a test already pins, what to do about the rest. |
 | `surface` | where can the state this route writes be read back? |
 | `skeleton` | write the spec that calls the route and observes that read-back. |

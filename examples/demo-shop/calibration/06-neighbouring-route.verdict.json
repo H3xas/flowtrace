@@ -1,0 +1,38 @@
+{
+  "id": "06-neighbouring-route",
+  "packet": "06-neighbouring-route.packet.json",
+  "shape": "a verdict written against a neighbouring route; the merge has no such route and rejects it",
+  "rule": "a verdict is merged into the route it names, and a route the packet does not hold is unknown",
+  "expect": {
+    "seeds": {
+      "5a6423a0": "route",
+      "ca37457e": "route",
+      "31ba2067": "route"
+    },
+    "upgrades": 0,
+    "confirmed": 0,
+    "rejections": {
+      "unknown-id": 1
+    }
+  },
+  "verdict": {
+    "route": "GET orders/v1/cart",
+    "reader": "reference",
+    "packetHash": "1fb4d4c81530",
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "b52bb585",
+        "level": "path",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "lists the cart",
+            "line": 19,
+            "reason": "a body field assertion on the cart read"
+          }
+        ]
+      }
+    ]
+  }
+}

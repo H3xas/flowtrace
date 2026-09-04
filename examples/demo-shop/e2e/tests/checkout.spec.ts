@@ -16,5 +16,6 @@ test.describe('orders/v1/checkout', () => {
   test('lists the cart', async ({ request }) => {
     const response = await request.get('orders/v1/cart');
     expect(response.status()).toBe(200);
+    expect(await response.json()).toHaveProperty('items');
   });
 });

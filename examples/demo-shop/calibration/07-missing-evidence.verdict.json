@@ -1,0 +1,29 @@
+{
+  "id": "07-missing-evidence",
+  "packet": "07-missing-evidence.packet.json",
+  "shape": "an upgrade claimed with no evidence entry; rejected as missing-evidence and the seed stays route",
+  "rule": "an accepted upgrade needs at least one evidence entry",
+  "expect": {
+    "seeds": {
+      "b52bb585": "route"
+    },
+    "upgrades": 0,
+    "confirmed": 0,
+    "rejections": {
+      "missing-evidence": 1
+    }
+  },
+  "verdict": {
+    "route": "GET orders/v1/cart",
+    "reader": "reference",
+    "packetHash": "1fb4d4c81530",
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "b52bb585",
+        "level": "path",
+        "evidence": []
+      }
+    ]
+  }
+}

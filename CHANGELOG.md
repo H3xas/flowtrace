@@ -73,6 +73,14 @@ The output is a shell script written outside every configured repository; `split
 mutating git command itself. A configured `split.ticketPrefix` goes in front of every drafted
 subject; without one, subjects are plain Conventional Commits.
 
+New verb `calibrate --golden <dir> --verdicts <dir>`: a reader's verdicts for a fixed golden
+set are merged through the same path `cover --verdicts` uses and each golden packet is
+reported as agreed or as the list of ways it disagreed — seed level, rejection reason,
+upgrade and confirmation counts — so a reader whose judgment drifts fails a build before it
+moves a coverage number. Exit `0` every packet agrees, `1` any disagreement, `2` usage. A
+golden set built from the worked example ships under `examples/demo-shop/calibration` with
+reference verdicts beside it.
+
 The README is now an entry page and the
 step-by-step tour moved to `docs/getting-started.md`, which takes a first-time reader — a person
 or an AI agent — from install to a first answer about their own repositories, with the
