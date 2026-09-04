@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * flowtrace command line: extract | join | render | trace | routes-of | span | surface | skeleton |
- * cover | affected | scaffold | cases | readiness | all.
+ * cover | affected | scaffold | cases | readiness | split | all.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -425,7 +425,7 @@ const USAGE = [
   '  a case-tool field, and the case id line is always pending — this writes a second',
   '  markdown shape of the same evidence, never a test-management API call.',
   '',
-  'split [--diff <range>] [--staged] [--max-specs 10] [--max-lines 400] [--out <script>]',
+  'split [--diff <range>] [--staged] [--max-specs N] [--max-lines N] [--out <script>]',
   '            [--no-check] [--json]',
   '  Turns a branch diff into ordered, reviewable commit slices and writes the shell script',
   '  that would commit them. Files group by endpoint area and by concern — a feature',
