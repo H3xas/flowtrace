@@ -16,6 +16,7 @@ commands:
   join      join the fact sets into out/flow.json
   render    write out/report.md and one out/flows/<route>.md per called route
   trace     walk one start to its sinks and print the tree
+  routes-of list every entry route whose complete walk passes through one point
   span      write one outcome-first HTML page for one entry route, for a QA reader
   surface   derive where the state one entry route changes can be read back
   skeleton  emit one spec skeleton from a derived assertion surface
@@ -27,9 +28,18 @@ commands:
   all       extract, then join, then render
 
 options:
-  --repo <id>      extract, or resolve a trace start, in this repository only
+  --repo <id>      scope extraction or point/start resolution to one repository
   --config <path>  use this configuration file instead of ./flowtrace.config.json
   -h, --help       show this message
+
+routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
+  Resolves <point> as repository-relative file:line, then exact method symbol, then
+  an exact allowlisted literal. --symbol and --literal force one mode and never fall
+  back. --repo scopes point resolution only; originating routes remain cross-repository.
+  A resolved point with no routes exits 0. Unresolved or ambiguous input exits 2 and
+  returns no route set. An incomplete forward walk exits 4 and returns no partial set.
+  JSON output is deterministic and carries schemaVersion 1; neither renderer claims
+  that route-level test evidence proves execution of the resolved point.
 
 trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]
             [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]

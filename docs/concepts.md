@@ -50,6 +50,19 @@ When facts run out — an interface with no registration, a call into a reposito
 not extracted — the walk can consult a code index (see [scout.md](scout.md)) for one more
 hop. Without one, the node prints `unresolved`, which is an answer too.
 
+### Walking back to routes
+
+`flowtrace routes-of <point>` resolves a repository-relative `file:line`, an exact method
+symbol, or an exact allowlisted literal, then asks which entry routes' forward walks contain
+that fact-backed point. The membership authority is still the forward walk above: reverse
+reachability does not reinterpret the graph or add an extraction pass. It disables the normal
+depth and interface-fan-out display limits, uses no optional code-index hop, and refuses the
+whole route set if its explicit node safety budget is reached.
+
+One shortest witness is kept per route, every hop carrying repository-relative provenance;
+other valid paths are counted. Seeds and evidence keep their existing meanings. In particular,
+a test that names the route is not evidence that it executed the resolved point.
+
 ## Seeds
 
 A **seed** is one distinguishable way through the route: a specific combination of

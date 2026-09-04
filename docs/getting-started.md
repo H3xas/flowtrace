@@ -142,7 +142,7 @@ configuration beside them:
 ```
 workspace/
   flowtrace.config.json      names the repositories below
-  areas/                     your area files (step 3.6)
+  areas/                     your area files (step 3.7)
   out/                       written by flowtrace; never committed
   shop-api/                  an ASP.NET Core checkout        → "root": "shop-api"
   shop-e2e/                  a Playwright checkout           → "root": "shop-e2e"
@@ -237,7 +237,54 @@ it (`{productId}`) or as `*`; the tool prints `*`, and area files use `*`. Other
 the same walk: `--mermaid` prints a flowchart, `--html <file>` writes a self-contained page,
 `--json` emits the tree for a program.
 
-### 3.6 Write an area file
+### 3.6 Walk back from a grep hit
+
+`trace` starts at a route. Mid-investigation you usually hold the other end: a line from a
+grep result or a stack frame, a method name, a message class. `routes-of` takes that point
+and reports every entry route whose complete walk passes through it, with one witness chain.
+
+```
+flowtrace routes-of "src/Services/OrderService.cs:43"
+```
+
+```
+resolved file OrderService.PlaceOrder — api:src/Services/OrderService.cs:35
+routes: 1 (complete across 5 entry routes)
+
+POST orders/v1/checkout — api:src/Controllers/OrdersController.cs:36
+  witness: shortest of 1 path
+    start route POST orders/v1/checkout — api:src/Controllers/OrdersController.cs:36
+    literal action OrdersController.Checkout — api:src/Controllers/OrdersController.cs:36
+    ctor class IOrderService — api:src/Controllers/OrdersController.cs:14
+    di class OrderService — api:src/Services/OrderService.cs:21
+    body method OrderService.PlaceOrder — api:src/Services/OrderService.cs:35
+  route evidence: route; 2 executing, 0 skipped
+  …
+note: route evidence is attached to the route and does not prove that the resolved point executed
+```
+
+A `file:line` resolves to the narrowest enclosing method the facts know; a bare or
+class-qualified method name (`OrderRepository.SaveOrder`) resolves by exact declaration; an
+exact literal such as a route template or a message class resolves against an allowlist of
+fact fields, never against source text. When more than one fact matches, the command lists
+the candidates and exits `2` instead of choosing:
+
+```
+flowtrace routes-of "OrderPlacedMessage" --literal
+```
+
+```
+flowtrace: ambiguous point "OrderPlacedMessage" (2 candidates):
+  consume.message="OrderPlacedMessage" — api:src/Messaging/OrderPlacedConsumer.cs:6
+  publish.message="OrderPlacedMessage" — api:src/Services/OrderService.cs:43
+```
+
+`--symbol` and `--literal` force one resolution mode, `--repo <id>` narrows the point but
+not the routes above it, and `--json` emits the same answer for a program. A route in the
+set carries the route's own test evidence; the closing note is literal, and worth repeating
+when relaying the answer.
+
+### 3.7 Write an area file
 
 `cover`, `affected`, `scaffold` and `cases` need a denominator, and flowtrace will not invent
 one. An area is a committed list of route keys, one per line, with the selection rule written
@@ -255,7 +302,7 @@ TXT
 
 Format details in [../areas/README.md](../areas/README.md).
 
-### 3.7 Cover
+### 3.8 Cover
 
 ```
 flowtrace cover --area areas/checkout.txt
@@ -264,7 +311,7 @@ flowtrace cover --area areas/checkout.txt
 The first line is the headline: routes with executing evidence over routes in the area, then
 seeds by tier. `--json` emits the whole report; `--md out/checkout.md` writes it as a page.
 
-### 3.8 Turn a diff into the specs that must run
+### 3.9 Turn a diff into the specs that must run
 
 ```
 flowtrace affected --diff main...HEAD --area areas/checkout.txt
@@ -277,7 +324,7 @@ nothing was affected, `4` the selection was widened to the whole suite with the 
 stderr, `2` usage, `1` refusal. Facts behind the repository's HEAD are one of the widening
 reasons, so run `extract` first in a fresh checkout.
 
-### 3.9 Optional: a code index for the hops facts cannot make
+### 3.10 Optional: a code index for the hops facts cannot make
 
 Configure [devscout](https://github.com/H3xas/devscout-rs) or any other tool speaking the
 same contract and mark the repositories it covers with `"scout": true`. Every
@@ -305,7 +352,7 @@ same contract and mark the repositories it covers with `"scout": true`. Every
 | `extract api (backend): 0 facts` | the root holds no source of that kind, or `exclude` swallows it | point `root` at the checkout that holds the controllers; narrow `exclude` |
 | `flowtrace: no page, component, service, route, method or class matches "…"` | the start is not a key the facts declare | list the keys as in 3.4; quote the argument |
 | `flowtrace: facts for api are stale (extracted at …) — run flowtrace extract --repo api` | the repository moved since the last extract | run `flowtrace extract`; `affected` treats this as a widening and exits `4` |
-| `graph: unavailable` on a hop | no code index configured | expected; see 3.9 |
+| `graph: unavailable` on a hop | no code index configured | expected; see 3.10 |
 | `[unknown: x ← unresolved]` on a seed | a branch condition no caller controls, or the trace-back gave up within its three-hop bound | not an error; the seed is reported as unknown, never as covered |
 | `--area checkout` reads the package's own example instead of yours | a bare name resolves inside the package | pass the path: `--area areas/checkout.txt` |
 

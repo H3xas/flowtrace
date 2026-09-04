@@ -12,6 +12,9 @@ open-source tools, with the truth sealed before anything runs.
 - [agentic.md](agentic.md) — the separate protocol for measuring an agent *using* the tool,
   as opposed to what the tool hands an agent. Protocol, plus the first (preliminary) run in
   [results/](results/2026-08.md).
+- [reverse-reachability result](results/2026-08-routes-of.md) — a pre-registered one-run
+  comparison whose tool cells failed integrity twice; published as a harness result, not a
+  tool-effect claim.
 - [results/](results/) — one document per run, each carrying its own environment block.
 
 ## The honesty statement
@@ -51,6 +54,7 @@ in [results/2026-08.md](results/2026-08.md).
 | --- | --- | --- |
 | Deterministic pipeline | facts, walks and `span` reconcile on the pinned corpus | measured; peer matrix not yet run |
 | Agentic — 4 sealed tickets, 2 models, tool / no-tool / no-code arms | tool arms 8/8 correct, baseline arms 8/8 correct, no-code control 0/4 | **no advantage shown this run** — correctness and token cost both flat against the baseline; only the no-code floor separated |
+| Reverse reachability (`routes-of`) — 4 sealed inputs, 2 models, tool / no-tool arms, run twice | both tool cells `tool_integrity: none` in both rounds; strict score 0/8 in every lane on the sealed JSON-only contract | **no valid tool contrast** — a harness result, published as such in [results/2026-08-routes-of.md](results/2026-08-routes-of.md) |
 
 One run per cell is an anecdote with a number attached, and is published as exactly that. The
 negative finding stays on the board until the 5-run protocol confirms or retires it — this

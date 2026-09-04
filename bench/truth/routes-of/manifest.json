@@ -1,0 +1,30 @@
+{
+  "sealed": "2026-08-30",
+  "protocol": "docs/benchmarks/agentic.md",
+  "corpora": [
+    {
+      "id": "eshoponweb",
+      "sha": "4da8212117e87d808d4bbc7da6286fd2147ce606"
+    },
+    {
+      "id": "demo-shop",
+      "sha": null,
+      "note": "bundled corpus from the development tree under test"
+    }
+  ],
+  "hash": "sha256, one file at a time, hex digest as printed by shasum -a 256",
+  "files": [
+    {
+      "file": "preregistration.md",
+      "sha256": "a762ae8782510b83b983e53cc226e06c00f04bb27876081ad20c85895cb4465f"
+    },
+    {
+      "file": "prompt.md",
+      "sha256": "84f8fb22a2bcd3733e27c136e42581c3491664762ca9933fd54f0135e820b6cb"
+    },
+    {
+      "file": "truth.json",
+      "sha256": "64d2ec81d862091e8041429be4faf1a0888e0ef49469869cbd040bbd41017f8c"
+    }
+  ]
+}
