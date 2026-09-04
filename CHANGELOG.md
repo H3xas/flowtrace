@@ -23,7 +23,11 @@ declaration the listing resolved, so a parameterised title renders as the titles
 is resolved from the repository root, and a preload written under `out/` keeps a suite that
 vendors a second copy of the package listable. When the collector cannot run, extraction still
 succeeds: the reason goes to stderr and into the fact set's header as `titles`, and no
-`pw_title` fact is written. Configuration reference: `titles` under `repos[]`.
+`pw_title` fact is written. List mode needs Node, which a checkout and the npm package run
+under; the single-file executable embeds its runtime and cannot start it, so run that way the
+collector refuses with a reason that names the distribution and the npm package that can,
+before anything is resolved, written or spawned. Configuration reference: `titles` under
+`repos[]`.
 
 The README is now an entry page and the
 step-by-step tour moved to `docs/getting-started.md`, which takes a first-time reader — a person
