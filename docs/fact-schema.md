@@ -94,9 +94,12 @@ same-file `for (const row of ROWS)` over an array of object literals. A subscrip
 computed value, a template or a cross-file table stays absent rather than being
 approximated — the id a tester pastes into a case tool is never invented.
 
-No bundled extractor emits `pw_title`: it is the enrichment slot for a collector that can
-evaluate a parameterised title, which reading source cannot. With none, a reader keeps the
-title *expression* as written and labels it `raw`.
+`pw_title` is written by `extract` for a `playwright` repository configured `"titles": true`
+(see [configuration.md](configuration.md#playwright-titles)): Playwright's own list mode
+evaluates each parameterised title, and one fact per resolved declaration line carries the
+titles it produced. Without the option, or when the collector could not run, a reader keeps
+the title *expression* as written and labels it `raw`; the fact set's header says which of
+the two happened.
 
 ### Derived and judged
 

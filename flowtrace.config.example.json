@@ -73,7 +73,8 @@
     {
       "id": "e2e",
       "kind": "playwright",
-      "root": "shop-e2e"
+      "root": "shop-e2e",
+      "titles": true
     }
   ]
 }

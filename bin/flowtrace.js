@@ -38,6 +38,7 @@ import * as traceModule from '../lib/trace.js';
 import * as backendExtractor from '../lib/extract/backend.js';
 import * as mobileExtractor from '../lib/extract/mobile.js';
 import * as playwrightExtractor from '../lib/extract/playwright.js';
+import * as pwTitlesModule from '../lib/extract/pw-titles.js';
 import * as webExtractor from '../lib/extract/web.js';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -69,6 +70,15 @@ const USAGE = [
   '  --repo <id>      scope extraction or point/start resolution to one repository',
   '  --config <path>  use this configuration file instead of ./flowtrace.config.json',
   '  -h, --help       show this message',
+  '',
+  'extract [--repo <id>]',
+  '  Reads every configured repository, or the one named, and writes out/facts/<repo>.json.',
+  '  A playwright repository configured "titles": true also runs its own installed',
+  '  Playwright in list mode and appends one pw_title fact per test declaration the',
+  '  listing resolved, so a parameterised title renders as the titles it produces rather',
+  '  than as its expression. When that collector cannot run, extraction still succeeds:',
+  '  the reason goes to stderr and into the fact set\'s header, and no pw_title fact is',
+  '  written.',
   '',
   'routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]',
   '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
@@ -739,12 +749,30 @@ async function runExtract(config, repoFilter) {
     } catch (error) {
       throw new Error(`repo "${repo.id}": ${error.message}`);
     }
+    // Title enrichment is opt-in per playwright repository and never fatal: a collector
+    // that cannot run leaves the facts as they are, says why on stderr, and records the
+    // reason in the header so a `raw` title can be explained later.
+    let titles = null;
+    let titleNote = '';
+    if (repo.titles) {
+      const collected = pwTitlesModule.collectTitles(repo.root, { preloadDir: config.out });
+      if (collected.status === 'ok') {
+        const extra = pwTitlesModule.titleFacts(facts, collected.titlesByLine);
+        facts.push(...extra);
+        titles = { status: 'ok', facts: extra.length };
+        titleNote = `, ${plural(extra.length, 'title')}`;
+      } else {
+        warn(`flowtrace: titles ${repo.id}: ${collected.reason}`);
+        titles = { status: 'failed', reason: collected.reason };
+        titleNote = ', titles unavailable';
+      }
+    }
     const target = joinPath(factsDir, `${repo.id}.json`);
     writeJson(
       target,
-      factsHeader({ repo: repo.id, kind: repo.kind, root: repo.root, generatedFrom: `flowtrace ${version()}`, facts }),
+      factsHeader({ repo: repo.id, kind: repo.kind, root: repo.root, generatedFrom: `flowtrace ${version()}`, facts, titles }),
     );
-    log(`extract ${repo.id} (${repo.kind}): ${plural(count, 'fact')} -> ${display(target)}`);
+    log(`extract ${repo.id} (${repo.kind}): ${plural(count, 'fact')}${titleNote} -> ${display(target)}`);
   }
 }
 

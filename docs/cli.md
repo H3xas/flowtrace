@@ -32,6 +32,15 @@ options:
   --config <path>  use this configuration file instead of ./flowtrace.config.json
   -h, --help       show this message
 
+extract [--repo <id>]
+  Reads every configured repository, or the one named, and writes out/facts/<repo>.json.
+  A playwright repository configured "titles": true also runs its own installed
+  Playwright in list mode and appends one pw_title fact per test declaration the
+  listing resolved, so a parameterised title renders as the titles it produces rather
+  than as its expression. When that collector cannot run, extraction still succeeds:
+  the reason goes to stderr and into the fact set's header, and no pw_title fact is
+  written.
+
 routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then
   an exact allowlisted literal. --symbol and --literal force one mode and never fall

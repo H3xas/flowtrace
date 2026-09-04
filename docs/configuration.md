@@ -52,6 +52,7 @@ checkouts named as siblings of the file.
 | `exclude` | no | glob patterns skipped during the walk |
 | `role` | no | `["api"]` · `["worker"]` · `["contracts"]` — what this repository *is*, when one kind serves two purposes |
 | `scout` | no | `true` to allow code-index hops into this repository |
+| `titles` | no | `true` on a `playwright` repository to collect the titles its tests produce, through Playwright's own list mode; see [Playwright titles](#playwright-titles) |
 | `srcSubpath` | no | `web` only: source subdirectory to walk (default `src`) |
 | `cypressSubpath` | no | `web` only: sibling Cypress suite, relative to `root` |
 | `featureRoots` | no | `mobile` only: source roots to walk instead of the single default |
@@ -68,7 +69,8 @@ checkouts named as siblings of the file.
   handlers, injected services, gateway calls, and a Cypress suite if one is present.
 - **`web`** — React + TypeScript with classic Redux. Components, `connect` bindings, JSX
   handlers, action creators that issue HTTP, and a sibling Cypress suite.
-- **`playwright`** — a spec suite. Tests, skips, case ids, requests, assertions, stubs.
+- **`playwright`** — a spec suite. Tests, skips, case ids, requests, assertions, stubs, and
+  with `"titles": true` the resolved titles of parameterised tests.
 
 ### Mobile Cypress roots
 
@@ -92,6 +94,35 @@ Both paths are relative to the repository root. Either subkey may be omitted: `e
 defaults to `cypress/e2e`, and `support` defaults to `cypress/support`. Each configured
 path replaces its corresponding default rather than adding another discovery root, so a
 sibling subtree outside the allowlist contributes no tests or intercepts.
+
+### Playwright titles
+
+A parameterised test declares its title as an expression — `renders a ${size} card` — and
+reading the source cannot know which titles that produces. Playwright's own list mode can.
+With `"titles": true` on a `playwright` repository, `extract` runs that repository's own
+installed Playwright in list mode and appends one `pw_title` fact per test declaration the
+listing resolved, carrying every title it produced; the tree renderer then marks such a
+title `listed` instead of `raw`.
+
+```json
+{ "id": "e2e", "kind": "playwright", "root": "shop-e2e", "titles": true }
+```
+
+What it needs: `@playwright/test` installed where a `require` from the repository root would
+find it, which is the suite's own `node_modules` or a hoisted workspace root. The tool
+resolves it there and nowhere else; nothing is fetched, nothing is installed, and no
+browser is started. The command runs with the repository as its working directory, a
+60-second limit, and a small preload written to `out/.pw-list-preload.cjs` that pins every
+request for `@playwright/test` to the one installed copy, so a suite that vendors a second
+copy inside a helper package still lists.
+
+When the collector cannot run — the package is not resolvable, its command-line entry is
+missing, list mode exits non-zero or times out, or its output is not the JSON reporter's —
+extraction still succeeds. The extract line reads `titles unavailable`, one stderr line
+names the reason, the fact set's header carries `"titles": { "status": "failed", "reason":
+"…" }`, and no `pw_title` fact is written. On success the header carries
+`"titles": { "status": "ok", "facts": N }`. Without the option the header has no `titles`
+field and nothing is spawned.
 
 ## `aliases[]`
 

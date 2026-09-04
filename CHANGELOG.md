@@ -14,6 +14,15 @@ the candidates; a walk that reaches its node budget exits `4` and returns no par
 for the verb is published under `docs/benchmarks/results/2026-08-routes-of.md`; both tool
 cells failed harness integrity, so it establishes no advantage in either direction.
 
+A `playwright` repository can be configured `"titles": true`. `extract` then runs that
+repository's own installed Playwright in list mode and appends one `pw_title` fact per test
+declaration the listing resolved, so a parameterised title renders as the titles it produces
+(`listed`) rather than as its expression (`raw`). Nothing is fetched or installed; the package
+is resolved from the repository root, and a preload written under `out/` keeps a suite that
+vendors a second copy of the package listable. When the collector cannot run, extraction still
+succeeds: the reason goes to stderr and into the fact set's header as `titles`, and no
+`pw_title` fact is written. Configuration reference: `titles` under `repos[]`.
+
 The README is now an entry page and the
 step-by-step tour moved to `docs/getting-started.md`, which takes a first-time reader — a person
 or an AI agent — from install to a first answer about their own repositories, with the

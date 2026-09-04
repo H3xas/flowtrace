@@ -16,9 +16,12 @@ earlier versions are not patched.
 
 flowtrace is a command-line program that reads source files under the roots named in
 `flowtrace.config.json` and writes under the `out` directory named there. It makes no
-network requests. It spawns two kinds of child process: `git`, for `affected --diff` and for
-recording the HEAD a fact set was read at, and the optional code-index binary named by
-`scout.bin` or `FLOWTRACE_SCOUT_BIN`, which runs with its own stores forced under `out/`.
+network requests. It spawns three kinds of child process: `git`, for `affected --diff` and for
+recording the HEAD a fact set was read at; the optional code-index binary named by
+`scout.bin` or `FLOWTRACE_SCOUT_BIN`, which runs with its own stores forced under `out/`; and,
+for a `playwright` repository configured `"titles": true`, that repository's own installed
+Playwright command-line entry in list mode, resolved from the repository root and never
+fetched, started with a preload the tool writes under `out/`.
 It has no runtime dependencies. The single-file executables on the releases page are built
 by the release workflow in this repository from the tagged source; the npm package is the
 same source with no build step.
