@@ -77,9 +77,10 @@ New verb `calibrate --golden <dir> --verdicts <dir>`: a reader's verdicts for a 
 set are merged through the same path `cover --verdicts` uses and each golden packet is
 reported as agreed or as the list of ways it disagreed — seed level, rejection reason,
 upgrade and confirmation counts — so a reader whose judgment drifts fails a build before it
-moves a coverage number. Exit `0` every packet agrees, `1` any disagreement, `2` usage. A
-golden set built from the worked example ships under `examples/demo-shop/calibration` with
-reference verdicts beside it.
+moves a coverage number. Exit `0` every packet agrees, `1` any disagreement, `2` usage; no
+configuration file is read. A golden set built from the worked example's own packets ships
+under `examples/demo-shop/calibration` with reference verdicts beside it, and CI checks the
+set against those verdicts on every push.
 
 The README is now an entry page and the
 step-by-step tour moved to `docs/getting-started.md`, which takes a first-time reader — a person
