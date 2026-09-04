@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * flowtrace command line: extract | join | render | trace | routes-of | span | surface | skeleton |
- * cover | affected | scaffold | cases | readiness | split | all.
+ * cover | affected | scaffold | cases | readiness | split | calibrate | all.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -455,9 +455,10 @@ const USAGE = [
   '  golden packet is reported as agreed or as a list of disagreements naming the seed,',
   '  what was expected, what the merge produced and the rule the entry quotes. A missing',
   '  verdict and a verdict naming no golden packet are disagreements too. Exit 0 every',
-  '  packet agrees, 1 any disagreement, 2 usage. --json emits { golden, agreed, disagreed }',
-  '  in golden-id order with no timestamp. The package ships a golden set built from its',
-  '  worked example under examples/demo-shop/calibration, with reference verdicts beside it.',
+  '  packet agrees, 1 any disagreement, 2 usage. --json emits { agreed, disagreed } in',
+  '  golden-id order with no timestamp. Reads no configuration and no facts: the two',
+  '  directories are all it needs. The package ships a golden set built from its worked',
+  '  example under examples/demo-shop/calibration, with reference verdicts beside it.',
   '',
   'readiness --areas <file> [--md <out>] [--json] [--repo <id>]',
   '  Turns an external area inventory into a per-area readiness sheet, entirely from',
@@ -902,11 +903,12 @@ async function runSplit(config, options) {
 }
 
 /**
- * Calibration reads two directories and no facts: the golden set and a reader's verdicts.
- * A verdict file may be the reader's own document or a golden-style one carrying the
- * reader's document under `verdict`; the golden id is the file name either way.
+ * Calibration reads two directories and nothing else — no configuration, no facts: the
+ * golden set and a reader's verdicts. A verdict file may be the reader's own document or
+ * a golden-style one carrying the reader's document under `verdict`; the golden id is the
+ * file name either way.
  */
-async function runCalibrate(config, options) {
+async function runCalibrate(options) {
   const { calibrate, loadGolden } = calibrateModule;
   const { readVerdicts } = packetsModule;
   const goldenDir = resolve(options.golden);
@@ -920,12 +922,12 @@ async function runCalibrate(config, options) {
   const result = calibrate(verdicts, { golden });
   const exitCode = result.disagreed.length === 0 ? 0 : 1;
   if (options.json) {
-    log(JSON.stringify({ golden: golden.map((entry) => entry.id), agreed: result.agreed, disagreed: result.disagreed }, null, 2));
+    log(JSON.stringify(result, null, 2));
     return exitCode;
   }
   log(`calibrate ${plural(golden.length, 'golden packet')}: ${result.agreed.length} agreed, ${plural(result.disagreed.length, 'disagreement')}`);
   for (const item of result.disagreed) {
-    log(`  ${item.id} ${item.seed ? `#${item.seed}` : '-'} expected ${item.expected}, got ${item.got}${item.rule ? ` — ${item.rule}` : ''}`);
+    log(`  ${item.id} ${item.seed ? `#${item.seed}` : '-'} expected ${item.expected} got ${item.got}${item.rule ? ` — ${item.rule}` : ''}`);
   }
   return exitCode;
 }
@@ -2201,11 +2203,14 @@ async function main() {
   if (options.command === 'readiness' && !options.areas) {
     return usage('readiness requires --areas <file>');
   }
+  // calibrate reads the two directories it is given and nothing else: no configuration.
   let config;
-  try {
-    config = loadConfig({ configPath: options.config });
-  } catch (error) {
-    return usage(error.message);
+  if (options.command !== 'calibrate') {
+    try {
+      config = loadConfig({ configPath: options.config });
+    } catch (error) {
+      return usage(error.message);
+    }
   }
   try {
     if (options.command === 'trace') {
@@ -2239,7 +2244,7 @@ async function main() {
       return await runSplit(config, options);
     }
     if (options.command === 'calibrate') {
-      return await runCalibrate(config, options);
+      return await runCalibrate(options);
     }
     if (options.command === 'readiness') {
       return await runReadiness(config, options);

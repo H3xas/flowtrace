@@ -410,9 +410,10 @@ calibrate --golden <dir> --verdicts <dir> [--json]
   golden packet is reported as agreed or as a list of disagreements naming the seed,
   what was expected, what the merge produced and the rule the entry quotes. A missing
   verdict and a verdict naming no golden packet are disagreements too. Exit 0 every
-  packet agrees, 1 any disagreement, 2 usage. --json emits { golden, agreed, disagreed }
-  in golden-id order with no timestamp. The package ships a golden set built from its
-  worked example under examples/demo-shop/calibration, with reference verdicts beside it.
+  packet agrees, 1 any disagreement, 2 usage. --json emits { agreed, disagreed } in
+  golden-id order with no timestamp. Reads no configuration and no facts: the two
+  directories are all it needs. The package ships a golden set built from its worked
+  example under examples/demo-shop/calibration, with reference verdicts beside it.
 
 readiness --areas <file> [--md <out>] [--json] [--repo <id>]
   Turns an external area inventory into a per-area readiness sheet, entirely from

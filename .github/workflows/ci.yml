@@ -44,7 +44,7 @@ jobs:
           node ../../bin/flowtrace.js span     --config flowtrace.config.json "POST orders/v1/checkout"
           node ../../bin/flowtrace.js surface  --config flowtrace.config.json "POST orders/v1/checkout"
           node ../../bin/flowtrace.js skeleton --config flowtrace.config.json "POST orders/v1/checkout"
-          node ../../bin/flowtrace.js calibrate --config flowtrace.config.json --golden calibration --verdicts calibration/reference
+          node ../../bin/flowtrace.js calibrate --golden calibration --verdicts calibration/reference
 
       - name: No machine paths in the tree
         run: bash scripts/path-check.sh
