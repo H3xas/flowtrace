@@ -32,7 +32,7 @@ through untouched.
 
 | type | fields | stated when |
 |---|---|---|
-| `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route; a minimal-API registration adds `handler` (`lambda` or `method`), and a lambda's `action` is `<registering method>(<VERBS> <template>)` |
+| `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route; a minimal-API registration adds `handler` (`lambda`, or `method` for a method group naming a method the repository declares), and a lambda's `action` is `<registering method>(<VERBS> <template>)` |
 | `http_out` | `configKey`, `template` | the service calls out over HTTP to another service |
 | `publish` | `message` | a message is published to the bus; `message` is `null` and `unresolved` names why when the argument's type could not be read |
 | `consume` | `message`, `consumer` | a class consumes a message type |
