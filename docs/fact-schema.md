@@ -34,7 +34,7 @@ through untouched.
 |---|---|---|
 | `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route |
 | `http_out` | `configKey`, `template` | the service calls out over HTTP to another service |
-| `publish` | `message` | a message is published to the bus |
+| `publish` | `message` | a message is published to the bus; `message` is `null` and `unresolved` names why when the argument's type could not be read |
 | `consume` | `message`, `consumer` | a class consumes a message type |
 | `worker_processor` | `workType`, `processor` | a processor is registered against a work type |
 | `signalr_push` | `method` | a SignalR hub method is pushed to clients |
