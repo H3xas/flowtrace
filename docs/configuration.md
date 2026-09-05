@@ -217,12 +217,14 @@ which verb enters a consumer. Every field is an array of regex-source strings (J
   declared type of a variable passed as the first argument.
 - `consumerBases` — extra consumer base-type names, matched alongside the built-in
   `BaseConsumer` and `IConsumer`.
-- `consumerEntryMethods` — extra method names `trace` enters a consumer through. The walk
-  first picks every method whose parameter type names the consumed message
-  (`ConsumeContext<T>`, `JobContext<T>`, `Batch<T>`, `T` itself); only when no parameter
-  identifies one does it fall back to the built-in `Consume`, `Process`, `ProcessAsync`
-  and `Run` plus these names. A consumer whose declared methods match neither way is
-  marked `unresolved` rather than entered through a guess.
+- `consumerEntryMethods` — extra method names `trace` enters a consumer through; plain
+  names, not regexes. The walk first picks every method whose parameter type hands it the
+  consumed message — the message itself, or the message inside a `…Context<T>` or
+  `Batch<T>` wrapper, nested either way (`ConsumeContext<T>`, `JobContext<T>`, `Batch<T>`,
+  `ConsumeContext<Batch<T>>`); only when no parameter identifies one does it fall back to
+  the built-in `Consume`, `Process`, `ProcessAsync` and `Run` plus these names. A consumer
+  whose declared methods match neither way is marked `unresolved` rather than entered
+  through a guess.
 - `broadcastCalls` — extra channel-publish method names, matched alongside the built-in
   `PublishAsync` when the argument is a `Channels.X` member.
 - `configReads` — helper methods whose single string argument is a configuration key
