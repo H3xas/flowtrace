@@ -11,6 +11,9 @@
   "bin": {
     "flowtrace": "bin/flowtrace.js"
   },
+  "scripts": {
+    "test": "node --test 'selftest/**/*.test.js'"
+  },
   "files": [
     "bin",
     "lib",
