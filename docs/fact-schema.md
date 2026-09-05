@@ -32,7 +32,7 @@ through untouched.
 
 | type | fields | stated when |
 |---|---|---|
-| `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route |
+| `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route; a minimal-API registration adds `handler` (`lambda` or `method`), and a lambda's `action` is `<registering method>(<VERBS> <template>)` |
 | `http_out` | `configKey`, `template` | the service calls out over HTTP to another service |
 | `publish` | `message` | a message is published to the bus; `message` is `null` and `unresolved` names why when the argument's type could not be read |
 | `consume` | `message`, `consumer` | a class consumes a message type |
@@ -43,8 +43,8 @@ through untouched.
 | `queue_name` | `message`, `name` | a queue name is derived for a message |
 | `message_class` | `name`, `fqn` | a message type is declared |
 | `di_binding` | `iface`, `impl` | an interface is registered to an implementation |
-| `ctor_field` | `class`, `field`, `paramType` | a class holds a constructor-injected field |
-| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field |
+| `ctor_field` | `class`, `field`, `paramType` | a class holds a constructor-injected field; with `method`, a parameter the framework injects into that one handler |
+| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field |
 | `method_span` | `class`, `method`, `endLine` | a method body's extent; optional `paramTypes` lists the signature's parameter types as written |
 | `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch` |
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
