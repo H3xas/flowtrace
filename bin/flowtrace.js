@@ -9,7 +9,9 @@ import { basename, dirname, join as joinPath, relative, resolve } from 'node:pat
 import { fileURLToPath } from 'node:url';
 
 import { loadConfig } from '../lib/config.js';
-import { fact, factsHeader, staleFactsWarnings, validateFacts } from '../lib/facts.js';
+import {
+  externalLocations, fact, factsHeader, loadFactsProvider, mergeFacts, producerSummary, staleFactsWarnings, validateFacts,
+} from '../lib/facts.js';
 
 import * as affectedModule from '../lib/affected.js';
 import * as assertionSurfaceModule from '../lib/assertion-surface.js';
@@ -79,6 +81,11 @@ const USAGE = [
   '  than as its expression. When that collector cannot run, extraction still succeeds:',
   '  the reason goes to stderr and into the fact set\'s header, and no pw_title fact is',
   '  written.',
+  '  A repository configured with a factsProvider also reads that provider\'s fact',
+  '  document — a file, or the stdout of a command — validates every fact against the',
+  '  schema, stamps each one provenance: { producer, version }, and merges it with the',
+  '  extraction under the configured merge mode; the header records both producers and',
+  '  how they compared. An invalid record refuses the whole run and names the record.',
   '',
   'routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]',
   '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
@@ -101,7 +108,9 @@ const USAGE = [
   '  inventory; --expand walks every route in full. --expand-infra prints the shared-dependency and',
   '  code-index hops the tree collapses to one line; folding (below) still applies on top',
   '  of whatever --expand-infra leaves shown. --area reads a newline list of route keys',
-  '  and emits one JSON array, one entry per key.',
+  '  and emits one JSON array, one entry per key. A hop located at a line where an',
+  '  externally supplied fact is stated prints [provider]; --json and --graph nodes carry',
+  '  provider: true for the same hops.',
   '',
   '  --from-handler <selector> restricts a mobile walk to the subtree rooted at one',
   '  `template_handler` hop, matched by its display form ("(click) onLike()"), the',
@@ -734,7 +743,7 @@ async function runExtract(config, repoFilter) {
   mkdirSync(factsDir, { recursive: true });
   for (const repo of repos) {
     const extract = loadExtractor(repo);
-    const facts = await extract(repo.root, {
+    let facts = await extract(repo.root, {
       exclude: repo.exclude,
       featureRoots: repo.featureRoots,
       cypress: repo.cypress,
@@ -767,12 +776,45 @@ async function runExtract(config, repoFilter) {
         titleNote = ', titles unavailable';
       }
     }
+    // An external provider is opt-in per repository and, unlike the title collector,
+    // fatal when it fails: a fact set silently missing what was configured would be a
+    // number nobody could point at a fact for. Every fact it supplies is stamped with its
+    // provenance; the extractor's own carry none, which is how a reader tells them apart.
+    let provider = null;
+    let countNote = plural(count, 'fact');
+    if (repo.factsProvider) {
+      let loaded;
+      try {
+        loaded = loadFactsProvider(repo, repo.factsProvider);
+      } catch (error) {
+        throw new Error(`repo "${repo.id}": ${error.message}`);
+      }
+      const { merge } = repo.factsProvider;
+      const merged = mergeFacts(facts, loaded.facts, { mode: merge, producer: loaded.producer, version: loaded.version });
+      facts = merged.facts;
+      provider = {
+        producer: loaded.producer,
+        version: loaded.version,
+        source: loaded.source,
+        merge,
+        supplied: merged.supplied,
+        kept: merged.kept,
+        replaced: merged.replaced,
+        comparison: merged.comparison,
+      };
+      countNote =
+        merge === 'regex-only-with-diff'
+          ? `${plural(facts.length, 'fact')} (${loaded.producer} compared, ${merge})`
+          : `${plural(facts.length, 'fact')} (${count - merged.replaced} extracted, ${merged.kept} from ${loaded.producer}, ${merge})`;
+    }
     const target = joinPath(factsDir, `${repo.id}.json`);
     writeJson(
       target,
-      factsHeader({ repo: repo.id, kind: repo.kind, root: repo.root, generatedFrom: `flowtrace ${version()}`, facts, titles }),
+      factsHeader({
+        repo: repo.id, kind: repo.kind, root: repo.root, generatedFrom: `flowtrace ${version()}`, facts, titles, provider,
+      }),
     );
-    log(`extract ${repo.id} (${repo.kind}): ${plural(count, 'fact')}${titleNote} -> ${display(target)}`);
+    log(`extract ${repo.id} (${repo.kind}): ${countNote}${titleNote} -> ${display(target)}`);
   }
 }
 
@@ -801,8 +843,30 @@ function loadFactSets(config) {
       dirtyDigest: parsed.dirtyDigest,
       generatedAt: parsed.generatedAt,
       fileCount: parsed.fileCount,
+      generatedFrom: parsed.generatedFrom,
+      provider: parsed.provider,
     };
   });
+}
+
+/**
+ * Mark every hop of a finished walk that sits at a `repo:file:line` where some fact set
+ * carries an externally supplied fact, so the tree, `--json` and `--graph` can say so.
+ * The walk itself is untouched: this is a statement about the fact file's contents at
+ * that location, which is exactly what a reader can go and check.
+ */
+function markProviderHops(result, factSets) {
+  const locations = externalLocations(factSets);
+  if (locations.size === 0 || !result || !result.root) return;
+  const seen = new Set();
+  const visit = (node) => {
+    if (!node || seen.has(node)) return;
+    seen.add(node);
+    if (node.file && locations.has(`${node.repo}|${node.file}|${node.line}`)) node.provider = true;
+    for (const child of node.children || []) visit(child);
+  };
+  visit(result.root);
+  for (const node of result.nodes || []) visit(node);
 }
 
 /** One `warn()` per repo `staleFactsWarnings` finds stale — stderr only, always silent on fresh or legacy facts. */
@@ -834,7 +898,10 @@ async function runRender(config) {
 
   const generated = `flowtrace ${version()} · ${new Date().toISOString()}`;
   const reportTarget = joinPath(config.out, 'report.md');
-  writeFileSync(reportTarget, `${renderReport(flow, { generated })}\n`);
+  // The fact sets are read again here, not taken from the flow: who wrote each fact is
+  // stated in the fact file, and the report counts from that rather than from a summary.
+  const producers = producerSummary(loadFactSets(config));
+  writeFileSync(reportTarget, `${renderReport(flow, { generated, producers })}\n`);
 
   const flowsDir = joinPath(config.out, 'flows');
   mkdirSync(flowsDir, { recursive: true });
@@ -893,6 +960,7 @@ function traceNodeFields(node) {
     'endLine',
     'methods',
     'methodDepth',
+    'provider',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }
@@ -970,6 +1038,7 @@ async function runTrace(config, options) {
       const walked = trace(factSets, key, { ...shared, seeds: true });
       if (walked.candidates) return { key, error: 'ambiguous start', candidates: walked.candidates };
       if (walked.error) return { key, error: walked.error };
+      markProviderHops(walked, factSets);
       return { key, ...traceResult(walked, options, foldedGraph) };
     });
     log(JSON.stringify(results, null, 2));
@@ -995,6 +1064,7 @@ async function runTrace(config, options) {
     inventory,
     fromHandler: options.fromHandler,
   });
+  markProviderHops(result, factSets);
   if (result.fromHandlerCandidates) {
     process.stderr.write(`flowtrace: "${options.fromHandler}" matches ${result.fromHandlerCandidates.length} handlers:\n`);
     for (const candidate of result.fromHandlerCandidates) process.stderr.write(`  ${candidate}\n`);
