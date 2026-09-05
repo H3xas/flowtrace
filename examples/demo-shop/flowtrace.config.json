@@ -1,5 +1,8 @@
 {
   "out": "out",
+  "workerPatterns": {
+    "consumerBases": ["IJobConsumer"]
+  },
   "repos": [
     {
       "id": "api",
