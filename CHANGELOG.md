@@ -97,6 +97,29 @@ entered through a guess. The worked example gains a job consumer behind the orde
 message, so `trace OrderPlacedConsumer` walks through to the fulfilment handler's branch
 and repository write.
 
+A minimal-API route registered with an inline lambda is walked into the lambda. The
+lambda is the route's own action, named `<registering method>(<VERBS> <template>)` under
+the registering class: its parameters that the framework injects (any interface, or
+`[FromServices]`) are the action's fields, scoped to it by `method` on the `ctor_field`
+fact, with every call through them carrying `receiverType`; its body-bound parameters are
+`param_source`s; and its body owns the branch, call, publish and sink facts that used to
+land on the registering method. `return Results.NotFound()` and the other `Results.`/
+`TypedResults.` shapes classify as error returns. A method-group handler
+(`MapPost("/x", WidgetHandlers.Save)`) resolves to the class the qualifier names and gets
+the same parameter treatment across files. The worked example gains `POST orders/v1/replay`
+registered that way.
+
+A consumer reached over a publish hop is entered through the method that takes the
+message it consumes — `Consume(ConsumeContext<T>)`, `Run(JobContext<T>)`, a `Batch<T>` or
+the message itself — read off the parameter types the backend extractor now records on
+every `method_span` as `paramTypes`. When no parameter names the message, the walk falls
+back to a verb list that now includes the job consumer's `Run` beside `Consume`, `Process`
+and `ProcessAsync`; `workerPatterns.consumerEntryMethods` adds a framework's own verbs. A
+consumer whose declared methods match neither way is marked `unresolved` instead of being
+entered through a guess. The worked example gains a job consumer behind the order-placed
+message, so `trace OrderPlacedConsumer` walks through to the fulfilment handler's branch
+and repository write.
+
 ## 0.1.1
 
 Release pipeline only; the CLI is unchanged. The single-file build normalises line endings
