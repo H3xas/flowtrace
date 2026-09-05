@@ -14,6 +14,12 @@ writes `out/facts/<repo>.json` — a header (repo id, kind, the git HEAD it was 
 a flat array of facts. Extraction is the only step that reads source code; every later step
 reads facts.
 
+A repository can also take facts from an external provider — a tool that holds a real
+syntax tree — configured as `factsProvider`
+([configuration.md](configuration.md#external-fact-provider)). Such a fact is validated
+like any other and carries a `provenance` naming its producer, so a reader never mistakes
+it for one the extractor read.
+
 Extractors are heuristic. They do not parse C# or TypeScript — they recognise a set of
 common idioms with regular expressions and brace matching. That has a cost (an unusual
 idiom is invisible) and a benefit (no toolchain, no build, no language server, and a

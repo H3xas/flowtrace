@@ -22,11 +22,19 @@ The git fields are stamped when the root is a git checkout and git is on `PATH`,
 what later steps compare against to warn that a fact set has gone stale. A non-git checkout
 extracts perfectly well; it simply carries no baseline, so nothing warns.
 
+A repository configured with a `factsProvider` also carries a `provider` block between the
+git fields and `facts`; see [Externally supplied facts](#externally-supplied-facts).
+
 ## Every fact
 
 Required on all: `type`, `file` (repository-relative, forward slashes), `line` (1-based).
 Each type adds its own required fields; optional fields may be added freely and are carried
 through untouched.
+
+One optional field has a fixed meaning on every type: `provenance`, present only on a fact
+an external provider supplied, `{ "producer": "…", "version": "…" }`. A fact the bundled
+extractor read never carries it. The absence is the mark, and a provider cannot set it
+(see below).
 
 ### Backend
 
@@ -112,12 +120,58 @@ These two are the only facts not produced by an extractor. `assertion_surface` i
 derivation this tool can redo from the same fact sets at any time; `surface_verdict` is a
 judgment it cannot make, cached so `skeleton` can quote it instead of guessing.
 
+## Externally supplied facts
+
+A repository configured with a `factsProvider` ([configuration.md](configuration.md#external-fact-provider))
+takes facts from a second producer. The provider's document is `{ "producer", "version"?,
+"repo"?, "facts" }`, its facts validated by the rules below, and every one that enters the
+file is stamped `provenance`. The header records the second producer and how the two
+compared, while `generatedFrom` still names the extraction that wrote the file:
+
+```json
+{
+  "repo": "api",
+  "kind": "backend",
+  "generatedFrom": "flowtrace 0.1.1",
+  "generatedAt": "2026-01-01T00:00:00.000Z",
+  "provider": {
+    "producer": "syntax-exporter",
+    "version": "1.4.0",
+    "source": { "file": "/workspace/shop-api-facts.json" },
+    "merge": "prefer-external",
+    "supplied": 37,
+    "kept": 37,
+    "replaced": 12,
+    "comparison": {
+      "ctor_field": { "extracted": 20, "external": 22, "agreed": 9, "disagreed": 3, "externalOnly": 10, "extractedOnly": 8 }
+    }
+  },
+  "facts": [
+    { "type": "ctor_field", "file": "Controllers/OrdersController.cs", "line": 14,
+      "class": "OrdersController", "field": "_orders", "paramType": "Shop.Orders.IOrderService",
+      "provenance": { "producer": "syntax-exporter", "version": "1.4.0" } }
+  ]
+}
+```
+
+`source` is `{ "file" }` or `{ "command": [ … ] }` as configured. `supplied` counts the
+facts the provider gave, `kept` how many of them entered the array, `replaced` how many
+extracted facts were dropped in their favour. In `comparison`, `extracted` and `external`
+count facts per type; `agreed`, `disagreed`, `externalOnly` and `extractedOnly` count
+*sites* — one type at one line of one file — that both stated identically, both stated
+differently, only the provider stated, only the extractor stated. The comparison is computed
+before the merge, because afterwards the losing facts are gone. Extracted facts keep their
+order and come first; the provider's follow in the order it gave them.
+
 ## Validation
 
 `fact(type, fields)` throws on an unknown type, a missing required field, a `file` that is
 not repository-relative with forward slashes, or a `line` that is not a positive integer.
 `validateFacts(array)` checks a whole set and reports the first bad entry by index and type.
 Both live in `lib/facts.js`; an extractor cannot emit a malformed fact by accident.
+`parseProviderDocument(document)` applies the same checks to an external provider's document
+and additionally refuses a fact that already carries `provenance`, so the stamp is always
+this tool's own statement.
 
 ## Reverse-resolution fields
 
