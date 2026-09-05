@@ -10,6 +10,21 @@ branch and through a pull request; CI runs on the pull request and must be green
 merge. Commit messages are plain English in the `type(scope): subject` form the history
 already uses (`fix(extract): …`, `docs: …`, `ci: …`).
 
+## Developer Certificate of Origin
+
+Every commit must be signed off:
+
+```
+git commit -s -m "fix(extract): recognise the new attribute shape"
+```
+
+`-s` appends a `Signed-off-by: Your Name <you@example.com>` trailer, which is your
+certification that you wrote the change or otherwise have the right to submit it under the
+[Developer Certificate of Origin](https://developercertificate.org/) and this project's
+license (see [README.md#license](README.md#license)). CI rejects a pull request carrying an
+unsigned commit; `git commit --amend -s` (or `git rebase --exec 'git commit --amend --no-edit
+-s' <base>` for several commits) fixes one after the fact.
+
 ## Running from a checkout
 
 There is no build and there are no dependencies to install.
@@ -45,6 +60,26 @@ rely on is the worked example under `examples/demo-shop`, which CI runs end to e
 A change to an extractor or to a walk should therefore make itself visible there: extend the
 demo shop with the idiom the change recognises, and quote the new `trace` or `cover` output
 in the pull request. A change nobody can see in the worked example is hard to review.
+
+Alongside that, `selftest/` holds a public, synthetic suite over invented fixtures that
+exercises the CLI's outer contract — argument parsing, `--help`, exit codes, `--json` shapes,
+error envelopes — run with `npm test`. It does not replace the private regression suite or
+the worked example; it is the layer a stranger's pull request is verified against before a
+maintainer looks at it. See [selftest/README.md](selftest/README.md).
+
+## What CI verifies
+
+Every push and pull request against `main` runs, on Node 20, 22 and 24:
+
+- `npm test` — the public contract suite under `selftest/`.
+- The worked example under `examples/demo-shop`, end to end.
+- `bash scripts/path-check.sh` — no machine paths anywhere in the tree.
+- `node scripts/docs-check.mjs` — `docs/cli.md` matches `--help`; every relative link
+  resolves.
+- Every commit in the pull request carries a `Signed-off-by:` trailer (the DCO check).
+
+A release additionally builds and signs the single-file executables and the npm tarball; see
+[RELEASING.md](RELEASING.md).
 
 ## Constraints that will fail a release if broken
 
@@ -82,6 +117,8 @@ gains the new type in the same pull request.
 
 ## Releases
 
-Maintainers only. A `v*` tag builds the single-file executables and the npm tarball and
-attaches them to a GitHub release; npm publish is a separate, manual step. Release tags are
-never moved or deleted; a broken release is superseded by the next patch version.
+Maintainers only. A `v*` tag builds the single-file executables and the npm tarball, signs
+and attests both, attaches them to a GitHub release with a checksum file and an SBOM, and
+publishes to npm via Trusted Publishing. See [RELEASING.md](RELEASING.md) for the full
+pipeline and its one-time setup. Release tags are never moved or deleted; a broken release is
+superseded by the next patch version.
