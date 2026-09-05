@@ -956,6 +956,7 @@ async function runTrace(config, options) {
     unscoped: options.unscoped,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -1078,6 +1079,7 @@ async function runRoutesOf(config, options) {
     maxNodes: options.maxNodes,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
   });
   const exitCode =
@@ -1134,6 +1136,7 @@ async function runSpan(config, options) {
       repo: options.repo,
       aliases: config.aliases,
       sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
       outbound: scout.outbound,
     },
@@ -1188,6 +1191,7 @@ async function runComponentSpan(config, options, factSets) {
       maxNodes: options.maxNodes,
       aliases: config.aliases,
       sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
       outbound: scout.outbound,
     },
@@ -1240,6 +1244,7 @@ async function runSurface(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   });
@@ -1295,6 +1300,7 @@ async function runSkeleton(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   });
@@ -1381,6 +1387,7 @@ async function runCover(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -1536,6 +1543,7 @@ async function runAffected(config, options) {
       maxNodes: options.maxNodes,
       aliases: config.aliases,
       sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
       outbound: scout.outbound,
     },
@@ -1605,6 +1613,7 @@ async function runScaffold(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -1678,6 +1687,7 @@ async function runCases(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -1752,6 +1762,7 @@ async function runReadiness(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };

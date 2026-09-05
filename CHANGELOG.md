@@ -86,6 +86,17 @@ compile because its import was unreachable from configuration. With neither fiel
 generated output is unchanged. Configuration reference: `poll` and `importAliases.caseId`
 under `scaffold`.
 
+A consumer reached over a publish hop is entered through the method that takes the
+message it consumes — `Consume(ConsumeContext<T>)`, `Run(JobContext<T>)`, a `Batch<T>` or
+the message itself — read off the parameter types the backend extractor now records on
+every `method_span` as `paramTypes`. When no parameter names the message, the walk falls
+back to a verb list that now includes the job consumer's `Run` beside `Consume`, `Process`
+and `ProcessAsync`; `workerPatterns.consumerEntryMethods` adds a framework's own verbs. A
+consumer whose declared methods match neither way is marked `unresolved` instead of being
+entered through a guess. The worked example gains a job consumer behind the order-placed
+message, so `trace OrderPlacedConsumer` walks through to the fulfilment handler's branch
+and repository write.
+
 ## 0.1.1
 
 Release pipeline only; the CLI is unchanged. The single-file build normalises line endings
