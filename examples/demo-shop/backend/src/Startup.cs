@@ -12,6 +12,7 @@ namespace DemoShop.Api
             services.AddScoped<ICatalogService, CatalogService>();
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<IFulfilmentHandler, FulfilmentHandler>();
+            services.AddScoped<IOrderReplayService, OrderReplayService>();
             services.AddScoped<IProductRepository, ProductRepository>();
             services.AddScoped<IOrderRepository, OrderRepository>();
             services.AddScoped<IPublishEndpoint, InMemoryPublishEndpoint>();

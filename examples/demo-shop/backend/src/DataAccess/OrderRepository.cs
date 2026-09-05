@@ -10,6 +10,7 @@ namespace DemoShop.Api.DataAccess
         Task MarkPlaced(string orderId);
         Task<object> FindOrder(string orderId);
         Task SaveFulfilment(string orderId);
+        Task SaveReplay(string orderId);
     }
 
     public class OrderRepository : IOrderRepository
@@ -25,5 +26,7 @@ namespace DemoShop.Api.DataAccess
         public Task<object> FindOrder(string orderId) => Task.FromResult<object>(null);
 
         public Task SaveFulfilment(string orderId) => Task.CompletedTask;
+
+        public Task SaveReplay(string orderId) => Task.CompletedTask;
     }
 }
