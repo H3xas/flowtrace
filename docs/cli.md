@@ -46,7 +46,8 @@ extract [--repo <id>]
   extraction under the configured merge mode; the header records both producers and
   how they compared. An invalid record refuses the whole run and names the record.
 
-join [--snapshot <file>] | join --against <file> [--json] [--fail-on <kinds>]
+join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json]
+            [--fail-on <kinds>]
   Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally
   writes one portable, versioned bundle of the current fact sets, the aliases and sink
   patterns the join and the walk read, and every repository identity the facts carry
@@ -62,8 +63,20 @@ join [--snapshot <file>] | join --against <file> [--json] [--fail-on <kinds>]
   not drift is found; --fail-on <kinds> (any, a family — path, seed, effect,
   evidence — or a kind, comma-separated) exits 1 when a selected finding is present;
   usage errors exit 2; a snapshot that cannot be read, is of another version or fails
-  its own digest exits 4 with no partial comparison. Both formats are new and may
-  change between minor versions.
+  its own digest exits 4 with no partial comparison.
+
+  --export-edges <file> additionally writes the joined cross-repo edges for a code index
+  to import: one record per joined edge, exactly { kind, from, to, key } with both ends
+  as { repo, ref, file, line }, plus a provenance field naming the export it came from.
+  The envelope carries the producer, the format version, the configuration the join
+  read and every fact set's identity once, under an id a facts change flips, so an
+  importer can drop or replace imported rows wholesale. Only joined edges export:
+  calls and tests matched to a route action, and the publishes, consumes and enqueues
+  edges of a message that has both a publisher and a matched consumer (the message end
+  carries repo "message" and no file or line, as the join states it). Records are sorted
+  and deduplicated and no timestamp is written, so two exports over unchanged facts are
+  the same bytes. Combines with --snapshot; refused with --against. All three formats
+  are new (schemaVersion 1) and may change between minor versions.
 
 routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then
