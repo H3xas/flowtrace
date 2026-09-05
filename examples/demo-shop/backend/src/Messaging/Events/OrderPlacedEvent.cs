@@ -1,6 +1,6 @@
-namespace DemoShop.Api.Messaging.Messages
+namespace DemoShop.Api.Messaging.Events
 {
-    public class OrderPlacedMessage : ICorrelatedMessage
+    public class OrderPlacedEvent
     {
         public string OrderId { get; set; }
     }

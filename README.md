@@ -56,7 +56,7 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
             ├─ IPublishEndpoint  api  src/Services/OrderService.cs:22  [ctor]
             │  └─ InMemoryPublishEndpoint  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [di]
             │     └─ InMemoryPublishEndpoint.Publish  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [body]  graph: unavailable
-            └─ OrderPlacedMessage  bus  src/Services/OrderService.cs:43  [publish]
+            └─ OrderPlacedEvent  bus  src/Services/OrderService.cs:43  [publish]
                └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:12  [message·fqn]
                   └─ OrderPlacedConsumer.Consume  api  src/Messaging/OrderPlacedConsumer.cs:15  [body]
                      ├─ ILogger<OrderPlacedConsumer>  api  src/Messaging/OrderPlacedConsumer.cs:12  [ctor]  unresolved
@@ -66,7 +66,7 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
 use-case seeds (3):
 U1  error_return@39=taken  → 400 BadRequest  #5a6423a0
 U2  error_return@39=not-taken, error_return@45=taken  → 403 Forbidden  #ca37457e  [unknown: placed ← unresolved]
-U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedMessage → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced  #31ba2067
+U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedEvent → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced  #31ba2067
     also on path: if@OrderService.PlaceOrder:38
 
 2 sinks · 3 branch points (3 primary) · 1 repo (api) · via: body 6, ctor 5, di 4, literal 1, message 1, publish 1 · 1 graph hop unavailable
