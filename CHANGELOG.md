@@ -135,6 +135,19 @@ located at an externally stated fact (`--json` and `--graph` carry `provider: tr
 Configuration reference: `factsProvider` under `repos[]`; fact schema: `provenance` and the
 `provider` header block.
 
+`join --snapshot <file>` writes one portable, versioned bundle of the current fact sets, the
+aliases and sink patterns the join and the walk read, and every repository identity the facts
+carry — `schemaVersion: 1`, no timestamp, so two runs over unchanged facts write the same bytes.
+`join --against <file>` compares such a snapshot with the current facts without touching a
+repository and reports what changed on the joined boundary: a joined path added, removed or
+reshaped and a call newly without a route; a seed added, removed or changed; an effect added or
+removed; an evidence level gained or lost. Both sides are derived with one implementation and
+the current configuration, identities are semantic (a moved line, a renamed spec or a reordered
+declaration is not drift), and identical states print an explicit no-drift line. `--json` is
+deterministic and carries `schemaVersion: 1`; `--fail-on <kinds>` turns a selected family or
+kind into exit `1`, usage errors exit `2`, and an unreadable, incompatible or tampered snapshot
+exits `4` with no partial comparison. Both formats are new and may change between minor versions.
+
 ## 0.1.1
 
 Release pipeline only; the CLI is unchanged. The single-file build normalises line endings
