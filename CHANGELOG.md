@@ -26,6 +26,13 @@ consumer base in any position of the base list qualifies, a class implementing s
 `OrderPlacedConsumer` now takes its repository and logger through a primary constructor, so
 `trace` shows the consumer's own subtree beneath the bus hop.
 
+Message contracts are recognised under `Messaging/Events`, `Messaging/Jobs` and
+`Messaging/Contracts` as well as `Messaging/Messages`, and a brace-less positional record
+(`record OrderShipped(string OrderId);`) counts like a class. Two `workerPatterns` fields extend
+the rules for a codebase that keeps its contracts elsewhere: `messagePaths` adds folders and
+`messageSuffixes` adds class-name suffixes beside the built-in `Message`. The worked example's
+bus type is now the plain `OrderPlacedEvent` under `Messaging/Events`.
+
 A `playwright` repository can be configured `"titles": true`. `extract` then runs that
 repository's own installed Playwright in list mode and appends one `pw_title` fact per test
 declaration the listing resolved, so a parameterised title renders as the titles it produces

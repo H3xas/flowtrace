@@ -178,10 +178,12 @@ a call flowtrace cannot know about. `caseId` names those callees. It defaults to
 ## `workerPatterns`
 
 The backend extractor recognises public messaging idioms out of the box — MassTransit's
-`IConsumer<T>` and `Publish`/`PublishAsync`, StackExchange.Redis channel publishes. A
+`IConsumer<T>` and `Publish`/`PublishAsync`, StackExchange.Redis channel publishes, and
+message contracts declared under `Messaging/Messages`, `Messaging/Events`, `Messaging/Jobs`
+or `Messaging/Contracts`, named `…Message`, or marked with a MassTransit message interface. A
 codebase built on its own worker-queue framework registers processors, binds queues and
-publishes through methods flowtrace cannot know about. `workerPatterns` teaches the
-extractor those shapes. Every field is an array of regex-source strings (JSON-escaped),
+publishes through methods flowtrace cannot know about, and may keep its contracts elsewhere
+under other names. `workerPatterns` teaches the extractor those shapes. Every field is an array of regex-source strings (JSON-escaped),
 and every field defaults to empty.
 
 ```json
@@ -192,7 +194,9 @@ and every field defaults to empty.
   "publishCalls": ["Enqueue"],
   "consumerBases": ["JobConsumerBase"],
   "broadcastCalls": ["BroadcastToChannel"],
-  "configReads": ["ReadSetting"]
+  "configReads": ["ReadSetting"],
+  "messagePaths": ["Bus/Types"],
+  "messageSuffixes": ["Notice"]
 }
 ```
 
@@ -214,6 +218,17 @@ and every field defaults to empty.
 - `configReads` — helper methods whose single string argument is a configuration key
   (`_url = config.ReadSetting("Gateway")`); this is what lets the outbound-HTTP pass tie
   an interpolated URL back to a configuration key. Without it that pass is inert.
+- `messagePaths` — extra repository-relative folders whose classes and records are message
+  contracts (`message_class` facts), matched alongside the built-in `Messaging/Messages`,
+  `Messaging/Events`, `Messaging/Jobs` and `Messaging/Contracts`. Each entry is anchored
+  between path separators, so `Bus/Types` matches `src/Bus/Types/Tick.cs` and nothing under
+  `Bus/TypesLegacy/`.
+- `messageSuffixes` — extra class-name suffixes that mark a message contract wherever the
+  class lives, matched alongside the built-in `Message`. `Event` and `Job` are deliberately
+  not built in, since both are common outside messaging; a codebase that names its contracts
+  that way lists them here. A contract carries the same `fqn` onto every `publish` and
+  `consume` of it, which is what lets `join` tell two same-named messages apart across
+  repositories and keeps them out of `messages_without_contract`.
 
 ## `scout`
 
