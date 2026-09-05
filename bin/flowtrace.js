@@ -19,6 +19,7 @@ import * as casesModule from '../lib/cases.js';
 import * as componentSpanModule from '../lib/component-span.js';
 import * as coverModule from '../lib/cover.js';
 import * as joinModule from '../lib/join.js';
+import * as joinDriftModule from '../lib/join-drift.js';
 import * as packetsModule from '../lib/packets.js';
 import * as readinessModule from '../lib/readiness.js';
 import * as renderModule from '../lib/render.js';
@@ -86,6 +87,25 @@ const USAGE = [
   '  schema, stamps each one provenance: { producer, version }, and merges it with the',
   '  extraction under the configured merge mode; the header records both producers and',
   '  how they compared. An invalid record refuses the whole run and names the record.',
+  '',
+  'join [--snapshot <file>] | join --against <file> [--json] [--fail-on <kinds>]',
+  '  Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally',
+  '  writes one portable, versioned bundle of the current fact sets, the aliases and sink',
+  '  patterns the join and the walk read, and every repository identity the facts carry',
+  '  (schemaVersion 1, no timestamp: two runs over unchanged facts write the same bytes).',
+  '  --against <file> compares that bundle with the current facts instead of writing',
+  '  anything: both sides are derived with the same implementation and the current',
+  '  configuration, and the report names what changed on the joined boundary — a joined',
+  '  path added, removed or reshaped, a call newly without a route; a seed added, removed',
+  '  or changed; an effect added or removed; an evidence level gained or lost. Identities',
+  '  are semantic: a moved line, a renamed spec or a reordered declaration is not drift,',
+  '  and identical states print an explicit no-drift line. --json emits the same findings',
+  '  in a versioned, deterministically ordered shape (schemaVersion 1). Exit 0 whether or',
+  '  not drift is found; --fail-on <kinds> (any, a family — path, seed, effect,',
+  '  evidence — or a kind, comma-separated) exits 1 when a selected finding is present;',
+  '  usage errors exit 2; a snapshot that cannot be read, is of another version or fails',
+  '  its own digest exits 4 with no partial comparison. Both formats are new and may',
+  '  change between minor versions.',
   '',
   'routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]',
   '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
@@ -493,6 +513,9 @@ function parseArgs(argv) {
     maxLines: undefined,
     symbol: false,
     literal: false,
+    snapshot: undefined,
+    against: undefined,
+    failOn: [],
   };
   const positional = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -591,6 +614,18 @@ function parseArgs(argv) {
         throw new UsageError('--hops requires a positive whole number');
       }
       options.hops = parsed;
+    } else if (argument === '--snapshot' || argument.startsWith('--snapshot=')) {
+      const value = argument.startsWith('--snapshot=') ? argument.slice('--snapshot='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--snapshot requires a file');
+      options.snapshot = value;
+    } else if (argument === '--against' || argument.startsWith('--against=')) {
+      const value = argument.startsWith('--against=') ? argument.slice('--against='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--against requires a snapshot file');
+      options.against = value;
+    } else if (argument === '--fail-on' || argument.startsWith('--fail-on=')) {
+      const value = argument.startsWith('--fail-on=') ? argument.slice('--fail-on='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--fail-on requires a finding family or kind');
+      options.failOn.push(value);
     } else if (argument === '--graph') {
       options.graph = true;
     } else if (argument === '--json') {
@@ -845,6 +880,7 @@ function loadFactSets(config) {
       fileCount: parsed.fileCount,
       generatedFrom: parsed.generatedFrom,
       provider: parsed.provider,
+      titles: parsed.titles,
     };
   });
 }
@@ -874,14 +910,70 @@ function warnStaleFacts(factSets, repos) {
   for (const message of staleFactsWarnings(factSets, repos)) warn(message);
 }
 
-async function runJoin(config) {
+function toolIdentity() {
+  return { name: 'flowtrace-cli', version: version() };
+}
+
+async function runJoin(config, options = {}) {
   const factSets = loadFactSets(config);
+  if (options.against) return runJoinAgainst(config, options, factSets);
   const { join } = joinModule;
   const flow = join(factSets, { aliases: config.aliases });
   const target = joinPath(config.out, 'flow.json');
   writeJson(target, flow);
   const edges = Array.isArray(flow?.edges) ? flow.edges.length : 0;
   log(`join ${plural(factSets.length, 'fact set')}: ${plural(edges, 'edge')} -> ${display(target)}`);
+  if (options.snapshot) {
+    const snapshotTarget = resolve(options.snapshot);
+    writeJson(snapshotTarget, joinDriftModule.snapshotOf(factSets, { tool: toolIdentity(), config }));
+    log(`snapshot ${plural(factSets.length, 'fact set')} -> ${display(snapshotTarget)}`);
+  }
+  return 0;
+}
+
+/**
+ * Compare a snapshot with the current facts. Writes nothing: a comparison is a reading
+ * of two states, not a step of the pipeline. A snapshot that cannot be read, is of
+ * another version or fails its own digest is refused whole with exit 4 — never a
+ * comparison against part of it.
+ */
+async function runJoinAgainst(config, options, factSets) {
+  const { readSnapshot, driftOf, renderDrift, parseFailOn, failingFindings, SnapshotError } = joinDriftModule;
+  let failOn;
+  try {
+    failOn = parseFailOn(options.failOn);
+  } catch (error) {
+    return usage(error.message);
+  }
+  warnStaleFacts(factSets, config.repos);
+  const source = resolve(options.against);
+  let snapshot;
+  try {
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(source, 'utf8'));
+    } catch (error) {
+      throw new SnapshotError(`${display(source)}: cannot be read (${error.message})`);
+    }
+    snapshot = readSnapshot(parsed, display(source));
+  } catch (error) {
+    if (!(error instanceof SnapshotError)) throw error;
+    process.stderr.write(`flowtrace: ${error.message}\n`);
+    return 4;
+  }
+  const report = driftOf(
+    snapshot,
+    { tool: toolIdentity(), factSets },
+    { aliases: config.aliases, sinks: config.sinks },
+  );
+  if (options.json) log(JSON.stringify(report, null, 2));
+  else log(renderDrift(report, { snapshotName: display(source) }));
+  const failing = failingFindings(report, failOn);
+  if (failing.length > 0) {
+    warn(`flowtrace: ${plural(failing.length, 'finding')} selected by --fail-on`);
+    return 1;
+  }
+  return 0;
 }
 
 function loadFlow(config) {
@@ -1871,6 +1963,15 @@ async function main() {
   if (options.command === 'routes-of' && !options.start) {
     return usage('routes-of requires a point');
   }
+  if ((options.snapshot || options.against) && options.command !== 'join') {
+    return usage('--snapshot and --against are join options');
+  }
+  if (options.snapshot && options.against) {
+    return usage('join takes --snapshot <file> or --against <file>, not both');
+  }
+  if (options.command === 'join' && (options.json || options.failOn.length > 0) && !options.against) {
+    return usage('--json and --fail-on are join --against options');
+  }
   if (options.symbol && options.literal) {
     return usage('--symbol and --literal are mutually exclusive');
   }
@@ -1958,10 +2059,13 @@ async function main() {
     if (options.command === 'readiness') {
       return await runReadiness(config, options);
     }
+    if (options.command === 'join') {
+      return await runJoin(config, options);
+    }
     if (options.command === 'extract' || options.command === 'all') {
       await runExtract(config, options.repo);
     }
-    if (options.command === 'join' || options.command === 'all') {
+    if (options.command === 'all') {
       await runJoin(config);
     }
     if (options.command === 'render' || options.command === 'all') {
