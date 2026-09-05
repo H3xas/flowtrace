@@ -4,6 +4,8 @@ Semantic versioning from `0.x`: the CLI surface may still change between minor v
 
 ## Unreleased
 
+License changed to MIT OR Apache-2.0.
+
 New verb `routes-of <file:line | symbol | literal>`, the reverse of `trace`. It resolves a
 repository-relative file and line, an exact method symbol or an exact allowlisted literal to
 one fact, then reports every entry route whose complete fact-only forward walk passes through
