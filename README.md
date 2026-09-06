@@ -187,6 +187,8 @@ published as exactly that.
   worked example under `examples/demo-shop`, which CI runs end to end on every push.
 - `span --from-component` covers the `web` repository kind only. A mobile-kind name is
   refused with its reason rather than answered partially.
+- A minimal-API route is walked into its inline lambda, or into the method a method-group
+  handler names. A handler held in a delegate variable, and a route filter, are not walked.
 - A consumer is entered through the method whose parameter carries the message it consumes,
   or failing that through a known entry verb. A consumer that matches neither is reported as
   unresolved rather than entered through a guessed method.
