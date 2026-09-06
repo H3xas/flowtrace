@@ -186,7 +186,11 @@ published as exactly that.
 
 Branch, pull request, green CI: [CONTRIBUTING.md](CONTRIBUTING.md) has the constraints a
 change must keep, the single-file build subset among them. Vulnerabilities go through
-[SECURITY.md](SECURITY.md), never a public issue.
+[SECURITY.md](SECURITY.md), never a public issue. Participation is covered by the
+[Code of Conduct](CODE_OF_CONDUCT.md). [GOVERNANCE.md](GOVERNANCE.md) describes how the
+project is run and how someone becomes a reviewer or maintainer;
+[MAINTAINERS.md](MAINTAINERS.md) lists who holds that role today.
+[ROADMAP.md](ROADMAP.md) lists capabilities under consideration.
 
 Semantic versioning from `0.x` — the CLI surface may still change between minor versions.
 What changed in each release is in [CHANGELOG.md](CHANGELOG.md). The current release is
@@ -194,4 +198,9 @@ What changed in each release is in [CHANGELOG.md](CHANGELOG.md). The current rel
 
 ## License
 
-Licensed under the [MIT license](LICENSE).
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
+[MIT license](LICENSE-MIT) at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for
+inclusion in this project by you, as defined in the Apache-2.0 license, shall be
+dual-licensed as above, without any additional terms or conditions.
