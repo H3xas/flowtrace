@@ -109,17 +109,6 @@ land on the registering method. `return Results.NotFound()` and the other `Resul
 the same parameter treatment across files. The worked example gains `POST orders/v1/replay`
 registered that way.
 
-A consumer reached over a publish hop is entered through the method that takes the
-message it consumes — `Consume(ConsumeContext<T>)`, `Run(JobContext<T>)`, a `Batch<T>` or
-the message itself — read off the parameter types the backend extractor now records on
-every `method_span` as `paramTypes`. When no parameter names the message, the walk falls
-back to a verb list that now includes the job consumer's `Run` beside `Consume`, `Process`
-and `ProcessAsync`; `workerPatterns.consumerEntryMethods` adds a framework's own verbs. A
-consumer whose declared methods match neither way is marked `unresolved` instead of being
-entered through a guess. The worked example gains a job consumer behind the order-placed
-message, so `trace OrderPlacedConsumer` walks through to the fulfilment handler's branch
-and repository write.
-
 A repository can be configured with a `factsProvider`: a JSON fact document, or a command
 whose stdout is one, written by a tool that holds a real syntax tree. `extract` validates
 every fact it supplies against the schema, stamps each one `provenance: { producer, version }`,
@@ -148,7 +137,6 @@ deterministic and carries `schemaVersion: 1`; `--fail-on <kinds>` turns a select
 kind into exit `1`, usage errors exit `2`, and an unreadable, incompatible or tampered snapshot
 exits `4` with no partial comparison. Both formats are new and may change between minor versions.
 
-
 `join --export-edges <file>` writes the joined cross-repo edges in a versioned file a code index
 can import (`schemaVersion: 1`, `format: "flowtrace-edges"`): one record per joined edge in
 exactly the join contract's shape — `kind`, `from` and `to` as `{ repo, ref, file, line }`, the
@@ -160,35 +148,6 @@ wholesale. Only joined edges export: `calls` and `tests` matched to a route acti
 consumer, the message end carrying `repo: "message"` and no file or line exactly as the join
 states it. Records are sorted and deduplicated and no timestamp is written, so two exports over
 unchanged facts are the same bytes. The format is new and may change between minor versions.
-New verb `routes-of <file:line | symbol | literal>`, the reverse of `trace`. It resolves a
-repository-relative file and line, an exact method symbol or an exact allowlisted literal to
-one fact, then reports every entry route whose complete fact-only forward walk passes through
-it: one shortest `repo:file:line` witness per route, the count of further paths, and the
-route's existing seeds and test evidence. Unresolved or ambiguous input exits `2` and lists
-the candidates; a walk that reaches its node budget exits `4` and returns no partial set.
-`--json` is deterministic and carries `schemaVersion: 1`. The pre-registered agentic round
-for the verb is published under `docs/benchmarks/results/2026-08-routes-of.md`; both tool
-cells failed harness integrity, so it establishes no advantage in either direction.
-
-A `playwright` repository can be configured `"titles": true`. `extract` then runs that
-repository's own installed Playwright in list mode and appends one `pw_title` fact per test
-declaration the listing resolved, so a parameterised title renders as the titles it produces
-(`listed`) rather than as its expression (`raw`). Nothing is fetched or installed; the package
-is resolved from the repository root, and a preload written under `out/` keeps a suite that
-vendors a second copy of the package listable. When the collector cannot run, extraction still
-succeeds: the reason goes to stderr and into the fact set's header as `titles`, and no
-`pw_title` fact is written. Configuration reference: `titles` under `repos[]`.
-
-The README is now an entry page and the
-step-by-step tour moved to `docs/getting-started.md`, which takes a first-time reader — a person
-or an AI agent — from install to a first answer about their own repositories, with the
-expected output at every step. `docs/agent-guide.md` states how an agent sets the tool up, what
-to paste into its instructions and how to relay the output without overstating it.
-`docs/cli.md` carries `flowtrace --help` verbatim; `scripts/docs-check.mjs` regenerates it,
-and CI fails when it drifts or when a relative link in any document does not resolve.
-`docs/README.md` indexes the set; `CONTRIBUTING.md` and `SECURITY.md` are new. The example
-configuration names its checkouts as siblings of the file (`shop-api`) rather than parents of
-it (`../shop-api`), matching the worked example's layout.
 
 ## 0.1.1
 
