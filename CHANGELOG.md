@@ -44,6 +44,14 @@ built-in publish verb, and the saga initialiser `PublishAsync(ctx => ctx.Init<T>
 `T`. The worked example's event consumer now submits a fulfilment job through a variable, and
 a second consumer picks it up.
 
+The backend extractor's publish pass, DI-binding pass and the repository-wide indexes of
+message, processor and filter declarations now read the comment- and string-masked text the
+other passes already use, so a documentation comment that spells `SubmitJob<T>` or a string
+that quotes a `Publish(new …)` call produces no fact. Line numbers are unchanged: masking keeps
+every offset. The passes that read a string literal — route templates, configuration keys, hub
+method names, exchange and queue-prefix constants, and the configured worker-registration
+patterns — keep the raw text and say so at the call.
+
 A `playwright` repository can be configured `"titles": true`. `extract` then runs that
 repository's own installed Playwright in list mode and appends one `pw_title` fact per test
 declaration the listing resolved, so a parameterised title renders as the titles it produces
