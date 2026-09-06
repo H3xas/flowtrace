@@ -187,6 +187,9 @@ published as exactly that.
   worked example under `examples/demo-shop`, which CI runs end to end on every push.
 - `span --from-component` covers the `web` repository kind only. A mobile-kind name is
   refused with its reason rather than answered partially.
+- A consumer is entered through the method whose parameter carries the message it consumes,
+  or failing that through a known entry verb. A consumer that matches neither is reported as
+  unresolved rather than entered through a guessed method.
 - `routes-of` searches extracted facts only. Its literal mode is exact and allowlisted; it
   does not scan source, expand a concrete URL into a template, or use the optional code index.
 - A parameterised Playwright title is the expression as written unless that repository is

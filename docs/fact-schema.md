@@ -45,7 +45,7 @@ through untouched.
 | `di_binding` | `iface`, `impl` | an interface is registered to an implementation |
 | `ctor_field` | `class`, `field`, `paramType` | a class holds a constructor-injected field |
 | `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field |
-| `method_span` | `class`, `method`, `endLine` | a method body's extent |
+| `method_span` | `class`, `method`, `endLine` | a method body's extent; optional `paramTypes` lists the signature's parameter types as written |
 | `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch` |
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
 | `exception_map` | `scope`, `class`, `exception`, `status` | an exception type is converted to a status — `scope` is `global` for a registered exception filter, `action` for a `catch` inside one controller action |

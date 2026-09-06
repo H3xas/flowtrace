@@ -183,8 +183,9 @@ message contracts declared under `Messaging/Messages`, `Messaging/Events`, `Mess
 or `Messaging/Contracts`, named `…Message`, or marked with a MassTransit message interface. A
 codebase built on its own worker-queue framework registers processors, binds queues and
 publishes through methods flowtrace cannot know about, and may keep its contracts elsewhere
-under other names. `workerPatterns` teaches the extractor those shapes. Every field is an array of regex-source strings (JSON-escaped),
-and every field defaults to empty.
+under other names. `workerPatterns` teaches the extractor those shapes, and teaches the walk
+which verb enters a consumer. Every field is an array of regex-source strings (JSON-escaped)
+— `consumerEntryMethods` holds plain method names — and every field defaults to empty.
 
 ```json
 "workerPatterns": {
@@ -193,6 +194,7 @@ and every field defaults to empty.
   "queuePrefixConstants": ["JOB_QUEUE_PREFIX"],
   "publishCalls": ["Enqueue"],
   "consumerBases": ["JobConsumerBase"],
+  "consumerEntryMethods": ["Execute"],
   "broadcastCalls": ["BroadcastToChannel"],
   "configReads": ["ReadSetting"],
   "messagePaths": ["Bus/Types"],
@@ -215,6 +217,14 @@ and every field defaults to empty.
   declared type of a variable passed as the first argument.
 - `consumerBases` — extra consumer base-type names, matched alongside the built-in
   `BaseConsumer` and `IConsumer`.
+- `consumerEntryMethods` — extra method names `trace` enters a consumer through; plain
+  names, not regexes. The walk first picks every method whose parameter type hands it the
+  consumed message — the message itself, or the message inside a `…Context<T>` or
+  `Batch<T>` wrapper, nested either way (`ConsumeContext<T>`, `JobContext<T>`, `Batch<T>`,
+  `ConsumeContext<Batch<T>>`); only when no parameter identifies one does it fall back to
+  the built-in `Consume`, `Process`, `ProcessAsync` and `Run` plus these names. A consumer
+  whose declared methods match neither way is marked `unresolved` rather than entered
+  through a guess.
 - `broadcastCalls` — extra channel-publish method names, matched alongside the built-in
   `PublishAsync` when the argument is a `Channels.X` member.
 - `configReads` — helper methods whose single string argument is a configuration key
