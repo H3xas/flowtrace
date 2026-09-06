@@ -132,6 +132,7 @@ rules that keep the tool's honesty intact in the agent's answer.
 | `extract` | what does each repository state about itself? |
 | `join` | which client calls reach which server routes, and which do not? |
 | `join --against` | what changed on the joined boundary since a saved snapshot — paths, seeds, effects, evidence levels? |
+| `join --export-edges` | hand the joined cross-repo edges to a code index, in one versioned, provenance-tagged file. |
 | `render` | write the joined route report and one flow page per called route. |
 | `trace` | what actually runs when this route is called — branches, services, database writes, published messages, consumers? |
 | `routes-of` | I hold a grep hit, a stack frame or a message name — which entry routes run through it? |
