@@ -33,6 +33,17 @@ the rules for a codebase that keeps its contracts elsewhere: `messagePaths` adds
 `messageSuffixes` adds class-name suffixes beside the built-in `Message`. The worked example's
 bus type is now the plain `OrderPlacedEvent` under `Messaging/Events`.
 
+A publish call whose argument is a variable — `var job = new ReindexJob(…); await
+bus.SubmitJob(job, ct)`, `Publish(completed, ct)` — resolves the message from the variable's
+declaration in the enclosing method: a lambda parameter (through the collection a `Select` or
+`ForEach` iterates), the nearest local, `foreach`, `out` or `is` declaration, or the method's
+parameter. A site whose type cannot be read is still a `publish` fact, with `message: null` and
+`unresolved` naming why, and `render` lists those sites under `publish_unresolved` rather than
+counting them as publishes without a consumer; `trace` shows them as a leaf. `SubmitJob` is a
+built-in publish verb, and the saga initialiser `PublishAsync(ctx => ctx.Init<T>(…))` resolves
+`T`. The worked example's event consumer now submits a fulfilment job through a variable, and
+a second consumer picks it up.
+
 A `playwright` repository can be configured `"titles": true`. `extract` then runs that
 repository's own installed Playwright in list mode and appends one `pw_title` fact per test
 declaration the listing resolved, so a parameterised title renders as the titles it produces

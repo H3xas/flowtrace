@@ -210,7 +210,9 @@ and every field defaults to empty.
 - `queuePrefixConstants` — names of the constant whose string literal is the queue-name
   prefix. The constant is matched in any class, however that class is named.
 - `publishCalls` — extra publish method names, matched with an optional `Async` suffix
-  alongside the built-in `Publish`.
+  alongside the built-in `Publish` and `SubmitJob`. Whatever the verb, the message is read
+  from the generic argument, the inline `new`, the saga `ctx.Init<T>(…)` initialiser, or the
+  declared type of a variable passed as the first argument.
 - `consumerBases` — extra consumer base-type names, matched alongside the built-in
   `BaseConsumer` and `IConsumer`.
 - `broadcastCalls` — extra channel-publish method names, matched alongside the built-in

@@ -57,19 +57,25 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
             │  └─ InMemoryPublishEndpoint  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [di]
             │     └─ InMemoryPublishEndpoint.Publish  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [body]  graph: unavailable
             └─ OrderPlacedEvent  bus  src/Services/OrderService.cs:43  [publish]
-               └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:12  [message·fqn]
-                  └─ OrderPlacedConsumer.Consume  api  src/Messaging/OrderPlacedConsumer.cs:15  [body]
-                     ├─ ILogger<OrderPlacedConsumer>  api  src/Messaging/OrderPlacedConsumer.cs:12  [ctor]  unresolved
-                     └─ IOrderRepository  api  src/Messaging/OrderPlacedConsumer.cs:12  [ctor]
-                        └─ ↑ OrderRepository (see above, ×2)
+               └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:13  [message·fqn]
+                  └─ OrderPlacedConsumer.Consume  api  src/Messaging/OrderPlacedConsumer.cs:16  [body]
+                     ├─ ILogger<OrderPlacedConsumer>  api  src/Messaging/OrderPlacedConsumer.cs:13  [ctor]  unresolved
+                     ├─ IOrderRepository  api  src/Messaging/OrderPlacedConsumer.cs:13  [ctor]
+                     │  └─ ↑ OrderRepository (see above, ×2)
+                     └─ FulfilOrderJob  bus  src/Messaging/OrderPlacedConsumer.cs:20  [publish]
+                        └─ OrderFulfilmentConsumer  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [message·fqn]
+                           └─ OrderFulfilmentConsumer.Consume  api  src/Messaging/OrderFulfilmentConsumer.cs:14  [body]
+                              ├─ IProductRepository  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [ctor]
+                              │  └─ ■ ProductRepository  api  src/DataAccess/ProductRepository.cs:13  [db·read]
+                              └─ ILogger<OrderFulfilmentConsumer>  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [ctor]  unresolved
 
 use-case seeds (3):
 U1  error_return@39=taken  → 400 BadRequest  #5a6423a0
 U2  error_return@39=not-taken, error_return@45=taken  → 403 Forbidden  #ca37457e  [unknown: placed ← unresolved]
-U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedEvent → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced  #31ba2067
+U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedEvent → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced → ■ db ProductRepository.GetById  #31ba2067
     also on path: if@OrderService.PlaceOrder:38
 
-2 sinks · 3 branch points (3 primary) · 1 repo (api) · via: body 6, ctor 5, di 4, literal 1, message 1, publish 1 · 1 graph hop unavailable
+3 sinks · 3 branch points (3 primary) · 1 repo (api) · via: body 7, ctor 7, di 5, literal 1, message 2, publish 2 · 1 graph hop unavailable
 ```
 
 `graph: unavailable` marks a hop the walk could not extend without a code index
