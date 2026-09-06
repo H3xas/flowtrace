@@ -20,6 +20,7 @@ import * as componentSpanModule from '../lib/component-span.js';
 import * as coverModule from '../lib/cover.js';
 import * as joinModule from '../lib/join.js';
 import * as joinDriftModule from '../lib/join-drift.js';
+import * as joinExportModule from '../lib/join-export.js';
 import * as packetsModule from '../lib/packets.js';
 import * as readinessModule from '../lib/readiness.js';
 import * as renderModule from '../lib/render.js';
@@ -88,7 +89,8 @@ const USAGE = [
   '  extraction under the configured merge mode; the header records both producers and',
   '  how they compared. An invalid record refuses the whole run and names the record.',
   '',
-  'join [--snapshot <file>] | join --against <file> [--json] [--fail-on <kinds>]',
+  'join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json]',
+  '            [--fail-on <kinds>]',
   '  Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally',
   '  writes one portable, versioned bundle of the current fact sets, the aliases and sink',
   '  patterns the join and the walk read, and every repository identity the facts carry',
@@ -104,8 +106,20 @@ const USAGE = [
   '  not drift is found; --fail-on <kinds> (any, a family — path, seed, effect,',
   '  evidence — or a kind, comma-separated) exits 1 when a selected finding is present;',
   '  usage errors exit 2; a snapshot that cannot be read, is of another version or fails',
-  '  its own digest exits 4 with no partial comparison. Both formats are new and may',
-  '  change between minor versions.',
+  '  its own digest exits 4 with no partial comparison.',
+  '',
+  '  --export-edges <file> additionally writes the joined cross-repo edges for a code index',
+  '  to import: one record per joined edge, exactly { kind, from, to, key } with both ends',
+  '  as { repo, ref, file, line }, plus a provenance field naming the export it came from.',
+  '  The envelope carries the producer, the format version, the configuration the join',
+  '  read and every fact set\x27s identity once, under an id a facts change flips, so an',
+  '  importer can drop or replace imported rows wholesale. Only joined edges export:',
+  '  calls and tests matched to a route action, and the publishes, consumes and enqueues',
+  '  edges of a message that has both a publisher and a matched consumer (the message end',
+  '  carries repo "message" and no file or line, as the join states it). Records are sorted',
+  '  and deduplicated and no timestamp is written, so two exports over unchanged facts are',
+  '  the same bytes. Combines with --snapshot; refused with --against. All three formats',
+  '  are new (schemaVersion 1) and may change between minor versions.',
   '',
   'routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]',
   '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
@@ -515,6 +529,7 @@ function parseArgs(argv) {
     literal: false,
     snapshot: undefined,
     against: undefined,
+    exportEdges: undefined,
     failOn: [],
   };
   const positional = [];
@@ -622,6 +637,10 @@ function parseArgs(argv) {
       const value = argument.startsWith('--against=') ? argument.slice('--against='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--against requires a snapshot file');
       options.against = value;
+    } else if (argument === '--export-edges' || argument.startsWith('--export-edges=')) {
+      const value = argument.startsWith('--export-edges=') ? argument.slice('--export-edges='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--export-edges requires a file');
+      options.exportEdges = value;
     } else if (argument === '--fail-on' || argument.startsWith('--fail-on=')) {
       const value = argument.startsWith('--fail-on=') ? argument.slice('--fail-on='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--fail-on requires a finding family or kind');
@@ -927,6 +946,12 @@ async function runJoin(config, options = {}) {
     const snapshotTarget = resolve(options.snapshot);
     writeJson(snapshotTarget, joinDriftModule.snapshotOf(factSets, { tool: toolIdentity(), config }));
     log(`snapshot ${plural(factSets.length, 'fact set')} -> ${display(snapshotTarget)}`);
+  }
+  if (options.exportEdges) {
+    const exportTarget = resolve(options.exportEdges);
+    const exported = joinExportModule.exportEdges(flow, factSets, { tool: toolIdentity(), config });
+    writeJson(exportTarget, exported);
+    log(`export ${plural(exported.edges.length, 'joined edge')} -> ${display(exportTarget)}`);
   }
   return 0;
 }
@@ -1963,11 +1988,11 @@ async function main() {
   if (options.command === 'routes-of' && !options.start) {
     return usage('routes-of requires a point');
   }
-  if ((options.snapshot || options.against) && options.command !== 'join') {
-    return usage('--snapshot and --against are join options');
+  if ((options.snapshot || options.against || options.exportEdges) && options.command !== 'join') {
+    return usage('--snapshot, --export-edges and --against are join options');
   }
-  if (options.snapshot && options.against) {
-    return usage('join takes --snapshot <file> or --against <file>, not both');
+  if ((options.snapshot || options.exportEdges) && options.against) {
+    return usage('join --against compares and writes nothing; it takes neither --snapshot nor --export-edges');
   }
   if (options.command === 'join' && (options.json || options.failOn.length > 0) && !options.against) {
     return usage('--json and --fail-on are join --against options');
