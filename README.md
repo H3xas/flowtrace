@@ -104,7 +104,7 @@ workspace/
 relative to the configuration file. Then `flowtrace extract`, `flowtrace join`, and trace a
 route. Step by step, with the expected output at each step and a table of what to do when
 something is off: [docs/getting-started.md](docs/getting-started.md). Every key:
-[docs/configuration.md](docs/configuration.md); all of them filled in:
+[docs/configuration.md](docs/configuration.md); every key at its built-in value:
 `flowtrace.config.example.json`.
 
 ## For AI agents

@@ -40,6 +40,10 @@
       "variable": "ctx"
     },
     "caseIdPlaceholder": "test.info().annotations.push({ type: 'case-id', description: 'TODO' })",
+    "poll": {
+      "timeoutMs": 30000,
+      "intervalsMs": [1000, 2000, 5000]
+    },
     "worker": {
       "module": "worker",
       "client": "MessageClient",
