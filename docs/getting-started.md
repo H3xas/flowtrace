@@ -46,7 +46,7 @@ flowtrace join
 ```
 
 ```
-extract api (backend): 78 facts -> out/facts/api.json
+extract api (backend): 83 facts -> out/facts/api.json
 extract e2e (playwright): 15 facts -> out/facts/e2e.json
 join 2 fact sets: 2 edges -> out/flow.json
 ```
@@ -67,20 +67,24 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
          └─ OrderService.PlaceOrder  api  src/Services/OrderService.cs:35  [body]
             ├─ ◇ 38-41  if (!accepted)  [branch:if]
             ├─ IOrderRepository  api  src/Services/OrderService.cs:21  [ctor]
-            │  └─ ■ OrderRepository  api  src/DataAccess/OrderRepository.cs:14  [db·write]
+            │  └─ ■ OrderRepository  api  src/DataAccess/OrderRepository.cs:15  [db·write]
             ├─ IPublishEndpoint  api  src/Services/OrderService.cs:22  [ctor]
             │  └─ InMemoryPublishEndpoint  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [di]
             │     └─ InMemoryPublishEndpoint.Publish  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [body]  graph: unavailable
             └─ OrderPlacedMessage  bus  src/Services/OrderService.cs:43  [publish]
-               └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:6  [message·fqn]  graph: unavailable
+               └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:12  [message·fqn]
+                  └─ OrderPlacedConsumer.Consume  api  src/Messaging/OrderPlacedConsumer.cs:15  [body]
+                     ├─ ILogger<OrderPlacedConsumer>  api  src/Messaging/OrderPlacedConsumer.cs:12  [ctor]  unresolved
+                     └─ IOrderRepository  api  src/Messaging/OrderPlacedConsumer.cs:12  [ctor]
+                        └─ ↑ OrderRepository (see above, ×2)
 
 use-case seeds (3):
 U1  error_return@39=taken  → 400 BadRequest  #5a6423a0
 U2  error_return@39=not-taken, error_return@45=taken  → 403 Forbidden  #ca37457e  [unknown: placed ← unresolved]
-U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedMessage → OrderPlacedConsumer [api]  #31ba2067
+U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedMessage → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced  #31ba2067
     also on path: if@OrderService.PlaceOrder:38
 
-1 sink · 3 branch points (3 primary) · 1 repo (api) · via: body 5, ctor 3, di 3, literal 1, message 1, publish 1 · 2 graph hop unavailable
+2 sinks · 3 branch points (3 primary) · 1 repo (api) · via: body 6, ctor 5, di 4, literal 1, message 1, publish 1 · 1 graph hop unavailable
 ```
 
 Two markers are worth knowing on day one. `graph: unavailable` says the walk could not
@@ -275,7 +279,7 @@ flowtrace routes-of "OrderPlacedMessage" --literal
 
 ```
 flowtrace: ambiguous point "OrderPlacedMessage" (2 candidates):
-  consume.message="OrderPlacedMessage" — api:src/Messaging/OrderPlacedConsumer.cs:6
+  consume.message="OrderPlacedMessage" — api:src/Messaging/OrderPlacedConsumer.cs:9
   publish.message="OrderPlacedMessage" — api:src/Services/OrderService.cs:43
 ```
 

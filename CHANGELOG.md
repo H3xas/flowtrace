@@ -16,6 +16,16 @@ the candidates; a walk that reaches its node budget exits `4` and returns no par
 for the verb is published under `docs/benchmarks/results/2026-08-routes-of.md`; both tool
 cells failed harness integrity, so it establishes no advantage in either direction.
 
+The backend extractor reads message consumers off the parsed class declaration instead of a
+separate pattern, so a consumer written with a C# 12 primary constructor
+(`class X(IStore store, ILogger<X> log) : IConsumer<T>`) emits its `consume` fact like any
+other, attributes with parentheses inside the parameter list and generic loggers included. A
+consumer base in any position of the base list qualifies, a class implementing several
+`IConsumer<T>` interfaces consumes each message, a namespace-qualified base and a nested
+`Batch<T>` resolve as before, and abstract classes stay silent. The worked example's
+`OrderPlacedConsumer` now takes its repository and logger through a primary constructor, so
+`trace` shows the consumer's own subtree beneath the bus hop.
+
 A `playwright` repository can be configured `"titles": true`. `extract` then runs that
 repository's own installed Playwright in list mode and appends one `pw_title` fact per test
 declaration the listing resolved, so a parameterised title renders as the titles it produces

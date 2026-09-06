@@ -7,6 +7,7 @@ namespace DemoShop.Api.DataAccess
         Task<object> GetCart();
         Task UpsertCartItem(string productId, int quantity);
         Task<bool> SaveOrder(string paymentToken);
+        Task MarkPlaced(string orderId);
     }
 
     public class OrderRepository : IOrderRepository
@@ -16,5 +17,7 @@ namespace DemoShop.Api.DataAccess
         public Task UpsertCartItem(string productId, int quantity) => Task.CompletedTask;
 
         public Task<bool> SaveOrder(string paymentToken) => Task.FromResult(true);
+
+        public Task MarkPlaced(string orderId) => Task.CompletedTask;
     }
 }
