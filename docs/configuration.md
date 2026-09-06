@@ -109,20 +109,28 @@ title `listed` instead of `raw`.
 ```
 
 What it needs: `@playwright/test` installed where a `require` from the repository root would
-find it, which is the suite's own `node_modules` or a hoisted workspace root. The tool
-resolves it there and nowhere else; nothing is fetched, nothing is installed, and no
-browser is started. The command runs with the repository as its working directory, a
-60-second limit, and a small preload written to `out/.pw-list-preload.cjs` that pins every
-request for `@playwright/test` to the one installed copy, so a suite that vendors a second
-copy inside a helper package still lists.
+find it, which is the suite's own `node_modules` or a hoisted workspace root, and Node to
+run it. The tool resolves the package there and nowhere else; nothing is fetched, nothing is
+installed, and no browser is started. The command runs with the repository as its working
+directory, a 60-second limit, and a small preload written to `out/.pw-list-preload.cjs` that
+pins every request for `@playwright/test` to the one installed copy, so a suite that vendors
+a second copy inside a helper package still lists.
 
-When the collector cannot run — the package is not resolvable, its command-line entry is
-missing, list mode exits non-zero or times out, or its output is not the JSON reporter's —
-extraction still succeeds. The extract line reads `titles unavailable`, one stderr line
-names the reason, the fact set's header carries `"titles": { "status": "failed", "reason":
-"…" }`, and no `pw_title` fact is written. On success the header carries
-`"titles": { "status": "ok", "facts": N }`. Without the option the header has no `titles`
-field and nothing is spawned.
+Which distributions collect titles: a checkout and the npm package, both of which run under
+Node. The single-file executable from the releases page does not. It embeds its own runtime
+and does not process Node's command-line options, so it cannot start list mode, and the tool
+neither searches the `PATH` for a Node nor fetches one. Run that way with `"titles": true`,
+`extract` reports `titles unavailable` with the reason `the single-file executable cannot run
+Playwright list mode; install the npm package (flowtrace-cli) to collect titles`; the
+collector resolves, writes and starts nothing, and everything else is extracted as usual.
+
+When the collector cannot run — the tool is the single-file executable, the package is not
+resolvable, its command-line entry is missing, list mode exits non-zero or times out, or its
+output is not the JSON reporter's — extraction still succeeds. The extract line reads
+`titles unavailable`, one stderr line names the reason, the fact set's header carries
+`"titles": { "status": "failed", "reason": "…" }`, and no `pw_title` fact is written. On
+success the header carries `"titles": { "status": "ok", "facts": N }`. Without the option
+the header has no `titles` field and nothing is spawned.
 
 ## `aliases[]`
 
