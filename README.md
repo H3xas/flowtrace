@@ -176,7 +176,8 @@ published as exactly that.
 
 - Extraction is heuristic, not a parse. An idiom the patterns do not recognise is invisible;
   the fix is to widen a regular expression in `lib/extract/`, and the patterns are grouped at
-  the top of each file for exactly that.
+  the top of each file for exactly that. Comments and string literals are blanked before the
+  patterns run, so an idiom written in prose is not read as code.
 - Language and framework support is what is listed above, no more.
 - `affected` reads diffs through `git`, so the repository it reads must be a git checkout.
 - Coverage is evidence overlay, not instrumentation. It reports what the tests *say* they
