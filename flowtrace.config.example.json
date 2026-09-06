@@ -61,7 +61,8 @@
       "root": "shop-api",
       "role": ["api"],
       "exclude": ["**/*.Tests", "**/*.IntegrationTests"],
-      "scout": true
+      "scout": true,
+      "factsProvider": { "file": "shop-api-facts.json", "merge": "prefer-external" }
     },
     {
       "id": "app",

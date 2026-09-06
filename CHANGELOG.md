@@ -120,6 +120,21 @@ entered through a guess. The worked example gains a job consumer behind the orde
 message, so `trace OrderPlacedConsumer` walks through to the fulfilment handler's branch
 and repository write.
 
+A repository can be configured with a `factsProvider`: a JSON fact document, or a command
+whose stdout is one, written by a tool that holds a real syntax tree. `extract` validates
+every fact it supplies against the schema, stamps each one `provenance: { producer, version }`,
+and combines the two sources under a required `merge` mode — `prefer-external` replaces
+the extractor's facts at every site (type, file, line) the provider states, `external-only`
+replaces every fact type it states, `regex-only-with-diff` keeps the extractor's facts and
+records the comparison only. The header records both producers and a per-type comparison;
+an invalid record, a foreign repository id, a fact claiming its own provenance, or a command
+that fails refuses the whole run and names the record. An extracted fact never carries
+`provenance`, so the two are always told apart: `trace` prints `[provider]` on every hop
+located at an externally stated fact (`--json` and `--graph` carry `provider: true`), and
+`render` gains a *Fact producers* section counting facts per producer and the disagreements.
+Configuration reference: `factsProvider` under `repos[]`; fact schema: `provenance` and the
+`provider` header block.
+
 ## 0.1.1
 
 Release pipeline only; the CLI is unchanged. The single-file build normalises line endings

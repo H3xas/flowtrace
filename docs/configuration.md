@@ -53,6 +53,7 @@ checkouts named as siblings of the file.
 | `role` | no | `["api"]` · `["worker"]` · `["contracts"]` — what this repository *is*, when one kind serves two purposes |
 | `scout` | no | `true` to allow code-index hops into this repository |
 | `titles` | no | `true` on a `playwright` repository to collect the titles its tests produce, through Playwright's own list mode; see [Playwright titles](#playwright-titles) |
+| `factsProvider` | no | an external fact document for this repository — a file, or a command that prints one — and how it merges with the extraction; see [External fact provider](#external-fact-provider) |
 | `srcSubpath` | no | `web` only: source subdirectory to walk (default `src`) |
 | `cypressSubpath` | no | `web` only: sibling Cypress suite, relative to `root` |
 | `featureRoots` | no | `mobile` only: source roots to walk instead of the single default |
@@ -131,6 +132,94 @@ output is not the JSON reporter's — extraction still succeeds. The extract lin
 `"titles": { "status": "failed", "reason": "…" }`, and no `pw_title` fact is written. On
 success the header carries `"titles": { "status": "ok", "facts": N }`. Without the option
 the header has no `titles` field and nothing is spawned.
+
+### External fact provider
+
+The bundled extractors read source with regular expressions and brace matching. A tool
+that holds a real syntax tree — a compiler front end, a language server, a code index —
+can state some facts better: a local variable's type, a lambda body as an action. A
+`factsProvider` lets one repository take facts from such a tool without flowtrace learning
+a compiler. One provider per repository, either a static document or a command:
+
+```json
+{ "id": "api", "kind": "backend", "root": "shop-api",
+  "factsProvider": { "file": "shop-api-facts.json", "merge": "prefer-external" } }
+```
+
+```json
+{ "id": "api", "kind": "backend", "root": "shop-api",
+  "factsProvider": { "command": ["dotnet", "tools/export-facts.dll"], "merge": "external-only" } }
+```
+
+Exactly one of `file` or `command`, and `merge` is required — the mode changes every
+number downstream, so a configuration must say which one it means. `file` resolves against
+the configuration file. `command` is an argument vector: its first entry resolves against
+the configuration file when it contains a path separator and is looked up on `PATH`
+otherwise. The command runs with the repository root as its working directory, with
+`FLOWTRACE_REPO_ID`, `FLOWTRACE_REPO_ROOT` and `FLOWTRACE_REPO_KIND` added to its
+environment, a five-minute limit and a 256 MiB output limit; its stdout must be the
+document below, and its stderr is shown only when it fails.
+
+**The document** is JSON:
+
+```json
+{
+  "producer": "syntax-exporter",
+  "version": "1.4.0",
+  "repo": "api",
+  "facts": [
+    { "type": "ctor_field", "file": "Controllers/OrdersController.cs", "line": 14,
+      "class": "OrdersController", "field": "_orders", "paramType": "Shop.Orders.IOrderService" }
+  ]
+}
+```
+
+`producer` is required; `version` is optional; `repo`, when present, must equal the
+repository's `id`; `facts` is an array of facts exactly as [fact-schema.md](fact-schema.md)
+defines them, any type included. Nothing else in the document is read.
+
+**What `extract` does with it.** After the extractor has run, the provider's document is
+read and every fact in it is validated as an extractor's would be. Each one is then stamped
+`provenance: { "producer", "version" }` and the two sets are combined under `merge`. The
+written fact set's header keeps `generatedFrom` for the extraction and adds a `provider`
+block — producer, version, source, mode, how many facts were supplied, kept and replaced,
+and a per-type comparison of the two sources computed before the merge discarded anything.
+The `extract` line says what happened: `53 facts (48 extracted, 5 from syntax-exporter,
+prefer-external)`.
+
+**Merge modes.** The unit is a *site*: one fact type at one line of one file. The value
+fields — `paramType`, `template`, `endLine` — are exactly what a semantic tool corrects,
+so matching on them would keep the extractor's wrong value beside the corrected one. A
+provider that states a site states it completely: two calls on one line are two facts at
+one site, and stating one of them replaces both.
+
+- `prefer-external` — at every site the provider states, its facts replace the
+  extractor's; sites it is silent on keep the extractor's facts.
+- `external-only` — for every fact *type* the provider states, the extractor's facts of
+  that type are dropped wholesale; types it is silent on keep the extractor's facts.
+- `regex-only-with-diff` — the extractor's facts only. The provider's are validated and
+  compared, the comparison lands in the header, and none of its facts enters the file.
+  This is how a new provider is measured against the baseline before it is trusted.
+
+**Refusals.** Any of these refuses the whole `extract` run with exit `1`, names the
+provider's source and the offending record (`Fact #12 (ctor_field): missing required field
+"paramType"`), and writes no fact file for that repository: a document that is not a JSON
+object, a missing `producer`, a `repo` naming another repository, a `facts` that is not an
+array, an unknown fact type, a missing required field, a `file` that is not
+repository-relative with forward slashes, a `line` that is not a positive integer, a fact
+that already carries `provenance` (the stamp is this tool's statement, never the
+provider's claim), an unreadable file, a command that cannot start, exits non-zero, times
+out, exceeds the output limit, or prints something other than JSON. Nothing is dropped
+silently: a fact set that quietly lacked what was configured would be a number nobody
+could point at a fact for.
+
+**What readers see.** An external fact carries `provenance` in the fact file; an extracted
+fact never does, and that absence is the mark. `trace` prints `[provider]` on every hop
+located at a line where an externally supplied fact is stated, and its `--json` and
+`--graph` nodes carry `provider: true` for the same hops. `render` adds a *Fact producers*
+section counting the facts each producer contributed and, per type, where the two sources
+agreed, disagreed, or saw a site the other did not. Every other command reads the merged
+file as it reads any other — a fact is a fact whoever wrote it; the tag says who.
 
 ## `aliases[]`
 

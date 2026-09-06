@@ -40,6 +40,11 @@ extract [--repo <id>]
   than as its expression. When that collector cannot run, extraction still succeeds:
   the reason goes to stderr and into the fact set's header, and no pw_title fact is
   written.
+  A repository configured with a factsProvider also reads that provider's fact
+  document — a file, or the stdout of a command — validates every fact against the
+  schema, stamps each one provenance: { producer, version }, and merges it with the
+  extraction under the configured merge mode; the header records both producers and
+  how they compared. An invalid record refuses the whole run and names the record.
 
 routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then
@@ -62,7 +67,9 @@ trace --area <file>
   inventory; --expand walks every route in full. --expand-infra prints the shared-dependency and
   code-index hops the tree collapses to one line; folding (below) still applies on top
   of whatever --expand-infra leaves shown. --area reads a newline list of route keys
-  and emits one JSON array, one entry per key.
+  and emits one JSON array, one entry per key. A hop located at a line where an
+  externally supplied fact is stated prints [provider]; --json and --graph nodes carry
+  provider: true for the same hops.
 
   --from-handler <selector> restricts a mobile walk to the subtree rooted at one
   `template_handler` hop, matched by its display form ("(click) onLike()"), the
