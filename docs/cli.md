@@ -46,6 +46,25 @@ extract [--repo <id>]
   extraction under the configured merge mode; the header records both producers and
   how they compared. An invalid record refuses the whole run and names the record.
 
+join [--snapshot <file>] | join --against <file> [--json] [--fail-on <kinds>]
+  Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally
+  writes one portable, versioned bundle of the current fact sets, the aliases and sink
+  patterns the join and the walk read, and every repository identity the facts carry
+  (schemaVersion 1, no timestamp: two runs over unchanged facts write the same bytes).
+  --against <file> compares that bundle with the current facts instead of writing
+  anything: both sides are derived with the same implementation and the current
+  configuration, and the report names what changed on the joined boundary — a joined
+  path added, removed or reshaped, a call newly without a route; a seed added, removed
+  or changed; an effect added or removed; an evidence level gained or lost. Identities
+  are semantic: a moved line, a renamed spec or a reordered declaration is not drift,
+  and identical states print an explicit no-drift line. --json emits the same findings
+  in a versioned, deterministically ordered shape (schemaVersion 1). Exit 0 whether or
+  not drift is found; --fail-on <kinds> (any, a family — path, seed, effect,
+  evidence — or a kind, comma-separated) exits 1 when a selected finding is present;
+  usage errors exit 2; a snapshot that cannot be read, is of another version or fails
+  its own digest exits 4 with no partial comparison. Both formats are new and may
+  change between minor versions.
+
 routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then
   an exact allowlisted literal. --symbol and --literal force one mode and never fall
