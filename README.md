@@ -180,7 +180,8 @@ published as exactly that.
   does not scan source, expand a concrete URL into a template, or use the optional code index.
 - A parameterised Playwright title is the expression as written unless that repository is
   configured `"titles": true`, which runs its own installed Playwright in list mode during
-  `extract` and appends the titles the listing resolves.
+  `extract` and appends the titles the listing resolves. A checkout and the npm package can
+  do that; the single-file executable reports the titles as unavailable and extracts the rest.
 
 ## Contributing
 
