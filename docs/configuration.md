@@ -41,6 +41,7 @@ checkouts named as siblings of the file.
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
+| `scope` | no | the node-ref patterns `scope` reads as a server-side authorization point, below |
 
 ## `repos[]`
 
@@ -53,6 +54,7 @@ checkouts named as siblings of the file.
 | `role` | no | `["api"]` · `["worker"]` · `["contracts"]` — what this repository *is*, when one kind serves two purposes |
 | `scout` | no | `true` to allow code-index hops into this repository |
 | `titles` | no | `true` on a `playwright` repository to collect the titles its tests produce, through Playwright's own list mode; see [Playwright titles](#playwright-titles) |
+| `factsProvider` | no | an external fact document for this repository — a file, or a command that prints one — and how it merges with the extraction; see [External fact provider](#external-fact-provider) |
 | `srcSubpath` | no | `web` only: source subdirectory to walk (default `src`) |
 | `cypressSubpath` | no | `web` only: sibling Cypress suite, relative to `root` |
 | `featureRoots` | no | `mobile` only: source roots to walk instead of the single default |
@@ -109,20 +111,116 @@ title `listed` instead of `raw`.
 ```
 
 What it needs: `@playwright/test` installed where a `require` from the repository root would
-find it, which is the suite's own `node_modules` or a hoisted workspace root. The tool
-resolves it there and nowhere else; nothing is fetched, nothing is installed, and no
-browser is started. The command runs with the repository as its working directory, a
-60-second limit, and a small preload written to `out/.pw-list-preload.cjs` that pins every
-request for `@playwright/test` to the one installed copy, so a suite that vendors a second
-copy inside a helper package still lists.
+find it, which is the suite's own `node_modules` or a hoisted workspace root, and Node to
+run it. The tool resolves the package there and nowhere else; nothing is fetched, nothing is
+installed, and no browser is started. The command runs with the repository as its working
+directory, a 60-second limit, and a small preload written to `out/.pw-list-preload.cjs` that
+pins every request for `@playwright/test` to the one installed copy, so a suite that vendors
+a second copy inside a helper package still lists.
 
-When the collector cannot run — the package is not resolvable, its command-line entry is
-missing, list mode exits non-zero or times out, or its output is not the JSON reporter's —
-extraction still succeeds. The extract line reads `titles unavailable`, one stderr line
-names the reason, the fact set's header carries `"titles": { "status": "failed", "reason":
-"…" }`, and no `pw_title` fact is written. On success the header carries
-`"titles": { "status": "ok", "facts": N }`. Without the option the header has no `titles`
-field and nothing is spawned.
+Which distributions collect titles: a checkout and the npm package, both of which run under
+Node. The single-file executable from the releases page does not. It embeds its own runtime
+and does not process Node's command-line options, so it cannot start list mode, and the tool
+neither searches the `PATH` for a Node nor fetches one. Run that way with `"titles": true`,
+`extract` reports `titles unavailable` with the reason `the single-file executable cannot run
+Playwright list mode; install the npm package (flowtrace-cli) to collect titles`; the
+collector resolves, writes and starts nothing, and everything else is extracted as usual.
+
+When the collector cannot run — the tool is the single-file executable, the package is not
+resolvable, its command-line entry is missing, list mode exits non-zero or times out, or its
+output is not the JSON reporter's — extraction still succeeds. The extract line reads
+`titles unavailable`, one stderr line names the reason, the fact set's header carries
+`"titles": { "status": "failed", "reason": "…" }`, and no `pw_title` fact is written. On
+success the header carries `"titles": { "status": "ok", "facts": N }`. Without the option
+the header has no `titles` field and nothing is spawned.
+
+### External fact provider
+
+The bundled extractors read source with regular expressions and brace matching. A tool
+that holds a real syntax tree — a compiler front end, a language server, a code index —
+can state some facts better: a local variable's type, a lambda body as an action. A
+`factsProvider` lets one repository take facts from such a tool without flowtrace learning
+a compiler. One provider per repository, either a static document or a command:
+
+```json
+{ "id": "api", "kind": "backend", "root": "shop-api",
+  "factsProvider": { "file": "shop-api-facts.json", "merge": "prefer-external" } }
+```
+
+```json
+{ "id": "api", "kind": "backend", "root": "shop-api",
+  "factsProvider": { "command": ["dotnet", "tools/export-facts.dll"], "merge": "external-only" } }
+```
+
+Exactly one of `file` or `command`, and `merge` is required — the mode changes every
+number downstream, so a configuration must say which one it means. `file` resolves against
+the configuration file. `command` is an argument vector: its first entry resolves against
+the configuration file when it contains a path separator and is looked up on `PATH`
+otherwise. The command runs with the repository root as its working directory, with
+`FLOWTRACE_REPO_ID`, `FLOWTRACE_REPO_ROOT` and `FLOWTRACE_REPO_KIND` added to its
+environment, a five-minute limit and a 256 MiB output limit; its stdout must be the
+document below, and its stderr is shown only when it fails.
+
+**The document** is JSON:
+
+```json
+{
+  "producer": "syntax-exporter",
+  "version": "1.4.0",
+  "repo": "api",
+  "facts": [
+    { "type": "ctor_field", "file": "Controllers/OrdersController.cs", "line": 14,
+      "class": "OrdersController", "field": "_orders", "paramType": "Shop.Orders.IOrderService" }
+  ]
+}
+```
+
+`producer` is required; `version` is optional; `repo`, when present, must equal the
+repository's `id`; `facts` is an array of facts exactly as [fact-schema.md](fact-schema.md)
+defines them, any type included. Nothing else in the document is read.
+
+**What `extract` does with it.** After the extractor has run, the provider's document is
+read and every fact in it is validated as an extractor's would be. Each one is then stamped
+`provenance: { "producer", "version" }` and the two sets are combined under `merge`. The
+written fact set's header keeps `generatedFrom` for the extraction and adds a `provider`
+block — producer, version, source, mode, how many facts were supplied, kept and replaced,
+and a per-type comparison of the two sources computed before the merge discarded anything.
+The `extract` line says what happened: `53 facts (48 extracted, 5 from syntax-exporter,
+prefer-external)`.
+
+**Merge modes.** The unit is a *site*: one fact type at one line of one file. The value
+fields — `paramType`, `template`, `endLine` — are exactly what a semantic tool corrects,
+so matching on them would keep the extractor's wrong value beside the corrected one. A
+provider that states a site states it completely: two calls on one line are two facts at
+one site, and stating one of them replaces both.
+
+- `prefer-external` — at every site the provider states, its facts replace the
+  extractor's; sites it is silent on keep the extractor's facts.
+- `external-only` — for every fact *type* the provider states, the extractor's facts of
+  that type are dropped wholesale; types it is silent on keep the extractor's facts.
+- `regex-only-with-diff` — the extractor's facts only. The provider's are validated and
+  compared, the comparison lands in the header, and none of its facts enters the file.
+  This is how a new provider is measured against the baseline before it is trusted.
+
+**Refusals.** Any of these refuses the whole `extract` run with exit `1`, names the
+provider's source and the offending record (`Fact #12 (ctor_field): missing required field
+"paramType"`), and writes no fact file for that repository: a document that is not a JSON
+object, a missing `producer`, a `repo` naming another repository, a `facts` that is not an
+array, an unknown fact type, a missing required field, a `file` that is not
+repository-relative with forward slashes, a `line` that is not a positive integer, a fact
+that already carries `provenance` (the stamp is this tool's statement, never the
+provider's claim), an unreadable file, a command that cannot start, exits non-zero, times
+out, exceeds the output limit, or prints something other than JSON. Nothing is dropped
+silently: a fact set that quietly lacked what was configured would be a number nobody
+could point at a fact for.
+
+**What readers see.** An external fact carries `provenance` in the fact file; an extracted
+fact never does, and that absence is the mark. `trace` prints `[provider]` on every hop
+located at a line where an externally supplied fact is stated, and its `--json` and
+`--graph` nodes carry `provider: true` for the same hops. `render` adds a *Fact producers*
+section counting the facts each producer contributed and, per type, where the two sources
+agreed, disagreed, or saw a site the other did not. Every other command reads the merged
+file as it reads any other — a fact is a fact whoever wrote it; the tag says who.
 
 ## `aliases[]`
 
@@ -170,21 +268,30 @@ a call flowtrace cannot know about. `caseId` names those callees. It defaults to
 ## `workerPatterns`
 
 The backend extractor recognises public messaging idioms out of the box — MassTransit's
-`IConsumer<T>` and `Publish`/`PublishAsync`, StackExchange.Redis channel publishes. A
-codebase built on its own worker-queue framework registers processors, binds queues and
-publishes through methods flowtrace cannot know about. `workerPatterns` teaches the
-extractor those shapes. Every field is an array of regex-source strings (JSON-escaped),
-and every field defaults to empty.
+`IConsumer<T>` and `Publish`/`PublishAsync`/`SubmitJob`/`Reply`, StackExchange.Redis channel
+publishes, `IAmInitiatedBy<T>` sagas, and message contracts declared under
+`Messaging/Messages`, `Messaging/Events`, `Messaging/Jobs` or `Messaging/Contracts`, named
+`…Message`, or marked with a MassTransit message interface. A codebase built on its own
+worker-queue framework registers processors, binds queues and publishes through methods
+flowtrace cannot know about, names its saga-initiator interface differently, and may keep its
+contracts elsewhere under other names. `workerPatterns` teaches the extractor those shapes,
+and teaches the walk which verb enters a consumer. Every field is an array of regex-source
+strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and a
+`publishCalls` entry may carry a `/N` suffix (see below) — and every field defaults to empty.
 
 ```json
 "workerPatterns": {
   "registrations": ["\\.RegisterJobHandler\\s*<\\s*(\\w+)\\s*>\\s*\\(\\s*JobKind\\.(\\w+)"],
   "topologyBindings": ["\\bBindJobQueue\\s*<\\s*(\\w+)\\s*>\\s*\\(\\s*JobKind\\.(\\w+)"],
   "queuePrefixConstants": ["JOB_QUEUE_PREFIX"],
-  "publishCalls": ["Enqueue"],
+  "publishCalls": ["Enqueue", "Defer/2"],
   "consumerBases": ["JobConsumerBase"],
+  "consumerEntryMethods": ["Execute"],
   "broadcastCalls": ["BroadcastToChannel"],
-  "configReads": ["ReadSetting"]
+  "configReads": ["ReadSetting"],
+  "messagePaths": ["Bus/Types"],
+  "messageSuffixes": ["Notice"],
+  "sagaInterfaces": ["IAmTriggeredBy"]
 }
 ```
 
@@ -198,14 +305,64 @@ and every field defaults to empty.
 - `queuePrefixConstants` — names of the constant whose string literal is the queue-name
   prefix. The constant is matched in any class, however that class is named.
 - `publishCalls` — extra publish method names, matched with an optional `Async` suffix
-  alongside the built-in `Publish`.
+  alongside the built-in `Publish`, `SubmitJob` and `Reply`. Whatever the verb, the message is
+  read from the generic argument, the inline `new`, the saga `ctx.Init<T>(…)` initialiser, or
+  the declared type of a variable passed as the first argument — unless the entry names a
+  later argument position after a slash (`Defer/2`, 1-based; a bare name keeps meaning
+  position 1), in which case only the two shapes that make sense at an arbitrary position
+  apply: an inline `new` there, or the declared type of a variable there, read by the same
+  rule a first-argument variable already is. An index the call does not have that many
+  arguments to reach emits nothing rather than guessing. Every `publish` fact carries `verb`,
+  the matched call name lower-cased, whichever spelling or position produced it.
 - `consumerBases` — extra consumer base-type names, matched alongside the built-in
   `BaseConsumer` and `IConsumer`.
+- `sagaInterfaces` — extra saga-interface names, matched alongside the built-in
+  `IAmInitiatedBy`. A base-list entry naming one, `IAmTriggeredBy<OrderPlaced>` say, emits a
+  `saga` fact for the class ([fact-schema.md](fact-schema.md#backend)) in addition to
+  whatever `consume` facts its own `consumerBases` entries already produce — this field never
+  changes what counts as a consumer, only what counts as a saga.
+- `consumerEntryMethods` — extra method names `trace` enters a consumer through; plain
+  names, not regexes. The walk first picks every method whose parameter type hands it the
+  consumed message — the message itself, or the message inside a `…Context<T>` or
+  `Batch<T>` wrapper, nested either way (`ConsumeContext<T>`, `JobContext<T>`, `Batch<T>`,
+  `ConsumeContext<Batch<T>>`); only when no parameter identifies one does it fall back to
+  the built-in `Consume`, `Process`, `ProcessAsync` and `Run` plus these names. A consumer
+  whose declared methods match neither way is marked `unresolved` rather than entered
+  through a guess.
 - `broadcastCalls` — extra channel-publish method names, matched alongside the built-in
   `PublishAsync` when the argument is a `Channels.X` member.
 - `configReads` — helper methods whose single string argument is a configuration key
   (`_url = config.ReadSetting("Gateway")`); this is what lets the outbound-HTTP pass tie
   an interpolated URL back to a configuration key. Without it that pass is inert.
+- `messagePaths` — extra repository-relative folders whose classes and records are message
+  contracts (`message_class` facts), matched alongside the built-in `Messaging/Messages`,
+  `Messaging/Events`, `Messaging/Jobs` and `Messaging/Contracts`. Each entry is anchored
+  between path separators, so `Bus/Types` matches `src/Bus/Types/Tick.cs` and nothing under
+  `Bus/TypesLegacy/`.
+- `messageSuffixes` — extra class-name suffixes that mark a message contract wherever the
+  class lives, matched alongside the built-in `Message`. `Event` and `Job` are deliberately
+  not built in, since both are common outside messaging; a codebase that names its contracts
+  that way lists them here. A contract carries the same `fqn` onto every `publish` and
+  `consume` of it, which is what lets `join` tell two same-named messages apart across
+  repositories and keeps them out of `messages_without_contract`.
+
+## `scope`
+
+The area's server-side authorization point, for the `scope` verb: the first node on a
+route's own walk whose ref matches one of these regexes.
+
+```json
+"scope": {
+  "gatePatterns": ["Authorize", "Permission", "Policy", "Entitlement", "Claims"]
+}
+```
+
+- `gatePatterns` — whole regexes (JSON-escaped) matched against a walked node's `ref`
+  (a method's `Class.Method`, an injected interface or class name, a database or message
+  ref). Defaults to the five shown above when the key is omitted. This is a naming
+  heuristic, not a guarantee: a check named something else is invisible to it, and a name
+  that merely contains one of these words is reported as a gate whether or not anything
+  actually enforces it.
 
 ## `scout`
 
@@ -232,6 +389,7 @@ objects may override only the entries they need.
 | `importAliases.utils` | string | module that exports the API factory, API base and roles |
 | `importAliases.features` | string | module prefix for feature client imports |
 | `importAliases.generated` | string | module prefix for generated helpers |
+| `importAliases.caseId` | string | module that exports the reporter the case-id placeholder calls; unset by default |
 | `roles.default` | string | role used for an ordinary successful request |
 | `roles.denied` | string | role used for an unauthorised or forbidden request |
 | `roles.member` | string | additional member-role vocabulary available to the harness |
@@ -244,6 +402,8 @@ objects may override only the entries they need.
 | `contextFactory.fixtures` | string[] | Playwright fixtures destructured by each generated test |
 | `contextFactory.variable` | string | local variable that receives the request context |
 | `caseIdPlaceholder` | string | statement left where a case id must be supplied |
+| `poll.timeoutMs` | number | whole wait, in milliseconds, of a generated read-back poll; a positive integer |
+| `poll.intervalsMs` | number[] | delays, in milliseconds, between successive poll attempts; a non-empty list of positive integers |
 | `worker.module` | string | module that exports the worker-publish client |
 | `worker.client` | string | worker-publish client class |
 | `worker.method` | string | client method that publishes the message |
@@ -252,7 +412,34 @@ objects may override only the entries they need.
 | `unresolvedRejectStatus` | number[] | accepted status choices when a rejection status is unresolved |
 | `okStatus` | number | expected status for a successful request or read-back |
 
-See `flowtrace.config.example.json` for every key with the built-in values filled in.
+`caseIdPlaceholder` is the statement every generated test carries where a case id must be
+supplied. The built-in one is a Playwright annotation and needs nothing imported. A
+placeholder that calls a reporter instead — `tms.id('TODO')`, say — needs that reporter
+imported, or the generated spec does not compile: set `importAliases.caseId` to the module
+that exports it, and every generated spec then opens with an import of the placeholder's
+leading identifier from that module. The two are read together; the alias alone emits
+nothing, and a reporter-calling placeholder without the alias leaves the import for you to add.
+
+`poll` bounds the read-back a generated test performs after a write that lands
+asynchronously — a worker-processed message, a sink-fed effect — and is emitted into the
+spec as `POLL_TIMEOUT_MS` and `POLL_INTERVALS_MS`. Either entry may be set on its own.
+
+See `flowtrace.config.example.json` for every key with the built-in values filled in;
+`importAliases.caseId` is the one key it leaves out, because its built-in value is unset.
+
+## `split`
+
+```json
+"split": { "ticketPrefix": "#0000" }
+```
+
+Optional. `ticketPrefix` is written in front of every commit subject `split` drafts, separated
+by one space (`#0000 feat(orders): add orders client`), and the emitted script's header then
+says to replace it with the real id. Use whatever token your tracker convention puts first —
+an issue reference as above, or a project key with a placeholder number. With no `split`
+object, or no `ticketPrefix`, a drafted subject is a plain Conventional Commit
+(`feat(orders): add orders client`) and nothing has to be replaced; that is the default. The
+value must be a non-empty string without whitespace.
 
 ## Worked example
 

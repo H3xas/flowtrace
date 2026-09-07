@@ -1,0 +1,62 @@
+{
+  "id": "03-disposition-status",
+  "packet": "03-disposition-status.packet.json",
+  "shape": "an asserted 400 maps to exactly one guard; that seed is promoted to disposition and the other two are confirmed at route",
+  "rule": "an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion",
+  "expect": {
+    "seeds": {
+      "5a6423a0": "disposition",
+      "ca37457e": "route",
+      "31ba2067": "route"
+    },
+    "upgrades": 1,
+    "confirmed": 2,
+    "rejections": {}
+  },
+  "verdict": {
+    "route": "POST orders/v1/checkout",
+    "reader": "reference",
+    "packetHash": "f30adbc292a8",
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "5a6423a0",
+        "level": "disposition",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "rejects a checkout with no payment token",
+            "line": 13,
+            "reason": "the request omits paymentToken and the test asserts 400, which only the missing-token guard returns"
+          }
+        ]
+      },
+      {
+        "id": "U2",
+        "key": "ca37457e",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "places an order when the cart holds an item",
+            "line": 8,
+            "reason": "the 403 branch needs a declined order, and no test arranges one"
+          }
+        ]
+      },
+      {
+        "id": "U3",
+        "key": "31ba2067",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "places an order when the cart holds an item",
+            "line": 8,
+            "reason": "a 200 shows the checkout completed; the saved order and the published message are not observed"
+          }
+        ]
+      }
+    ]
+  }
+}

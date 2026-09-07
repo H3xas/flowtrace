@@ -2,39 +2,86 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
-## Unreleased
+## 0.2.0
 
-License changed to MIT OR Apache-2.0.
+Dual-licensed MIT OR Apache-2.0.
 
-New verb `routes-of <file:line | symbol | literal>`, the reverse of `trace`. It resolves a
-repository-relative file and line, an exact method symbol or an exact allowlisted literal to
-one fact, then reports every entry route whose complete fact-only forward walk passes through
-it: one shortest `repo:file:line` witness per route, the count of further paths, and the
-route's existing seeds and test evidence. Unresolved or ambiguous input exits `2` and lists
-the candidates; a walk that reaches its node budget exits `4` and returns no partial set.
-`--json` is deterministic and carries `schemaVersion: 1`. The pre-registered agentic round
-for the verb is published under `docs/benchmarks/results/2026-08-routes-of.md`; both tool
-cells failed harness integrity, so it establishes no advantage in either direction.
+New verbs:
 
-A `playwright` repository can be configured `"titles": true`. `extract` then runs that
-repository's own installed Playwright in list mode and appends one `pw_title` fact per test
-declaration the listing resolved, so a parameterised title renders as the titles it produces
-(`listed`) rather than as its expression (`raw`). Nothing is fetched or installed; the package
-is resolved from the repository root, and a preload written under `out/` keeps a suite that
-vendors a second copy of the package listable. When the collector cannot run, extraction still
-succeeds: the reason goes to stderr and into the fact set's header as `titles`, and no
-`pw_title` fact is written. Configuration reference: `titles` under `repos[]`.
+- `scope --area <file|name>` — the area's whole route universe before an edit: one line per
+  route, an `automation: yes|no` flag from `cover`'s executing-evidence state, and the
+  authorization point the route's walk passes through, named by `scope.gatePatterns`.
+- `routes-of <file:line | symbol | literal>` — the reverse of `trace`: every entry route whose
+  complete fact-only walk passes through one point, with one shortest witness per route.
+- `split` — a branch diff becomes ordered, capped commit slices, one concern each, every slice
+  checked on its own with `affected` and the touched area's own compiler, written out as an inert
+  shell script outside every configured repository.
+- `check --area <file|name>` — fail a build when an area's `cover` seed totals or per-route parity
+  drop against a baseline committed beside the area file. `--write-baseline` is the only producer,
+  and stale facts exit `4` rather than passing.
+- `calibrate --golden <dir> --verdicts <dir>` — pin a reader's verdicts against a golden set,
+  merged through the path `cover --verdicts` uses. A golden set built from the worked example
+  ships with the package.
+- `join --snapshot <file>` and `join --against <file>` — write a verifiable snapshot of the joined
+  boundary and compare a later join to it: routes, paths, seeds, effects and evidence levels, with
+  `--fail-on` to gate on a family or a kind.
+- `join --export-edges <file>` — the joined cross-repo edges in one versioned, provenance-tagged
+  file a code index can import, byte-identical over unchanged facts.
 
-The README is now an entry page and the
-step-by-step tour moved to `docs/getting-started.md`, which takes a first-time reader — a person
-or an AI agent — from install to a first answer about their own repositories, with the
-expected output at every step. `docs/agent-guide.md` states how an agent sets the tool up, what
-to paste into its instructions and how to relay the output without overstating it.
-`docs/cli.md` carries `flowtrace --help` verbatim; `scripts/docs-check.mjs` regenerates it,
-and CI fails when it drifts or when a relative link in any document does not resolve.
-`docs/README.md` indexes the set; `CONTRIBUTING.md` and `SECURITY.md` are new. The example
-configuration names its checkouts as siblings of the file (`shop-api`) rather than parents of
-it (`../shop-api`), matching the worked example's layout.
+Extraction:
+
+- Message consumers are read off the parsed class declaration, so a C# 12 primary constructor, a
+  consumer base anywhere in the base list and several `IConsumer<T>` interfaces on one class all
+  emit their `consume` facts.
+- A class or record under `Messaging/Messages`, `Events`, `Jobs` or `Contracts` is a message
+  contract with no suffix or marker interface; `workerPatterns.messagePaths` and `messageSuffixes`
+  extend both rules.
+- A publish whose argument is a variable resolves the message from that variable's declaration in
+  the enclosing method; a site whose type cannot be read is still reported, with `unresolved`
+  naming why, under `publish_unresolved`. `SubmitJob` and `Reply` are built-in publish verbs.
+- A publish verb may take its message in a later argument: a `workerPatterns.publishCalls` entry
+  may name the position after a slash (`Defer/2`), so `bus.Defer(delay, msg)` is no longer
+  invisible. Every `publish` fact now carries `verb`, the matched call name lower-cased.
+- A class implementing a saga interface — `workerPatterns.sagaInterfaces`, defaulting to
+  `IAmInitiatedBy` — emits a `saga` fact naming the messages that initiate it, the messages it
+  handles and the property it correlates on. Its `consume` facts are unaffected.
+- The publish, DI-binding and repository-index passes read the comment- and string-masked text, so
+  an idiom written in a comment or a literal produces no fact. Line numbers are unchanged.
+- A minimal-API route whose handler is an inline lambda is walked into the lambda: it becomes the
+  route's action, its injected parameters are that action's fields, and its body owns the branches,
+  calls and publishes. A method-group handler is walked as the method it names.
+
+Walk:
+
+- A consumer reached over a publish hop is entered through the method whose parameter carries the
+  message it consumes, falling back to a verb list that now includes a job consumer's `Run`. A
+  consumer that matches neither is marked `unresolved` rather than entered through a guess.
+
+Facts:
+
+- A repository may name one external fact provider — a file or a command. Its document is validated
+  against the schema, every fact it supplies is stamped with its producer, and the two sources are
+  merged or substituted under a mode the configuration states. `trace` marks a hop backed by an
+  external fact; `render` counts facts per producer and the disagreements.
+- Staleness distinguishes facts extracted at another commit from facts that only predate an
+  uncommitted edit. `affected` still exits `4` for the first and now runs for the second, carrying
+  the warnings and their kinds in `--json`; `check` refuses both, because a gate compares against a
+  committed baseline.
+
+Fixes:
+
+- The configuration validator accepts the two `scaffold` fields the scaffold already read and
+  defaulted, `poll` and `importAliases.caseId`, so a reporter-calling placeholder can compile.
+- A `playwright` repository configured `"titles": true` has its own installed Playwright run in
+  list mode during `extract`, appending one `pw_title` fact per resolved test declaration. Nothing
+  is fetched or installed, and a collector that cannot run leaves extraction succeeding with the
+  reason in the header. Run as the single-file executable, the collector refuses before it resolves
+  or spawns anything, with a reason naming the distribution and the npm package that can.
+
+Documentation: the README is an entry page, with the step-by-step tour in
+`docs/getting-started.md`, an agent guide in `docs/agent-guide.md`, and `docs/cli.md` carrying
+`flowtrace --help` verbatim and checked in CI for drift. `CONTRIBUTING.md` and `SECURITY.md` are
+new, and the example configuration names its checkouts as siblings of the file.
 
 ## 0.1.1
 

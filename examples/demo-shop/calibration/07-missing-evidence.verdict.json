@@ -1,0 +1,29 @@
+{
+  "id": "07-missing-evidence",
+  "packet": "07-missing-evidence.packet.json",
+  "shape": "path is claimed with no evidence entry; the merge refuses the upgrade and the seed stays at route",
+  "rule": "an upgrade must cite at least one evidence entry; only a confirmation may cite none",
+  "expect": {
+    "seeds": {
+      "b52bb585": "route"
+    },
+    "upgrades": 0,
+    "confirmed": 0,
+    "rejections": {
+      "missing-evidence": 1
+    }
+  },
+  "verdict": {
+    "route": "GET orders/v1/cart",
+    "reader": "reference",
+    "packetHash": "1fb4d4c81530",
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "b52bb585",
+        "level": "path",
+        "evidence": []
+      }
+    ]
+  }
+}

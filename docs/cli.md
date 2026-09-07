@@ -21,10 +21,14 @@ commands:
   surface   derive where the state one entry route changes can be read back
   skeleton  emit one spec skeleton from a derived assertion surface
   cover     seed-level coverage of one area, from the existing test evidence
+  scope     list an area's whole route universe, before any edit
   affected  turn a diff into the specs that must run
   scaffold  write a starting spec per route for the seeds no test reaches
   cases     write a human-readable case sheet per route for the seeds no test reaches
   readiness render an area inventory's readiness sheet from the existing facts
+  split     turn a branch diff into ordered, checked commit slices
+  check     fail the build on seed-coverage regression against a committed baseline
+  calibrate check a reader's verdicts against a golden set before trusting them
   all       extract, then join, then render
 
 options:
@@ -40,6 +44,45 @@ extract [--repo <id>]
   than as its expression. When that collector cannot run, extraction still succeeds:
   the reason goes to stderr and into the fact set's header, and no pw_title fact is
   written.
+  A repository configured with a factsProvider also reads that provider's fact
+  document — a file, or the stdout of a command — validates every fact against the
+  schema, stamps each one provenance: { producer, version }, and merges it with the
+  extraction under the configured merge mode; the header records both producers and
+  how they compared. An invalid record refuses the whole run and names the record.
+
+join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json]
+            [--fail-on <kinds>]
+  Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally
+  writes one portable, versioned bundle of the current fact sets, the aliases and sink
+  patterns the join and the walk read, and every repository identity the facts carry
+  (schemaVersion 1, no timestamp: two runs over unchanged facts write the same bytes).
+  --against <file> compares that bundle with the current facts instead of writing
+  anything: both sides are derived with the same implementation and the current
+  configuration, and the report names what changed on the joined boundary — a joined
+  path added, removed or reshaped, a call newly without a route; a seed added, removed
+  or changed; an effect added or removed; an evidence level gained or lost. Identities
+  are semantic: a moved line, a renamed spec or a reordered declaration is not drift,
+  and identical states print an explicit no-drift line. --json emits the same findings
+  in a versioned, deterministically ordered shape (schemaVersion 1). Exit 0 whether or
+  not drift is found; --fail-on <kinds> (any, a family — path, seed, effect,
+  evidence — or a kind, comma-separated) exits 1 when a selected finding is present;
+  usage errors exit 2; a snapshot that cannot be read, is of another version or fails
+  its own digest exits 4 with no partial comparison. --fail-on selects findings only; a
+  route whose seed walk was truncated at the 64-seed cap is listed under "skipped" in
+  the report and is not gated.
+
+  --export-edges <file> additionally writes the joined cross-repo edges for a code index
+  to import: one record per joined edge, exactly { kind, from, to, key } with both ends
+  as { repo, ref, file, line }, plus a provenance field naming the export it came from.
+  The envelope carries the producer, the format version, the configuration the join
+  read and every fact set's identity once, under an id a facts change flips, so an
+  importer can drop or replace imported rows wholesale. Only joined edges export:
+  calls and tests matched to a route action, and the publishes, consumes and enqueues
+  edges of a message that has both a publisher and a matched consumer (the message end
+  carries repo "message" and no file or line, as the join states it). Records are sorted
+  and deduplicated and no timestamp is written, so two exports over unchanged facts are
+  the same bytes. Combines with --snapshot; refused with --against. All three formats
+  are new (schemaVersion 1) and may change between minor versions.
 
 routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then
@@ -62,7 +105,9 @@ trace --area <file>
   inventory; --expand walks every route in full. --expand-infra prints the shared-dependency and
   code-index hops the tree collapses to one line; folding (below) still applies on top
   of whatever --expand-infra leaves shown. --area reads a newline list of route keys
-  and emits one JSON array, one entry per key.
+  and emits one JSON array, one entry per key. A hop located at a line where an
+  externally supplied fact is stated prints [provider]; --json and --graph nodes carry
+  provider: true for the same hops.
 
   --from-handler <selector> restricts a mobile walk to the subtree rooted at one
   `template_handler` hop, matched by its display form ("(click) onLike()"), the
@@ -242,6 +287,20 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   line is not an assertion: it proves the arm ran in that window, nothing more.
   Without the flag nothing is read and the report is the byte-identical static one.
 
+scope --area <file|name> [--json]
+  Lists the area's whole route universe before any edit, one line per route in the area
+  file's own order: the route key, its repo:file:line, "automation: yes|no" from
+  cover's own per-route executing-evidence state (yes when the route has any executing
+  evidence, no otherwise), and "server-gate: <repo:file:line>|none" — the first node on
+  the route's own cover-depth walk whose ref matches "scope.gatePatterns"
+  (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,
+  Entitlement and Claims and both misses an unnamed check and over-reports a name that
+  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:
+  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no
+  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts
+  behind the repository HEAD — facts that only predate an uncommitted edit at the same
+  commit are noted on stderr and never gate this verb, since it reads no diff of its own.
+
 affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]
             [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]
             [--member-scoped] [--nx]
@@ -298,8 +357,10 @@ affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo
   (a fact set behind its repository HEAD — nothing is selected at all), a repository
   with no facts, a harness change with no production source to walk, a config-only
   diff, a changed controller declaring no route, and a selection above --max-share
-  (default 0.5) of a suite. Exit 0 a list was produced, 3 nothing was affected,
-  2 usage, 1 refusal.
+  (default 0.5) of a suite. A fact set that only predates an uncommitted edit at the
+  same commit is not this: it is noted on stderr and carried in --json's "stale" field,
+  and never widens — the edit it predates is already inside the diff this run reads.
+  Exit 0 a list was produced, 3 nothing was affected, 2 usage, 1 refusal.
 
 scaffold --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run]
             [--include-unreachable]
@@ -340,6 +401,49 @@ cases --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run
   block instead of none). The seed's stable `#key` rides as a `<!-- -->` comment, never
   a case-tool field, and the case id line is always pending — this writes a second
   markdown shape of the same evidence, never a test-management API call.
+
+split [--diff <range>] [--staged] [--max-specs N] [--max-lines N] [--out <script>]
+            [--no-check] [--json]
+  Turns a branch diff into ordered, reviewable commit slices and writes the shell script
+  that would commit them. Files group by endpoint area and by concern — a feature
+  package (a `clients`/`builders`-shaped path), production source, config/infra, specs,
+  docs — in one fixed order: the package before the specs that consume it, config/infra
+  before the tests that depend on it, one concern per commit. Each slice stays under
+  --max-specs spec files and --max-lines added lines; an over-cap group splits into
+  further slices of the same area, never into an unrelated one. Per slice, the
+  project-scoped `tsc` the area's own tsconfig names and the `affected` spec list for
+  that slice's own changed files are run and recorded; a check that cannot run is
+  "skipped" with its reason, a check that fails flags the slice in the script rather
+  than dropping it. --no-check skips both. One Conventional Commit subject is drafted
+  per slice from what the diff carries — type from the dominant change, scope from the
+  area, and the "split.ticketPrefix" of the configuration file in front when one is
+  configured — never invented prose. --out defaults to <out>/split/commit-slices.sh and
+  is refused inside any configured repository. `split` runs no mutating git command:
+  the emitted script is inert text until a person runs it. Exit 0 a script was written,
+  1 a slice failed its own check (the script still names it), 3 the diff was empty.
+check --area <file|name> [--baseline <file>] [--write-baseline] [--json]
+  Compares this run's `cover` totals and per-route parity for the area against a
+  committed baseline and fails the build on any drop. --baseline defaults to
+  <area>.baseline.json beside the area file; --write-baseline writes the current run
+  as the new baseline instead of comparing, and never compares. Exit 0 no regression,
+  1 regression, 2 usage, 4 a stale baseline, facts behind the repository HEAD or only
+  predating an uncommitted edit at the same commit, or no baseline at all — unlike
+  affected, check refuses on either kind of staleness: a gate compares against a
+  committed baseline, and a run that only predates an uncommitted edit cannot back a
+  regression claim any more than one behind a commit can.
+calibrate --golden <dir> --verdicts <dir> [--json]
+  Pins a reader — a person, a script, an agent that writes `cover --verdicts` files —
+  against a golden set: one <id>.packet.json per entry beside an <id>.verdict.json
+  stating the reference verdict and the outcome the merge must produce for it (seed
+  levels, rejection reasons, upgrade and confirmation counts). Every <id>.verdict.json
+  under --verdicts is merged through exactly the path `cover --verdicts` uses, and each
+  golden packet is reported as agreed or as a list of disagreements naming the seed,
+  what was expected, what the merge produced and the rule the entry quotes. A missing
+  verdict and a verdict naming no golden packet are disagreements too. Exit 0 every
+  packet agrees, 1 any disagreement, 2 usage. --json emits { agreed, disagreed } in
+  golden-id order with no timestamp. Reads no configuration and no facts: the two
+  directories are all it needs. The package ships a golden set built from its worked
+  example under examples/demo-shop/calibration, with reference verdicts beside it.
 
 readiness --areas <file> [--md <out>] [--json] [--repo <id>]
   Turns an external area inventory into a per-area readiness sheet, entirely from

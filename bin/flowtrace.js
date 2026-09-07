@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * flowtrace command line: extract | join | render | trace | routes-of | span | surface | skeleton |
- * cover | affected | scaffold | cases | readiness | all.
+ * cover | scope | affected | scaffold | cases | readiness | split | check | calibrate | all.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -9,14 +9,20 @@ import { basename, dirname, join as joinPath, relative, resolve } from 'node:pat
 import { fileURLToPath } from 'node:url';
 
 import { loadConfig } from '../lib/config.js';
-import { fact, factsHeader, staleFactsWarnings, validateFacts } from '../lib/facts.js';
+import {
+  externalLocations, fact, factsHeader, loadFactsProvider, mergeFacts, producerSummary, staleFactsWarnings, validateFacts,
+} from '../lib/facts.js';
 
 import * as affectedModule from '../lib/affected.js';
 import * as assertionSurfaceModule from '../lib/assertion-surface.js';
+import * as calibrateModule from '../lib/calibrate.js';
 import * as casesModule from '../lib/cases.js';
+import * as checkModule from '../lib/check.js';
 import * as componentSpanModule from '../lib/component-span.js';
 import * as coverModule from '../lib/cover.js';
 import * as joinModule from '../lib/join.js';
+import * as joinDriftModule from '../lib/join-drift.js';
+import * as joinExportModule from '../lib/join-export.js';
 import * as packetsModule from '../lib/packets.js';
 import * as readinessModule from '../lib/readiness.js';
 import * as renderModule from '../lib/render.js';
@@ -30,9 +36,11 @@ import * as renderTreeHtmlModule from '../lib/render-tree-html.js';
 import * as routesOfModule from '../lib/routes-of.js';
 import * as runtimeCoverModule from '../lib/runtime-cover.js';
 import * as scaffoldModule from '../lib/scaffold.js';
+import * as scopeModule from '../lib/scope.js';
 import * as scoutModule from '../lib/scout.js';
 import * as skeletonModule from '../lib/skeleton.js';
 import * as spanModule from '../lib/span.js';
+import * as splitModule from '../lib/split.js';
 import * as traceModule from '../lib/trace.js';
 
 import * as backendExtractor from '../lib/extract/backend.js';
@@ -43,8 +51,8 @@ import * as webExtractor from '../lib/extract/web.js';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
-  'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover',
-  'affected', 'scaffold', 'cases', 'readiness', 'all',
+  'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover', 'scope',
+  'affected', 'scaffold', 'cases', 'readiness', 'split', 'check', 'calibrate', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
 const USAGE = [
@@ -60,10 +68,14 @@ const USAGE = [
   '  surface   derive where the state one entry route changes can be read back',
   '  skeleton  emit one spec skeleton from a derived assertion surface',
   '  cover     seed-level coverage of one area, from the existing test evidence',
+  '  scope     list an area\'s whole route universe, before any edit',
   '  affected  turn a diff into the specs that must run',
   '  scaffold  write a starting spec per route for the seeds no test reaches',
   '  cases     write a human-readable case sheet per route for the seeds no test reaches',
   '  readiness render an area inventory\'s readiness sheet from the existing facts',
+  '  split     turn a branch diff into ordered, checked commit slices',
+  '  check     fail the build on seed-coverage regression against a committed baseline',
+  '  calibrate check a reader\'s verdicts against a golden set before trusting them',
   '  all       extract, then join, then render',
   '',
   'options:',
@@ -79,6 +91,45 @@ const USAGE = [
   '  than as its expression. When that collector cannot run, extraction still succeeds:',
   '  the reason goes to stderr and into the fact set\'s header, and no pw_title fact is',
   '  written.',
+  '  A repository configured with a factsProvider also reads that provider\'s fact',
+  '  document — a file, or the stdout of a command — validates every fact against the',
+  '  schema, stamps each one provenance: { producer, version }, and merges it with the',
+  '  extraction under the configured merge mode; the header records both producers and',
+  '  how they compared. An invalid record refuses the whole run and names the record.',
+  '',
+  'join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json]',
+  '            [--fail-on <kinds>]',
+  '  Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally',
+  '  writes one portable, versioned bundle of the current fact sets, the aliases and sink',
+  '  patterns the join and the walk read, and every repository identity the facts carry',
+  '  (schemaVersion 1, no timestamp: two runs over unchanged facts write the same bytes).',
+  '  --against <file> compares that bundle with the current facts instead of writing',
+  '  anything: both sides are derived with the same implementation and the current',
+  '  configuration, and the report names what changed on the joined boundary — a joined',
+  '  path added, removed or reshaped, a call newly without a route; a seed added, removed',
+  '  or changed; an effect added or removed; an evidence level gained or lost. Identities',
+  '  are semantic: a moved line, a renamed spec or a reordered declaration is not drift,',
+  '  and identical states print an explicit no-drift line. --json emits the same findings',
+  '  in a versioned, deterministically ordered shape (schemaVersion 1). Exit 0 whether or',
+  '  not drift is found; --fail-on <kinds> (any, a family — path, seed, effect,',
+  '  evidence — or a kind, comma-separated) exits 1 when a selected finding is present;',
+  '  usage errors exit 2; a snapshot that cannot be read, is of another version or fails',
+  '  its own digest exits 4 with no partial comparison. --fail-on selects findings only; a',
+  '  route whose seed walk was truncated at the 64-seed cap is listed under "skipped" in',
+  '  the report and is not gated.',
+  '',
+  '  --export-edges <file> additionally writes the joined cross-repo edges for a code index',
+  '  to import: one record per joined edge, exactly { kind, from, to, key } with both ends',
+  '  as { repo, ref, file, line }, plus a provenance field naming the export it came from.',
+  '  The envelope carries the producer, the format version, the configuration the join',
+  '  read and every fact set\x27s identity once, under an id a facts change flips, so an',
+  '  importer can drop or replace imported rows wholesale. Only joined edges export:',
+  '  calls and tests matched to a route action, and the publishes, consumes and enqueues',
+  '  edges of a message that has both a publisher and a matched consumer (the message end',
+  '  carries repo "message" and no file or line, as the join states it). Records are sorted',
+  '  and deduplicated and no timestamp is written, so two exports over unchanged facts are',
+  '  the same bytes. Combines with --snapshot; refused with --against. All three formats',
+  '  are new (schemaVersion 1) and may change between minor versions.',
   '',
   'routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]',
   '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
@@ -101,7 +152,9 @@ const USAGE = [
   '  inventory; --expand walks every route in full. --expand-infra prints the shared-dependency and',
   '  code-index hops the tree collapses to one line; folding (below) still applies on top',
   '  of whatever --expand-infra leaves shown. --area reads a newline list of route keys',
-  '  and emits one JSON array, one entry per key.',
+  '  and emits one JSON array, one entry per key. A hop located at a line where an',
+  '  externally supplied fact is stated prints [provider]; --json and --graph nodes carry',
+  '  provider: true for the same hops.',
   '',
   '  --from-handler <selector> restricts a mobile walk to the subtree rooted at one',
   '  `template_handler` hop, matched by its display form ("(click) onLike()"), the',
@@ -281,6 +334,20 @@ const USAGE = [
   '  line is not an assertion: it proves the arm ran in that window, nothing more.',
   '  Without the flag nothing is read and the report is the byte-identical static one.',
   '',
+  'scope --area <file|name> [--json]',
+  '  Lists the area\'s whole route universe before any edit, one line per route in the area',
+  '  file\'s own order: the route key, its repo:file:line, "automation: yes|no" from',
+  '  cover\'s own per-route executing-evidence state (yes when the route has any executing',
+  '  evidence, no otherwise), and "server-gate: <repo:file:line>|none" — the first node on',
+  '  the route\'s own cover-depth walk whose ref matches "scope.gatePatterns"',
+  '  (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,',
+  '  Entitlement and Claims and both misses an unnamed check and over-reports a name that',
+  '  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:',
+  '  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no',
+  '  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts',
+  '  behind the repository HEAD — facts that only predate an uncommitted edit at the same',
+  '  commit are noted on stderr and never gate this verb, since it reads no diff of its own.',
+  '',
   'affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]',
   '            [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]',
   '            [--member-scoped] [--nx]',
@@ -337,8 +404,10 @@ const USAGE = [
   '  (a fact set behind its repository HEAD — nothing is selected at all), a repository',
   '  with no facts, a harness change with no production source to walk, a config-only',
   '  diff, a changed controller declaring no route, and a selection above --max-share',
-  '  (default 0.5) of a suite. Exit 0 a list was produced, 3 nothing was affected,',
-  '  2 usage, 1 refusal.',
+  '  (default 0.5) of a suite. A fact set that only predates an uncommitted edit at the',
+  '  same commit is not this: it is noted on stderr and carried in --json\x27s "stale" field,',
+  '  and never widens — the edit it predates is already inside the diff this run reads.',
+  '  Exit 0 a list was produced, 3 nothing was affected, 2 usage, 1 refusal.',
   '',
   'scaffold --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run]',
   '            [--include-unreachable]',
@@ -379,6 +448,49 @@ const USAGE = [
   '  block instead of none). The seed\'s stable `#key` rides as a `<!-- -->` comment, never',
   '  a case-tool field, and the case id line is always pending — this writes a second',
   '  markdown shape of the same evidence, never a test-management API call.',
+  '',
+  'split [--diff <range>] [--staged] [--max-specs N] [--max-lines N] [--out <script>]',
+  '            [--no-check] [--json]',
+  '  Turns a branch diff into ordered, reviewable commit slices and writes the shell script',
+  '  that would commit them. Files group by endpoint area and by concern — a feature',
+  '  package (a `clients`/`builders`-shaped path), production source, config/infra, specs,',
+  '  docs — in one fixed order: the package before the specs that consume it, config/infra',
+  '  before the tests that depend on it, one concern per commit. Each slice stays under',
+  '  --max-specs spec files and --max-lines added lines; an over-cap group splits into',
+  '  further slices of the same area, never into an unrelated one. Per slice, the',
+  '  project-scoped `tsc` the area\'s own tsconfig names and the `affected` spec list for',
+  '  that slice\'s own changed files are run and recorded; a check that cannot run is',
+  '  "skipped" with its reason, a check that fails flags the slice in the script rather',
+  '  than dropping it. --no-check skips both. One Conventional Commit subject is drafted',
+  '  per slice from what the diff carries — type from the dominant change, scope from the',
+  '  area, and the "split.ticketPrefix" of the configuration file in front when one is',
+  '  configured — never invented prose. --out defaults to <out>/split/commit-slices.sh and',
+  '  is refused inside any configured repository. `split` runs no mutating git command:',
+  '  the emitted script is inert text until a person runs it. Exit 0 a script was written,',
+  '  1 a slice failed its own check (the script still names it), 3 the diff was empty.',
+  'check --area <file|name> [--baseline <file>] [--write-baseline] [--json]',
+  '  Compares this run\'s `cover` totals and per-route parity for the area against a',
+  '  committed baseline and fails the build on any drop. --baseline defaults to',
+  '  <area>.baseline.json beside the area file; --write-baseline writes the current run',
+  '  as the new baseline instead of comparing, and never compares. Exit 0 no regression,',
+  '  1 regression, 2 usage, 4 a stale baseline, facts behind the repository HEAD or only',
+  '  predating an uncommitted edit at the same commit, or no baseline at all — unlike',
+  '  affected, check refuses on either kind of staleness: a gate compares against a',
+  '  committed baseline, and a run that only predates an uncommitted edit cannot back a',
+  '  regression claim any more than one behind a commit can.',
+  'calibrate --golden <dir> --verdicts <dir> [--json]',
+  '  Pins a reader — a person, a script, an agent that writes `cover --verdicts` files —',
+  '  against a golden set: one <id>.packet.json per entry beside an <id>.verdict.json',
+  '  stating the reference verdict and the outcome the merge must produce for it (seed',
+  '  levels, rejection reasons, upgrade and confirmation counts). Every <id>.verdict.json',
+  '  under --verdicts is merged through exactly the path `cover --verdicts` uses, and each',
+  '  golden packet is reported as agreed or as a list of disagreements naming the seed,',
+  '  what was expected, what the merge produced and the rule the entry quotes. A missing',
+  '  verdict and a verdict naming no golden packet are disagreements too. Exit 0 every',
+  '  packet agrees, 1 any disagreement, 2 usage. --json emits { agreed, disagreed } in',
+  '  golden-id order with no timestamp. Reads no configuration and no facts: the two',
+  '  directories are all it needs. The package ships a golden set built from its worked',
+  '  example under examples/demo-shop/calibration, with reference verdicts beside it.',
   '',
   'readiness --areas <file> [--md <out>] [--json] [--repo <id>]',
   '  Turns an external area inventory into a per-area readiness sheet, entirely from',
@@ -453,6 +565,7 @@ function parseArgs(argv) {
     md: undefined,
     packets: undefined,
     verdicts: undefined,
+    golden: undefined,
     runtime: undefined,
     seedKeys: [],
     maxLevel: undefined,
@@ -484,6 +597,11 @@ function parseArgs(argv) {
     maxLines: undefined,
     symbol: false,
     literal: false,
+    snapshot: undefined,
+    against: undefined,
+    exportEdges: undefined,
+    failOn: [],
+    check: true,
   };
   const positional = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -518,6 +636,8 @@ function parseArgs(argv) {
       options.memberScoped = true;
     } else if (argument === '--nx') {
       options.nx = true;
+    } else if (argument === '--no-check') {
+      options.check = false;
     } else if (argument === '--max-specs' || argument.startsWith('--max-specs=')) {
       const value = argument.startsWith('--max-specs=') ? argument.slice('--max-specs='.length) : argv[++index];
       const parsed = Number(value);
@@ -582,6 +702,22 @@ function parseArgs(argv) {
         throw new UsageError('--hops requires a positive whole number');
       }
       options.hops = parsed;
+    } else if (argument === '--snapshot' || argument.startsWith('--snapshot=')) {
+      const value = argument.startsWith('--snapshot=') ? argument.slice('--snapshot='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--snapshot requires a file');
+      options.snapshot = value;
+    } else if (argument === '--against' || argument.startsWith('--against=')) {
+      const value = argument.startsWith('--against=') ? argument.slice('--against='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--against requires a snapshot file');
+      options.against = value;
+    } else if (argument === '--export-edges' || argument.startsWith('--export-edges=')) {
+      const value = argument.startsWith('--export-edges=') ? argument.slice('--export-edges='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--export-edges requires a file');
+      options.exportEdges = value;
+    } else if (argument === '--fail-on' || argument.startsWith('--fail-on=')) {
+      const value = argument.startsWith('--fail-on=') ? argument.slice('--fail-on='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--fail-on requires a finding family or kind');
+      options.failOn.push(value);
     } else if (argument === '--graph') {
       options.graph = true;
     } else if (argument === '--json') {
@@ -650,6 +786,10 @@ function parseArgs(argv) {
       const value = argument.startsWith('--out=') ? argument.slice('--out='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--out requires a path');
       options.out = value;
+    } else if (argument === '--golden' || argument.startsWith('--golden=')) {
+      const value = argument.startsWith('--golden=') ? argument.slice('--golden='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--golden requires a directory');
+      options.golden = value;
     } else if (argument === '--verdicts' || argument.startsWith('--verdicts=')) {
       const value = argument.startsWith('--verdicts=') ? argument.slice('--verdicts='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--verdicts requires a directory');
@@ -716,6 +856,199 @@ function loadExtractor(repo) {
   return module.extract;
 }
 
+/**
+ * The per-slice check, both halves reused rather than re-derived: the project-scoped
+ * `tsc` the touched area's own `tsconfig.json` names, and `affected` itself called with
+ * the slice's own changed files. Either half being unavailable — no facts extracted yet,
+ * no compiler in the checkout — is recorded as a skip carrying its reason, never as a pass.
+ */
+function sliceCheck(config, options, source) {
+  const { createSliceCheck, tscRunner } = splitModule;
+  const reasons = {};
+  let affectedFor = null;
+  try {
+    const factSets = loadFactSets(config);
+    const { affected, allRouteKeys, attributeChanges } = affectedModule;
+    const keys = allRouteKeys(factSets);
+    affectedFor = (paths) => affected(factSets, {
+      area: null,
+      universeSource: 'all-routes',
+      keys,
+      changed: attributeChanges(paths, config.repos, { root: source.root }),
+      aliases: config.aliases,
+      repos: config.repos,
+      // A slice is a handful of files: the share brake is about a whole diff, and firing
+      // it here would report "run everything" for every small, correctly-scoped slice.
+      maxShare: 1,
+      traceOptions: {
+        depth: options.depth,
+        maxNodes: options.maxNodes,
+        aliases: config.aliases,
+        sinks: config.sinks,
+        repos: config.repos,
+      },
+    });
+  } catch (error) {
+    reasons.specs = `affected unavailable (${error.message.split('\n')[0]})`;
+  }
+  return createSliceCheck({ root: source.root, runTsc: tscRunner(source.root), affectedFor, reasons });
+}
+
+/**
+ * `split` reads its diff where `affected` reads its own and proposes commits inside that
+ * checkout. Every mutating git command lives in the script it writes, never here, and the
+ * script's default target is outside every configured checkout, the boundary `scaffold`
+ * and `cases` already hold for their own output.
+ */
+async function runSplit(config, options) {
+  const { assertOutsideRepos, changedStats, renderSplit, split } = splitModule;
+  const source = diffSourceRepo(config, options.repo);
+  if (!source) throw new Error('no repository configured to read a diff from');
+  const files = changedStats(source.root, { diff: options.diff, staged: options.staged });
+  if (files === null) {
+    throw new Error(`cannot read a diff in ${source.id}: not a git repository, or git is unavailable`);
+  }
+  const target = assertOutsideRepos(
+    resolve(options.out || joinPath(config.out, 'split', 'commit-slices.sh')),
+    config.repos.map((repo) => repo.root),
+  );
+  const check = options.check === false ? null : sliceCheck(config, options, source);
+  const result = split({
+    files,
+    maxSpecs: options.maxSpecs,
+    maxLines: options.maxLines,
+    check,
+    repo: source.id,
+    repoRoot: source.root,
+    ticketPrefix: config.split ? config.split.ticketPrefix : null,
+  });
+
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, result.script);
+  if (options.json) {
+    log(JSON.stringify(result, null, 2));
+    return result.exit;
+  }
+  log(renderSplit(result));
+  log(`  -> ${display(target)} — nothing has run: read it, then run it yourself`);
+  return result.exit;
+}
+
+function resolveBaselinePath(area, value) {
+  return value ? resolve(value) : joinPath(dirname(area.file), `${area.name}.baseline.json`);
+}
+
+function readBaseline(target) {
+  if (!existsSync(target)) return { baseline: null, error: null };
+  try {
+    return { baseline: JSON.parse(readFileSync(target, 'utf8')), error: null };
+  } catch (error) {
+    return { baseline: null, error: error.message };
+  }
+}
+
+/**
+ * The gate. A compare run reads the committed baseline beside the area file and never
+ * writes one; `--write-baseline` writes one and never compares. Both refuse facts behind
+ * the repository HEAD, so a baseline is never authored from a snapshot that could not be
+ * trusted for a compare.
+ */
+async function runCheck(config, options) {
+  const area = resolveAreaFile(options.area);
+  const factSets = loadFactSets(config);
+  const { check, renderCheck } = checkModule;
+  const { readAreaKeys } = coverModule;
+  const { trace } = traceModule;
+  const { createScout } = scoutModule;
+  const scout = createScout({
+    bin: config.scout ? config.scout.bin : undefined,
+    outDir: config.out,
+    repos: config.repos,
+  });
+  const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
+  const traceOptions = {
+    aliases: config.aliases,
+    sinks: config.sinks,
+    repos: config.repos,
+    outbound: scout.outbound,
+  };
+  const baselinePath = resolveBaselinePath(area, options.baseline);
+
+  let report;
+  if (options.writeBaseline) {
+    report = check(factSets, {
+      area: area.name,
+      keys,
+      aliases: config.aliases,
+      traceOptions,
+      trace,
+      repos: config.repos,
+      writeBaseline: true,
+    });
+    if (report.exit === 0) writeJson(baselinePath, report.baseline);
+  } else {
+    const { baseline, error } = readBaseline(baselinePath);
+    if (error) {
+      report = {
+        area: area.name,
+        mode: 'compare',
+        exit: 4,
+        stale: [`flowtrace: baseline at ${display(baselinePath)} is not valid JSON (${error})`],
+        regressions: [],
+        dropped: [],
+      };
+    } else {
+      report = check(factSets, {
+        area: area.name,
+        keys,
+        aliases: config.aliases,
+        traceOptions,
+        trace,
+        repos: config.repos,
+        baseline,
+      });
+    }
+  }
+
+  if (options.json) {
+    log(JSON.stringify(report, null, 2));
+    return report.exit;
+  }
+  log(renderCheck(report));
+  if (options.writeBaseline && report.exit === 0) log(`baseline -> ${display(baselinePath)}`);
+  return report.exit;
+}
+
+/**
+ * Calibration reads two directories and nothing else — no configuration, no facts: the
+ * golden set and a reader's verdicts. A verdict file may be the reader's own document or
+ * a golden-style one carrying the reader's document under `verdict`; the golden id is the
+ * file name either way.
+ */
+async function runCalibrate(options) {
+  const { calibrate, loadGolden } = calibrateModule;
+  const { readVerdicts } = packetsModule;
+  const goldenDir = resolve(options.golden);
+  const verdictsDir = resolve(options.verdicts);
+  const golden = loadGolden(goldenDir);
+  if (!existsSync(verdictsDir)) throw new Error(`no verdicts directory at ${display(verdictsDir)}`);
+  const verdicts = readVerdicts(verdictsDir).map(({ file, doc }) => ({
+    id: basename(file, '.verdict.json'),
+    verdict: doc && doc.verdict && typeof doc.verdict === 'object' ? doc.verdict : doc,
+  }));
+  const result = calibrate(verdicts, { golden });
+  const exitCode = result.disagreed.length === 0 ? 0 : 1;
+  if (options.json) {
+    log(JSON.stringify(result, null, 2));
+    return exitCode;
+  }
+  log(`calibrate ${plural(golden.length, 'golden packet')}: ${result.agreed.length} agreed, ${plural(result.disagreed.length, 'disagreement')}`);
+  for (const item of result.disagreed) {
+    log(`  ${item.id} ${item.seed ? `#${item.seed}` : '-'} expected ${item.expected} got ${item.got}${item.rule ? ` — ${item.rule}` : ''}`);
+  }
+  return exitCode;
+}
+
 function sanitiseKey(key) {
   return String(key)
     .toLowerCase()
@@ -734,7 +1067,7 @@ async function runExtract(config, repoFilter) {
   mkdirSync(factsDir, { recursive: true });
   for (const repo of repos) {
     const extract = loadExtractor(repo);
-    const facts = await extract(repo.root, {
+    let facts = await extract(repo.root, {
       exclude: repo.exclude,
       featureRoots: repo.featureRoots,
       cypress: repo.cypress,
@@ -767,12 +1100,45 @@ async function runExtract(config, repoFilter) {
         titleNote = ', titles unavailable';
       }
     }
+    // An external provider is opt-in per repository and, unlike the title collector,
+    // fatal when it fails: a fact set silently missing what was configured would be a
+    // number nobody could point at a fact for. Every fact it supplies is stamped with its
+    // provenance; the extractor's own carry none, which is how a reader tells them apart.
+    let provider = null;
+    let countNote = plural(count, 'fact');
+    if (repo.factsProvider) {
+      let loaded;
+      try {
+        loaded = loadFactsProvider(repo, repo.factsProvider);
+      } catch (error) {
+        throw new Error(`repo "${repo.id}": ${error.message}`);
+      }
+      const { merge } = repo.factsProvider;
+      const merged = mergeFacts(facts, loaded.facts, { mode: merge, producer: loaded.producer, version: loaded.version });
+      facts = merged.facts;
+      provider = {
+        producer: loaded.producer,
+        version: loaded.version,
+        source: loaded.source,
+        merge,
+        supplied: merged.supplied,
+        kept: merged.kept,
+        replaced: merged.replaced,
+        comparison: merged.comparison,
+      };
+      countNote =
+        merge === 'regex-only-with-diff'
+          ? `${plural(facts.length, 'fact')} (${loaded.producer} compared, ${merge})`
+          : `${plural(facts.length, 'fact')} (${count - merged.replaced} extracted, ${merged.kept} from ${loaded.producer}, ${merge})`;
+    }
     const target = joinPath(factsDir, `${repo.id}.json`);
     writeJson(
       target,
-      factsHeader({ repo: repo.id, kind: repo.kind, root: repo.root, generatedFrom: `flowtrace ${version()}`, facts, titles }),
+      factsHeader({
+        repo: repo.id, kind: repo.kind, root: repo.root, generatedFrom: `flowtrace ${version()}`, facts, titles, provider,
+      }),
     );
-    log(`extract ${repo.id} (${repo.kind}): ${plural(count, 'fact')}${titleNote} -> ${display(target)}`);
+    log(`extract ${repo.id} (${repo.kind}): ${countNote}${titleNote} -> ${display(target)}`);
   }
 }
 
@@ -801,23 +1167,108 @@ function loadFactSets(config) {
       dirtyDigest: parsed.dirtyDigest,
       generatedAt: parsed.generatedAt,
       fileCount: parsed.fileCount,
+      generatedFrom: parsed.generatedFrom,
+      provider: parsed.provider,
+      titles: parsed.titles,
     };
   });
 }
 
-/** One `warn()` per repo `staleFactsWarnings` finds stale — stderr only, always silent on fresh or legacy facts. */
-function warnStaleFacts(factSets, repos) {
-  for (const message of staleFactsWarnings(factSets, repos)) warn(message);
+/**
+ * Mark every hop of a finished walk that sits at a `repo:file:line` where some fact set
+ * carries an externally supplied fact, so the tree, `--json` and `--graph` can say so.
+ * The walk itself is untouched: this is a statement about the fact file's contents at
+ * that location, which is exactly what a reader can go and check.
+ */
+function markProviderHops(result, factSets) {
+  const locations = externalLocations(factSets);
+  if (locations.size === 0 || !result || !result.root) return;
+  const seen = new Set();
+  const visit = (node) => {
+    if (!node || seen.has(node)) return;
+    seen.add(node);
+    if (node.file && locations.has(`${node.repo}|${node.file}|${node.line}`)) node.provider = true;
+    for (const child of node.children || []) visit(child);
+  };
+  visit(result.root);
+  for (const node of result.nodes || []) visit(node);
 }
 
-async function runJoin(config) {
+/** One `warn()` per repo `staleFactsWarnings` finds stale — stderr only, always silent on fresh or legacy facts. */
+function warnStaleFacts(factSets, repos) {
+  for (const entry of staleFactsWarnings(factSets, repos)) warn(entry.message);
+}
+
+function toolIdentity() {
+  return { name: 'flowtrace-cli', version: version() };
+}
+
+async function runJoin(config, options = {}) {
   const factSets = loadFactSets(config);
+  if (options.against) return runJoinAgainst(config, options, factSets);
   const { join } = joinModule;
   const flow = join(factSets, { aliases: config.aliases });
   const target = joinPath(config.out, 'flow.json');
   writeJson(target, flow);
   const edges = Array.isArray(flow?.edges) ? flow.edges.length : 0;
   log(`join ${plural(factSets.length, 'fact set')}: ${plural(edges, 'edge')} -> ${display(target)}`);
+  if (options.snapshot) {
+    const snapshotTarget = resolve(options.snapshot);
+    writeJson(snapshotTarget, joinDriftModule.snapshotOf(factSets, { tool: toolIdentity(), config }));
+    log(`snapshot ${plural(factSets.length, 'fact set')} -> ${display(snapshotTarget)}`);
+  }
+  if (options.exportEdges) {
+    const exportTarget = resolve(options.exportEdges);
+    const exported = joinExportModule.exportEdges(flow, factSets, { tool: toolIdentity(), config });
+    writeJson(exportTarget, exported);
+    log(`export ${plural(exported.edges.length, 'joined edge')} -> ${display(exportTarget)}`);
+  }
+  return 0;
+}
+
+/**
+ * Compare a snapshot with the current facts. Writes nothing: a comparison is a reading
+ * of two states, not a step of the pipeline. A snapshot that cannot be read, is of
+ * another version or fails its own digest is refused whole with exit 4 — never a
+ * comparison against part of it.
+ */
+async function runJoinAgainst(config, options, factSets) {
+  const { readSnapshot, driftOf, renderDrift, parseFailOn, failingFindings, SnapshotError } = joinDriftModule;
+  let failOn;
+  try {
+    failOn = parseFailOn(options.failOn);
+  } catch (error) {
+    return usage(error.message);
+  }
+  warnStaleFacts(factSets, config.repos);
+  const source = resolve(options.against);
+  let snapshot;
+  try {
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(source, 'utf8'));
+    } catch (error) {
+      throw new SnapshotError(`${display(source)}: cannot be read (${error.message})`);
+    }
+    snapshot = readSnapshot(parsed, display(source));
+  } catch (error) {
+    if (!(error instanceof SnapshotError)) throw error;
+    process.stderr.write(`flowtrace: ${error.message}\n`);
+    return 4;
+  }
+  const report = driftOf(
+    snapshot,
+    { tool: toolIdentity(), factSets },
+    { aliases: config.aliases, sinks: config.sinks },
+  );
+  if (options.json) log(JSON.stringify(report, null, 2));
+  else log(renderDrift(report, { snapshotName: display(source) }));
+  const failing = failingFindings(report, failOn);
+  if (failing.length > 0) {
+    warn(`flowtrace: ${plural(failing.length, 'finding')} selected by --fail-on`);
+    return 1;
+  }
+  return 0;
 }
 
 function loadFlow(config) {
@@ -834,7 +1285,10 @@ async function runRender(config) {
 
   const generated = `flowtrace ${version()} · ${new Date().toISOString()}`;
   const reportTarget = joinPath(config.out, 'report.md');
-  writeFileSync(reportTarget, `${renderReport(flow, { generated })}\n`);
+  // The fact sets are read again here, not taken from the flow: who wrote each fact is
+  // stated in the fact file, and the report counts from that rather than from a summary.
+  const producers = producerSummary(loadFactSets(config));
+  writeFileSync(reportTarget, `${renderReport(flow, { generated, producers })}\n`);
 
   const flowsDir = joinPath(config.out, 'flows');
   mkdirSync(flowsDir, { recursive: true });
@@ -893,6 +1347,7 @@ function traceNodeFields(node) {
     'endLine',
     'methods',
     'methodDepth',
+    'provider',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }
@@ -956,6 +1411,7 @@ async function runTrace(config, options) {
     unscoped: options.unscoped,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -969,6 +1425,7 @@ async function runTrace(config, options) {
       const walked = trace(factSets, key, { ...shared, seeds: true });
       if (walked.candidates) return { key, error: 'ambiguous start', candidates: walked.candidates };
       if (walked.error) return { key, error: walked.error };
+      markProviderHops(walked, factSets);
       return { key, ...traceResult(walked, options, foldedGraph) };
     });
     log(JSON.stringify(results, null, 2));
@@ -994,6 +1451,7 @@ async function runTrace(config, options) {
     inventory,
     fromHandler: options.fromHandler,
   });
+  markProviderHops(result, factSets);
   if (result.fromHandlerCandidates) {
     process.stderr.write(`flowtrace: "${options.fromHandler}" matches ${result.fromHandlerCandidates.length} handlers:\n`);
     for (const candidate of result.fromHandlerCandidates) process.stderr.write(`  ${candidate}\n`);
@@ -1078,6 +1536,7 @@ async function runRoutesOf(config, options) {
     maxNodes: options.maxNodes,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
   });
   const exitCode =
@@ -1134,6 +1593,7 @@ async function runSpan(config, options) {
       repo: options.repo,
       aliases: config.aliases,
       sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
       outbound: scout.outbound,
     },
@@ -1188,6 +1648,7 @@ async function runComponentSpan(config, options, factSets) {
       maxNodes: options.maxNodes,
       aliases: config.aliases,
       sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
       outbound: scout.outbound,
     },
@@ -1240,6 +1701,7 @@ async function runSurface(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   });
@@ -1295,6 +1757,7 @@ async function runSkeleton(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   });
@@ -1381,6 +1844,7 @@ async function runCover(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -1445,6 +1909,60 @@ async function runCover(config, options) {
   log(renderCover(report, { color: colorEnabled() }));
   if (options.md) log(`\nmarkdown -> ${display(resolve(options.md))}`);
   return 0;
+}
+
+/**
+ * `scope` answers the question a change starts from, before `affected` has a diff to
+ * read: an area's whole route universe, its automation state and its server-side gate.
+ * A missing or unresolvable `--area` is this verb's own usage error (exit 2) rather than
+ * the generic run-time refusal (exit 1) every other area-reading verb falls back to,
+ * because the ticket's own contract states it that way — the area is the argument here
+ * even more literally than it is for `cover` or `affected`.
+ */
+async function runScope(config, options) {
+  let area;
+  try {
+    area = resolveAreaFile(options.area);
+  } catch (error) {
+    process.stderr.write(`flowtrace: ${error.message}\n`);
+    return 2;
+  }
+  const factSets = loadFactSets(config);
+  const { scope, renderScope } = scopeModule;
+  const { readAreaKeys } = coverModule;
+  const { createScout } = scoutModule;
+  const scout = createScout({
+    bin: config.scout ? config.scout.bin : undefined,
+    outDir: config.out,
+    repos: config.repos,
+  });
+  const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
+  const traceOptions = {
+    aliases: config.aliases,
+    sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+    repos: config.repos,
+    outbound: scout.outbound,
+  };
+  const report = scope(factSets, {
+    area: area.name,
+    keys,
+    aliases: config.aliases,
+    traceOptions,
+    repos: config.repos,
+    gatePatterns: config.scope.gatePatterns,
+  });
+  const exitCode = report.verdict === 'stale' ? 4 : 0;
+  if (options.json) {
+    log(JSON.stringify(report, null, 2));
+    return exitCode;
+  }
+  if (exitCode === 0) {
+    log(renderScope(report));
+  } else {
+    process.stderr.write(`flowtrace: ${renderScope(report)}\n`);
+  }
+  return exitCode;
 }
 
 /**
@@ -1536,10 +2054,19 @@ async function runAffected(config, options) {
       maxNodes: options.maxNodes,
       aliases: config.aliases,
       sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
       outbound: scout.outbound,
     },
   });
+
+  // A `head`-stale fact set already prints through the widened "fallbacks" rung below; a
+  // `worktree`-stale one gates nothing and would otherwise print nowhere at all, so it is
+  // warned here regardless of --json — the same "never silent" rule every other stale
+  // warning gets from `warnStaleFacts`.
+  for (const entry of report.stale) {
+    if (entry.kind === 'worktree') warn(entry.message);
+  }
 
   if (options.json) {
     log(JSON.stringify(report, null, 2));
@@ -1605,6 +2132,7 @@ async function runScaffold(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -1678,6 +2206,7 @@ async function runCases(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -1752,6 +2281,7 @@ async function runReadiness(config, options) {
     repo: options.repo,
     aliases: config.aliases,
     sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
   };
@@ -1790,6 +2320,15 @@ async function main() {
   if (options.command === 'routes-of' && !options.start) {
     return usage('routes-of requires a point');
   }
+  if ((options.snapshot || options.against || options.exportEdges) && options.command !== 'join') {
+    return usage('--snapshot, --export-edges and --against are join options');
+  }
+  if ((options.snapshot || options.exportEdges) && options.against) {
+    return usage('join --against compares and writes nothing; it takes neither --snapshot nor --export-edges');
+  }
+  if (options.command === 'join' && (options.json || options.failOn.length > 0) && !options.against) {
+    return usage('--json and --fail-on are join --against options');
+  }
   if (options.symbol && options.literal) {
     return usage('--symbol and --literal are mutually exclusive');
   }
@@ -1825,6 +2364,9 @@ async function main() {
   if (options.runtime && options.command !== 'cover') {
     return usage('--runtime is a cover option');
   }
+  if (options.command === 'scope' && !options.area) {
+    return usage('scope requires --area <file|name>');
+  }
   if (options.command === 'affected' && !options.area && !options.allRoutes) {
     return usage('affected requires --area <file|name> or --all-routes');
   }
@@ -1837,14 +2379,23 @@ async function main() {
   if (options.command === 'cases' && !options.area) {
     return usage('cases requires --area <file|name>');
   }
+  if (options.command === 'check' && !options.area) {
+    return usage('check requires --area <file|name>');
+  }
+  if (options.command === 'calibrate' && (!options.golden || !options.verdicts)) {
+    return usage('calibrate requires --golden <dir> and --verdicts <dir>');
+  }
   if (options.command === 'readiness' && !options.areas) {
     return usage('readiness requires --areas <file>');
   }
+  // calibrate reads the two directories it is given and nothing else: no configuration.
   let config;
-  try {
-    config = loadConfig({ configPath: options.config });
-  } catch (error) {
-    return usage(error.message);
+  if (options.command !== 'calibrate') {
+    try {
+      config = loadConfig({ configPath: options.config });
+    } catch (error) {
+      return usage(error.message);
+    }
   }
   try {
     if (options.command === 'trace') {
@@ -1865,6 +2416,9 @@ async function main() {
     if (options.command === 'cover') {
       return await runCover(config, options);
     }
+    if (options.command === 'scope') {
+      return await runScope(config, options);
+    }
     if (options.command === 'affected') {
       return await runAffected(config, options);
     }
@@ -1874,13 +2428,25 @@ async function main() {
     if (options.command === 'cases') {
       return await runCases(config, options);
     }
+    if (options.command === 'split') {
+      return await runSplit(config, options);
+    }
+    if (options.command === 'check') {
+      return await runCheck(config, options);
+    }
+    if (options.command === 'calibrate') {
+      return await runCalibrate(options);
+    }
     if (options.command === 'readiness') {
       return await runReadiness(config, options);
+    }
+    if (options.command === 'join') {
+      return await runJoin(config, options);
     }
     if (options.command === 'extract' || options.command === 'all') {
       await runExtract(config, options.repo);
     }
-    if (options.command === 'join' || options.command === 'all') {
+    if (options.command === 'all') {
       await runJoin(config);
     }
     if (options.command === 'render' || options.command === 'all') {

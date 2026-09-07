@@ -46,9 +46,9 @@ flowtrace join
 ```
 
 ```
-extract api (backend): 78 facts -> out/facts/api.json
-extract e2e (playwright): 15 facts -> out/facts/e2e.json
-join 2 fact sets: 2 edges -> out/flow.json
+extract api (backend): 134 facts -> out/facts/api.json
+extract e2e (playwright): 19 facts -> out/facts/e2e.json
+join 2 fact sets: 6 edges -> out/flow.json
 ```
 
 Trace one route to everything it reaches, and enumerate its distinct outcomes (seeds):
@@ -67,20 +67,39 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
          └─ OrderService.PlaceOrder  api  src/Services/OrderService.cs:35  [body]
             ├─ ◇ 38-41  if (!accepted)  [branch:if]
             ├─ IOrderRepository  api  src/Services/OrderService.cs:21  [ctor]
-            │  └─ ■ OrderRepository  api  src/DataAccess/OrderRepository.cs:14  [db·write]
+            │  └─ ■ OrderRepository  api  src/DataAccess/OrderRepository.cs:18  [db·write]
             ├─ IPublishEndpoint  api  src/Services/OrderService.cs:22  [ctor]
             │  └─ InMemoryPublishEndpoint  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [di]
             │     └─ InMemoryPublishEndpoint.Publish  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [body]  graph: unavailable
-            └─ OrderPlacedMessage  bus  src/Services/OrderService.cs:43  [publish]
-               └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:6  [message·fqn]  graph: unavailable
+            └─ OrderPlacedEvent  bus  src/Services/OrderService.cs:43  [publish]
+               └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:13  [message·fqn]
+                  └─ OrderPlacedConsumer.Consume  api  src/Messaging/OrderPlacedConsumer.cs:16  [body]
+                     ├─ ILogger<OrderPlacedConsumer>  api  src/Messaging/OrderPlacedConsumer.cs:13  [ctor]  unresolved
+                     ├─ IOrderRepository  api  src/Messaging/OrderPlacedConsumer.cs:13  [ctor]
+                     │  └─ ↑ OrderRepository (see above, ×3)
+                     └─ FulfilOrderJob  bus  src/Messaging/OrderPlacedConsumer.cs:20  [publish]
+                        ├─ FulfilOrderJobConsumer  api  src/Messaging/FulfilOrderJobConsumer.cs:13  [message·fqn]
+                        │  └─ FulfilOrderJobConsumer.Run  api  src/Messaging/FulfilOrderJobConsumer.cs:18  [body]
+                        │     └─ IFulfilmentHandler  api  src/Messaging/FulfilOrderJobConsumer.cs:13  [ctor]
+                        │        └─ FulfilmentHandler  api  src/Services/FulfilmentHandler.cs:18  [di]
+                        │           └─ FulfilmentHandler.Fulfil  api  src/Services/FulfilmentHandler.cs:21  [body]
+                        │              ├─ ◇ 24-27  if (order == null)  → throw InvalidOperationException (500)  [branch:error_return]  (async)
+                        │              └─ IOrderRepository  api  src/Services/FulfilmentHandler.cs:18  [ctor]
+                        │                 └─ ↑ OrderRepository (see above, ×3)
+                        └─ OrderFulfilmentConsumer  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [message·fqn]
+                           └─ OrderFulfilmentConsumer.Consume  api  src/Messaging/OrderFulfilmentConsumer.cs:14  [body]
+                              ├─ IProductRepository  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [ctor]
+                              │  └─ ■ ProductRepository  api  src/DataAccess/ProductRepository.cs:13  [db·read]
+                              └─ ILogger<OrderFulfilmentConsumer>  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [ctor]  unresolved
 
 use-case seeds (3):
 U1  error_return@39=taken  → 400 BadRequest  #5a6423a0
 U2  error_return@39=not-taken, error_return@45=taken  → 403 Forbidden  #ca37457e  [unknown: placed ← unresolved]
-U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedMessage → OrderPlacedConsumer [api]  #31ba2067
+U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedEvent → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced → ■ db OrderRepository.FindOrder → ■ db ProductRepository.GetById  #31ba2067
     also on path: if@OrderService.PlaceOrder:38
+    also on path (infrastructure): error_return@FulfilmentHandler.Fulfil:24
 
-1 sink · 3 branch points (3 primary) · 1 repo (api) · via: body 5, ctor 3, di 3, literal 1, message 1, publish 1 · 2 graph hop unavailable
+4 sinks · 4 branch points (3 primary) · 1 repo (api) · via: body 10, ctor 9, di 7, literal 1, message 3, publish 2 · 1 graph hop unavailable
 ```
 
 Two markers are worth knowing on day one. `graph: unavailable` says the walk could not
@@ -98,7 +117,7 @@ flowtrace cover --area checkout
 ```
 
 ```
-area checkout   3/5 area routes with executing evidence · 0 skipped-only · 2 none · 10 seeds · 0 path · 1 disposition
+area checkout   3/5 area routes with executing evidence · 1 skipped-only · 1 none · 10 seeds · 0 path · 1 disposition
 …
 ■■  GET catalog/v1/products  2 seeds · 2 intercepts (1 executing, 1 skipped) · match exact · …
   ■ U1  error_return=taken   → 400 BadRequest   route b3/s0   catalog.spec.ts :: lists the products of a category | …
@@ -224,6 +243,7 @@ GET catalog/v1/products/{productId}
 GET orders/v1/cart
 POST orders/v1/cart/items
 POST orders/v1/checkout
+POST orders/v1/replay
 ```
 
 ### 3.5 Trace a route
@@ -249,7 +269,7 @@ flowtrace routes-of "src/Services/OrderService.cs:43"
 
 ```
 resolved file OrderService.PlaceOrder — api:src/Services/OrderService.cs:35
-routes: 1 (complete across 5 entry routes)
+routes: 1 (complete across 6 entry routes)
 
 POST orders/v1/checkout — api:src/Controllers/OrdersController.cs:36
   witness: shortest of 1 path
@@ -270,13 +290,13 @@ fact fields, never against source text. When more than one fact matches, the com
 the candidates and exits `2` instead of choosing:
 
 ```
-flowtrace routes-of "OrderPlacedMessage" --literal
+flowtrace routes-of "OrderPlacedEvent" --literal
 ```
 
 ```
-flowtrace: ambiguous point "OrderPlacedMessage" (2 candidates):
-  consume.message="OrderPlacedMessage" — api:src/Messaging/OrderPlacedConsumer.cs:6
-  publish.message="OrderPlacedMessage" — api:src/Services/OrderService.cs:43
+flowtrace: ambiguous point "OrderPlacedEvent" (2 candidates):
+  consume.message="OrderPlacedEvent" — api:src/Messaging/OrderPlacedConsumer.cs:10
+  publish.message="OrderPlacedEvent" — api:src/Services/OrderService.cs:43
 ```
 
 `--symbol` and `--literal` force one resolution mode, `--repo <id>` narrows the point but
@@ -323,6 +343,18 @@ working tree is read. The exit code is the answer's shape: `0` a list was produc
 nothing was affected, `4` the selection was widened to the whole suite with the reason on
 stderr, `2` usage, `1` refusal. Facts behind the repository's HEAD are one of the widening
 reasons, so run `extract` first in a fresh checkout.
+
+Once an area's coverage is where you want it, commit a baseline and gate on it:
+
+```
+flowtrace check --area areas/checkout.txt --write-baseline
+flowtrace check --area areas/checkout.txt
+```
+
+The first writes `areas/checkout.baseline.json` and exits `0`. The second compares the
+current run against it: `0` no regression, `1` a drop in seed totals or per-route parity,
+`4` when the facts or the baseline are too stale to trust or no baseline exists. A `4`
+never turns into a `0`.
 
 ### 3.10 Optional: a code index for the hops facts cannot make
 

@@ -52,20 +52,39 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
          └─ OrderService.PlaceOrder  api  src/Services/OrderService.cs:35  [body]
             ├─ ◇ 38-41  if (!accepted)  [branch:if]
             ├─ IOrderRepository  api  src/Services/OrderService.cs:21  [ctor]
-            │  └─ ■ OrderRepository  api  src/DataAccess/OrderRepository.cs:14  [db·write]
+            │  └─ ■ OrderRepository  api  src/DataAccess/OrderRepository.cs:18  [db·write]
             ├─ IPublishEndpoint  api  src/Services/OrderService.cs:22  [ctor]
             │  └─ InMemoryPublishEndpoint  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [di]
             │     └─ InMemoryPublishEndpoint.Publish  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [body]  graph: unavailable
-            └─ OrderPlacedMessage  bus  src/Services/OrderService.cs:43  [publish]
-               └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:6  [message·fqn]  graph: unavailable
+            └─ OrderPlacedEvent  bus  src/Services/OrderService.cs:43  [publish]
+               └─ OrderPlacedConsumer  api  src/Messaging/OrderPlacedConsumer.cs:13  [message·fqn]
+                  └─ OrderPlacedConsumer.Consume  api  src/Messaging/OrderPlacedConsumer.cs:16  [body]
+                     ├─ ILogger<OrderPlacedConsumer>  api  src/Messaging/OrderPlacedConsumer.cs:13  [ctor]  unresolved
+                     ├─ IOrderRepository  api  src/Messaging/OrderPlacedConsumer.cs:13  [ctor]
+                     │  └─ ↑ OrderRepository (see above, ×3)
+                     └─ FulfilOrderJob  bus  src/Messaging/OrderPlacedConsumer.cs:20  [publish]
+                        ├─ FulfilOrderJobConsumer  api  src/Messaging/FulfilOrderJobConsumer.cs:13  [message·fqn]
+                        │  └─ FulfilOrderJobConsumer.Run  api  src/Messaging/FulfilOrderJobConsumer.cs:18  [body]
+                        │     └─ IFulfilmentHandler  api  src/Messaging/FulfilOrderJobConsumer.cs:13  [ctor]
+                        │        └─ FulfilmentHandler  api  src/Services/FulfilmentHandler.cs:18  [di]
+                        │           └─ FulfilmentHandler.Fulfil  api  src/Services/FulfilmentHandler.cs:21  [body]
+                        │              ├─ ◇ 24-27  if (order == null)  → throw InvalidOperationException (500)  [branch:error_return]  (async)
+                        │              └─ IOrderRepository  api  src/Services/FulfilmentHandler.cs:18  [ctor]
+                        │                 └─ ↑ OrderRepository (see above, ×3)
+                        └─ OrderFulfilmentConsumer  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [message·fqn]
+                           └─ OrderFulfilmentConsumer.Consume  api  src/Messaging/OrderFulfilmentConsumer.cs:14  [body]
+                              ├─ IProductRepository  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [ctor]
+                              │  └─ ■ ProductRepository  api  src/DataAccess/ProductRepository.cs:13  [db·read]
+                              └─ ILogger<OrderFulfilmentConsumer>  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [ctor]  unresolved
 
 use-case seeds (3):
 U1  error_return@39=taken  → 400 BadRequest  #5a6423a0
 U2  error_return@39=not-taken, error_return@45=taken  → 403 Forbidden  #ca37457e  [unknown: placed ← unresolved]
-U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedMessage → OrderPlacedConsumer [api]  #31ba2067
+U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedEvent → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced → ■ db OrderRepository.FindOrder → ■ db ProductRepository.GetById  #31ba2067
     also on path: if@OrderService.PlaceOrder:38
+    also on path (infrastructure): error_return@FulfilmentHandler.Fulfil:24
 
-1 sink · 3 branch points (3 primary) · 1 repo (api) · via: body 5, ctor 3, di 3, literal 1, message 1, publish 1 · 2 graph hop unavailable
+4 sinks · 4 branch points (3 primary) · 1 repo (api) · via: body 10, ctor 9, di 7, literal 1, message 3, publish 2 · 1 graph hop unavailable
 ```
 
 `graph: unavailable` marks a hop the walk could not extend without a code index
@@ -104,7 +123,7 @@ workspace/
 relative to the configuration file. Then `flowtrace extract`, `flowtrace join`, and trace a
 route. Step by step, with the expected output at each step and a table of what to do when
 something is off: [docs/getting-started.md](docs/getting-started.md). Every key:
-[docs/configuration.md](docs/configuration.md); all of them filled in:
+[docs/configuration.md](docs/configuration.md); every key at its built-in value:
 `flowtrace.config.example.json`.
 
 ## For AI agents
@@ -121,14 +140,20 @@ rules that keep the tool's honesty intact in the agent's answer.
 |---|---|
 | `extract` | what does each repository state about itself? |
 | `join` | which client calls reach which server routes, and which do not? |
+| `join --against` | what changed on the joined boundary since a saved snapshot — paths, seeds, effects, evidence levels? |
+| `join --export-edges` | hand the joined cross-repo edges to a code index, in one versioned, provenance-tagged file. |
 | `render` | write the joined route report and one flow page per called route. |
 | `trace` | what actually runs when this route is called — branches, services, database writes, published messages, consumers? |
 | `routes-of` | I hold a grep hit, a stack frame or a message name — which entry routes run through it? |
 | `cover` | which distinguishable ways through this feature's routes does a test actually pin down? |
+| `scope` | before I touch this area: its whole route universe, which routes already have automated evidence, and which reach a server-side authorization check. |
 | `affected` | I changed these files — which specs must run, and which affected routes have no test at all? |
 | `scaffold` | write a starting spec for each gap. |
 | `cases` | write a plain-English case sheet for each gap, for a person to judge. |
 | `readiness` | per feature area: routes reached, sinks by class, seeds by reachability. |
+| `split` | how should this branch split into reviewable commits, and is each slice green on its own? |
+| `check` | has this area's coverage regressed against the baseline we committed? |
+| `calibrate` | does the reader whose verdicts move my coverage numbers still read the way it did? |
 | `span` | one self-contained page per route, outcome first — what can happen, which outcomes a test already pins, what to do about the rest. |
 | `surface` | where can the state this route writes be read back? |
 | `skeleton` | write the spec that calls the route and observes that read-back. |
@@ -166,8 +191,13 @@ published as exactly that.
 
 - Extraction is heuristic, not a parse. An idiom the patterns do not recognise is invisible;
   the fix is to widen a regular expression in `lib/extract/`, and the patterns are grouped at
-  the top of each file for exactly that.
-- Language and framework support is what is listed above, no more.
+  the top of each file for exactly that. Comments and string literals are blanked before the
+  patterns run, so an idiom written in prose is not read as code. A repository may also name
+  an external fact provider, whose facts `extract` validates, tags with their producer and
+  merges under a mode the configuration states.
+- Language and framework support is what is listed above, no more. A second messaging idiom —
+  handler interfaces, sagas, and sends through a bus variable — is read once its interface and
+  verb names are given in the configuration; only one idiom is recognised without that.
 - `affected` reads diffs through `git`, so the repository it reads must be a git checkout.
 - Coverage is evidence overlay, not instrumentation. It reports what the tests *say* they
   touch, from their own source; it never runs them.
@@ -176,11 +206,17 @@ published as exactly that.
   worked example under `examples/demo-shop`, which CI runs end to end on every push.
 - `span --from-component` covers the `web` repository kind only. A mobile-kind name is
   refused with its reason rather than answered partially.
+- A minimal-API route is walked into its inline lambda, or into the method a method-group
+  handler names. A handler held in a delegate variable, and a route filter, are not walked.
+- A consumer is entered through the method whose parameter carries the message it consumes,
+  or failing that through a known entry verb. A consumer that matches neither is reported as
+  unresolved rather than entered through a guessed method.
 - `routes-of` searches extracted facts only. Its literal mode is exact and allowlisted; it
   does not scan source, expand a concrete URL into a template, or use the optional code index.
 - A parameterised Playwright title is the expression as written unless that repository is
   configured `"titles": true`, which runs its own installed Playwright in list mode during
-  `extract` and appends the titles the listing resolves.
+  `extract` and appends the titles the listing resolves. A checkout and the npm package can
+  do that; the single-file executable reports the titles as unavailable and extracts the rest.
 
 ## Contributing
 
@@ -194,7 +230,7 @@ project is run and how someone becomes a reviewer or maintainer;
 
 Semantic versioning from `0.x` — the CLI surface may still change between minor versions.
 What changed in each release is in [CHANGELOG.md](CHANGELOG.md). The current release is
-`0.1.1`.
+`0.2.0`.
 
 ## License
 

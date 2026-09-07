@@ -1,0 +1,13 @@
+{
+  "route": "GET orders/v1/cart",
+  "reader": "reference",
+  "packetHash": "1fb4d4c81530",
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "b52bb585",
+      "level": "path",
+      "evidence": []
+    }
+  ]
+}

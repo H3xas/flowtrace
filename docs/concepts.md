@@ -14,6 +14,12 @@ writes `out/facts/<repo>.json` — a header (repo id, kind, the git HEAD it was 
 a flat array of facts. Extraction is the only step that reads source code; every later step
 reads facts.
 
+A repository can also take facts from an external provider — a tool that holds a real
+syntax tree — configured as `factsProvider`
+([configuration.md](configuration.md#external-fact-provider)). Such a fact is validated
+like any other and carries a `provenance` naming its producer, so a reader never mistakes
+it for one the extractor read.
+
 Extractors are heuristic. They do not parse C# or TypeScript — they recognise a set of
 common idioms with regular expressions and brace matching. That has a cost (an unusual
 idiom is invisible) and a benefit (no toolchain, no build, no language server, and a
@@ -104,6 +110,18 @@ route; it does not prove which way through it. So every seed of a route carries 
 route's route-level evidence, and nothing is promoted to `path` without an assertion that
 actually distinguishes one seed from another. flowtrace never reports a coverage percentage
 it cannot point at a fact for.
+
+### Calibrating a reader
+
+`cover --packets <dir>` writes one packet per route: the seeds, the candidate tests and
+their excerpts, and the two rules a promotion needs. A reader answers with one verdict
+file per packet, and `cover --verdicts <dir>` merges those verdicts back, moving a seed
+forward only when the merge accepts the claim. `flowtrace calibrate --golden <dir>
+--verdicts <dir>` runs a reader's verdicts for a fixed golden set through that same merge
+and reports, per packet, whether the levels, rejections and counts came out as the set's
+reference says. A reader whose judgment drifts fails calibration before it moves a number.
+The package ships a golden set built from the worked example under
+`examples/demo-shop/calibration`.
 
 ## Areas
 

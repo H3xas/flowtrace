@@ -40,6 +40,10 @@
       "variable": "ctx"
     },
     "caseIdPlaceholder": "test.info().annotations.push({ type: 'case-id', description: 'TODO' })",
+    "poll": {
+      "timeoutMs": 30000,
+      "intervalsMs": [1000, 2000, 5000]
+    },
     "worker": {
       "module": "worker",
       "client": "MessageClient",
@@ -57,7 +61,8 @@
       "root": "shop-api",
       "role": ["api"],
       "exclude": ["**/*.Tests", "**/*.IntegrationTests"],
-      "scout": true
+      "scout": true,
+      "factsProvider": { "file": "shop-api-facts.json", "merge": "prefer-external" }
     },
     {
       "id": "app",

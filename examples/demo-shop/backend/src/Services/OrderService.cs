@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using DemoShop.Api.DataAccess;
-using DemoShop.Api.Messaging.Messages;
+using DemoShop.Api.Messaging.Events;
 
 namespace DemoShop.Api.Services
 {
@@ -40,7 +40,7 @@ namespace DemoShop.Api.Services
                 return false;
             }
 
-            await _bus.Publish(new OrderPlacedMessage());
+            await _bus.Publish(new OrderPlacedEvent());
             return true;
         }
     }

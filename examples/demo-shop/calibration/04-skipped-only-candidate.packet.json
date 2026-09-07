@@ -1,0 +1,70 @@
+{
+  "route": "POST orders/v1/cart/items",
+  "routeRef": "POST orders/v1/cart/items",
+  "file": "src/Controllers/OrdersController.cs",
+  "line": 24,
+  "packetHash": "03a02656e326",
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "d94ea2d1",
+      "dispositions": [
+        {
+          "kind": "error_return",
+          "line": 27,
+          "disposition": "taken",
+          "text": "if (request == null || request.Quantity <= 0)"
+        }
+      ],
+      "kind": "reject",
+      "response": "400 BadRequest",
+      "outcomes": [
+        "→ 400 BadRequest"
+      ],
+      "reads": 0
+    },
+    {
+      "id": "U2",
+      "key": "26ff9125",
+      "dispositions": [
+        {
+          "kind": "error_return",
+          "line": 27,
+          "disposition": "not-taken",
+          "text": "if (request == null || request.Quantity <= 0)"
+        }
+      ],
+      "kind": "effect",
+      "outcomes": [
+        "db OrderRepository.UpsertCartItem"
+      ],
+      "reads": 0
+    }
+  ],
+  "candidates": [
+    {
+      "repo": "e2e",
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a cart item with no quantity",
+      "skipped": true,
+      "match": "exact",
+      "intercepts": [
+        {
+          "verb": "POST",
+          "pattern": "orders/v1/cart/items",
+          "line": 23
+        }
+      ],
+      "excerpt": {
+        "file": "tests/checkout.spec.ts",
+        "startLine": 22,
+        "endLine": 25,
+        "text": "  test.skip('rejects a cart item with no quantity', async ({ request }) => {\n    const response = await request.post('orders/v1/cart/items', { data: { productId: 'sku_demo' } });\n    expect(response.status()).toBe(400);\n  });"
+      }
+    }
+  ],
+  "rules": {
+    "path": "an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect",
+    "disposition": "an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion"
+  }
+}
