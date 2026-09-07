@@ -41,6 +41,7 @@ checkouts named as siblings of the file.
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
+| `scope` | no | the node-ref patterns `scope` reads as a server-side authorization point, below |
 
 ## `repos[]`
 
@@ -330,6 +331,24 @@ which verb enters a consumer. Every field is an array of regex-source strings (J
   that way lists them here. A contract carries the same `fqn` onto every `publish` and
   `consume` of it, which is what lets `join` tell two same-named messages apart across
   repositories and keeps them out of `messages_without_contract`.
+
+## `scope`
+
+The area's server-side authorization point, for the `scope` verb: the first node on a
+route's own walk whose ref matches one of these regexes.
+
+```json
+"scope": {
+  "gatePatterns": ["Authorize", "Permission", "Policy", "Entitlement", "Claims"]
+}
+```
+
+- `gatePatterns` — whole regexes (JSON-escaped) matched against a walked node's `ref`
+  (a method's `Class.Method`, an injected interface or class name, a database or message
+  ref). Defaults to the five shown above when the key is omitted. This is a naming
+  heuristic, not a guarantee: a check named something else is invisible to it, and a name
+  that merely contains one of these words is reported as a gate whether or not anything
+  actually enforces it.
 
 ## `scout`
 

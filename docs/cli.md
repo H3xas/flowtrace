@@ -21,6 +21,7 @@ commands:
   surface   derive where the state one entry route changes can be read back
   skeleton  emit one spec skeleton from a derived assertion surface
   cover     seed-level coverage of one area, from the existing test evidence
+  scope     list an area's whole route universe, before any edit
   affected  turn a diff into the specs that must run
   scaffold  write a starting spec per route for the seeds no test reaches
   cases     write a human-readable case sheet per route for the seeds no test reaches
@@ -284,6 +285,20 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   line is not an assertion: it proves the arm ran in that window, nothing more.
   Without the flag nothing is read and the report is the byte-identical static one.
 
+scope --area <file|name> [--json]
+  Lists the area's whole route universe before any edit, one line per route in the area
+  file's own order: the route key, its repo:file:line, "automation: yes|no" from
+  cover's own per-route executing-evidence state (yes when the route has any executing
+  evidence, no otherwise), and "server-gate: <repo:file:line>|none" — the first node on
+  the route's own cover-depth walk whose ref matches "scope.gatePatterns"
+  (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,
+  Entitlement and Claims and both misses an unnamed check and over-reports a name that
+  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:
+  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no
+  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts
+  behind the repository HEAD — facts that only predate an uncommitted edit at the same
+  commit are noted on stderr and never gate this verb, since it reads no diff of its own.
+
 affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]
             [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]
             [--member-scoped] [--nx]
@@ -340,8 +355,10 @@ affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo
   (a fact set behind its repository HEAD — nothing is selected at all), a repository
   with no facts, a harness change with no production source to walk, a config-only
   diff, a changed controller declaring no route, and a selection above --max-share
-  (default 0.5) of a suite. Exit 0 a list was produced, 3 nothing was affected,
-  2 usage, 1 refusal.
+  (default 0.5) of a suite. A fact set that only predates an uncommitted edit at the
+  same commit is not this: it is noted on stderr and carried in --json's "stale" field,
+  and never widens — the edit it predates is already inside the diff this run reads.
+  Exit 0 a list was produced, 3 nothing was affected, 2 usage, 1 refusal.
 
 scaffold --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run]
             [--include-unreachable]
@@ -407,9 +424,11 @@ check --area <file|name> [--baseline <file>] [--write-baseline] [--json]
   committed baseline and fails the build on any drop. --baseline defaults to
   <area>.baseline.json beside the area file; --write-baseline writes the current run
   as the new baseline instead of comparing, and never compares. Exit 0 no regression,
-  1 regression, 2 usage, 4 a stale baseline, facts behind the repository HEAD, or no
-  baseline at all — a stale run never exits 0 and never reports a regression it
-  cannot back with trustworthy facts.
+  1 regression, 2 usage, 4 a stale baseline, facts behind the repository HEAD or only
+  predating an uncommitted edit at the same commit, or no baseline at all — unlike
+  affected, check refuses on either kind of staleness: a gate compares against a
+  committed baseline, and a run that only predates an uncommitted edit cannot back a
+  regression claim any more than one behind a commit can.
 calibrate --golden <dir> --verdicts <dir> [--json]
   Pins a reader — a person, a script, an agent that writes `cover --verdicts` files —
   against a golden set: one <id>.packet.json per entry beside an <id>.verdict.json
