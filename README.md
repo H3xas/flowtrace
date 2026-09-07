@@ -137,6 +137,7 @@ rules that keep the tool's honesty intact in the agent's answer.
 | `trace` | what actually runs when this route is called — branches, services, database writes, published messages, consumers? |
 | `routes-of` | I hold a grep hit, a stack frame or a message name — which entry routes run through it? |
 | `cover` | which distinguishable ways through this feature's routes does a test actually pin down? |
+| `scope` | before I touch this area: its whole route universe, which routes already have automated evidence, and which reach a server-side authorization check. |
 | `affected` | I changed these files — which specs must run, and which affected routes have no test at all? |
 | `scaffold` | write a starting spec for each gap. |
 | `cases` | write a plain-English case sheet for each gap, for a person to judge. |

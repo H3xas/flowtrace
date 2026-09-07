@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * flowtrace command line: extract | join | render | trace | routes-of | span | surface | skeleton |
- * cover | affected | scaffold | cases | readiness | split | calibrate | all.
+ * cover | scope | affected | scaffold | cases | readiness | split | check | calibrate | all.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -36,6 +36,7 @@ import * as renderTreeHtmlModule from '../lib/render-tree-html.js';
 import * as routesOfModule from '../lib/routes-of.js';
 import * as runtimeCoverModule from '../lib/runtime-cover.js';
 import * as scaffoldModule from '../lib/scaffold.js';
+import * as scopeModule from '../lib/scope.js';
 import * as scoutModule from '../lib/scout.js';
 import * as skeletonModule from '../lib/skeleton.js';
 import * as spanModule from '../lib/span.js';
@@ -50,7 +51,7 @@ import * as webExtractor from '../lib/extract/web.js';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
-  'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover',
+  'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover', 'scope',
   'affected', 'scaffold', 'cases', 'readiness', 'split', 'check', 'calibrate', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
@@ -67,6 +68,7 @@ const USAGE = [
   '  surface   derive where the state one entry route changes can be read back',
   '  skeleton  emit one spec skeleton from a derived assertion surface',
   '  cover     seed-level coverage of one area, from the existing test evidence',
+  '  scope     list an area\'s whole route universe, before any edit',
   '  affected  turn a diff into the specs that must run',
   '  scaffold  write a starting spec per route for the seeds no test reaches',
   '  cases     write a human-readable case sheet per route for the seeds no test reaches',
@@ -330,6 +332,20 @@ const USAGE = [
   '  line is not an assertion: it proves the arm ran in that window, nothing more.',
   '  Without the flag nothing is read and the report is the byte-identical static one.',
   '',
+  'scope --area <file|name> [--json]',
+  '  Lists the area\'s whole route universe before any edit, one line per route in the area',
+  '  file\'s own order: the route key, its repo:file:line, "automation: yes|no" from',
+  '  cover\'s own per-route executing-evidence state (yes when the route has any executing',
+  '  evidence, no otherwise), and "server-gate: <repo:file:line>|none" — the first node on',
+  '  the route\'s own cover-depth walk whose ref matches "scope.gatePatterns"',
+  '  (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,',
+  '  Entitlement and Claims and both misses an unnamed check and over-reports a name that',
+  '  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:',
+  '  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no',
+  '  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts',
+  '  behind the repository HEAD — facts that only predate an uncommitted edit at the same',
+  '  commit are noted on stderr and never gate this verb, since it reads no diff of its own.',
+  '',
   'affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]',
   '            [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]',
   '            [--member-scoped] [--nx]',
@@ -386,8 +402,10 @@ const USAGE = [
   '  (a fact set behind its repository HEAD — nothing is selected at all), a repository',
   '  with no facts, a harness change with no production source to walk, a config-only',
   '  diff, a changed controller declaring no route, and a selection above --max-share',
-  '  (default 0.5) of a suite. Exit 0 a list was produced, 3 nothing was affected,',
-  '  2 usage, 1 refusal.',
+  '  (default 0.5) of a suite. A fact set that only predates an uncommitted edit at the',
+  '  same commit is not this: it is noted on stderr and carried in --json\x27s "stale" field,',
+  '  and never widens — the edit it predates is already inside the diff this run reads.',
+  '  Exit 0 a list was produced, 3 nothing was affected, 2 usage, 1 refusal.',
   '',
   'scaffold --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run]',
   '            [--include-unreachable]',
@@ -453,9 +471,11 @@ const USAGE = [
   '  committed baseline and fails the build on any drop. --baseline defaults to',
   '  <area>.baseline.json beside the area file; --write-baseline writes the current run',
   '  as the new baseline instead of comparing, and never compares. Exit 0 no regression,',
-  '  1 regression, 2 usage, 4 a stale baseline, facts behind the repository HEAD, or no',
-  '  baseline at all — a stale run never exits 0 and never reports a regression it',
-  '  cannot back with trustworthy facts.',
+  '  1 regression, 2 usage, 4 a stale baseline, facts behind the repository HEAD or only',
+  '  predating an uncommitted edit at the same commit, or no baseline at all — unlike',
+  '  affected, check refuses on either kind of staleness: a gate compares against a',
+  '  committed baseline, and a run that only predates an uncommitted edit cannot back a',
+  '  regression claim any more than one behind a commit can.',
   'calibrate --golden <dir> --verdicts <dir> [--json]',
   '  Pins a reader — a person, a script, an agent that writes `cover --verdicts` files —',
   '  against a golden set: one <id>.packet.json per entry beside an <id>.verdict.json',
@@ -1174,7 +1194,7 @@ function markProviderHops(result, factSets) {
 
 /** One `warn()` per repo `staleFactsWarnings` finds stale — stderr only, always silent on fresh or legacy facts. */
 function warnStaleFacts(factSets, repos) {
-  for (const message of staleFactsWarnings(factSets, repos)) warn(message);
+  for (const entry of staleFactsWarnings(factSets, repos)) warn(entry.message);
 }
 
 function toolIdentity() {
@@ -1890,6 +1910,60 @@ async function runCover(config, options) {
 }
 
 /**
+ * `scope` answers the question a change starts from, before `affected` has a diff to
+ * read: an area's whole route universe, its automation state and its server-side gate.
+ * A missing or unresolvable `--area` is this verb's own usage error (exit 2) rather than
+ * the generic run-time refusal (exit 1) every other area-reading verb falls back to,
+ * because the ticket's own contract states it that way — the area is the argument here
+ * even more literally than it is for `cover` or `affected`.
+ */
+async function runScope(config, options) {
+  let area;
+  try {
+    area = resolveAreaFile(options.area);
+  } catch (error) {
+    process.stderr.write(`flowtrace: ${error.message}\n`);
+    return 2;
+  }
+  const factSets = loadFactSets(config);
+  const { scope, renderScope } = scopeModule;
+  const { readAreaKeys } = coverModule;
+  const { createScout } = scoutModule;
+  const scout = createScout({
+    bin: config.scout ? config.scout.bin : undefined,
+    outDir: config.out,
+    repos: config.repos,
+  });
+  const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
+  const traceOptions = {
+    aliases: config.aliases,
+    sinks: config.sinks,
+    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+    repos: config.repos,
+    outbound: scout.outbound,
+  };
+  const report = scope(factSets, {
+    area: area.name,
+    keys,
+    aliases: config.aliases,
+    traceOptions,
+    repos: config.repos,
+    gatePatterns: config.scope.gatePatterns,
+  });
+  const exitCode = report.verdict === 'stale' ? 4 : 0;
+  if (options.json) {
+    log(JSON.stringify(report, null, 2));
+    return exitCode;
+  }
+  if (exitCode === 0) {
+    log(renderScope(report));
+  } else {
+    process.stderr.write(`flowtrace: ${renderScope(report)}\n`);
+  }
+  return exitCode;
+}
+
+/**
  * `affected` reads its diff from the repository the system lives in — the backend —
  * and attributes every path in it across every configured repository, so a harness
  * nested inside that checkout is recognised as its own repository rather than as backend
@@ -1983,6 +2057,14 @@ async function runAffected(config, options) {
       outbound: scout.outbound,
     },
   });
+
+  // A `head`-stale fact set already prints through the widened "fallbacks" rung below; a
+  // `worktree`-stale one gates nothing and would otherwise print nowhere at all, so it is
+  // warned here regardless of --json — the same "never silent" rule every other stale
+  // warning gets from `warnStaleFacts`.
+  for (const entry of report.stale) {
+    if (entry.kind === 'worktree') warn(entry.message);
+  }
 
   if (options.json) {
     log(JSON.stringify(report, null, 2));
@@ -2280,6 +2362,9 @@ async function main() {
   if (options.runtime && options.command !== 'cover') {
     return usage('--runtime is a cover option');
   }
+  if (options.command === 'scope' && !options.area) {
+    return usage('scope requires --area <file|name>');
+  }
   if (options.command === 'affected' && !options.area && !options.allRoutes) {
     return usage('affected requires --area <file|name> or --all-routes');
   }
@@ -2328,6 +2413,9 @@ async function main() {
     }
     if (options.command === 'cover') {
       return await runCover(config, options);
+    }
+    if (options.command === 'scope') {
+      return await runScope(config, options);
     }
     if (options.command === 'affected') {
       return await runAffected(config, options);

@@ -37,15 +37,20 @@ tool writes is under `out/` and is never committed. The main area file is `areas
 
 Before answering what a route does, what a change reaches, or which tests cover something:
 
-1. `flowtrace extract && flowtrace join` — refresh the facts. Takes seconds. Facts behind
-   HEAD make `affected` exit 4; re-run this rather than reasoning around it.
-2. `flowtrace trace "<VERB template>" --seeds` — what runs, and the distinct outcomes.
-3. `flowtrace routes-of "<file:line | Class.Method | literal>"` — the other direction: which
+1. `flowtrace extract && flowtrace join` — refresh the facts. Takes seconds. Facts behind a
+   commit you have not seen make `affected`/`check` exit 4; an uncommitted edit at the same
+   commit never does — see the staleness note below before re-running this out of habit.
+2. **Step 0, before touching the area:** `flowtrace scope --area areas/<name>.txt --json` —
+   the area's whole route universe, one row per route: its `repo:file:line`, whether it
+   already has automated evidence, and the server-side gate its walk reaches, if any. Seed
+   your checklist from this before you edit anything.
+3. `flowtrace trace "<VERB template>" --seeds` — what runs, and the distinct outcomes.
+4. `flowtrace routes-of "<file:line | Class.Method | literal>"` — the other direction: which
    entry routes run through a point you already hold, such as a grep hit or a stack frame.
-4. `flowtrace cover --area areas/<name>.txt` — which of those outcomes a test already pins.
-5. `flowtrace affected --diff <base>...HEAD --area areas/<name>.txt --json` — the specs to
-   run. Exit 0: a list; 3: nothing affected; 4: widened, run the whole suite, reason on
-   stderr; 2: usage; 1: refusal.
+5. `flowtrace cover --area areas/<name>.txt` — which of those outcomes a test already pins.
+6. **Step 1, after editing:** `flowtrace affected --diff <base>...HEAD --area
+   areas/<name>.txt --json` — the specs to run. Exit 0: a list; 3: nothing affected;
+   4: widened, run the whole suite, reason on stderr; 2: usage; 1: refusal.
 
 Rules: quote the output rather than paraphrasing it. `unresolved` and `graph: unavailable`
 mean unknown, not absent. Never state a coverage figure the output does not print. Never
@@ -60,11 +65,12 @@ the rest is stateless:
 | question | command | reads |
 |---|---|---|
 | refresh what the repositories say | `flowtrace extract` then `flowtrace join` | source, then `out/facts/` |
+| **(step 0)** before touching an area: its route universe, automation and server gates | `flowtrace scope --area <file> --json` | facts |
 | what does this route run, and what can it do | `flowtrace trace "<key>" --seeds --json` | facts |
 | what does this screen or component reach | `flowtrace trace <ComponentName> --expand` | facts |
 | which entry routes run through this file line, method or literal | `flowtrace routes-of "<point>" --json` | facts |
 | which outcomes do tests already pin | `flowtrace cover --area <file> --json` | facts |
-| which specs must run for this diff | `flowtrace affected --diff <range> --area <file> --json` | facts + `git diff` |
+| **(step 1)** after editing: which specs must run for this diff | `flowtrace affected --diff <range> --area <file> --json` | facts + `git diff` |
 | which `dotnet test` filter covers this diff | `flowtrace affected --diff <range> --area <file> --dotnet-filter` | facts + `git diff` |
 | where can I observe what this route writes | `flowtrace surface "<key>" --json` | facts |
 | draft the missing tests | `flowtrace scaffold --area <file> --dry-run`, `flowtrace skeleton "<key>"` | facts |
@@ -74,11 +80,23 @@ the rest is stateless:
 | has coverage regressed against the committed baseline | `flowtrace check --area <file> --json` | facts + `<area>.baseline.json` |
 | is this reader's judgment still calibrated | `flowtrace calibrate --golden <dir> --verdicts <dir> --json` | two directories, no facts |
 
-`--json` exists on `trace`, `routes-of`, `cover`, `affected`, `surface`, `skeleton`,
+`--json` exists on `trace`, `routes-of`, `cover`, `scope`, `affected`, `surface`, `skeleton`,
 `readiness`, `split` and `calibrate`;
 `trace --area <file>` emits one JSON array for a list of keys. The terminal form is for
 showing a person; the JSON form is for deciding. Field lists per command are in
 [cli.md](cli.md).
+
+**What "stale" means, once, for every command above that can exit `4` on it (`scope`,
+`affected`, `check`):** a fact set can be stale two different ways, and they are not the
+same refusal. `head`-stale means the facts were extracted at a commit that is no longer
+HEAD — the facts describe a different tree than the one you are looking at, and every
+verb above refuses rather than answer from it. `worktree`-stale means HEAD has not moved
+and the facts only predate an uncommitted edit sitting in the tree right now — `scope`
+and `affected` both read that edit anyway (`scope` from the tree it walks, `affected` from
+the diff it was given), so neither refuses on it; only `check`, which is comparing against
+a *committed* baseline, still refuses on it, because a half-current run cannot back a
+regression claim. Either way the reason prints; re-run `extract` for a `head` refusal,
+and do nothing for a `worktree` one — it is not an error.
 
 ## Calibrate before verdicting
 
@@ -113,12 +131,14 @@ An agent relaying its output keeps that rule intact by observing the following.
   Do not upgrade a `route`-tier seed in prose.
 - **Counts are seeds, not lines.** `3/5 area routes with executing evidence · 10 seeds` is
   the whole claim. There is no line-coverage figure to derive from it.
-- **Exit `4` from `affected` means "run everything", with the reason on stderr.** Stale
-  facts, a repository with no facts, a config-only diff, a selection above `--max-share` are
-  all such reasons. Relay the reason; do not narrow the list by hand.
+- **Exit `4` from `affected` means "run everything", with the reason on stderr.**
+  `head`-stale facts, a repository with no facts, a config-only diff, a selection above
+  `--max-share` are all such reasons — see the staleness note above for what does and does
+  not count. Relay the reason; do not narrow the list by hand.
 - **`check` exit `4` is a refusal, not a pass.** No baseline, a baseline captured from an
-  older fact snapshot, or facts behind HEAD: the gate could not run. Report it as such and
-  re-run `extract`; write a baseline only when asked, with `--write-baseline`.
+  older fact snapshot, or facts stale either way (see above): the gate could not run.
+  Report it as such and re-run `extract` only for a `head` refusal; write a baseline only
+  when asked, with `--write-baseline`.
 - **`TODO` is a boundary.** `scaffold`, `skeleton` and `cases` leave the case id, the
   response-field claim and an unknown helper as placeholders because those are judgments,
   not walks. Leave them for a person unless that person has asked the agent to decide.
