@@ -157,6 +157,13 @@ consumer, the message end carrying `repo: "message"` and no file or line exactly
 states it. Records are sorted and deduplicated and no timestamp is written, so two exports over
 unchanged facts are the same bytes. The format is new and may change between minor versions.
 
+New verb `check`: a gate that compares an area's current `cover` seed totals and per-route
+parity against a committed `<area>.baseline.json` beside the area file and fails the build
+on any drop. Exit `0` no regression, `1` regression, `2` usage, `4` when the facts are
+behind the repository HEAD, the baseline was captured from an older fact snapshot, or no
+baseline exists; `4` is never collapsed into `0`. `--write-baseline` writes the current run
+as the baseline instead of comparing and is refused by the same staleness rule.
+
 ## 0.1.1
 
 Release pipeline only; the CLI is unchanged. The single-file build normalises line endings

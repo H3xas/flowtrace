@@ -334,6 +334,18 @@ nothing was affected, `4` the selection was widened to the whole suite with the 
 stderr, `2` usage, `1` refusal. Facts behind the repository's HEAD are one of the widening
 reasons, so run `extract` first in a fresh checkout.
 
+Once an area's coverage is where you want it, commit a baseline and gate on it:
+
+```
+flowtrace check --area areas/checkout.txt --write-baseline
+flowtrace check --area areas/checkout.txt
+```
+
+The first writes `areas/checkout.baseline.json` and exits `0`. The second compares the
+current run against it: `0` no regression, `1` a drop in seed totals or per-route parity,
+`4` when the facts or the baseline are too stale to trust or no baseline exists. A `4`
+never turns into a `0`.
+
 ### 3.10 Optional: a code index for the hops facts cannot make
 
 Configure [devscout](https://github.com/H3xas/devscout-rs) or any other tool speaking the

@@ -26,6 +26,7 @@ commands:
   cases     write a human-readable case sheet per route for the seeds no test reaches
   readiness render an area inventory's readiness sheet from the existing facts
   split     turn a branch diff into ordered, checked commit slices
+  check     fail the build on seed-coverage regression against a committed baseline
   all       extract, then join, then render
 
 options:
@@ -400,6 +401,14 @@ split [--diff <range>] [--staged] [--max-specs N] [--max-lines N] [--out <script
   is refused inside any configured repository. `split` runs no mutating git command:
   the emitted script is inert text until a person runs it. Exit 0 a script was written,
   1 a slice failed its own check (the script still names it), 3 the diff was empty.
+check --area <file|name> [--baseline <file>] [--write-baseline] [--json]
+  Compares this run's `cover` totals and per-route parity for the area against a
+  committed baseline and fails the build on any drop. --baseline defaults to
+  <area>.baseline.json beside the area file; --write-baseline writes the current run
+  as the new baseline instead of comparing, and never compares. Exit 0 no regression,
+  1 regression, 2 usage, 4 a stale baseline, facts behind the repository HEAD, or no
+  baseline at all — a stale run never exits 0 and never reports a regression it
+  cannot back with trustworthy facts.
 
 readiness --areas <file> [--md <out>] [--json] [--repo <id>]
   Turns an external area inventory into a per-area readiness sheet, entirely from

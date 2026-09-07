@@ -35,6 +35,15 @@ usually reads "every route reached by these caller-side services" or "every rout
 these templates" — the first survives refactors better, because a URL-prefix rule silently
 misses a route the feature calls from a neighbouring prefix.
 
+## Baselines
+
+`flowtrace check --area <file>` compares the area's current coverage against
+`<name>.baseline.json` beside the area file and fails on any drop. The baseline is written
+only on request, by `check --area <file> --write-baseline`, from facts that are current for
+every repository; it is committed and reviewed like the area file itself, and a compare run
+that finds none, or one captured from an older fact snapshot, refuses with exit `4` rather
+than inventing a reference.
+
 ## Regenerating
 
 Print the route inventory of the entry point, apply the rule, sort, and review the diff:
