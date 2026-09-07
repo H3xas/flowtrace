@@ -72,12 +72,24 @@ the rest is stateless:
 | one page for a tester | `flowtrace span "<key>"` | facts |
 | how should this branch split into reviewable commits | `flowtrace split --diff <range> --json` | facts + `git diff` |
 | has coverage regressed against the committed baseline | `flowtrace check --area <file> --json` | facts + `<area>.baseline.json` |
+| is this reader's judgment still calibrated | `flowtrace calibrate --golden <dir> --verdicts <dir> --json` | two directories, no facts |
 
 `--json` exists on `trace`, `routes-of`, `cover`, `affected`, `surface`, `skeleton`,
-`readiness` and `split`;
+`readiness`, `split` and `calibrate`;
 `trace --area <file>` emits one JSON array for a list of keys. The terminal form is for
 showing a person; the JSON form is for deciding. Field lists per command are in
 [cli.md](cli.md).
+
+## Calibrate before verdicting
+
+An agent asked to read reader packets (`cover --packets`) and write verdicts
+(`cover --verdicts`) is moving a coverage number by judgment. Before doing that on real
+packets, have it verdict the golden set under `examples/demo-shop/calibration`, add the
+refusal verdicts that set's README names from its `reference/` directory unchanged, and
+run `flowtrace calibrate --golden <that directory> --verdicts <its output>`. Exit `0` means
+every golden packet came out as the reference says it should; anything else lists the
+packet, the seed and the rule it disagreed on, and the agent should not proceed to real
+packets until the disagreement is understood.
 
 ## Reading the output honestly
 

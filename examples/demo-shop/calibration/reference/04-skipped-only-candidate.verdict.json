@@ -1,0 +1,33 @@
+{
+  "route": "POST orders/v1/cart/items",
+  "reader": "reference",
+  "packetHash": "03a02656e326",
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "d94ea2d1",
+      "level": "skipped",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "rejects a cart item with no quantity",
+          "line": 24,
+          "reason": "the test would pin the 400 guard, but it is skipped and has not run"
+        }
+      ]
+    },
+    {
+      "id": "U2",
+      "key": "26ff9125",
+      "level": "skipped",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "rejects a cart item with no quantity",
+          "line": 24,
+          "reason": "no executing test reaches the route, so the cart write is unobserved"
+        }
+      ]
+    }
+  ]
+}

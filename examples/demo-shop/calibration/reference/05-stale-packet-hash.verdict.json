@@ -1,0 +1,43 @@
+{
+  "route": "POST orders/v1/checkout",
+  "reader": "reference",
+  "packetHash": "3fb01b567485",
+  "seeds": [
+    {
+      "id": "U1",
+      "level": "disposition",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "rejects a checkout with no payment token",
+          "line": 13,
+          "reason": "a 400 that the missing-token guard alone returns"
+        }
+      ]
+    },
+    {
+      "id": "U2",
+      "level": "route",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "places an order when the cart holds an item",
+          "line": 8,
+          "reason": "the declined-order branch is not arranged"
+        }
+      ]
+    },
+    {
+      "id": "U3",
+      "level": "route",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "places an order when the cart holds an item",
+          "line": 8,
+          "reason": "a 200 observes neither the saved order nor the message"
+        }
+      ]
+    }
+  ]
+}

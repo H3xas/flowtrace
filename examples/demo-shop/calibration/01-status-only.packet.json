@@ -1,0 +1,88 @@
+{
+  "route": "GET catalog/v1/products",
+  "routeRef": "GET catalog/v1/products",
+  "file": "src/Controllers/CatalogController.cs",
+  "line": 17,
+  "packetHash": "b8e5e6885cc8",
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "6a3d57e8",
+      "dispositions": [
+        {
+          "kind": "error_return",
+          "line": 20,
+          "disposition": "taken",
+          "text": "if (string.IsNullOrEmpty(category))"
+        }
+      ],
+      "kind": "reject",
+      "response": "400 BadRequest",
+      "outcomes": [
+        "→ 400 BadRequest"
+      ],
+      "reads": 0
+    },
+    {
+      "id": "U2",
+      "key": "c87ccc19",
+      "dispositions": [
+        {
+          "kind": "error_return",
+          "line": 20,
+          "disposition": "not-taken",
+          "text": "if (string.IsNullOrEmpty(category))"
+        }
+      ],
+      "kind": "effect",
+      "outcomes": [],
+      "reads": 1
+    }
+  ],
+  "candidates": [
+    {
+      "repo": "e2e",
+      "spec": "tests/catalog.spec.ts",
+      "test": "lists the products of a category",
+      "skipped": false,
+      "match": "exact",
+      "intercepts": [
+        {
+          "verb": "GET",
+          "pattern": "catalog/v1/products?category=shoes",
+          "line": 5
+        }
+      ],
+      "excerpt": {
+        "file": "tests/catalog.spec.ts",
+        "startLine": 4,
+        "endLine": 7,
+        "text": "  test('lists the products of a category', async ({ request }) => {\n    const response = await request.get('catalog/v1/products?category=shoes');\n    expect(response.status()).toBe(200);\n  });"
+      }
+    },
+    {
+      "repo": "e2e",
+      "spec": "tests/catalog.spec.ts",
+      "test": "rejects a listing with no category",
+      "skipped": true,
+      "match": "exact",
+      "intercepts": [
+        {
+          "verb": "GET",
+          "pattern": "catalog/v1/products",
+          "line": 10
+        }
+      ],
+      "excerpt": {
+        "file": "tests/catalog.spec.ts",
+        "startLine": 9,
+        "endLine": 12,
+        "text": "  test.skip('rejects a listing with no category', async ({ request }) => {\n    const response = await request.get('catalog/v1/products');\n    expect(response.status()).toBe(400);\n  });"
+      }
+    }
+  ],
+  "rules": {
+    "path": "an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect",
+    "disposition": "an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion"
+  }
+}

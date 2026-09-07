@@ -1,0 +1,34 @@
+{
+  "id": "02-follow-up-read",
+  "packet": "02-follow-up-read.packet.json",
+  "shape": "the executing test asserts a body field the read serves; the seed is promoted to path",
+  "rule": "an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect",
+  "expect": {
+    "seeds": {
+      "b52bb585": "path"
+    },
+    "upgrades": 1,
+    "confirmed": 0,
+    "rejections": {}
+  },
+  "verdict": {
+    "route": "GET orders/v1/cart",
+    "reader": "reference",
+    "packetHash": "1fb4d4c81530",
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "b52bb585",
+        "level": "path",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "lists the cart",
+            "line": 19,
+            "reason": "toHaveProperty('items') observes the cart the handler returned, which only this read produces"
+          }
+        ]
+      }
+    ]
+  }
+}

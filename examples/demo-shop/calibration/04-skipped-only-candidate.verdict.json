@@ -1,0 +1,50 @@
+{
+  "id": "04-skipped-only-candidate",
+  "packet": "04-skipped-only-candidate.packet.json",
+  "shape": "the only test naming the route is skipped; every reader entry on its seeds is refused as not-executed",
+  "rule": "a seed the mechanics leave at skipped or none has never run, so the merge refuses whatever level a reader claims for it",
+  "expect": {
+    "seeds": {
+      "d94ea2d1": "skipped",
+      "26ff9125": "skipped"
+    },
+    "upgrades": 0,
+    "confirmed": 0,
+    "rejections": {
+      "not-executed": 2
+    }
+  },
+  "verdict": {
+    "route": "POST orders/v1/cart/items",
+    "reader": "reference",
+    "packetHash": "03a02656e326",
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "d94ea2d1",
+        "level": "skipped",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "rejects a cart item with no quantity",
+            "line": 24,
+            "reason": "the test would pin the 400 guard, but it is skipped and has not run"
+          }
+        ]
+      },
+      {
+        "id": "U2",
+        "key": "26ff9125",
+        "level": "skipped",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "rejects a cart item with no quantity",
+            "line": 24,
+            "reason": "no executing test reaches the route, so the cart write is unobserved"
+          }
+        ]
+      }
+    ]
+  }
+}
