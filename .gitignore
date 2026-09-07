@@ -26,15 +26,21 @@ sea-config.json
 *.blob
 *.tgz
 
-# Assistant and private tooling; never published.
-.claude/
+# Assistant and private tooling; only the comment-hygiene guard is published.
 .claude*
+!.claude/
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
+.claude/hooks/*
+!.claude/hooks/comment-hygiene.py
+!.claude/hooks/comment-hygiene.allow
+!.claude/hooks/require-signoff.py
 CLAUDE.md
 CLAUDE.local.md
 MEMORY.md
 WORKTREE.md
 HANDOFF.md
-AGENTS.md
 AGENTS.override.md
 .codex/
 .conductor/
