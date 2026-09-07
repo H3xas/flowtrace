@@ -25,6 +25,7 @@ commands:
   scaffold  write a starting spec per route for the seeds no test reaches
   cases     write a human-readable case sheet per route for the seeds no test reaches
   readiness render an area inventory's readiness sheet from the existing facts
+  split     turn a branch diff into ordered, checked commit slices
   all       extract, then join, then render
 
 options:
@@ -379,6 +380,26 @@ cases --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run
   block instead of none). The seed's stable `#key` rides as a `<!-- -->` comment, never
   a case-tool field, and the case id line is always pending — this writes a second
   markdown shape of the same evidence, never a test-management API call.
+
+split [--diff <range>] [--staged] [--max-specs N] [--max-lines N] [--out <script>]
+            [--no-check] [--json]
+  Turns a branch diff into ordered, reviewable commit slices and writes the shell script
+  that would commit them. Files group by endpoint area and by concern — a feature
+  package (a `clients`/`builders`-shaped path), production source, config/infra, specs,
+  docs — in one fixed order: the package before the specs that consume it, config/infra
+  before the tests that depend on it, one concern per commit. Each slice stays under
+  --max-specs spec files and --max-lines added lines; an over-cap group splits into
+  further slices of the same area, never into an unrelated one. Per slice, the
+  project-scoped `tsc` the area's own tsconfig names and the `affected` spec list for
+  that slice's own changed files are run and recorded; a check that cannot run is
+  "skipped" with its reason, a check that fails flags the slice in the script rather
+  than dropping it. --no-check skips both. One Conventional Commit subject is drafted
+  per slice from what the diff carries — type from the dominant change, scope from the
+  area, and the "split.ticketPrefix" of the configuration file in front when one is
+  configured — never invented prose. --out defaults to <out>/split/commit-slices.sh and
+  is refused inside any configured repository. `split` runs no mutating git command:
+  the emitted script is inert text until a person runs it. Exit 0 a script was written,
+  1 a slice failed its own check (the script still names it), 3 the diff was empty.
 
 readiness --areas <file> [--md <out>] [--json] [--repo <id>]
   Turns an external area inventory into a per-area readiness sheet, entirely from

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * flowtrace command line: extract | join | render | trace | routes-of | span | surface | skeleton |
- * cover | affected | scaffold | cases | readiness | all.
+ * cover | affected | scaffold | cases | readiness | split | all.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -37,6 +37,7 @@ import * as scaffoldModule from '../lib/scaffold.js';
 import * as scoutModule from '../lib/scout.js';
 import * as skeletonModule from '../lib/skeleton.js';
 import * as spanModule from '../lib/span.js';
+import * as splitModule from '../lib/split.js';
 import * as traceModule from '../lib/trace.js';
 
 import * as backendExtractor from '../lib/extract/backend.js';
@@ -48,7 +49,7 @@ import * as webExtractor from '../lib/extract/web.js';
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
   'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover',
-  'affected', 'scaffold', 'cases', 'readiness', 'all',
+  'affected', 'scaffold', 'cases', 'readiness', 'split', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
 const USAGE = [
@@ -68,6 +69,7 @@ const USAGE = [
   '  scaffold  write a starting spec per route for the seeds no test reaches',
   '  cases     write a human-readable case sheet per route for the seeds no test reaches',
   '  readiness render an area inventory\'s readiness sheet from the existing facts',
+  '  split     turn a branch diff into ordered, checked commit slices',
   '  all       extract, then join, then render',
   '',
   'options:',
@@ -423,6 +425,26 @@ const USAGE = [
   '  a case-tool field, and the case id line is always pending — this writes a second',
   '  markdown shape of the same evidence, never a test-management API call.',
   '',
+  'split [--diff <range>] [--staged] [--max-specs N] [--max-lines N] [--out <script>]',
+  '            [--no-check] [--json]',
+  '  Turns a branch diff into ordered, reviewable commit slices and writes the shell script',
+  '  that would commit them. Files group by endpoint area and by concern — a feature',
+  '  package (a `clients`/`builders`-shaped path), production source, config/infra, specs,',
+  '  docs — in one fixed order: the package before the specs that consume it, config/infra',
+  '  before the tests that depend on it, one concern per commit. Each slice stays under',
+  '  --max-specs spec files and --max-lines added lines; an over-cap group splits into',
+  '  further slices of the same area, never into an unrelated one. Per slice, the',
+  '  project-scoped `tsc` the area\'s own tsconfig names and the `affected` spec list for',
+  '  that slice\'s own changed files are run and recorded; a check that cannot run is',
+  '  "skipped" with its reason, a check that fails flags the slice in the script rather',
+  '  than dropping it. --no-check skips both. One Conventional Commit subject is drafted',
+  '  per slice from what the diff carries — type from the dominant change, scope from the',
+  '  area, and the "split.ticketPrefix" of the configuration file in front when one is',
+  '  configured — never invented prose. --out defaults to <out>/split/commit-slices.sh and',
+  '  is refused inside any configured repository. `split` runs no mutating git command:',
+  '  the emitted script is inert text until a person runs it. Exit 0 a script was written,',
+  '  1 a slice failed its own check (the script still names it), 3 the diff was empty.',
+  '',
   'readiness --areas <file> [--md <out>] [--json] [--repo <id>]',
   '  Turns an external area inventory into a per-area readiness sheet, entirely from',
   '  facts already on disk — no new walk beyond the ones `trace`/`cover` already do.',
@@ -531,6 +553,7 @@ function parseArgs(argv) {
     against: undefined,
     exportEdges: undefined,
     failOn: [],
+    check: true,
   };
   const positional = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -565,6 +588,8 @@ function parseArgs(argv) {
       options.memberScoped = true;
     } else if (argument === '--nx') {
       options.nx = true;
+    } else if (argument === '--no-check') {
+      options.check = false;
     } else if (argument === '--max-specs' || argument.startsWith('--max-specs=')) {
       const value = argument.startsWith('--max-specs=') ? argument.slice('--max-specs='.length) : argv[++index];
       const parsed = Number(value);
@@ -777,6 +802,84 @@ function loadExtractor(repo) {
     );
   }
   return module.extract;
+}
+
+/**
+ * The per-slice check, both halves reused rather than re-derived: the project-scoped
+ * `tsc` the touched area's own `tsconfig.json` names, and `affected` itself called with
+ * the slice's own changed files. Either half being unavailable — no facts extracted yet,
+ * no compiler in the checkout — is recorded as a skip carrying its reason, never as a pass.
+ */
+function sliceCheck(config, options, source) {
+  const { createSliceCheck, tscRunner } = splitModule;
+  const reasons = {};
+  let affectedFor = null;
+  try {
+    const factSets = loadFactSets(config);
+    const { affected, allRouteKeys, attributeChanges } = affectedModule;
+    const keys = allRouteKeys(factSets);
+    affectedFor = (paths) => affected(factSets, {
+      area: null,
+      universeSource: 'all-routes',
+      keys,
+      changed: attributeChanges(paths, config.repos, { root: source.root }),
+      aliases: config.aliases,
+      repos: config.repos,
+      // A slice is a handful of files: the share brake is about a whole diff, and firing
+      // it here would report "run everything" for every small, correctly-scoped slice.
+      maxShare: 1,
+      traceOptions: {
+        depth: options.depth,
+        maxNodes: options.maxNodes,
+        aliases: config.aliases,
+        sinks: config.sinks,
+        repos: config.repos,
+      },
+    });
+  } catch (error) {
+    reasons.specs = `affected unavailable (${error.message.split('\n')[0]})`;
+  }
+  return createSliceCheck({ root: source.root, runTsc: tscRunner(source.root), affectedFor, reasons });
+}
+
+/**
+ * `split` reads its diff where `affected` reads its own and proposes commits inside that
+ * checkout. Every mutating git command lives in the script it writes, never here, and the
+ * script's default target is outside every configured checkout, the boundary `scaffold`
+ * and `cases` already hold for their own output.
+ */
+async function runSplit(config, options) {
+  const { assertOutsideRepos, changedStats, renderSplit, split } = splitModule;
+  const source = diffSourceRepo(config, options.repo);
+  if (!source) throw new Error('no repository configured to read a diff from');
+  const files = changedStats(source.root, { diff: options.diff, staged: options.staged });
+  if (files === null) {
+    throw new Error(`cannot read a diff in ${source.id}: not a git repository, or git is unavailable`);
+  }
+  const target = assertOutsideRepos(
+    resolve(options.out || joinPath(config.out, 'split', 'commit-slices.sh')),
+    config.repos.map((repo) => repo.root),
+  );
+  const check = options.check === false ? null : sliceCheck(config, options, source);
+  const result = split({
+    files,
+    maxSpecs: options.maxSpecs,
+    maxLines: options.maxLines,
+    check,
+    repo: source.id,
+    repoRoot: source.root,
+    ticketPrefix: config.split ? config.split.ticketPrefix : null,
+  });
+
+  mkdirSync(dirname(target), { recursive: true });
+  writeFileSync(target, result.script);
+  if (options.json) {
+    log(JSON.stringify(result, null, 2));
+    return result.exit;
+  }
+  log(renderSplit(result));
+  log(`  -> ${display(target)} — nothing has run: read it, then run it yourself`);
+  return result.exit;
 }
 
 function sanitiseKey(key) {
@@ -2080,6 +2183,9 @@ async function main() {
     }
     if (options.command === 'cases') {
       return await runCases(config, options);
+    }
+    if (options.command === 'split') {
+      return await runSplit(config, options);
     }
     if (options.command === 'readiness') {
       return await runReadiness(config, options);

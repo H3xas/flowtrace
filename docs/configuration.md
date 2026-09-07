@@ -394,6 +394,20 @@ spec as `POLL_TIMEOUT_MS` and `POLL_INTERVALS_MS`. Either entry may be set on it
 See `flowtrace.config.example.json` for every key with the built-in values filled in;
 `importAliases.caseId` is the one key it leaves out, because its built-in value is unset.
 
+## `split`
+
+```json
+"split": { "ticketPrefix": "#0000" }
+```
+
+Optional. `ticketPrefix` is written in front of every commit subject `split` drafts, separated
+by one space (`#0000 feat(orders): add orders client`), and the emitted script's header then
+says to replace it with the real id. Use whatever token your tracker convention puts first —
+an issue reference as above, or a project key with a placeholder number. With no `split`
+object, or no `ticketPrefix`, a drafted subject is a plain Conventional Commit
+(`feat(orders): add orders client`) and nothing has to be replaced; that is the default. The
+value must be a non-empty string without whitespace.
+
 ## Worked example
 
 `examples/demo-shop/flowtrace.config.json` is the smallest configuration that produces a

@@ -70,9 +70,10 @@ the rest is stateless:
 | draft the missing tests | `flowtrace scaffold --area <file> --dry-run`, `flowtrace skeleton "<key>"` | facts |
 | draft the missing cases for a person | `flowtrace cases --area <file> --dry-run` | facts |
 | one page for a tester | `flowtrace span "<key>"` | facts |
+| how should this branch split into reviewable commits | `flowtrace split --diff <range> --json` | facts + `git diff` |
 
-`--json` exists on `trace`, `routes-of`, `cover`, `affected`, `surface`, `skeleton` and
-`readiness`;
+`--json` exists on `trace`, `routes-of`, `cover`, `affected`, `surface`, `skeleton`,
+`readiness` and `split`;
 `trace --area <file>` emits one JSON array for a list of keys. The terminal form is for
 showing a person; the JSON form is for deciding. Field lists per command are in
 [cli.md](cli.md).

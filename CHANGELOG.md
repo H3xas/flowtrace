@@ -65,6 +65,14 @@ collector refuses with a reason that names the distribution and the npm package 
 before anything is resolved, written or spawned. Configuration reference: `titles` under
 `repos[]`.
 
+New verb `split`: a branch diff becomes ordered, capped commit slices, one concern per
+slice — a feature package before the specs that consume it, config before the tests that
+depend on it — each checked with the area's own project-scoped `tsc` and the `affected` spec
+list for its files, with a Conventional Commit subject drafted from what the diff carries.
+The output is a shell script written outside every configured repository; `split` runs no
+mutating git command itself. A configured `split.ticketPrefix` goes in front of every drafted
+subject; without one, subjects are plain Conventional Commits.
+
 The README is now an entry page and the
 step-by-step tour moved to `docs/getting-started.md`, which takes a first-time reader — a person
 or an AI agent — from install to a first answer about their own repositories, with the
