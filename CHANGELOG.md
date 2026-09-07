@@ -4,6 +4,27 @@ Semantic versioning from `0.x`: the CLI surface may still change between minor v
 
 ## Unreleased
 
+New verb `scope --area <file|name> [--json]`, the ledger a run needs before it edits
+anything: one line per route in the area's own file order, its `repo:file:line`,
+`automation: yes|no` from `cover`'s own executing-evidence state, and
+`server-gate: <repo:file:line>|none` — the first node on the route's own walk whose ref
+matches the new top-level `scope.gatePatterns` configuration array, a naming heuristic
+defaulting to `Authorize`, `Permission`, `Policy`, `Entitlement` and `Claims`. `--json`
+emits `{ schemaVersion: 1, area, routes }`, deterministic and with no timestamp. Exit 0 the
+area resolved, 2 a missing or unresolvable `--area`, 4 facts behind the repository HEAD.
+
+Staleness now distinguishes two things it used to conflate. `staleFactsWarnings` reports
+each warning's `kind`: `head` when the recorded facts were extracted at a commit that is no
+longer HEAD, `worktree` when HEAD has not moved and the facts only predate an uncommitted
+edit already sitting in the tree. `affected` keeps exiting `4` on `head`-stale facts and no
+longer exits `4` on `worktree`-stale ones — it runs, and `--json`'s `stale` field still
+carries every warning with its kind. `check` refuses on both kinds unchanged: a gate
+compares against a committed baseline, and a run that only predates an uncommitted edit
+cannot back a regression claim any more than one behind a commit can. Every fact set that
+was extracted from a dirty tree and then edited further — the false "facts are stale"
+reading a tooled run used to pay an extra `extract`/`join` for — now runs `affected`
+straight through, on stderr only, never gating.
+
 License changed to MIT OR Apache-2.0.
 
 New verb `routes-of <file:line | symbol | literal>`, the reverse of `trace`. It resolves a
