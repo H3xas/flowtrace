@@ -4,6 +4,26 @@ Semantic versioning from `0.x`: the CLI surface may still change between minor v
 
 ## Unreleased
 
+A `workerPatterns.publishCalls` entry may now name a later argument position after a slash
+(`Defer/2`, 1-based; a bare name keeps meaning position 1), so a bus verb whose message is
+not its first argument (`bus.Defer(TimeSpan.FromMinutes(5), due)`) is no longer invisible.
+The message at that position is resolved by the same rules a first-argument variable already
+is: an inline `new`, or the declared type of a variable there. An index the call does not
+have that many arguments to reach emits nothing rather than guessing, and an invalid entry
+(`Defer/0`, `Defer/x`, `Defer/2/3`) is refused by `validateConfig`. Every `publish` fact now
+carries `verb`, the matched call name lower-cased (`PublishAsync` and `Publish` both read
+`publish`); `Reply` joins the built-in `Publish` and `SubmitJob`.
+
+A class implementing a saga interface — `workerPatterns.sagaInterfaces`, defaulting to
+`IAmInitiatedBy` — now emits a `saga` fact naming the messages that initiate it
+(`initiatedBy`), the messages it handles (`handles`, read off the same base-list entries
+`consume` already reads), and the property a `ConfigureHowToFindSaga`/`CorrelateBy` lambda
+correlates on (`correlation`, `null` when the class states none). The class's own `consume`
+facts are entirely unaffected — this is an additional fact, not a replacement — so a reader
+that ignores `saga` sees the walk unchanged. See
+[fact-schema.md](docs/fact-schema.md#backend) and
+[configuration.md](docs/configuration.md#workerpatterns).
+
 License changed to MIT OR Apache-2.0.
 
 New verb `routes-of <file:line | symbol | literal>`, the reverse of `trace`. It resolves a

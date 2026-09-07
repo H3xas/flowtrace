@@ -267,27 +267,30 @@ a call flowtrace cannot know about. `caseId` names those callees. It defaults to
 ## `workerPatterns`
 
 The backend extractor recognises public messaging idioms out of the box — MassTransit's
-`IConsumer<T>` and `Publish`/`PublishAsync`, StackExchange.Redis channel publishes, and
-message contracts declared under `Messaging/Messages`, `Messaging/Events`, `Messaging/Jobs`
-or `Messaging/Contracts`, named `…Message`, or marked with a MassTransit message interface. A
-codebase built on its own worker-queue framework registers processors, binds queues and
-publishes through methods flowtrace cannot know about, and may keep its contracts elsewhere
-under other names. `workerPatterns` teaches the extractor those shapes, and teaches the walk
-which verb enters a consumer. Every field is an array of regex-source strings (JSON-escaped)
-— `consumerEntryMethods` holds plain method names — and every field defaults to empty.
+`IConsumer<T>` and `Publish`/`PublishAsync`/`SubmitJob`/`Reply`, StackExchange.Redis channel
+publishes, `IAmInitiatedBy<T>` sagas, and message contracts declared under
+`Messaging/Messages`, `Messaging/Events`, `Messaging/Jobs` or `Messaging/Contracts`, named
+`…Message`, or marked with a MassTransit message interface. A codebase built on its own
+worker-queue framework registers processors, binds queues and publishes through methods
+flowtrace cannot know about, names its saga-initiator interface differently, and may keep its
+contracts elsewhere under other names. `workerPatterns` teaches the extractor those shapes,
+and teaches the walk which verb enters a consumer. Every field is an array of regex-source
+strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and a
+`publishCalls` entry may carry a `/N` suffix (see below) — and every field defaults to empty.
 
 ```json
 "workerPatterns": {
   "registrations": ["\\.RegisterJobHandler\\s*<\\s*(\\w+)\\s*>\\s*\\(\\s*JobKind\\.(\\w+)"],
   "topologyBindings": ["\\bBindJobQueue\\s*<\\s*(\\w+)\\s*>\\s*\\(\\s*JobKind\\.(\\w+)"],
   "queuePrefixConstants": ["JOB_QUEUE_PREFIX"],
-  "publishCalls": ["Enqueue"],
+  "publishCalls": ["Enqueue", "Defer/2"],
   "consumerBases": ["JobConsumerBase"],
   "consumerEntryMethods": ["Execute"],
   "broadcastCalls": ["BroadcastToChannel"],
   "configReads": ["ReadSetting"],
   "messagePaths": ["Bus/Types"],
-  "messageSuffixes": ["Notice"]
+  "messageSuffixes": ["Notice"],
+  "sagaInterfaces": ["IAmTriggeredBy"]
 }
 ```
 
@@ -301,11 +304,22 @@ which verb enters a consumer. Every field is an array of regex-source strings (J
 - `queuePrefixConstants` — names of the constant whose string literal is the queue-name
   prefix. The constant is matched in any class, however that class is named.
 - `publishCalls` — extra publish method names, matched with an optional `Async` suffix
-  alongside the built-in `Publish` and `SubmitJob`. Whatever the verb, the message is read
-  from the generic argument, the inline `new`, the saga `ctx.Init<T>(…)` initialiser, or the
-  declared type of a variable passed as the first argument.
+  alongside the built-in `Publish`, `SubmitJob` and `Reply`. Whatever the verb, the message is
+  read from the generic argument, the inline `new`, the saga `ctx.Init<T>(…)` initialiser, or
+  the declared type of a variable passed as the first argument — unless the entry names a
+  later argument position after a slash (`Defer/2`, 1-based; a bare name keeps meaning
+  position 1), in which case only the two shapes that make sense at an arbitrary position
+  apply: an inline `new` there, or the declared type of a variable there, read by the same
+  rule a first-argument variable already is. An index the call does not have that many
+  arguments to reach emits nothing rather than guessing. Every `publish` fact carries `verb`,
+  the matched call name lower-cased, whichever spelling or position produced it.
 - `consumerBases` — extra consumer base-type names, matched alongside the built-in
   `BaseConsumer` and `IConsumer`.
+- `sagaInterfaces` — extra saga-interface names, matched alongside the built-in
+  `IAmInitiatedBy`. A base-list entry naming one, `IAmTriggeredBy<OrderPlaced>` say, emits a
+  `saga` fact for the class ([fact-schema.md](fact-schema.md#backend)) in addition to
+  whatever `consume` facts its own `consumerBases` entries already produce — this field never
+  changes what counts as a consumer, only what counts as a saga.
 - `consumerEntryMethods` — extra method names `trace` enters a consumer through; plain
   names, not regexes. The walk first picks every method whose parameter type hands it the
   consumed message — the message itself, or the message inside a `…Context<T>` or

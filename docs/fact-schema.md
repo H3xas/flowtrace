@@ -42,8 +42,9 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 |---|---|---|
 | `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route; a minimal-API registration adds `handler` (`lambda`, or `method` for a method group naming a method the repository declares), and a lambda's `action` is `<registering method>(<VERBS> <template>)` |
 | `http_out` | `configKey`, `template` | the service calls out over HTTP to another service |
-| `publish` | `message` | a message is published to the bus; `message` is `null` and `unresolved` names why when the argument's type could not be read |
+| `publish` | `message`, `verb` | a message is published to the bus; `message` is `null` and `unresolved` names why when the argument's type could not be read; `verb` is the matched call name lower-cased (`publish`, `send`, `defer`, `submitjob`, `reply`, an `Async` suffix dropped either way) |
 | `consume` | `message`, `consumer` | a class consumes a message type |
+| `saga` | `saga`, `initiatedBy`, `handles`, `correlation` | a class implements a saga interface (`workerPatterns.sagaInterfaces`, default `IAmInitiatedBy`); `initiatedBy` and `handles` are message-type-name arrays read off the class's own base list, and `correlation` is the property a `ConfigureHowToFindSaga`/`CorrelateBy` lambda names, or `null` when the class states none. The class still emits its own `consume` facts for whichever messages its base list names through a consumer base, so a reader that ignores `saga` sees the walk unchanged |
 | `worker_processor` | `workType`, `processor` | a processor is registered against a work type |
 | `signalr_push` | `method` | a SignalR hub method is pushed to clients |
 | `redis_publish` | `channel` | a broadcast is published to a channel |
