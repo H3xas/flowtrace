@@ -67,7 +67,7 @@
       "kind": "effect",
       "outcomes": [
         "db OrderRepository.SaveOrder",
-        "⇝ OrderPlacedMessage"
+        "⇝ OrderPlacedEvent"
       ],
       "reads": 0
     }
