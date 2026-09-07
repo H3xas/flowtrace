@@ -51,7 +51,7 @@ extract [--repo <id>]
   how they compared. An invalid record refuses the whole run and names the record.
 
 join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json]
-            [--fail-on <kinds>]
+            [--fail-on <kinds>] [--allow-skipped]
   Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally
   writes one portable, versioned bundle of the current fact sets, the aliases and sink
   patterns the join and the walk read, and every repository identity the facts carry
@@ -67,9 +67,13 @@ join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json
   not drift is found; --fail-on <kinds> (any, a family — path, seed, effect,
   evidence — or a kind, comma-separated) exits 1 when a selected finding is present;
   usage errors exit 2; a snapshot that cannot be read, is of another version or fails
-  its own digest exits 4 with no partial comparison. --fail-on selects findings only; a
-  route whose seed walk was truncated at the 64-seed cap is listed under "skipped" in
-  the report and is not gated.
+  its own digest exits 4 with no partial comparison. A route whose seed walk was
+  truncated at the 64-seed cap is listed under "skipped", its seed, effect and evidence
+  comparison never run; under --fail-on a non-empty "skipped" fails the gate on exit 5,
+  naming every such route and the cap that truncated it, since a clean report about a
+  boundary never compared is not honest. --allow-skipped restores the plain
+  exit-by-finding behaviour and is a usage error (exit 2) without --against. Without
+  --fail-on, "skipped" stays informational and never changes the exit code.
 
   --export-edges <file> additionally writes the joined cross-repo edges for a code index
   to import: one record per joined edge, exactly { kind, from, to, key } with both ends
@@ -79,10 +83,13 @@ join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json
   importer can drop or replace imported rows wholesale. Only joined edges export:
   calls and tests matched to a route action, and the publishes, consumes and enqueues
   edges of a message that has both a publisher and a matched consumer (the message end
-  carries repo "message" and no file or line, as the join states it). Records are sorted
-  and deduplicated and no timestamp is written, so two exports over unchanged facts are
-  the same bytes. Combines with --snapshot; refused with --against. All three formats
-  are new (schemaVersion 1) and may change between minor versions.
+  carries repo "message" and no file or line, as the join states it, and is the only
+  code end exempt from the rule below). Records are sorted and deduplicated and no
+  timestamp is written, so two exports over unchanged facts are the same bytes. A joined
+  edge whose code end is missing repo, file or line refuses the whole export, naming the
+  edge's kind and key: nothing is written, and a file already at the target path is left
+  untouched. Combines with --snapshot; refused with --against. All three formats are new
+  (schemaVersion 1) and may change between minor versions.
 
 routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then

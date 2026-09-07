@@ -12,7 +12,7 @@
     "flowtrace": "bin/flowtrace.js"
   },
   "scripts": {
-    "test": "node --test selftest/affected.test.js selftest/cli-contract.test.js selftest/json-contract.test.js selftest/routes-of.test.js"
+    "test": "node --test selftest/affected.test.js selftest/cli-contract.test.js selftest/join-contract.test.js selftest/json-contract.test.js selftest/routes-of.test.js"
   },
   "files": [
     "bin",

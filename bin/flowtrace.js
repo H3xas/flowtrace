@@ -98,7 +98,7 @@ const USAGE = [
   '  how they compared. An invalid record refuses the whole run and names the record.',
   '',
   'join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json]',
-  '            [--fail-on <kinds>]',
+  '            [--fail-on <kinds>] [--allow-skipped]',
   '  Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally',
   '  writes one portable, versioned bundle of the current fact sets, the aliases and sink',
   '  patterns the join and the walk read, and every repository identity the facts carry',
@@ -114,9 +114,13 @@ const USAGE = [
   '  not drift is found; --fail-on <kinds> (any, a family — path, seed, effect,',
   '  evidence — or a kind, comma-separated) exits 1 when a selected finding is present;',
   '  usage errors exit 2; a snapshot that cannot be read, is of another version or fails',
-  '  its own digest exits 4 with no partial comparison. --fail-on selects findings only; a',
-  '  route whose seed walk was truncated at the 64-seed cap is listed under "skipped" in',
-  '  the report and is not gated.',
+  '  its own digest exits 4 with no partial comparison. A route whose seed walk was',
+  '  truncated at the 64-seed cap is listed under "skipped", its seed, effect and evidence',
+  '  comparison never run; under --fail-on a non-empty "skipped" fails the gate on exit 5,',
+  '  naming every such route and the cap that truncated it, since a clean report about a',
+  '  boundary never compared is not honest. --allow-skipped restores the plain',
+  '  exit-by-finding behaviour and is a usage error (exit 2) without --against. Without',
+  '  --fail-on, "skipped" stays informational and never changes the exit code.',
   '',
   '  --export-edges <file> additionally writes the joined cross-repo edges for a code index',
   '  to import: one record per joined edge, exactly { kind, from, to, key } with both ends',
@@ -126,10 +130,13 @@ const USAGE = [
   '  importer can drop or replace imported rows wholesale. Only joined edges export:',
   '  calls and tests matched to a route action, and the publishes, consumes and enqueues',
   '  edges of a message that has both a publisher and a matched consumer (the message end',
-  '  carries repo "message" and no file or line, as the join states it). Records are sorted',
-  '  and deduplicated and no timestamp is written, so two exports over unchanged facts are',
-  '  the same bytes. Combines with --snapshot; refused with --against. All three formats',
-  '  are new (schemaVersion 1) and may change between minor versions.',
+  '  carries repo "message" and no file or line, as the join states it, and is the only',
+  '  code end exempt from the rule below). Records are sorted and deduplicated and no',
+  '  timestamp is written, so two exports over unchanged facts are the same bytes. A joined',
+  '  edge whose code end is missing repo, file or line refuses the whole export, naming the',
+  '  edge\x27s kind and key: nothing is written, and a file already at the target path is left',
+  '  untouched. Combines with --snapshot; refused with --against. All three formats are new',
+  '  (schemaVersion 1) and may change between minor versions.',
   '',
   'routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]',
   '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
@@ -601,6 +608,7 @@ function parseArgs(argv) {
     against: undefined,
     exportEdges: undefined,
     failOn: [],
+    allowSkipped: false,
     check: true,
   };
   const positional = [];
@@ -718,6 +726,8 @@ function parseArgs(argv) {
       const value = argument.startsWith('--fail-on=') ? argument.slice('--fail-on='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--fail-on requires a finding family or kind');
       options.failOn.push(value);
+    } else if (argument === '--allow-skipped') {
+      options.allowSkipped = true;
     } else if (argument === '--graph') {
       options.graph = true;
     } else if (argument === '--json') {
@@ -1230,7 +1240,9 @@ async function runJoin(config, options = {}) {
  * Compare a snapshot with the current facts. Writes nothing: a comparison is a reading
  * of two states, not a step of the pipeline. A snapshot that cannot be read, is of
  * another version or fails its own digest is refused whole with exit 4 — never a
- * comparison against part of it.
+ * comparison against part of it. Under --fail-on, a route the walk skipped (its seed
+ * walk truncated at the seed cap) fails the gate on exit 5 unless --allow-skipped is
+ * given, since a clean report about a boundary never compared is not honest.
  */
 async function runJoinAgainst(config, options, factSets) {
   const { readSnapshot, driftOf, renderDrift, parseFailOn, failingFindings, SnapshotError } = joinDriftModule;
@@ -1263,6 +1275,21 @@ async function runJoinAgainst(config, options, factSets) {
   );
   if (options.json) log(JSON.stringify(report, null, 2));
   else log(renderDrift(report, { snapshotName: display(source) }));
+  // A route the walk could not finish comparing is a boundary `--fail-on` never got to
+  // look at; reporting "no drift" about it would be a lie, so a non-empty `skipped` fails
+  // the gate on a rung of its own — ahead of the ordinary finding check below — unless the
+  // caller opts out with --allow-skipped, which restores exit-by-finding exactly.
+  if (options.failOn.length > 0 && !options.allowSkipped && report.skipped.length > 0) {
+    for (const entry of report.skipped) {
+      const route = entry.routeBefore ? `${entry.routeBefore} → ${entry.route}` : entry.route;
+      warn(`flowtrace: skipped ${route}: ${entry.reason}`);
+    }
+    warn(
+      `flowtrace: ${plural(report.skipped.length, 'route')} skipped and never compared; ` +
+        're-run with --allow-skipped to gate on findings alone',
+    );
+    return 5;
+  }
   const failing = failingFindings(report, failOn);
   if (failing.length > 0) {
     warn(`flowtrace: ${plural(failing.length, 'finding')} selected by --fail-on`);
@@ -2323,11 +2350,14 @@ async function main() {
   if ((options.snapshot || options.against || options.exportEdges) && options.command !== 'join') {
     return usage('--snapshot, --export-edges and --against are join options');
   }
+  if (options.allowSkipped && options.command !== 'join') {
+    return usage('--allow-skipped is a join option');
+  }
   if ((options.snapshot || options.exportEdges) && options.against) {
     return usage('join --against compares and writes nothing; it takes neither --snapshot nor --export-edges');
   }
-  if (options.command === 'join' && (options.json || options.failOn.length > 0) && !options.against) {
-    return usage('--json and --fail-on are join --against options');
+  if (options.command === 'join' && (options.json || options.failOn.length > 0 || options.allowSkipped) && !options.against) {
+    return usage('--json, --fail-on and --allow-skipped are join --against options');
   }
   if (options.symbol && options.literal) {
     return usage('--symbol and --literal are mutually exclusive');
