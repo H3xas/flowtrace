@@ -35,4 +35,8 @@ npm test
   of the corpus.
 - `corpus/gizmo-shop/` — a minimal invented ASP.NET-Core-shaped backend: one controller, one
   service, one repository, reachable by `flowtrace extract`.
-- `*.test.js` — one file per contract area.
+- `*.test.js` — one file per contract area, run against the CLI through `helpers.js` — with
+  one exception: `scout-contract.test.js` imports `lib/scout.js` and `lib/dotnet.js`
+  directly, because the code index binary that would otherwise have to be faked for a CLI
+  run is off the table for a public fixture, and the functions it covers are pure parsing
+  and selection logic with no process or filesystem behavior of their own to observe.
