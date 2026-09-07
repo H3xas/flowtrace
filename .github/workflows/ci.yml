@@ -39,7 +39,10 @@ jobs:
           set -e
           cd examples/demo-shop
           node ../../bin/flowtrace.js extract  --config flowtrace.config.json
-          node ../../bin/flowtrace.js join     --config flowtrace.config.json
+          node ../../bin/flowtrace.js join     --config flowtrace.config.json --export-edges out/flowtrace-edges.json
+          node ../../scripts/check-pinned-export.mjs out/flowtrace-edges.json exports/flowtrace-edges.json
+          node ../../bin/flowtrace.js join     --config flowtrace.config.json --export-edges out/flowtrace-edges-again.json
+          cmp out/flowtrace-edges.json out/flowtrace-edges-again.json
           node ../../bin/flowtrace.js cover    --config flowtrace.config.json --area ../../areas/checkout.txt
           node ../../bin/flowtrace.js span     --config flowtrace.config.json "POST orders/v1/checkout"
           node ../../bin/flowtrace.js surface  --config flowtrace.config.json "POST orders/v1/checkout"

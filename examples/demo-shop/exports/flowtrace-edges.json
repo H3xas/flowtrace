@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "format": "flowtrace-edges",
+  "tool": {
+    "name": "flowtrace-cli",
+    "version": "0.2.0"
+  },
+  "provenance": {
+    "id": "4d38598e5419ea62",
+    "producer": "flowtrace-cli 0.2.0",
+    "formatVersion": 1,
+    "config": {
+      "aliases": [],
+      "sinks": {
+        "db": [
+          "/DataAccess/",
+          "Repository",
+          "ResourceService"
+        ],
+        "writePrefixes": [
+          "Insert",
+          "Update",
+          "Upsert",
+          "Set",
+          "Delete",
+          "Remove",
+          "Save",
+          "Clear",
+          "Add",
+          "Create",
+          "Archive",
+          "Mark",
+          "Increment",
+          "Decrement",
+          "Push",
+          "Replace",
+          "Write"
+        ],
+        "readPrefixes": [
+          "Get",
+          "Find",
+          "Fetch",
+          "Load",
+          "Read",
+          "Exists",
+          "Count",
+          "List",
+          "Query",
+          "Search",
+          "Any",
+          "Has",
+          "Is"
+        ]
+      }
+    },
+    "factSets": [
+      {
+        "repo": "api",
+        "kind": "backend",
+        "generatedFrom": "flowtrace 0.2.0",
+        "headSha": "68b4e7923efc925afd8e05504e0e0656398d8bbe",
+        "dirty": true,
+        "dirtyDigest": "5b0094aff37fdc357338217683f6194278513027",
+        "fileCount": 16,
+        "digest": "46f29df4fed96c903f845b6df26d2404f75989ec"
+      },
+      {
+        "repo": "e2e",
+        "kind": "playwright",
+        "generatedFrom": "flowtrace 0.2.0",
+        "headSha": "68b4e7923efc925afd8e05504e0e0656398d8bbe",
+        "dirty": true,
+        "dirtyDigest": "5b0094aff37fdc357338217683f6194278513027",
+        "fileCount": 2,
+        "digest": "1fe8e0afb3f3642db88b399f8bc6d4bcc88e5ea9"
+      }
+    ]
+  },
+  "edges": [
+    {
+      "kind": "consumes",
+      "from": {
+        "repo": "message",
+        "ref": "FulfilOrderJob",
+        "file": null,
+        "line": null
+      },
+      "to": {
+        "repo": "api",
+        "ref": "FulfilOrderJobConsumer",
+        "file": "src/Messaging/FulfilOrderJobConsumer.cs",
+        "line": 7
+      },
+      "key": "FulfilOrderJob",
+      "provenance": "4d38598e5419ea62"
+    },
+    {
+      "kind": "consumes",
+      "from": {
+        "repo": "message",
+        "ref": "FulfilOrderJob",
+        "file": null,
+        "line": null
+      },
+      "to": {
+        "repo": "api",
+        "ref": "OrderFulfilmentConsumer",
+        "file": "src/Messaging/OrderFulfilmentConsumer.cs",
+        "line": 8
+      },
+      "key": "FulfilOrderJob",
+      "provenance": "4d38598e5419ea62"
+    },
+    {
+      "kind": "consumes",
+      "from": {
+        "repo": "message",
+        "ref": "OrderPlacedEvent",
+        "file": null,
+        "line": null
+      },
+      "to": {
+        "repo": "api",
+        "ref": "OrderPlacedConsumer",
+        "file": "src/Messaging/OrderPlacedConsumer.cs",
+        "line": 10
+      },
+      "key": "OrderPlacedEvent",
+      "provenance": "4d38598e5419ea62"
+    },
+    {
+      "kind": "publishes",
+      "from": {
+        "repo": "api",
+        "ref": "src/Endpoints/ReplayEndpoints.cs",
+        "file": "src/Endpoints/ReplayEndpoints.cs",
+        "line": 34
+      },
+      "to": {
+        "repo": "message",
+        "ref": "FulfilOrderJob",
+        "file": null,
+        "line": null
+      },
+      "key": "FulfilOrderJob",
+      "provenance": "4d38598e5419ea62"
+    },
+    {
+      "kind": "publishes",
+      "from": {
+        "repo": "api",
+        "ref": "src/Messaging/OrderPlacedConsumer.cs",
+        "file": "src/Messaging/OrderPlacedConsumer.cs",
+        "line": 20
+      },
+      "to": {
+        "repo": "message",
+        "ref": "FulfilOrderJob",
+        "file": null,
+        "line": null
+      },
+      "key": "FulfilOrderJob",
+      "provenance": "4d38598e5419ea62"
+    },
+    {
+      "kind": "publishes",
+      "from": {
+        "repo": "api",
+        "ref": "src/Services/OrderService.cs",
+        "file": "src/Services/OrderService.cs",
+        "line": 43
+      },
+      "to": {
+        "repo": "message",
+        "ref": "OrderPlacedEvent",
+        "file": null,
+        "line": null
+      },
+      "key": "OrderPlacedEvent",
+      "provenance": "4d38598e5419ea62"
+    }
+  ]
+}
