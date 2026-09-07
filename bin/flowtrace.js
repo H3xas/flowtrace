@@ -16,6 +16,7 @@ import {
 import * as affectedModule from '../lib/affected.js';
 import * as assertionSurfaceModule from '../lib/assertion-surface.js';
 import * as casesModule from '../lib/cases.js';
+import * as checkModule from '../lib/check.js';
 import * as componentSpanModule from '../lib/component-span.js';
 import * as coverModule from '../lib/cover.js';
 import * as joinModule from '../lib/join.js';
@@ -49,7 +50,7 @@ import * as webExtractor from '../lib/extract/web.js';
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
   'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover',
-  'affected', 'scaffold', 'cases', 'readiness', 'split', 'all',
+  'affected', 'scaffold', 'cases', 'readiness', 'split', 'check', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
 const USAGE = [
@@ -70,6 +71,7 @@ const USAGE = [
   '  cases     write a human-readable case sheet per route for the seeds no test reaches',
   '  readiness render an area inventory\'s readiness sheet from the existing facts',
   '  split     turn a branch diff into ordered, checked commit slices',
+  '  check     fail the build on seed-coverage regression against a committed baseline',
   '  all       extract, then join, then render',
   '',
   'options:',
@@ -444,6 +446,14 @@ const USAGE = [
   '  is refused inside any configured repository. `split` runs no mutating git command:',
   '  the emitted script is inert text until a person runs it. Exit 0 a script was written,',
   '  1 a slice failed its own check (the script still names it), 3 the diff was empty.',
+  'check --area <file|name> [--baseline <file>] [--write-baseline] [--json]',
+  '  Compares this run\'s `cover` totals and per-route parity for the area against a',
+  '  committed baseline and fails the build on any drop. --baseline defaults to',
+  '  <area>.baseline.json beside the area file; --write-baseline writes the current run',
+  '  as the new baseline instead of comparing, and never compares. Exit 0 no regression,',
+  '  1 regression, 2 usage, 4 a stale baseline, facts behind the repository HEAD, or no',
+  '  baseline at all — a stale run never exits 0 and never reports a regression it',
+  '  cannot back with trustworthy facts.',
   '',
   'readiness --areas <file> [--md <out>] [--json] [--repo <id>]',
   '  Turns an external area inventory into a per-area readiness sheet, entirely from',
@@ -880,6 +890,91 @@ async function runSplit(config, options) {
   log(renderSplit(result));
   log(`  -> ${display(target)} — nothing has run: read it, then run it yourself`);
   return result.exit;
+}
+
+function resolveBaselinePath(area, value) {
+  return value ? resolve(value) : joinPath(dirname(area.file), `${area.name}.baseline.json`);
+}
+
+function readBaseline(target) {
+  if (!existsSync(target)) return { baseline: null, error: null };
+  try {
+    return { baseline: JSON.parse(readFileSync(target, 'utf8')), error: null };
+  } catch (error) {
+    return { baseline: null, error: error.message };
+  }
+}
+
+/**
+ * The gate. A compare run reads the committed baseline beside the area file and never
+ * writes one; `--write-baseline` writes one and never compares. Both refuse facts behind
+ * the repository HEAD, so a baseline is never authored from a snapshot that could not be
+ * trusted for a compare.
+ */
+async function runCheck(config, options) {
+  const area = resolveAreaFile(options.area);
+  const factSets = loadFactSets(config);
+  const { check, renderCheck } = checkModule;
+  const { readAreaKeys } = coverModule;
+  const { trace } = traceModule;
+  const { createScout } = scoutModule;
+  const scout = createScout({
+    bin: config.scout ? config.scout.bin : undefined,
+    outDir: config.out,
+    repos: config.repos,
+  });
+  const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
+  const traceOptions = {
+    aliases: config.aliases,
+    sinks: config.sinks,
+    repos: config.repos,
+    outbound: scout.outbound,
+  };
+  const baselinePath = resolveBaselinePath(area, options.baseline);
+
+  let report;
+  if (options.writeBaseline) {
+    report = check(factSets, {
+      area: area.name,
+      keys,
+      aliases: config.aliases,
+      traceOptions,
+      trace,
+      repos: config.repos,
+      writeBaseline: true,
+    });
+    if (report.exit === 0) writeJson(baselinePath, report.baseline);
+  } else {
+    const { baseline, error } = readBaseline(baselinePath);
+    if (error) {
+      report = {
+        area: area.name,
+        mode: 'compare',
+        exit: 4,
+        stale: [`flowtrace: baseline at ${display(baselinePath)} is not valid JSON (${error})`],
+        regressions: [],
+        dropped: [],
+      };
+    } else {
+      report = check(factSets, {
+        area: area.name,
+        keys,
+        aliases: config.aliases,
+        traceOptions,
+        trace,
+        repos: config.repos,
+        baseline,
+      });
+    }
+  }
+
+  if (options.json) {
+    log(JSON.stringify(report, null, 2));
+    return report.exit;
+  }
+  log(renderCheck(report));
+  if (options.writeBaseline && report.exit === 0) log(`baseline -> ${display(baselinePath)}`);
+  return report.exit;
 }
 
 function sanitiseKey(key) {
@@ -2147,6 +2242,9 @@ async function main() {
   if (options.command === 'cases' && !options.area) {
     return usage('cases requires --area <file|name>');
   }
+  if (options.command === 'check' && !options.area) {
+    return usage('check requires --area <file|name>');
+  }
   if (options.command === 'readiness' && !options.areas) {
     return usage('readiness requires --areas <file>');
   }
@@ -2186,6 +2284,9 @@ async function main() {
     }
     if (options.command === 'split') {
       return await runSplit(config, options);
+    }
+    if (options.command === 'check') {
+      return await runCheck(config, options);
     }
     if (options.command === 'readiness') {
       return await runReadiness(config, options);

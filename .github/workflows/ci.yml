@@ -44,6 +44,8 @@ jobs:
           node ../../bin/flowtrace.js span     --config flowtrace.config.json "POST orders/v1/checkout"
           node ../../bin/flowtrace.js surface  --config flowtrace.config.json "POST orders/v1/checkout"
           node ../../bin/flowtrace.js skeleton --config flowtrace.config.json "POST orders/v1/checkout"
+          node ../../bin/flowtrace.js check    --config flowtrace.config.json --area ../../areas/checkout.txt --baseline out/checkout.baseline.json --write-baseline
+          node ../../bin/flowtrace.js check    --config flowtrace.config.json --area ../../areas/checkout.txt --baseline out/checkout.baseline.json
 
       - name: No machine paths in the tree
         run: bash scripts/path-check.sh

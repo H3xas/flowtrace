@@ -71,6 +71,7 @@ the rest is stateless:
 | draft the missing cases for a person | `flowtrace cases --area <file> --dry-run` | facts |
 | one page for a tester | `flowtrace span "<key>"` | facts |
 | how should this branch split into reviewable commits | `flowtrace split --diff <range> --json` | facts + `git diff` |
+| has coverage regressed against the committed baseline | `flowtrace check --area <file> --json` | facts + `<area>.baseline.json` |
 
 `--json` exists on `trace`, `routes-of`, `cover`, `affected`, `surface`, `skeleton`,
 `readiness` and `split`;
@@ -103,6 +104,9 @@ An agent relaying its output keeps that rule intact by observing the following.
 - **Exit `4` from `affected` means "run everything", with the reason on stderr.** Stale
   facts, a repository with no facts, a config-only diff, a selection above `--max-share` are
   all such reasons. Relay the reason; do not narrow the list by hand.
+- **`check` exit `4` is a refusal, not a pass.** No baseline, a baseline captured from an
+  older fact snapshot, or facts behind HEAD: the gate could not run. Report it as such and
+  re-run `extract`; write a baseline only when asked, with `--write-baseline`.
 - **`TODO` is a boundary.** `scaffold`, `skeleton` and `cases` leave the case id, the
   response-field claim and an unknown helper as placeholders because those are judgments,
   not walks. Leave them for a person unless that person has asked the agent to decide.
