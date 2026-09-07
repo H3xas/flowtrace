@@ -185,7 +185,9 @@ published as exactly that.
   patterns run, so an idiom written in prose is not read as code. A repository may also name
   an external fact provider, whose facts `extract` validates, tags with their producer and
   merges under a mode the configuration states.
-- Language and framework support is what is listed above, no more.
+- Language and framework support is what is listed above, no more. A second messaging idiom —
+  handler interfaces, sagas, and sends through a bus variable — is read once its interface and
+  verb names are given in the configuration; only one idiom is recognised without that.
 - `affected` reads diffs through `git`, so the repository it reads must be a git checkout.
 - Coverage is evidence overlay, not instrumentation. It reports what the tests *say* they
   touch, from their own source; it never runs them.
