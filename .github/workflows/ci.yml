@@ -82,3 +82,23 @@ jobs:
             fi
           done
           exit "$missing"
+
+  comment-hygiene:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Comment hygiene
+        run: python3 .claude/hooks/comment-hygiene.py --scan
+
+      - name: Comment hygiene (commit messages)
+        if: github.event_name == 'pull_request'
+        run: python3 .claude/hooks/comment-hygiene.py --scan-commits origin/${{ github.base_ref }}..HEAD
+
+      - name: Comment hygiene selfcheck
+        run: python3 .claude/hooks/comment-hygiene.py --selfcheck
