@@ -52,7 +52,7 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
          └─ OrderService.PlaceOrder  api  src/Services/OrderService.cs:35  [body]
             ├─ ◇ 38-41  if (!accepted)  [branch:if]
             ├─ IOrderRepository  api  src/Services/OrderService.cs:21  [ctor]
-            │  └─ ■ OrderRepository  api  src/DataAccess/OrderRepository.cs:15  [db·write]
+            │  └─ ■ OrderRepository  api  src/DataAccess/OrderRepository.cs:18  [db·write]
             ├─ IPublishEndpoint  api  src/Services/OrderService.cs:22  [ctor]
             │  └─ InMemoryPublishEndpoint  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [di]
             │     └─ InMemoryPublishEndpoint.Publish  api  src/Messaging/InMemoryPublishEndpoint.cs:7  [body]  graph: unavailable
@@ -61,8 +61,16 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
                   └─ OrderPlacedConsumer.Consume  api  src/Messaging/OrderPlacedConsumer.cs:16  [body]
                      ├─ ILogger<OrderPlacedConsumer>  api  src/Messaging/OrderPlacedConsumer.cs:13  [ctor]  unresolved
                      ├─ IOrderRepository  api  src/Messaging/OrderPlacedConsumer.cs:13  [ctor]
-                     │  └─ ↑ OrderRepository (see above, ×2)
+                     │  └─ ↑ OrderRepository (see above, ×3)
                      └─ FulfilOrderJob  bus  src/Messaging/OrderPlacedConsumer.cs:20  [publish]
+                        ├─ FulfilOrderJobConsumer  api  src/Messaging/FulfilOrderJobConsumer.cs:13  [message·fqn]
+                        │  └─ FulfilOrderJobConsumer.Run  api  src/Messaging/FulfilOrderJobConsumer.cs:18  [body]
+                        │     └─ IFulfilmentHandler  api  src/Messaging/FulfilOrderJobConsumer.cs:13  [ctor]
+                        │        └─ FulfilmentHandler  api  src/Services/FulfilmentHandler.cs:18  [di]
+                        │           └─ FulfilmentHandler.Fulfil  api  src/Services/FulfilmentHandler.cs:21  [body]
+                        │              ├─ ◇ 24-27  if (order == null)  → throw InvalidOperationException (500)  [branch:error_return]  (async)
+                        │              └─ IOrderRepository  api  src/Services/FulfilmentHandler.cs:18  [ctor]
+                        │                 └─ ↑ OrderRepository (see above, ×3)
                         └─ OrderFulfilmentConsumer  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [message·fqn]
                            └─ OrderFulfilmentConsumer.Consume  api  src/Messaging/OrderFulfilmentConsumer.cs:14  [body]
                               ├─ IProductRepository  api  src/Messaging/OrderFulfilmentConsumer.cs:11  [ctor]
@@ -72,10 +80,11 @@ POST orders/v1/checkout  api  src/Controllers/OrdersController.cs:36  [start]
 use-case seeds (3):
 U1  error_return@39=taken  → 400 BadRequest  #5a6423a0
 U2  error_return@39=not-taken, error_return@45=taken  → 403 Forbidden  #ca37457e  [unknown: placed ← unresolved]
-U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedEvent → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced → ■ db ProductRepository.GetById  #31ba2067
+U3  error_return@39=not-taken, error_return@45=not-taken  → ■ db OrderRepository.SaveOrder, ⇝ OrderPlacedEvent → OrderPlacedConsumer [api] → ■ db OrderRepository.MarkPlaced → ■ db OrderRepository.FindOrder → ■ db ProductRepository.GetById  #31ba2067
     also on path: if@OrderService.PlaceOrder:38
+    also on path (infrastructure): error_return@FulfilmentHandler.Fulfil:24
 
-3 sinks · 3 branch points (3 primary) · 1 repo (api) · via: body 7, ctor 7, di 5, literal 1, message 2, publish 2 · 1 graph hop unavailable
+4 sinks · 4 branch points (3 primary) · 1 repo (api) · via: body 10, ctor 9, di 7, literal 1, message 3, publish 2 · 1 graph hop unavailable
 ```
 
 `graph: unavailable` marks a hop the walk could not extend without a code index
@@ -221,7 +230,7 @@ project is run and how someone becomes a reviewer or maintainer;
 
 Semantic versioning from `0.x` — the CLI surface may still change between minor versions.
 What changed in each release is in [CHANGELOG.md](CHANGELOG.md). The current release is
-`0.1.1`.
+`0.2.0`.
 
 ## License
 

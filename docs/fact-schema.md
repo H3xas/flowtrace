@@ -133,7 +133,7 @@ compared, while `generatedFrom` still names the extraction that wrote the file:
 {
   "repo": "api",
   "kind": "backend",
-  "generatedFrom": "flowtrace 0.1.1",
+  "generatedFrom": "flowtrace 0.2.0",
   "generatedAt": "2026-01-01T00:00:00.000Z",
   "provider": {
     "producer": "syntax-exporter",
