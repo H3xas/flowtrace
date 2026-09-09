@@ -1,0 +1,10 @@
+{
+  "out": "out",
+  "repos": [
+    {
+      "id": "e2e",
+      "kind": "playwright",
+      "root": "e2e"
+    }
+  ]
+}

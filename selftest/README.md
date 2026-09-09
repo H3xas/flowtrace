@@ -35,8 +35,14 @@ npm test
   of the corpus.
 - `corpus/gizmo-shop/` — a minimal invented ASP.NET-Core-shaped backend: one controller, one
   service, one repository, reachable by `flowtrace extract`.
+- `corpus/widget-cart/` — a minimal invented Playwright suite: one spec with five test
+  declarations, plus `pw-list-transformed.json`, a list-mode report of that same suite whose
+  positions are shifted the way a transformed source shifts them, so the title join is pinned
+  against a report whose lines do not match the spec's own.
 - `*.test.js` — one file per contract area, run against the CLI through `helpers.js` — with
-  one exception: `scout-contract.test.js` imports `lib/scout.js` and `lib/dotnet.js`
+  two exceptions: `scout-contract.test.js` imports `lib/scout.js` and `lib/dotnet.js`
   directly, because the code index binary that would otherwise have to be faked for a CLI
   run is off the table for a public fixture, and the functions it covers are pure parsing
-  and selection logic with no process or filesystem behavior of their own to observe.
+  and selection logic with no process or filesystem behavior of their own to observe; and
+  `pw-titles-contract.test.js` imports `lib/extract/pw-titles.js` directly for the same
+  reason, since the CLI path would spawn the suite's own installed Playwright.

@@ -88,9 +88,12 @@ const USAGE = [
   '  A playwright repository configured "titles": true also runs its own installed',
   '  Playwright in list mode and appends one pw_title fact per test declaration the',
   '  listing resolved, so a parameterised title renders as the titles it produces rather',
-  '  than as its expression. When that collector cannot run, extraction still succeeds:',
-  '  the reason goes to stderr and into the fact set\'s header, and no pw_title fact is',
-  '  written.',
+  '  than as its expression. The listing is joined to the source on (spec file,',
+  '  declaration ordinal), never on a reported line, and a spec file whose two sides do',
+  '  not line up resolves no title at all rather than a shifted one; the header counts',
+  '  those files under "refused". When that collector cannot run, extraction still',
+  '  succeeds: the reason goes to stderr and into the fact set\'s header, and no pw_title',
+  '  fact is written.',
   '  A repository configured with a factsProvider also reads that provider\'s fact',
   '  document — a file, or the stdout of a command — validates every fact against the',
   '  schema, stamps each one provenance: { producer, version }, and merges it with the',
@@ -1100,10 +1103,18 @@ async function runExtract(config, repoFilter) {
     if (repo.titles) {
       const collected = pwTitlesModule.collectTitles(repo.root, { preloadDir: config.out });
       if (collected.status === 'ok') {
-        const extra = pwTitlesModule.titleFacts(facts, collected.titlesByLine);
+        // A spec file the join cannot prove resolves nothing rather than a shifted set, so
+        // the count of refused files is carried too: without it a suite whose listing no
+        // longer lines up with its source reads exactly like a suite with no titles.
+        const refusals = [];
+        const extra = pwTitlesModule.titleFacts(facts, collected.titlesByLine, refusals);
         facts.push(...extra);
-        titles = { status: 'ok', facts: extra.length };
+        titles = { status: 'ok', facts: extra.length, refused: refusals.length };
         titleNote = `, ${plural(extra.length, 'title')}`;
+        if (refusals.length > 0) {
+          warn(`flowtrace: titles ${repo.id}: ${plural(refusals.length, 'spec file')} resolved no title, first ${refusals[0].spec}: ${refusals[0].reason}`);
+          titleNote += `, ${plural(refusals.length, 'spec file')} unresolved`;
+        }
       } else {
         warn(`flowtrace: titles ${repo.id}: ${collected.reason}`);
         titles = { status: 'failed', reason: collected.reason };

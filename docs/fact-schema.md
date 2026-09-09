@@ -87,7 +87,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `cypress_test` | `spec`, `test`, `skipped` | a Cypress test is declared |
 | `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL |
 | `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal argument of a configured case-id call, `table` for one row of a same-file data table the test iterates |
-| `pw_title` | `spec`, `titles` | *(optional)* the titles a collector resolved at one `pw_test` declaration line, one per parameter instance |
+| `pw_title` | `spec`, `titles` | *(optional)* the titles a collector resolved for one `pw_test` declaration, one per parameter instance; its `line` is that declaration's *source* line |
 
 A `cypress_intercept` written in a support command carries no enclosing test and is exactly
 as much proof that a route is exercised as one written inline. There is no Cypress assertion
@@ -105,10 +105,14 @@ approximated — the id a tester pastes into a case tool is never invented.
 
 `pw_title` is written by `extract` for a `playwright` repository configured `"titles": true`
 (see [configuration.md](configuration.md#playwright-titles)): Playwright's own list mode
-evaluates each parameterised title, and one fact per resolved declaration line carries the
-titles it produced. Without the option, or when the collector could not run, a reader keeps
-the title *expression* as written and labels it `raw`; the fact set's header says which of
-the two happened.
+evaluates each parameterised title, and one fact per resolved declaration carries the titles
+it produced. The listing is joined to the source on `(spec file, declaration ordinal)`, not
+on any line the runner reports — those are positions in transformed source — so a fact's
+`line` is always the *source* line of the declaration it belongs to, the same line the
+`pw_test` fact for that declaration carries. A spec file whose two sides cannot be shown to
+line up resolves nothing at all rather than a shifted set. Without the option, when the
+collector could not run, or for a refused file, a reader keeps the title *expression* as
+written and labels it `raw`; the fact set's header says which of the three happened.
 
 ### Derived and judged
 

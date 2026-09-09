@@ -1,0 +1,86 @@
+{
+  "config": {
+    "testDir": "tests"
+  },
+  "suites": [
+    {
+      "title": "tests/cart.spec.ts",
+      "file": "tests/cart.spec.ts",
+      "line": 0,
+      "column": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "cart/v1/items",
+          "file": "tests/cart.spec.ts",
+          "line": 10,
+          "column": 6,
+          "specs": [
+            {
+              "title": "adds an item to the cart",
+              "ok": true,
+              "tags": [],
+              "id": "5a1c0d3ee0f4b6c71001",
+              "file": "tests/cart.spec.ts",
+              "line": 11,
+              "column": 3,
+              "tests": [{ "expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium" }]
+            },
+            {
+              "title": "removes an item from the cart",
+              "ok": true,
+              "tags": [],
+              "id": "5a1c0d3ee0f4b6c71002",
+              "file": "tests/cart.spec.ts",
+              "line": 16,
+              "column": 3,
+              "tests": [{ "expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium" }]
+            },
+            {
+              "title": "renders a small cart badge",
+              "ok": true,
+              "tags": [],
+              "id": "5a1c0d3ee0f4b6c71003",
+              "file": "tests/cart.spec.ts",
+              "line": 21,
+              "column": 5,
+              "tests": [{ "expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium" }]
+            },
+            {
+              "title": "renders a large cart badge",
+              "ok": true,
+              "tags": [],
+              "id": "5a1c0d3ee0f4b6c71004",
+              "file": "tests/cart.spec.ts",
+              "line": 21,
+              "column": 5,
+              "tests": [{ "expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium" }]
+            },
+            {
+              "title": "rejects an unauthenticated add",
+              "ok": true,
+              "tags": [],
+              "id": "5a1c0d3ee0f4b6c71005",
+              "file": "tests/cart.spec.ts",
+              "line": 27,
+              "column": 3,
+              "tests": [{ "expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium" }]
+            },
+            {
+              "title": "empties the cart",
+              "ok": true,
+              "tags": [],
+              "id": "5a1c0d3ee0f4b6c71006",
+              "file": "tests/cart.spec.ts",
+              "line": 33,
+              "column": 3,
+              "tests": [{ "expectedStatus": "passed", "status": "expected", "projectId": "chromium", "projectName": "chromium" }]
+            }
+          ],
+          "suites": []
+        }
+      ]
+    }
+  ],
+  "errors": []
+}
