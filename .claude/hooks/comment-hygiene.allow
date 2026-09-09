@@ -1,0 +1,4 @@
+# One prefix per line, widening the scanner's tracker-id allowlist for this
+# repo only. TC is the Playwright case-id API's own vocabulary, the prefix
+# passed to tms.id(), not an issue-tracker reference.
+TC
