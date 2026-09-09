@@ -1,5 +1,19 @@
 # Releasing
 
+## Before the tag
+
+Bump `version` in `package.json`, add the `CHANGELOG.md` section and update the release named
+in `README.md`, then regenerate the worked example's pinned export:
+
+```sh
+cd examples/demo-shop
+node ../../bin/flowtrace.js extract --config flowtrace.config.json
+node ../../bin/flowtrace.js join    --config flowtrace.config.json --export-edges exports/flowtrace-edges.json
+```
+
+The export stamps the producing version, and CI compares the regenerated file against the pinned
+one, so a version bump without this step fails the worked example.
+
 Maintainers only. Pushing a `v*` tag runs [`.github/workflows/release.yml`](.github/workflows/release.yml),
 which:
 

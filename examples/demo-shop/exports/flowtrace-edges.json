@@ -3,11 +3,11 @@
   "format": "flowtrace-edges",
   "tool": {
     "name": "flowtrace-cli",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "provenance": {
-    "id": "4d38598e5419ea62",
-    "producer": "flowtrace-cli 0.2.0",
+    "id": "e0b9e243e89184d8",
+    "producer": "flowtrace-cli 0.3.0",
     "formatVersion": 1,
     "config": {
       "aliases": [],
@@ -57,20 +57,20 @@
       {
         "repo": "api",
         "kind": "backend",
-        "generatedFrom": "flowtrace 0.2.0",
-        "headSha": "68b4e7923efc925afd8e05504e0e0656398d8bbe",
-        "dirty": true,
-        "dirtyDigest": "5b0094aff37fdc357338217683f6194278513027",
+        "generatedFrom": "flowtrace 0.3.0",
+        "headSha": "f25e39173eb0af922f86c55652066172d6293ed5",
+        "dirty": false,
+        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 16,
         "digest": "46f29df4fed96c903f845b6df26d2404f75989ec"
       },
       {
         "repo": "e2e",
         "kind": "playwright",
-        "generatedFrom": "flowtrace 0.2.0",
-        "headSha": "68b4e7923efc925afd8e05504e0e0656398d8bbe",
-        "dirty": true,
-        "dirtyDigest": "5b0094aff37fdc357338217683f6194278513027",
+        "generatedFrom": "flowtrace 0.3.0",
+        "headSha": "f25e39173eb0af922f86c55652066172d6293ed5",
+        "dirty": false,
+        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 2,
         "digest": "1fe8e0afb3f3642db88b399f8bc6d4bcc88e5ea9"
       }
@@ -92,7 +92,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "4d38598e5419ea62"
+      "provenance": "e0b9e243e89184d8"
     },
     {
       "kind": "consumes",
@@ -109,7 +109,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "4d38598e5419ea62"
+      "provenance": "e0b9e243e89184d8"
     },
     {
       "kind": "consumes",
@@ -126,7 +126,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "4d38598e5419ea62"
+      "provenance": "e0b9e243e89184d8"
     },
     {
       "kind": "publishes",
@@ -143,7 +143,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "4d38598e5419ea62"
+      "provenance": "e0b9e243e89184d8"
     },
     {
       "kind": "publishes",
@@ -160,7 +160,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "4d38598e5419ea62"
+      "provenance": "e0b9e243e89184d8"
     },
     {
       "kind": "publishes",
@@ -177,7 +177,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "4d38598e5419ea62"
+      "provenance": "e0b9e243e89184d8"
     }
   ]
 }
