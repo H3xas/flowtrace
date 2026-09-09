@@ -230,7 +230,7 @@ project is run and how someone becomes a reviewer or maintainer;
 
 Semantic versioning from `0.x` — the CLI surface may still change between minor versions.
 What changed in each release is in [CHANGELOG.md](CHANGELOG.md). The current release is
-`0.2.0`.
+`0.3.0`.
 
 ## License
 

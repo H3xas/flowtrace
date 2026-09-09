@@ -2,6 +2,34 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## 0.3.0
+
+Gates:
+
+- `join --against` no longer passes a comparison it never ran: under `--fail-on`, a non-empty
+  `skipped` set exits `5`, because a boundary that was never compared is not evidence that the
+  boundary is unchanged. `--allow-skipped` restores the plain exit-by-finding behaviour for a
+  caller that wants it, and is refused on any other verb.
+- `join --export-edges` refuses the whole export when an edge's code end is missing its repo,
+  file or line, and leaves any previously written file untouched — a partial edge set read by a
+  code index is worse than no edge set.
+- The worked example now pins a public `flowtrace-edges` export, so a change to the export shape
+  is caught by the example's own check rather than by a consumer.
+
+Index adapter:
+
+- Every edge kind the graph declares is read, instead of a frozen three. A graph that gains a
+  kind is no longer silently narrowed on the way in.
+- The dotnet test filter answers for itself which inbound kinds are strong enough to select a
+  test class: a shared base type, a shared member type, a member call, constructor injection, an
+  implemented interface and an overridden method each mean the referencing class is compiled
+  against the changed shape. A bare namespace import stays visible in the counts but never
+  selects a class on its own.
+
+Repository:
+
+- CI guards comment hygiene on every run and requires a signed-off commit.
+
 ## 0.2.0
 
 Dual-licensed MIT OR Apache-2.0.
