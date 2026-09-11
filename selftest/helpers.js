@@ -29,13 +29,19 @@ export function runCli(args, options = {}) {
   };
 }
 
+/** Copies one named fixture under `corpus/` into a fresh temp directory, registered for
+ * cleanup on `t` (a node:test TestContext). Returns the directory. */
+export function copyFixture(t, name) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-selftest-'));
+  cpSync(join(HERE, 'corpus', name), dir, { recursive: true });
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
+
 /** Copies the synthetic corpus into a fresh temp directory, registered for cleanup on
  * `t` (a node:test TestContext). Returns the directory. */
 export function copyCorpus(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-selftest-'));
-  cpSync(CORPUS, dir, { recursive: true });
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
-  return dir;
+  return copyFixture(t, 'gizmo-shop');
 }
 
 /** Same as copyCorpus, but also makes it a git checkout with one commit and `out/`
@@ -52,8 +58,8 @@ export function copyGitCorpus(t) {
   return dir;
 }
 
-export function extract(dir) {
-  const result = runCli(['extract', '--config', 'gizmo.config.json'], { cwd: dir });
+export function extract(dir, config = 'gizmo.config.json') {
+  const result = runCli(['extract', '--config', config], { cwd: dir });
   if (result.status !== 0) {
     throw new Error(`fixture extract failed: ${result.stderr}`);
   }

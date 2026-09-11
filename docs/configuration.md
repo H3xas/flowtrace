@@ -110,6 +110,27 @@ title `listed` instead of `raw`.
 { "id": "e2e", "kind": "playwright", "root": "shop-e2e", "titles": true }
 ```
 
+Omitting the key is a silent no-op, not a default-on: a configuration without `"titles"` on
+its `playwright` repository spawns nothing, writes no `pw_title` fact and carries no `titles`
+field in the header, so a suite whose titles were never collected reads exactly like a suite
+whose titles are all literal. If a copied or generated configuration loses these facts, this
+key is the first thing to check.
+
+How the two sides are joined: on `(spec file, declaration ordinal)`. Recent Playwright
+versions report list-mode positions in *transformed* source, so a reported line names
+nothing in the file the extractor read. A transform renumbers lines but does not reorder
+declarations, so the listing's specs are collapsed to declaration sites — every spec
+reported at one position is one site, which is how a parameterised declaration keeps all of
+its instance titles — and the Nth site of a file is joined to the Nth declaration the
+extractor found in it.
+
+A spec file resolves either every declaration or none. Two guards must hold first: the two
+sides must count the same number of declarations in the file, and every declaration whose
+title has no `${` must find that title verbatim at its own site. If either fails the whole
+file is refused, because one missed declaration shifts every ordinal after it; its titles
+then stay `raw` and the header counts the file under `refused`. A missing title is visible;
+a wrong one would not be.
+
 What it needs: `@playwright/test` installed where a `require` from the repository root would
 find it, which is the suite's own `node_modules` or a hoisted workspace root, and Node to
 run it. The tool resolves the package there and nowhere else; nothing is fetched, nothing is
@@ -131,8 +152,9 @@ resolvable, its command-line entry is missing, list mode exits non-zero or times
 output is not the JSON reporter's — extraction still succeeds. The extract line reads
 `titles unavailable`, one stderr line names the reason, the fact set's header carries
 `"titles": { "status": "failed", "reason": "…" }`, and no `pw_title` fact is written. On
-success the header carries `"titles": { "status": "ok", "facts": N }`. Without the option
-the header has no `titles` field and nothing is spawned.
+success the header carries `"titles": { "status": "ok", "facts": N, "refused": M }`, where
+`M` counts the spec files the guards above refused. Without the option the header has no
+`titles` field and nothing is spawned.
 
 ### External fact provider
 

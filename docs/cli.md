@@ -41,9 +41,12 @@ extract [--repo <id>]
   A playwright repository configured "titles": true also runs its own installed
   Playwright in list mode and appends one pw_title fact per test declaration the
   listing resolved, so a parameterised title renders as the titles it produces rather
-  than as its expression. When that collector cannot run, extraction still succeeds:
-  the reason goes to stderr and into the fact set's header, and no pw_title fact is
-  written.
+  than as its expression. The listing is joined to the source on (spec file,
+  declaration ordinal), never on a reported line, and a spec file whose two sides do
+  not line up resolves no title at all rather than a shifted one; the header counts
+  those files under "refused". When that collector cannot run, extraction still
+  succeeds: the reason goes to stderr and into the fact set's header, and no pw_title
+  fact is written.
   A repository configured with a factsProvider also reads that provider's fact
   document — a file, or the stdout of a command — validates every fact against the
   schema, stamps each one provenance: { producer, version }, and merges it with the

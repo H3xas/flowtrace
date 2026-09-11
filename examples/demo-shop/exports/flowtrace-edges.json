@@ -6,7 +6,7 @@
     "version": "0.3.0"
   },
   "provenance": {
-    "id": "e0b9e243e89184d8",
+    "id": "a781219a9be7fc55",
     "producer": "flowtrace-cli 0.3.0",
     "formatVersion": 1,
     "config": {
@@ -58,9 +58,9 @@
         "repo": "api",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.3.0",
-        "headSha": "f25e39173eb0af922f86c55652066172d6293ed5",
-        "dirty": false,
-        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "headSha": "e7c512fc15c9cc0f17b2c085d5b64dc62dafecc3",
+        "dirty": true,
+        "dirtyDigest": "ab1e3222e5d29080b67bedfa3f0f306df44d6f81",
         "fileCount": 16,
         "digest": "46f29df4fed96c903f845b6df26d2404f75989ec"
       },
@@ -68,10 +68,14 @@
         "repo": "e2e",
         "kind": "playwright",
         "generatedFrom": "flowtrace 0.3.0",
-        "headSha": "f25e39173eb0af922f86c55652066172d6293ed5",
-        "dirty": false,
-        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "headSha": "e7c512fc15c9cc0f17b2c085d5b64dc62dafecc3",
+        "dirty": true,
+        "dirtyDigest": "ab1e3222e5d29080b67bedfa3f0f306df44d6f81",
         "fileCount": 2,
+        "titles": {
+          "status": "failed",
+          "reason": "@playwright/test not resolvable from the repository root"
+        },
         "digest": "1fe8e0afb3f3642db88b399f8bc6d4bcc88e5ea9"
       }
     ]
@@ -92,7 +96,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "e0b9e243e89184d8"
+      "provenance": "a781219a9be7fc55"
     },
     {
       "kind": "consumes",
@@ -109,7 +113,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "e0b9e243e89184d8"
+      "provenance": "a781219a9be7fc55"
     },
     {
       "kind": "consumes",
@@ -126,7 +130,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "e0b9e243e89184d8"
+      "provenance": "a781219a9be7fc55"
     },
     {
       "kind": "publishes",
@@ -143,7 +147,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "e0b9e243e89184d8"
+      "provenance": "a781219a9be7fc55"
     },
     {
       "kind": "publishes",
@@ -160,7 +164,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "e0b9e243e89184d8"
+      "provenance": "a781219a9be7fc55"
     },
     {
       "kind": "publishes",
@@ -177,7 +181,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "e0b9e243e89184d8"
+      "provenance": "a781219a9be7fc55"
     }
   ]
 }
