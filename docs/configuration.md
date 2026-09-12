@@ -287,6 +287,12 @@ a call flowtrace cannot know about. `caseId` names those callees. It defaults to
   string-literal argument of a `tms.id(...)` site a case id. Ids resolved either way join
   the test's `case_id` fact ([fact-schema.md](fact-schema.md)).
 
+A configured callee is also read in title position. A test declared as
+`test(tms.id(9001, 'refunds a sale'), …)` has the title the runner reports carried inside the
+wrapper, so title collection compares against `refunds a sale` rather than against the whole
+call. Without the entry the wrapper is opaque and the declaration resolves on its position in
+the file alone.
+
 ## `workerPatterns`
 
 The backend extractor recognises public messaging idioms out of the box — MassTransit's
