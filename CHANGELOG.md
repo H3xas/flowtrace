@@ -2,6 +2,18 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## [Unreleased]
+
+Extraction:
+
+- A C# file containing a bare carriage return is no longer mis-numbered. `lineAt` and
+  `computeLineStartIndices` counted lines by `\n` alone while several other passes split on
+  any terminator, so from the first stray `\r` onward the two disagreed by the number of
+  stray `\r`s seen; the masking pass then gated line text against the drifted offset and
+  blanked whole lines, dropping `branch_point` facts for live `if`/`else` statements. All
+  three readers now treat CR, LF and CRLF alike. Fact counts in such files go up. Files with
+  no bare `\r` are byte-identical.
+
 ## 0.3.0
 
 Gates:
