@@ -5,7 +5,9 @@
  * skipped declaration, and a runtime guard written inside a body. A `test` that is a member of
  * something else — a regular expression, a matcher object — is not Playwright's `test` at all.
  * Counting either as a declaration inflates the source side, and the ordinal join then refuses
- * the whole file because the two sides no longer have the same length.
+ * the whole file because the two sides no longer have the same length. A declaration whose body
+ * is a function named at the call site and written elsewhere in the file is still a declaration,
+ * and dropping it deflates that side just as badly.
  *
  * The second is which titles the runner is obliged to echo back. A parsed title arrives with its
  * quotes already stripped, so a plain string and a table-supplied identifier look alike and only
@@ -32,6 +34,7 @@ const EXPECTED = [
   { line: 21, expression: 'scans a label', titles: ['scans a label'] },
   { line: 26, expression: "tms.id(7, 'refunds a sale')", titles: ['refunds a sale'] },
   { line: 34, expression: 'row.summary', titles: ['prints a duplicate receipt'] },
+  { line: 40, expression: 'tops up the float', titles: ['tops up the float'] },
 ];
 
 function joinInputs(t) {
@@ -59,7 +62,7 @@ test('a skip guard and a member call are not declarations', (t) => {
   assert.deepEqual(
     declarations.map((fact) => fact.test),
     EXPECTED.map((row) => row.expression),
-    'the spec declares five tests; the guards, the bare skip and the member `test` calls are not among them',
+    'the spec declares six tests, one of them with its body passed by reference; the guards, the bare skip and the member `test` calls are not among them',
   );
 });
 
@@ -68,6 +71,7 @@ test('a skipped declaration keeps its skipped flag and its three-argument form c
   const byTitle = new Map(facts.filter((fact) => fact.type === 'pw_test').map((fact) => [fact.test, fact]));
   assert.equal(byTitle.get('reprints a receipt').skipped, true);
   assert.equal(byTitle.get('scans a label').skipped, false);
+  assert.equal(byTitle.get('tops up the float').skipped, false);
 });
 
 test('every declaration resolves its own title', (t) => {

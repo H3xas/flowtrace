@@ -66,6 +66,16 @@
               "line": 38,
               "column": 10,
               "tests": []
+            },
+            {
+              "title": "tops up the float",
+              "ok": true,
+              "tags": [],
+              "id": "kiosk0005",
+              "file": "tests/kiosk.spec.ts",
+              "line": 44,
+              "column": 8,
+              "tests": []
             }
           ]
         }

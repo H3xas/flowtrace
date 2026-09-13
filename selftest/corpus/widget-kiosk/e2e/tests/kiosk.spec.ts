@@ -36,4 +36,11 @@ test.describe('kiosk/v1/till', () => {
       expect(page.url()).toContain('kiosk');
     });
   }
+
+  test('tops up the float', topsUpTheFloat);
 });
+
+async function topsUpTheFloat({ request }) {
+  const response = await request.post('kiosk/v1/float');
+  expect(response.status()).toBe(200);
+}
