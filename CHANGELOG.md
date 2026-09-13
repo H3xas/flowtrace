@@ -17,7 +17,10 @@ Extraction:
   its spec file. The title the runner reports sits inside the wrapper, so it is compared against
   the unwrapped string; a wrapper that is not configured, a template, and a title supplied as an
   identifier by a table all resolve on their position in the file, as templates already did.
-  Suites that wrap every title kept almost no titles before this.
+  Suites that wrap every title kept almost no titles before this. A title is read as text, so a
+  title whose text reads as a single identifier, a dotted path or a call — `checkout`,
+  `cart.badge`, `retries (twice)` — is treated as dynamic and resolves on its position in the
+  file rather than being compared verbatim, even when the source wrote it as a quoted string.
 
 ## 0.3.0
 
