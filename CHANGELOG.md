@@ -2,6 +2,37 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## [Unreleased]
+
+Provenance:
+
+- A fact set's identity in a snapshot and an edge export now carries its facts provider:
+  producer, version, merge mode, counts, comparison and a digest of the provider's own facts.
+  Two exports over the same extraction, one with a provider and one without, no longer share
+  a `provenance.id`, and neither do two provider documents that compare to the extraction with
+  equal counts under `regex-only-with-diff`. The provider's file or command is never part of
+  the identity, so the same facts keep their id wherever the checkout sits, and no filesystem
+  path reaches a snapshot or an export. The facts header's `provider` block gains `digest`.
+- A fact set with no revision witness states `"headSha": null` in its identity instead of
+  omitting the field.
+- `join --snapshot` writes `schemaVersion` 2. A schemaVersion 1 snapshot is refused by
+  `join --against` (exit 4) with an instruction to retake it.
+- `join --export-edges` adds `provenance.factSetsWithoutEdges`, the fact sets no record names,
+  so a fact set in the envelope never reads as a witness for edges it did not produce. The
+  record shape and `schemaVersion` 1 are unchanged.
+
+Worked example:
+
+- `examples/demo-shop` gains a second backend (`stock`) and a web client with a Cypress suite
+  (`shopfront`), so the pinned edge export carries `calls`, `tests`, `publishes` and
+  `consumes`, including a message published in one backend and consumed in the other.
+- `scripts/check-pinned-export.mjs` no longer strips provenance to compare. The id is
+  re-derived, every record's `provenance` must equal it, each regenerated fact set's `headSha`
+  must be the checkout's HEAD, `dirty` and `dirtyDigest` must agree, and `fileCount` is
+  compared. The CI workflow and the exports README name the two checks for what they are:
+  canonical structural and provenance equality against the pinned copy, and literal byte
+  equality of two exports within one checkout.
+
 ## 0.3.0
 
 Gates:

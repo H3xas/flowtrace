@@ -32,8 +32,8 @@ run from a checkout with `node bin/flowtrace.js`.
 ## Quickstart
 
 The repository ships a worked example under `examples/demo-shop`: a small ASP.NET Core
-service with a catalog and an orders controller, and a Playwright suite that covers some of
-it. Nothing to set up:
+service with a catalog and an orders controller, a second service that reserves stock, a web
+client with a Cypress suite, and a Playwright suite that covers some of it. Nothing to set up:
 
 ```
 cd examples/demo-shop

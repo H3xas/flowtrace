@@ -206,7 +206,9 @@ read and every fact in it is validated as an extractor's would be. Each one is t
 `provenance: { "producer", "version" }` and the two sets are combined under `merge`. The
 written fact set's header keeps `generatedFrom` for the extraction and adds a `provider`
 block — producer, version, source, mode, how many facts were supplied, kept and replaced,
-and a per-type comparison of the two sources computed before the merge discarded anything.
+a per-type comparison of the two sources computed before the merge discarded anything, and a
+digest of the provider's facts. Everything but `source` identifies the fact set in a snapshot
+and an edge export, so the same facts read from a different checkout path keep their identity.
 The `extract` line says what happened: `53 facts (48 extracted, 5 from syntax-exporter,
 prefer-external)`.
 
@@ -465,15 +467,19 @@ value must be a non-empty string without whitespace.
 
 ## Worked example
 
-`examples/demo-shop/flowtrace.config.json` is the smallest configuration that produces a
-non-trivial trace: two repositories, no options.
+`examples/demo-shop/flowtrace.config.json` produces a non-trivial trace and every edge kind
+the edge export carries across repositories: two backends, a web client with a Cypress suite
+and a Playwright suite.
 
 ```json
 {
   "out": "out",
+  "workerPatterns": { "consumerBases": ["IJobConsumer"] },
   "repos": [
     { "id": "api", "kind": "backend", "root": "backend", "role": ["api"] },
-    { "id": "e2e", "kind": "playwright", "root": "e2e" }
+    { "id": "e2e", "kind": "playwright", "root": "e2e", "titles": true },
+    { "id": "shopfront", "kind": "web", "root": "shopfront", "cypressSubpath": "cypress" },
+    { "id": "stock", "kind": "backend", "root": "stock" }
   ]
 }
 ```
