@@ -6,7 +6,7 @@
     "version": "0.3.0"
   },
   "provenance": {
-    "id": "a781219a9be7fc55",
+    "id": "f33d6a440c0dd040",
     "producer": "flowtrace-cli 0.3.0",
     "formatVersion": 1,
     "config": {
@@ -58,29 +58,69 @@
         "repo": "api",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.3.0",
-        "headSha": "e7c512fc15c9cc0f17b2c085d5b64dc62dafecc3",
-        "dirty": true,
-        "dirtyDigest": "ab1e3222e5d29080b67bedfa3f0f306df44d6f81",
-        "fileCount": 16,
-        "digest": "46f29df4fed96c903f845b6df26d2404f75989ec"
+        "headSha": "1fcf4547bde0c6cfaa395bd058fa200f8c71185c",
+        "dirty": false,
+        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "fileCount": 17,
+        "digest": "301cd818f999125d4b7cc05d267e870cce829cba"
       },
       {
         "repo": "e2e",
         "kind": "playwright",
         "generatedFrom": "flowtrace 0.3.0",
-        "headSha": "e7c512fc15c9cc0f17b2c085d5b64dc62dafecc3",
-        "dirty": true,
-        "dirtyDigest": "ab1e3222e5d29080b67bedfa3f0f306df44d6f81",
+        "headSha": "1fcf4547bde0c6cfaa395bd058fa200f8c71185c",
+        "dirty": false,
+        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 2,
         "titles": {
           "status": "failed",
           "reason": "@playwright/test not resolvable from the repository root"
         },
         "digest": "1fe8e0afb3f3642db88b399f8bc6d4bcc88e5ea9"
+      },
+      {
+        "repo": "shopfront",
+        "kind": "web",
+        "generatedFrom": "flowtrace 0.3.0",
+        "headSha": "1fcf4547bde0c6cfaa395bd058fa200f8c71185c",
+        "dirty": false,
+        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "fileCount": 3,
+        "digest": "6f73b0c786c0791c1e7d80bd7e35c6143484293c"
+      },
+      {
+        "repo": "stock",
+        "kind": "backend",
+        "generatedFrom": "flowtrace 0.3.0",
+        "headSha": "1fcf4547bde0c6cfaa395bd058fa200f8c71185c",
+        "dirty": false,
+        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "fileCount": 5,
+        "digest": "2a7ceaeb6c43d23133b9c1f54668571388bf30d7"
       }
+    ],
+    "factSetsWithoutEdges": [
+      "e2e"
     ]
   },
   "edges": [
+    {
+      "kind": "calls",
+      "from": {
+        "repo": "shopfront",
+        "ref": "httpClient.reserveStock",
+        "file": "src/services/reservations.ts",
+        "line": 4
+      },
+      "to": {
+        "repo": "stock",
+        "ref": "ReservationsController.Reserve",
+        "file": "src/Controllers/ReservationsController.cs",
+        "line": 18
+      },
+      "key": "POST stock/v1/reservations",
+      "provenance": "f33d6a440c0dd040"
+    },
     {
       "kind": "consumes",
       "from": {
@@ -96,7 +136,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "a781219a9be7fc55"
+      "provenance": "f33d6a440c0dd040"
     },
     {
       "kind": "consumes",
@@ -113,7 +153,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "a781219a9be7fc55"
+      "provenance": "f33d6a440c0dd040"
     },
     {
       "kind": "consumes",
@@ -130,7 +170,24 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "a781219a9be7fc55"
+      "provenance": "f33d6a440c0dd040"
+    },
+    {
+      "kind": "consumes",
+      "from": {
+        "repo": "message",
+        "ref": "StockReservedEvent",
+        "file": null,
+        "line": null
+      },
+      "to": {
+        "repo": "api",
+        "ref": "StockReservedConsumer",
+        "file": "src/Messaging/StockReservedConsumer.cs",
+        "line": 7
+      },
+      "key": "StockReservedEvent",
+      "provenance": "f33d6a440c0dd040"
     },
     {
       "kind": "publishes",
@@ -147,7 +204,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "a781219a9be7fc55"
+      "provenance": "f33d6a440c0dd040"
     },
     {
       "kind": "publishes",
@@ -164,7 +221,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "a781219a9be7fc55"
+      "provenance": "f33d6a440c0dd040"
     },
     {
       "kind": "publishes",
@@ -181,7 +238,41 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "a781219a9be7fc55"
+      "provenance": "f33d6a440c0dd040"
+    },
+    {
+      "kind": "publishes",
+      "from": {
+        "repo": "stock",
+        "ref": "src/Services/ReservationService.cs",
+        "file": "src/Services/ReservationService.cs",
+        "line": 31
+      },
+      "to": {
+        "repo": "message",
+        "ref": "StockReservedEvent",
+        "file": null,
+        "line": null
+      },
+      "key": "StockReservedEvent",
+      "provenance": "f33d6a440c0dd040"
+    },
+    {
+      "kind": "tests",
+      "from": {
+        "repo": "shopfront",
+        "ref": "reserves stock from the product page",
+        "file": "e2e/reservations.cy.ts",
+        "line": 3
+      },
+      "to": {
+        "repo": "stock",
+        "ref": "ReservationsController.Reserve",
+        "file": "src/Controllers/ReservationsController.cs",
+        "line": 18
+      },
+      "key": "POST stock/v1/reservations",
+      "provenance": "f33d6a440c0dd040"
     }
   ]
 }
