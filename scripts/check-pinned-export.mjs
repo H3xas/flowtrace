@@ -6,7 +6,11 @@
  *
  *   node scripts/check-pinned-export.mjs <generated-file> <pinned-file>
  *
- * Run it from inside the checkout the generated file was extracted from.
+ * Run it from inside the checkout the generated file was extracted from. That checkout is a
+ * requirement, not a convenience: an extraction outside git carries no revision witness at
+ * all — no `headSha`, no `dirty`, no `fileCount` — so there is nothing to bind the
+ * regeneration to and nothing to compare with a pinned copy that has one. Outside a
+ * checkout this refuses rather than compare what is left.
  *
  * This is canonical structural and provenance equality against the pinned copy, not byte
  * equality: the pinned copy was extracted at an earlier commit, so a handful of fields
@@ -18,8 +22,7 @@
  * - `provenance` on every edge: a copy of that id. Bound record by record to the envelope's
  *   id, in both files.
  * - `headSha` on every fact set: the commit each copy was extracted at. The generated file's
- *   is bound to this checkout's HEAD, or must be null when this is not a git checkout; the
- *   pinned copy's must be a commit sha or null.
+ *   is bound to this checkout's HEAD; the pinned copy's must be a commit sha or null.
  * - `dirty` and `dirtyDigest` on every fact set: the working-tree state at extraction, which
  *   a regeneration in a clean checkout and a regeneration beside local edits legitimately
  *   disagree on. Bound in both files by their rule: `dirty` is a boolean, a clean set carries
@@ -92,6 +95,15 @@ function differences(generated, pinned, path, out) {
   return out;
 }
 
+const head = checkoutHead();
+if (head === null) {
+  console.error(
+    'check-pinned-export: this is not a git checkout, so a regeneration here carries no revision ' +
+      'witness to bind or compare — run it from the checkout the generated file was extracted from',
+  );
+  process.exit(1);
+}
+
 const generated = JSON.parse(readFileSync(generatedPath, 'utf8'));
 const pinned = JSON.parse(readFileSync(pinnedPath, 'utf8'));
 const problems = [
@@ -99,7 +111,6 @@ const problems = [
   ...exportProblems(pinned).map((problem) => `${pinnedPath}: ${problem}`),
 ];
 
-const head = checkoutHead();
 for (const set of generated.provenance?.factSets || []) {
   if ((set.headSha ?? null) !== head) {
     problems.push(

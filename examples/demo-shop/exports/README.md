@@ -65,14 +65,17 @@ The worked-example CI job regenerates this file and runs two different checks on
 - **Repeat export**: two consecutive `join --export-edges` runs over the same facts are
   compared with `cmp`. This is literal byte equality within one checkout, and says only that
   the export is deterministic.
-- **Pinned export**: `scripts/check-pinned-export.mjs` compares the regeneration with this
-  copy. This is canonical structural and provenance equality against the pinned copy, not
-  byte equality. The copy was extracted at an earlier commit, so `provenance.id`, each
+- **Pinned export**: `scripts/check-pinned-export.mjs`, run from inside the checkout the
+  regeneration was extracted from, compares it with this copy. This is canonical structural
+  and provenance equality against the pinned copy, not byte equality. The copy was extracted
+  at an earlier commit, so `provenance.id`, each
   record's `provenance`, and each fact set's `headSha`, `dirty` and `dirtyDigest` are not
   compared with it. Each is bound instead: the id is re-derived from its own block, every
   record's `provenance` must equal it, the regeneration's `headSha` must be the checkout's
   HEAD, and `dirty` must be a boolean whose `dirtyDigest` is the empty-input sha1 exactly
   when the tree was clean. Everything else, `fileCount` and every `provider` field included,
-  must match, and a failure names each field that differs. The checks a file must pass on
-  its own, with no checkout, are also run by the public contract suite
-  (`selftest/export-invariants.js`).
+  must match, and a failure names each field that differs. Outside a checkout it refuses
+  instead of comparing: an extraction with no git root carries no `headSha`, `dirty` or
+  `fileCount`, so there is nothing to bind the regeneration to and nothing to compare with a
+  copy that has one. The checks a file must pass on its own, with no checkout, are also run by
+  the public contract suite (`selftest/export-invariants.js`).

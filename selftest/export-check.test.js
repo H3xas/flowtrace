@@ -6,7 +6,8 @@
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join as joinPath } from 'node:path';
 import test from 'node:test';
 import { copyCorpus, extract, providerDocument, REPO_ROOT, runCli, writeConfig, writeJsonFile } from './helpers.js';
@@ -103,6 +104,18 @@ test('check-pinned-export fails on every provenance mutation that leaves the edg
       assert.match(result.stderr, expected);
     });
   }
+
+  await t.test('a tree that is not a git checkout', () => {
+    const outside = mkdtempSync(joinPath(tmpdir(), 'flowtrace-no-checkout-'));
+    t.after(() => rmSync(outside, { recursive: true, force: true }));
+    for (const name of ['generated.json', 'pinned.json']) {
+      copyFileSync(joinPath(dir, 'out', 'pinned.json'), joinPath(outside, name));
+    }
+    const result = spawnSync(process.execPath, [CHECK, 'generated.json', 'pinned.json'], { cwd: outside, encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /this is not a git checkout, so a regeneration here carries no revision witness/);
+    assert.doesNotMatch(result.stderr, /fileCount/);
+  });
 
   const regenerated = [
     [
