@@ -129,7 +129,10 @@ sides must count the same number of declarations in the file, and every declarat
 title has no `${` must find that title verbatim at its own site. If either fails the whole
 file is refused, because one missed declaration shifts every ordinal after it; its titles
 then stay `raw` and the header counts the file under `refused`. A missing title is visible;
-a wrong one would not be.
+a wrong one would not be. A title reaches that check as text, with any quotes already stripped,
+so a title whose text reads as a single identifier, a dotted path or a call — `checkout`,
+`cart.badge`, `retries (twice)` — counts as dynamic and rests on its ordinal rather than being
+compared verbatim.
 
 What it needs: `@playwright/test` installed where a `require` from the repository root would
 find it, which is the suite's own `node_modules` or a hoisted workspace root, and Node to
@@ -288,6 +291,12 @@ a call flowtrace cannot know about. `caseId` names those callees. It defaults to
 - `calls` — callee names whose call sites carry case ids: the entry `tms.id` makes every
   string-literal argument of a `tms.id(...)` site a case id. Ids resolved either way join
   the test's `case_id` fact ([fact-schema.md](fact-schema.md)).
+
+A configured callee is also read in title position. A test declared as
+`test(tms.id(9001, 'refunds a sale'), …)` has the title the runner reports carried inside the
+wrapper, so title collection compares against `refunds a sale` rather than against the whole
+call. Without the entry the wrapper is opaque and the declaration resolves on its position in
+the file alone.
 
 ## `workerPatterns`
 

@@ -33,6 +33,24 @@ Worked example:
   canonical structural and provenance equality against the pinned copy, and literal byte
   equality of two exports within one checkout.
 
+Extraction:
+
+- Playwright declaration counting no longer mistakes two other constructs for a test. A
+  `test.skip(condition, reason)` guard written inside a test body was counted as a declaration
+  and its condition stored as the title, and a `test` reached through a member access — a
+  regular expression's `.test(...)`, a matcher object's — was counted as well. A declaration is
+  now recognised by ending in the function that holds its body, and a member `test` is not
+  Playwright's. `pw_test` counts go **down** in suites that use either shape, and the withdrawn
+  facts are the ones whose titles were fragments of unrelated expressions.
+- A Playwright title written as a configured `caseId.calls` wrapper resolves instead of refusing
+  its spec file. The title the runner reports sits inside the wrapper, so it is compared against
+  the unwrapped string; a wrapper that is not configured, a template, and a title supplied as an
+  identifier by a table all resolve on their position in the file, as templates already did.
+  Suites that wrap every title kept almost no titles before this. A title is read as text, so a
+  title whose text reads as a single identifier, a dotted path or a call — `checkout`,
+  `cart.badge`, `retries (twice)` — is treated as dynamic and resolves on its position in the
+  file rather than being compared verbatim, even when the source wrote it as a quoted string.
+
 ## 0.3.0
 
 Gates:

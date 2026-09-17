@@ -1112,7 +1112,7 @@ async function runExtract(config, repoFilter) {
         // the count of refused files is carried too: without it a suite whose listing no
         // longer lines up with its source reads exactly like a suite with no titles.
         const refusals = [];
-        const extra = pwTitlesModule.titleFacts(facts, collected.titlesByLine, refusals);
+        const extra = pwTitlesModule.titleFacts(facts, collected.titlesByLine, refusals, config.caseId ? config.caseId.calls : []);
         facts.push(...extra);
         titles = { status: 'ok', facts: extra.length, refused: refusals.length };
         titleNote = `, ${plural(extra.length, 'title')}`;
