@@ -34,7 +34,12 @@ npm test
   so what's tested is what a user actually runs) and gives each test its own disposable copy
   of the corpus.
 - `corpus/gizmo-shop/` — a minimal invented ASP.NET-Core-shaped backend: one controller, one
-  service, one repository, reachable by `flowtrace extract`.
+  service, one repository, reachable by `flowtrace extract`. It also holds one deliberately
+  malformed file, `backend/src/Repositories/WidgetLedgerRepository.cs`, stored with mixed
+  line terminators (its first method ends its lines CR CR LF, the rest of the file ends LF)
+  and exempted from the repository's `eol=lf` normalisation in `.gitattributes`. It is the
+  smallest shape that makes the two line models inside `lib/extract/backend.js` disagree;
+  the file's own head comment says what it is for.
 - `corpus/widget-cart/` — a minimal invented Playwright suite: one spec with five test
   declarations, plus `pw-list-transformed.json`, a list-mode report of that same suite whose
   positions are shifted the way a transformed source shifts them, so the title join is pinned

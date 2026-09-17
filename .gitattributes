@@ -1,3 +1,8 @@
 # Sources are LF on every platform, Windows checkouts included. The single-file build and
 # the path check read line ends literally.
 * text=auto eol=lf
+
+# One selftest fixture is stored with mixed line terminators on purpose: its preceding
+# method ends its lines CR CR LF while the rest of the file ends LF. That mix is the input
+# under test, so this path is exempt from the normalisation above.
+selftest/corpus/gizmo-shop/backend/src/Repositories/WidgetLedgerRepository.cs -text

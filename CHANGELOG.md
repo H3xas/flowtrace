@@ -50,6 +50,13 @@ Extraction:
   title whose text reads as a single identifier, a dotted path or a call — `checkout`,
   `cart.badge`, `retries (twice)` — is treated as dynamic and resolves on its position in the
   file rather than being compared verbatim, even when the source wrote it as a quoted string.
+- A C# file containing a bare carriage return is no longer mis-numbered. `lineAt` and
+  `computeLineStartIndices` counted lines by `\n` alone while several other passes split on
+  any terminator, so from the first stray `\r` onward the two disagreed by the number of
+  stray `\r`s seen; the masking pass then gated line text against the drifted offset and
+  blanked whole lines, dropping `branch_point` facts for live `if`/`else` statements. All
+  three readers now treat CR, LF and CRLF alike. Fact counts in such files go up. Files with
+  no bare `\r` are byte-identical.
 
 ## 0.3.0
 
