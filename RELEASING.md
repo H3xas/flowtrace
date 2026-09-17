@@ -3,7 +3,8 @@
 ## Before the tag
 
 Bump `version` in `package.json`, add the `CHANGELOG.md` section and update the release named
-in `README.md`, then regenerate the worked example's pinned export:
+in `README.md` and commit them, then regenerate the worked example's pinned export from that
+clean tree:
 
 ```sh
 cd examples/demo-shop
@@ -12,7 +13,9 @@ node ../../bin/flowtrace.js join    --config flowtrace.config.json --export-edge
 ```
 
 The export stamps the producing version, and CI compares the regenerated file against the pinned
-one, so a version bump without this step fails the worked example.
+one, so a version bump without this step fails the worked example. Regenerating beside
+uncommitted changes records `"dirty": true` in every fact set; the check accepts that, but a
+pinned copy a reader vendors should state the clean commit it was read at.
 
 Maintainers only. Pushing a `v*` tag runs [`.github/workflows/release.yml`](.github/workflows/release.yml),
 which:

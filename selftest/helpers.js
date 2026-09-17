@@ -58,6 +58,38 @@ export function copyGitCorpus(t) {
   return dir;
 }
 
+/** A provider document stating one route the corpus extractor does not, named `action`, so
+ * two documents that differ only in `action` compare to the extraction with equal counts. */
+export function providerDocument({ producer = 'route-lister', version = '2.1.0', action = 'Archive' } = {}) {
+  return {
+    producer,
+    version,
+    facts: [
+      {
+        type: 'route',
+        file: 'src/Controllers/GizmoController.cs',
+        line: 90,
+        controller: 'GizmoController',
+        action,
+        verb: 'POST',
+        template: 'gizmos/v1/archive',
+      },
+    ],
+  };
+}
+
+/** Writes `<name>` beside the corpus configuration: the same `api` repository, taking
+ * `provider.json` under `merge` when given one, plus any `extraRepos`, writing under `out`. */
+export function writeConfig(dir, name, { merge = null, extraRepos = [], out = 'out' } = {}) {
+  const api = { id: 'api', kind: 'backend', root: 'backend', role: ['api'] };
+  if (merge) api.factsProvider = { file: 'provider.json', merge };
+  writeFileSync(join(dir, name), `${JSON.stringify({ out, repos: [api, ...extraRepos] }, null, 2)}\n`);
+}
+
+export function writeJsonFile(dir, name, value) {
+  writeFileSync(join(dir, name), `${JSON.stringify(value, null, 2)}\n`);
+}
+
 export function extract(dir, config = 'gizmo.config.json') {
   const result = runCli(['extract', '--config', config], { cwd: dir });
   if (result.status !== 0) {

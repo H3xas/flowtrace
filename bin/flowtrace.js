@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 import { loadConfig } from '../lib/config.js';
 import {
-  externalLocations, fact, factsHeader, loadFactsProvider, mergeFacts, producerSummary, staleFactsWarnings, validateFacts,
+  externalLocations, fact, factsDigest, factsHeader, loadFactsProvider, mergeFacts, producerSummary, staleFactsWarnings, validateFacts,
 } from '../lib/facts.js';
 
 import * as affectedModule from '../lib/affected.js';
@@ -105,7 +105,10 @@ const USAGE = [
   '  Joins the fact sets in out/facts into out/flow.json. --snapshot <file> additionally',
   '  writes one portable, versioned bundle of the current fact sets, the aliases and sink',
   '  patterns the join and the walk read, and every repository identity the facts carry',
-  '  (schemaVersion 1, no timestamp: two runs over unchanged facts write the same bytes).',
+  '  (schemaVersion 2, no timestamp: two runs over unchanged facts write the same bytes).',
+  '  A fact set\x27s identity names its facts provider by producer, version, merge mode,',
+  '  counts and a digest of the provider\x27s facts, never by the file or command it was read',
+  '  from, and states headSha null when the facts carry no revision witness.',
   '  --against <file> compares that bundle with the current facts instead of writing',
   '  anything: both sides are derived with the same implementation and the current',
   '  configuration, and the report names what changed on the joined boundary — a joined',
@@ -130,7 +133,8 @@ const USAGE = [
   '  as { repo, ref, file, line }, plus a provenance field naming the export it came from.',
   '  The envelope carries the producer, the format version, the configuration the join',
   '  read and every fact set\x27s identity once, under an id a facts change flips, so an',
-  '  importer can drop or replace imported rows wholesale. Only joined edges export:',
+  '  importer can drop or replace imported rows wholesale; factSetsWithoutEdges lists',
+  '  every fact set no record names. Only joined edges export:',
   '  calls and tests matched to a route action, and the publishes, consumes and enqueues',
   '  edges of a message that has both a publisher and a matched consumer (the message end',
   '  carries repo "message" and no file or line, as the join states it, and is the only',
@@ -139,7 +143,8 @@ const USAGE = [
   '  edge whose code end is missing repo, file or line refuses the whole export, naming the',
   '  edge\x27s kind and key: nothing is written, and a file already at the target path is left',
   '  untouched. Combines with --snapshot; refused with --against. All three formats are new',
-  '  (schemaVersion 1) and may change between minor versions.',
+  '  (the snapshot at schemaVersion 2, the drift report and the export at schemaVersion 1)',
+  '  and may change between minor versions.',
   '',
   'routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]',
   '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
@@ -1135,6 +1140,7 @@ async function runExtract(config, repoFilter) {
         throw new Error(`repo "${repo.id}": ${error.message}`);
       }
       const { merge } = repo.factsProvider;
+      const providerDigest = factsDigest(loaded.facts);
       const merged = mergeFacts(facts, loaded.facts, { mode: merge, producer: loaded.producer, version: loaded.version });
       facts = merged.facts;
       provider = {
@@ -1146,6 +1152,7 @@ async function runExtract(config, repoFilter) {
         kept: merged.kept,
         replaced: merged.replaced,
         comparison: merged.comparison,
+        digest: providerDigest,
       };
       countNote =
         merge === 'regex-only-with-diff'

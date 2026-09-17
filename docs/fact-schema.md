@@ -149,7 +149,8 @@ compared, while `generatedFrom` still names the extraction that wrote the file:
     "replaced": 12,
     "comparison": {
       "ctor_field": { "extracted": 20, "external": 22, "agreed": 9, "disagreed": 3, "externalOnly": 10, "extractedOnly": 8 }
-    }
+    },
+    "digest": "4b1f0c9e2d7a58e3b6c1f90a7d2e4c8b5a3f6e10"
   },
   "facts": [
     { "type": "ctor_field", "file": "Controllers/OrdersController.cs", "line": 14,
@@ -165,7 +166,14 @@ extracted facts were dropped in their favour. In `comparison`, `extracted` and `
 count facts per type; `agreed`, `disagreed`, `externalOnly` and `extractedOnly` count
 *sites* — one type at one line of one file — that both stated identically, both stated
 differently, only the provider stated, only the extractor stated. The comparison is computed
-before the merge, because afterwards the losing facts are gone. Extracted facts keep their
+before the merge, because afterwards the losing facts are gone. `digest` is a sha1 over the
+provider's facts as it supplied them, before any stamp or merge.
+
+Every field of this block except `source` is part of the fact set's identity in a snapshot and
+an edge export. `source` is left out because it is a location on one machine: the same facts
+read from another checkout must keep the same identity, and an identity is published.
+`digest` stands in for it, and is what still tells two provider documents apart under
+`regex-only-with-diff`, where none of the provider's facts enter the array. Extracted facts keep their
 order and come first; the provider's follow in the order it gave them.
 
 ## Validation

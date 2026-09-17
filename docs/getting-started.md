@@ -34,8 +34,8 @@ usage: flowtrace <command> [options]
 
 ## 2. Try it on the worked example
 
-The repository ships a small ASP.NET Core service and a Playwright suite under
-`examples/demo-shop`. Its configuration is already written, so this is the fastest way to
+The repository ships two small ASP.NET Core services, a web client with a Cypress suite and a
+Playwright suite under `examples/demo-shop`. Its configuration is already written, so this is the fastest way to
 see what every command prints.
 
 ```
@@ -46,9 +46,11 @@ flowtrace join
 ```
 
 ```
-extract api (backend): 134 facts -> out/facts/api.json
+extract api (backend): 139 facts -> out/facts/api.json
 extract e2e (playwright): 19 facts -> out/facts/e2e.json
-join 2 fact sets: 6 edges -> out/flow.json
+extract shopfront (web): 6 facts -> out/facts/shopfront.json
+extract stock (backend): 28 facts -> out/facts/stock.json
+join 4 fact sets: 10 edges -> out/flow.json
 ```
 
 Trace one route to everything it reaches, and enumerate its distinct outcomes (seeds):
