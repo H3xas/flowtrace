@@ -2,6 +2,16 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## [Unreleased]
+
+Extraction:
+
+- A Playwright title is joined to its declaration by the declaration's ordinal within its spec
+  file rather than by a reported line number, so a suite whose runner reports transformed-source
+  positions resolves its titles onto the declarations that produced them. A spec file whose two
+  sides cannot be shown to line up resolves nothing rather than guessing, which renders as `raw`
+  and is counted in the fact-set header.
+
 ## 0.3.0
 
 Gates:
