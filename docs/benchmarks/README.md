@@ -50,6 +50,12 @@ install flowtrace *or* something else, not to sell flowtrace.
 eShopOnWeb corpus, sha-pinned; full tables, per-cell verdicts and the integrity caveats are
 in [results/2026-08.md](results/2026-08.md).
 
+**Measured on** development build A and development build B (both pre-release; see
+[results/2026-08.md](results/2026-08.md) for which round used which), against eShopOnWeb
+pinned at `4da8212117e87d808d4bbc7da6286fd2147ce606`. Those runs' own bundled-corpus figures
+were measured before `examples/demo-shop` carried its second backend and web client, and
+predate the worked example described in the rest of this documentation set.
+
 | round | result | verdict |
 | --- | --- | --- |
 | Deterministic pipeline | facts, walks and `span` reconcile on the pinned corpus | measured; peer matrix not yet run |
@@ -64,7 +70,8 @@ project publishes the rounds it loses with the same prominence as the ones it wi
 
 The reference set outside this directory is deliberately small and is listed in
 [../README.md](../README.md): getting started, the agent page, concepts, the command
-reference (`flowtrace --help`, verbatim), configuration, the fact schema, scout, the area
+reference (`flowtrace --help`, verbatim), configuration, the fact schema, the edge export
+contract ([exports/README.md](../../examples/demo-shop/exports/README.md)), scout, the area
 format, and the CHANGELOG.
 
 **`docs/benchmarks/` is where measurements go, and the only place they go.** A measurement

@@ -55,5 +55,8 @@ flowtrace trace CheckoutPage --json | jq -r '.routes[].key' | sort
 ## Shipped example
 
 `checkout.txt` is the area of the worked example in `examples/demo-shop` — five routes
-across a catalog and an orders service. It exists so `flowtrace cover --area checkout`
-has something to run against out of the box; delete it once you have your own.
+across a catalog and an orders service. The second backend's route,
+`POST stock/v1/reservations`, sits deliberately outside it: this area is the cart and
+checkout flow, not every route the worked example declares. It exists so
+`flowtrace cover --area checkout` has something to run against out of the box; delete it
+once you have your own.
