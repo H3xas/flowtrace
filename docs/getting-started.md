@@ -231,10 +231,11 @@ Playwright suite configured every route is listed under "Routes with no mobile c
 that is expected, since a spec is evidence, not a caller. Add a `mobile` or `web`
 repository and the joined routes each get a page under `out/flows/`.
 
-To list the route keys the facts declare, in the form every later command takes:
+To list the route keys every repository's facts declare, in the form every later command
+takes:
 
 ```
-node -e "for (const f of JSON.parse(require('fs').readFileSync('out/facts/api.json')).facts) if (f.type === 'route') console.log(f.verb, f.template)"
+node -e "for (const f of require('fs').readdirSync('out/facts').sort()) for (const fact of JSON.parse(require('fs').readFileSync('out/facts/'+f)).facts) if (fact.type === 'route') console.log(fact.verb, fact.template)"
 ```
 
 For the worked example that prints:
@@ -246,6 +247,7 @@ GET orders/v1/cart
 POST orders/v1/cart/items
 POST orders/v1/checkout
 POST orders/v1/replay
+POST stock/v1/reservations
 ```
 
 ### 3.5 Trace a route

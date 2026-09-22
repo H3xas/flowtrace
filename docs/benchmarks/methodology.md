@@ -13,7 +13,7 @@ Two public corpora, pinned by sha in [`bench/corpus.lock`](../../bench/corpus.lo
 
 | corpus | what it is | tasks it can carry |
 |---|---|---|
-| `examples/demo-shop` (bundled) | a small ASP.NET Core service plus a Playwright suite, configured as two repo ids | every task, at toy scale — including the repo-boundary join and the evidence overlay |
+| `examples/demo-shop` (bundled) | two small ASP.NET Core services, a web client with a Cypress suite and a Playwright suite, configured as four repo ids | every task, at toy scale — including the repo-boundary join and the evidence overlay |
 | `dotnet-architecture/eShopOnWeb` (pinned) | a real ASP.NET Core reference application with a git history | `route-consumer`, `sink`, `affected` at realistic size |
 
 A corpus that cannot exercise a task prints `not_exercised`, never a substitute. Both are small next to a production system — a stated limit on external validity.
@@ -84,6 +84,10 @@ peers     <arm> <version>                     one line each, as the tool itself 
 setup     <arm> <install ms> <index ms> <bytes on disk> <network/JVM/container/LSP needed?>
 commands  <the exact argv of every step, in order>
 ```
+
+The `flowtrace` line names a released version or a commit sha; a run from a tree that is
+neither — a pre-release development build with nothing to pin — says so instead of leaving
+the line blank, the way the published pipeline results do.
 
 ## Re-running it
 

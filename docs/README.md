@@ -11,6 +11,7 @@ Read in this order the first time; jump straight to a reference afterwards.
 | [configuration.md](configuration.md) | you are editing `flowtrace.config.json`: every key, every repository kind |
 | [../areas/README.md](../areas/README.md) | you are writing an area file, the denominator every coverage number stands on |
 | [fact-schema.md](fact-schema.md) | you are reading `out/facts/*.json` directly or extending an extractor |
+| [../examples/demo-shop/exports/README.md](../examples/demo-shop/exports/README.md) | you are consuming the `join --export-edges` file — a code index or similar tool wants the joined cross-repo edges |
 | [scout.md](scout.md) | you want the optional code index that extends the walk past `graph: unavailable` |
 | [benchmarks/](benchmarks/README.md) | you want to know how this compares to the tools you could install instead, and how that was measured |
 

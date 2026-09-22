@@ -44,6 +44,15 @@ npm test
   declarations, plus `pw-list-transformed.json`, a list-mode report of that same suite whose
   positions are shifted the way a transformed source shifts them, so the title join is pinned
   against a report whose lines do not match the spec's own.
+- `corpus/widget-kiosk/` — a minimal invented Playwright suite covering every shape that
+  decides whether a title resolves: a skipped declaration versus a `test.skip` guard written
+  inside a body, a `test` reached through a member access, a title wrapped in a configured
+  case-id call, and a title supplied as a table identifier — plus a listing whose positions
+  sit below the source so nothing can resolve by line.
+- `export-invariants.js` — the checks a `flowtrace-edges` document must satisfy on its own,
+  with no checkout, no git and no second document to compare against; deliberately
+  independent of `lib/`, so an implementation that drifts from its own documentation fails
+  instead of agreeing with itself.
 - `*.test.js` — one file per contract area, run against the CLI through `helpers.js` — with
   two exceptions: `scout-contract.test.js` imports `lib/scout.js` and `lib/dotnet.js`
   directly, because the code index binary that would otherwise have to be faked for a CLI

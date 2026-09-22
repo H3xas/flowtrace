@@ -9,18 +9,26 @@ writes them to `out/facts/<repo>.json`; every later step reads only facts.
 {
   "repo": "api",
   "kind": "backend",
-  "generatedFrom": "backend",
+  "generatedFrom": "flowtrace <version>",
   "generatedAt": "2026-01-01T00:00:00.000Z",
   "headSha": "…",
   "dirty": false,
+  "dirtyDigest": "…",
   "fileCount": 9,
+  "titles": { "status": "ok", "facts": 12, "refused": 0 },
   "facts": [ … ]
 }
 ```
 
 The git fields are stamped when the root is a git checkout and git is on `PATH`, and are
-what later steps compare against to warn that a fact set has gone stale. A non-git checkout
-extracts perfectly well; it simply carries no baseline, so nothing warns.
+what later steps compare against to warn that a fact set has gone stale. `dirtyDigest` is
+part of that same stamp: a fingerprint of the working tree's changed paths, present whenever
+the other git fields are. `titles` is not a git field: it appears only on a `playwright`
+repository configured `"titles": true`, and states what the title collector did (`status`
+`ok` or `failed`). A non-git checkout extracts perfectly well; it simply carries no
+baseline, so nothing warns — that fact set's *identity* inside a `join --snapshot` or
+`join --export-edges` document still states a revision witness, as `"headSha": null`, rather
+than omitting the field.
 
 A repository configured with a `factsProvider` also carries a `provider` block between the
 git fields and `facts`; see [Externally supplied facts](#externally-supplied-facts).
@@ -80,7 +88,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 
 | type | fields | stated when |
 |---|---|---|
-| `pw_test` | `spec`, `test`, `skipped` | a Playwright test is declared |
+| `pw_test` | `spec`, `test`, `skipped` | a Playwright test is declared — not a `test.skip(condition, reason)` guard written inside a test body, and not a `test` reached through a member access (a regular expression's `.test(...)`, a matcher object's) |
 | `pw_request` | `spec`, `test`, `verb`, `template`, `resolved` | a test issues a request |
 | `pw_assert` | `spec`, `test`, `kind` | a test asserts something |
 | `pw_stub` | `spec`, `test`, `kind` | a test stubs a response |
@@ -137,7 +145,7 @@ compared, while `generatedFrom` still names the extraction that wrote the file:
 {
   "repo": "api",
   "kind": "backend",
-  "generatedFrom": "flowtrace 0.2.0",
+  "generatedFrom": "flowtrace <version>",
   "generatedAt": "2026-01-01T00:00:00.000Z",
   "provider": {
     "producer": "syntax-exporter",
