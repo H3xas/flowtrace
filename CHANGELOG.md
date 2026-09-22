@@ -2,7 +2,7 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
-## [Unreleased]
+## 0.4.0
 
 Provenance:
 
