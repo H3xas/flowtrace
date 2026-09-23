@@ -129,7 +129,10 @@ sides must count the same number of declarations in the file, and every declarat
 title has no `${` must find that title verbatim at its own site. If either fails the whole
 file is refused, because one missed declaration shifts every ordinal after it; its titles
 then stay `raw` and the header counts the file under `refused`. A missing title is visible;
-a wrong one would not be.
+a wrong one would not be. A title reaches that check as text, with any quotes already stripped,
+so a title whose text reads as a single identifier, a dotted path or a call — `checkout`,
+`cart.badge`, `retries (twice)` — counts as dynamic and rests on its ordinal rather than being
+compared verbatim.
 
 What it needs: `@playwright/test` installed where a `require` from the repository root would
 find it, which is the suite's own `node_modules` or a hoisted workspace root, and Node to
@@ -206,7 +209,9 @@ read and every fact in it is validated as an extractor's would be. Each one is t
 `provenance: { "producer", "version" }` and the two sets are combined under `merge`. The
 written fact set's header keeps `generatedFrom` for the extraction and adds a `provider`
 block — producer, version, source, mode, how many facts were supplied, kept and replaced,
-and a per-type comparison of the two sources computed before the merge discarded anything.
+a per-type comparison of the two sources computed before the merge discarded anything, and a
+digest of the provider's facts. Everything but `source` identifies the fact set in a snapshot
+and an edge export, so the same facts read from a different checkout path keep their identity.
 The `extract` line says what happened: `53 facts (48 extracted, 5 from syntax-exporter,
 prefer-external)`.
 
@@ -286,6 +291,12 @@ a call flowtrace cannot know about. `caseId` names those callees. It defaults to
 - `calls` — callee names whose call sites carry case ids: the entry `tms.id` makes every
   string-literal argument of a `tms.id(...)` site a case id. Ids resolved either way join
   the test's `case_id` fact ([fact-schema.md](fact-schema.md)).
+
+A configured callee is also read in title position. A test declared as
+`test(tms.id(9001, 'refunds a sale'), …)` has the title the runner reports carried inside the
+wrapper, so title collection compares against `refunds a sale` rather than against the whole
+call. Without the entry the wrapper is opaque and the declaration resolves on its position in
+the file alone.
 
 ## `workerPatterns`
 
@@ -465,15 +476,19 @@ value must be a non-empty string without whitespace.
 
 ## Worked example
 
-`examples/demo-shop/flowtrace.config.json` is the smallest configuration that produces a
-non-trivial trace: two repositories, no options.
+`examples/demo-shop/flowtrace.config.json` produces a non-trivial trace and every edge kind
+the edge export carries across repositories: two backends, a web client with a Cypress suite
+and a Playwright suite.
 
 ```json
 {
   "out": "out",
+  "workerPatterns": { "consumerBases": ["IJobConsumer"] },
   "repos": [
     { "id": "api", "kind": "backend", "root": "backend", "role": ["api"] },
-    { "id": "e2e", "kind": "playwright", "root": "e2e" }
+    { "id": "e2e", "kind": "playwright", "root": "e2e", "titles": true },
+    { "id": "shopfront", "kind": "web", "root": "shopfront", "cypressSubpath": "cypress" },
+    { "id": "stock", "kind": "backend", "root": "stock" }
   ]
 }
 ```

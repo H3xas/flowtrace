@@ -34,8 +34,8 @@ usage: flowtrace <command> [options]
 
 ## 2. Try it on the worked example
 
-The repository ships a small ASP.NET Core service and a Playwright suite under
-`examples/demo-shop`. Its configuration is already written, so this is the fastest way to
+The repository ships two small ASP.NET Core services, a web client with a Cypress suite and a
+Playwright suite under `examples/demo-shop`. Its configuration is already written, so this is the fastest way to
 see what every command prints.
 
 ```
@@ -46,9 +46,11 @@ flowtrace join
 ```
 
 ```
-extract api (backend): 134 facts -> out/facts/api.json
+extract api (backend): 139 facts -> out/facts/api.json
 extract e2e (playwright): 19 facts -> out/facts/e2e.json
-join 2 fact sets: 6 edges -> out/flow.json
+extract shopfront (web): 6 facts -> out/facts/shopfront.json
+extract stock (backend): 28 facts -> out/facts/stock.json
+join 4 fact sets: 10 edges -> out/flow.json
 ```
 
 Trace one route to everything it reaches, and enumerate its distinct outcomes (seeds):
@@ -229,10 +231,11 @@ Playwright suite configured every route is listed under "Routes with no mobile c
 that is expected, since a spec is evidence, not a caller. Add a `mobile` or `web`
 repository and the joined routes each get a page under `out/flows/`.
 
-To list the route keys the facts declare, in the form every later command takes:
+To list the route keys every repository's facts declare, in the form every later command
+takes:
 
 ```
-node -e "for (const f of JSON.parse(require('fs').readFileSync('out/facts/api.json')).facts) if (f.type === 'route') console.log(f.verb, f.template)"
+node -e "for (const f of require('fs').readdirSync('out/facts').sort()) for (const fact of JSON.parse(require('fs').readFileSync('out/facts/'+f)).facts) if (fact.type === 'route') console.log(fact.verb, fact.template)"
 ```
 
 For the worked example that prints:
@@ -244,6 +247,7 @@ GET orders/v1/cart
 POST orders/v1/cart/items
 POST orders/v1/checkout
 POST orders/v1/replay
+POST stock/v1/reservations
 ```
 
 ### 3.5 Trace a route

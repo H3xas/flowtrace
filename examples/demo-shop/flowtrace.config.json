@@ -15,6 +15,17 @@
       "kind": "playwright",
       "root": "e2e",
       "titles": true
+    },
+    {
+      "id": "shopfront",
+      "kind": "web",
+      "root": "shopfront",
+      "cypressSubpath": "cypress"
+    },
+    {
+      "id": "stock",
+      "kind": "backend",
+      "root": "stock"
     }
   ]
 }

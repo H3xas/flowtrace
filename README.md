@@ -32,8 +32,8 @@ run from a checkout with `node bin/flowtrace.js`.
 ## Quickstart
 
 The repository ships a worked example under `examples/demo-shop`: a small ASP.NET Core
-service with a catalog and an orders controller, and a Playwright suite that covers some of
-it. Nothing to set up:
+service with a catalog and an orders controller, a second service that reserves stock, a web
+client with a Cypress suite, and a Playwright suite that covers some of it. Nothing to set up:
 
 ```
 cd examples/demo-shop
@@ -141,7 +141,7 @@ rules that keep the tool's honesty intact in the agent's answer.
 | `extract` | what does each repository state about itself? |
 | `join` | which client calls reach which server routes, and which do not? |
 | `join --against` | what changed on the joined boundary since a saved snapshot — paths, seeds, effects, evidence levels? |
-| `join --export-edges` | hand the joined cross-repo edges to a code index, in one versioned, provenance-tagged file. |
+| `join --export-edges` | hand the joined cross-repo edges to a code index, in one versioned, provenance-tagged file — format documented in [examples/demo-shop/exports/README.md](examples/demo-shop/exports/README.md). |
 | `render` | write the joined route report and one flow page per called route. |
 | `trace` | what actually runs when this route is called — branches, services, database writes, published messages, consumers? |
 | `routes-of` | I hold a grep hit, a stack frame or a message name — which entry routes run through it? |
@@ -201,9 +201,10 @@ published as exactly that.
 - `affected` reads diffs through `git`, so the repository it reads must be a git checkout.
 - Coverage is evidence overlay, not instrumentation. It reports what the tests *say* they
   touch, from their own source; it never runs them.
-- The test suite is not part of this repository or the published package. It runs privately
-  before each release, against corpora that are not public. The public verification is the
-  worked example under `examples/demo-shop`, which CI runs end to end on every push.
+- Two suites cover the tool: the public contract suite under `selftest/`, run by `npm test`
+  and by CI as its first step, and the private regression suite against corpora that are not
+  public, run before each release. The public verification is the worked example under
+  `examples/demo-shop`, which CI runs end to end on every push.
 - `span --from-component` covers the `web` repository kind only. A mobile-kind name is
   refused with its reason rather than answered partially.
 - A minimal-API route is walked into its inline lambda, or into the method a method-group
@@ -215,8 +216,14 @@ published as exactly that.
   does not scan source, expand a concrete URL into a template, or use the optional code index.
 - A parameterised Playwright title is the expression as written unless that repository is
   configured `"titles": true`, which runs its own installed Playwright in list mode during
-  `extract` and appends the titles the listing resolves. A checkout and the npm package can
-  do that; the single-file executable reports the titles as unavailable and extracts the rest.
+  `extract` and appends the titles the listing resolves. A title inside a configured case-id
+  wrapper resolves the same way; a title whose text reads as a single identifier, a dotted
+  path or a call rests on its declaration's ordinal rather than being compared verbatim; and
+  a spec file whose two sides cannot be lined up resolves nothing at all — its titles stay
+  `raw` and the file is counted under `refused`. See
+  [docs/configuration.md#playwright-titles](docs/configuration.md#playwright-titles). A
+  checkout and the npm package can do that; the single-file executable reports the titles as
+  unavailable and extracts the rest.
 
 ## Contributing
 
@@ -230,7 +237,7 @@ project is run and how someone becomes a reviewer or maintainer;
 
 Semantic versioning from `0.x` — the CLI surface may still change between minor versions.
 What changed in each release is in [CHANGELOG.md](CHANGELOG.md). The current release is
-`0.3.0`.
+`0.4.1`.
 
 ## License
 

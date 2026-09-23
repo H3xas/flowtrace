@@ -2,6 +2,70 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## 0.4.1
+
+The first 0.4 release. The `v0.4.0` tag was created in error on the 0.3.0 tree and was never
+published to npm.
+
+Provenance:
+
+- A fact set's identity in a snapshot and an edge export now carries its facts provider:
+  producer, version, merge mode, counts, comparison and a digest of the provider's own facts.
+  Two exports over the same extraction, one with a provider and one without, no longer share
+  a `provenance.id`, and neither do two provider documents that compare to the extraction with
+  equal counts under `regex-only-with-diff`. The provider's file or command is never part of
+  the identity, so the same facts keep their id wherever the checkout sits, and no filesystem
+  path reaches a snapshot or an export. The facts header's `provider` block gains `digest`.
+- A fact set with no revision witness states `"headSha": null` in its identity instead of
+  omitting the field.
+- `join --snapshot` writes `schemaVersion` 2. A schemaVersion 1 snapshot is refused by
+  `join --against` (exit 4) with an instruction to retake it.
+- `join --export-edges` adds `provenance.factSetsWithoutEdges`, the fact sets no record names,
+  so a fact set in the envelope never reads as a witness for edges it did not produce. The
+  record shape and `schemaVersion` 1 are unchanged.
+
+Worked example:
+
+- `examples/demo-shop` gains a second backend (`stock`) and a web client with a Cypress suite
+  (`shopfront`), so the pinned edge export carries `calls`, `tests`, `publishes` and
+  `consumes`, including a message published in one backend and consumed in the other.
+- `scripts/check-pinned-export.mjs` no longer strips provenance to compare. The id is
+  re-derived, every record's `provenance` must equal it, each regenerated fact set's `headSha`
+  must be the checkout's HEAD, `dirty` and `dirtyDigest` must agree, and `fileCount` is
+  compared. The CI workflow and the exports README name the two checks for what they are:
+  canonical structural and provenance equality against the pinned copy, and literal byte
+  equality of two exports within one checkout.
+
+Extraction:
+
+- Playwright declaration counting no longer mistakes two other constructs for a test. A
+  `test.skip(condition, reason)` guard written inside a test body was counted as a declaration
+  and its condition stored as the title, and a `test` reached through a member access — a
+  regular expression's `.test(...)`, a matcher object's — was counted as well. A declaration is
+  now recognised by ending in the function that holds its body, and a member `test` is not
+  Playwright's. `pw_test` counts go **down** in suites that use either shape, and the withdrawn
+  facts are the ones whose titles were fragments of unrelated expressions.
+- A Playwright title written as a configured `caseId.calls` wrapper resolves instead of refusing
+  its spec file. The title the runner reports sits inside the wrapper, so it is compared against
+  the unwrapped string; a wrapper that is not configured, a template, and a title supplied as an
+  identifier by a table all resolve on their position in the file, as templates already did.
+  Suites that wrap every title kept almost no titles before this. A title is read as text, so a
+  title whose text reads as a single identifier, a dotted path or a call — `checkout`,
+  `cart.badge`, `retries (twice)` — is treated as dynamic and resolves on its position in the
+  file rather than being compared verbatim, even when the source wrote it as a quoted string.
+- A C# file containing a bare carriage return is no longer mis-numbered. `lineAt` and
+  `computeLineStartIndices` counted lines by `\n` alone while several other passes split on
+  any terminator, so from the first stray `\r` onward the two disagreed by the number of
+  stray `\r`s seen; the masking pass then gated line text against the drifted offset and
+  blanked whole lines, dropping `branch_point` facts for live `if`/`else` statements. All
+  three readers now treat CR, LF and CRLF alike. Fact counts in such files go up. Files with
+  no bare `\r` are byte-identical.
+- A Playwright title is joined to its declaration by the declaration's ordinal within its spec
+  file rather than by a reported line number, so a suite whose runner reports transformed-source
+  positions resolves its titles onto the declarations that produced them. A spec file whose two
+  sides cannot be shown to line up resolves nothing rather than guessing, which renders as `raw`
+  and is counted in the fact-set header.
+
 ## 0.3.0
 
 Gates:

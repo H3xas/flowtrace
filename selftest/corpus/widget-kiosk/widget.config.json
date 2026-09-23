@@ -1,0 +1,13 @@
+{
+  "out": "out",
+  "caseId": {
+    "calls": ["tms.id"]
+  },
+  "repos": [
+    {
+      "id": "e2e",
+      "kind": "playwright",
+      "root": "e2e"
+    }
+  ]
+}
