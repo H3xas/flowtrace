@@ -3,11 +3,11 @@
   "format": "flowtrace-edges",
   "tool": {
     "name": "flowtrace-cli",
-    "version": "0.4.0"
+    "version": "0.4.1"
   },
   "provenance": {
-    "id": "60cf03c5e49c6a4b",
-    "producer": "flowtrace-cli 0.4.0",
+    "id": "b6c38f94948d01c2",
+    "producer": "flowtrace-cli 0.4.1",
     "formatVersion": 1,
     "config": {
       "aliases": [],
@@ -57,8 +57,8 @@
       {
         "repo": "api",
         "kind": "backend",
-        "generatedFrom": "flowtrace 0.4.0",
-        "headSha": "43c7e91e4e1fe6b83e8aa31715f62cb7ec5692a6",
+        "generatedFrom": "flowtrace 0.4.1",
+        "headSha": "5eb1e17f051f8cad2d3f8c015c0019c213f027dc",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 17,
@@ -67,8 +67,8 @@
       {
         "repo": "e2e",
         "kind": "playwright",
-        "generatedFrom": "flowtrace 0.4.0",
-        "headSha": "43c7e91e4e1fe6b83e8aa31715f62cb7ec5692a6",
+        "generatedFrom": "flowtrace 0.4.1",
+        "headSha": "5eb1e17f051f8cad2d3f8c015c0019c213f027dc",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 2,
@@ -81,8 +81,8 @@
       {
         "repo": "shopfront",
         "kind": "web",
-        "generatedFrom": "flowtrace 0.4.0",
-        "headSha": "43c7e91e4e1fe6b83e8aa31715f62cb7ec5692a6",
+        "generatedFrom": "flowtrace 0.4.1",
+        "headSha": "5eb1e17f051f8cad2d3f8c015c0019c213f027dc",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
@@ -91,8 +91,8 @@
       {
         "repo": "stock",
         "kind": "backend",
-        "generatedFrom": "flowtrace 0.4.0",
-        "headSha": "43c7e91e4e1fe6b83e8aa31715f62cb7ec5692a6",
+        "generatedFrom": "flowtrace 0.4.1",
+        "headSha": "5eb1e17f051f8cad2d3f8c015c0019c213f027dc",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 5,
@@ -119,7 +119,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "consumes",
@@ -136,7 +136,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "consumes",
@@ -153,7 +153,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "consumes",
@@ -170,7 +170,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "consumes",
@@ -187,7 +187,7 @@
         "line": 7
       },
       "key": "StockReservedEvent",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "publishes",
@@ -204,7 +204,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "publishes",
@@ -221,7 +221,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "publishes",
@@ -238,7 +238,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "publishes",
@@ -255,7 +255,7 @@
         "line": null
       },
       "key": "StockReservedEvent",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     },
     {
       "kind": "tests",
@@ -272,7 +272,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "60cf03c5e49c6a4b"
+      "provenance": "b6c38f94948d01c2"
     }
   ]
 }
