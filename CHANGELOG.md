@@ -2,7 +2,10 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
-## 0.4.0
+## 0.4.1
+
+The first 0.4 release. The `v0.4.0` tag was created in error on the 0.3.0 tree and was never
+published to npm.
 
 Provenance:
 
