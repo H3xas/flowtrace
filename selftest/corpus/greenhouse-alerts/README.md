@@ -120,7 +120,9 @@ Match rule `match/1`: a site is found by a node of the walk, in order, when that
 site's file and line, when the edge that reached it carries evidence at that file and line (a
 node stands on a declaration; the call that reached it is recorded on its edge), or when the node,
 in the site's repository, answers to the site's symbol. A folded node stands for the node it
-refers to. `before` compares the first matching nodes in the order `trace --json` reports them,
+refers to. The `sinks` and `branches` lists are read too: they carry every walked sink and branch
+in full, including those beneath a folded node whose subtree `nodes` leaves out, so such a record
+can be found, but nothing is shown to reach it and it is ordered after everything the tree shows. `before` compares the first matching nodes in the order `trace --json` reports them,
 which is walk order rather than source order; `reached-from` holds when the site's node descends
 from the other site's node or was reached by an edge evidenced at the other site.
 

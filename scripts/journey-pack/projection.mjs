@@ -53,6 +53,18 @@ export function readWalk(document) {
       edge: incoming.get(node.id) ?? null,
     });
   });
+  // `sinks` and `branches` list every walked sink and branch in full, including those beneath a
+  // folded node whose own subtree `nodes` leaves out; they are part of the answer, but with no
+  // edge reaching them they can be found and ordered only after everything the tree shows.
+  let order = nodes.length;
+  for (const list of [document?.sinks, document?.branches]) {
+    for (const node of Array.isArray(list) ? list : []) {
+      if (!node || typeof node.kind !== 'string' || full.has(node.id)) continue;
+      full.set(node.id, node);
+      occurrences.push({ id: node.id, canonical: node.id, order, fields: node, edge: null });
+      order += 1;
+    }
+  }
   const byId = new Map(occurrences.map((occurrence) => [occurrence.id, occurrence]));
   return { occurrences, byId, children, full, stats: document?.stats ?? null };
 }

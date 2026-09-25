@@ -295,3 +295,49 @@ test('a ledger that no longer holds its anchors stops a replay before any run', 
   assert.deepEqual(diagnosticNames(result.stderr), ['ledger-invalid']);
   assert.deepEqual(readJson(join(out, 'replay.json')).invocations, []);
 });
+
+test('a sink or branch beneath a folded node is still found, though nothing is shown to reach it', () => {
+  const site = (id, kind, file, line, symbol) => ({ id, kind, repo: 'api', file, line, anchor: 'x', symbol });
+  const ledger = {
+    pack: 'folded',
+    sites: [
+      site('route', 'route', 'src/Api.cs', 3, 'Api.Save'),
+      site('guard', 'branch', 'src/Store.cs', 12, null),
+      site('write', 'write', 'src/Store.cs', 14, 'StoreRepository.Put'),
+    ],
+    unknowns: [],
+    runs: [{ id: 'walk', start: 'Api.Save', args: [], asserts: 'sinks', reach: ['write'] }],
+    cases: [
+      {
+        id: 'hidden',
+        run: 'walk',
+        expect: ['route', 'guard', 'write'],
+        unknowns: [],
+        assertions: [{ id: 'write-from-route', kind: 'reached-from', site: 'write', from: 'route' }],
+      },
+    ],
+  };
+  const document = {
+    nodes: [
+      { id: 'n1', repo: 'api', kind: 'action', ref: 'Api.Save', file: 'src/Api.cs', line: 3, class: 'Api', method: 'Save' },
+      { id: 'n2', repo: 'api', kind: 'class', ref: 'Store', file: 'src/Store.cs', line: 1 },
+      { id: 'n3', ref: 'n2' },
+    ],
+    edges: [
+      { from: 'n1', to: 'n2', via: 'ctor' },
+      { from: 'n1', to: 'n3', via: 'ctor' },
+    ],
+    sinks: [{ id: 'n7', repo: 'api', kind: 'db', ref: 'StoreRepository', file: 'src/Store.cs', line: 20, class: 'StoreRepository', methods: ['Put'], sink: true }],
+    branches: [{ id: 'n6', repo: 'api', kind: 'branch', ref: 'Store.Put@12', file: 'src/Store.cs', line: 12, class: 'Store', method: 'Put' }],
+    stats: { budgetHit: false },
+  };
+  const outputs = new Map([['walk', { exit: 0, stdout: JSON.stringify(document), stderr: '' }]]);
+  const [entry] = project(ledger, outputs).cases;
+  assert.deepEqual(entry.sites.map((item) => [item.id, item.found, item.by]), [
+    ['route', true, 'both'],
+    ['guard', true, 'site'],
+    ['write', true, 'symbol'],
+  ]);
+  assert.deepEqual(entry.assertions, [{ id: 'write-from-route', held: false, reason: 'not-reached' }]);
+  assert.equal(project(ledger, outputs).runs[0].outside.length, 0);
+});
