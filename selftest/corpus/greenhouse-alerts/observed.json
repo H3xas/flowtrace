@@ -1,0 +1,697 @@
+{
+  "format": "flowtrace-journey-observed",
+  "schemaVersion": 1,
+  "pack": "greenhouse-alerts",
+  "rules": {
+    "match": "match/1"
+  },
+  "runs": [
+    {
+      "id": "watchers-page-by-url",
+      "exit": 2,
+      "entry": "unresolved",
+      "budgetHit": null,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
+      "id": "watchers-page-by-name",
+      "exit": 2,
+      "entry": "ambiguous",
+      "budgetHit": null,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
+      "id": "watchers-page-expanded",
+      "exit": 2,
+      "entry": "ambiguous",
+      "budgetHit": null,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
+      "id": "overview-panel-by-name",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
+      "id": "replace-watchers-walk",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
+      "id": "harvest-plan-small-budget",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": true,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
+      "id": "harvest-plan-large-budget",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 0,
+      "outside": []
+    }
+  ],
+  "cases": [
+    {
+      "id": "nested-page-by-url",
+      "run": "watchers-page-by-url",
+      "sites": [
+        {
+          "id": "page-watcher-preferences",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "request-load-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "request-save-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "route-get-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "route-put-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [],
+      "counts": {
+        "sitesResolved": 0,
+        "sitesExpected": 5,
+        "outside": 0,
+        "entryUnresolved": 1,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 0,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "discovery",
+      "evidence": ""
+    },
+    {
+      "id": "nested-page-mount-chain",
+      "run": "watchers-page-by-url",
+      "sites": [
+        {
+          "id": "mount-greenhouse",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "mount-zone",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "mount-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "lazy-watchers-import",
+          "found": false,
+          "by": null,
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [],
+      "counts": {
+        "sitesResolved": 0,
+        "sitesExpected": 4,
+        "outside": 0,
+        "entryUnresolved": 1,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 0,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "discovery",
+      "evidence": ""
+    },
+    {
+      "id": "nested-page-by-name",
+      "run": "watchers-page-by-name",
+      "sites": [
+        {
+          "id": "page-watcher-preferences",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "request-load-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "request-save-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "route-get-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "route-put-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        }
+      ],
+      "unknowns": [
+        {
+          "id": "report-url",
+          "seen": false,
+          "marked": false,
+          "asserted": false
+        }
+      ],
+      "assertions": [],
+      "counts": {
+        "sitesResolved": 0,
+        "sitesExpected": 5,
+        "outside": 0,
+        "entryUnresolved": 1,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 0,
+        "unknownsMarked": 0,
+        "unknownsExpected": 1
+      },
+      "falselyComplete": false,
+      "classification": "discovery",
+      "evidence": ""
+    },
+    {
+      "id": "effect-load-versus-save-click",
+      "run": "watchers-page-by-name",
+      "sites": [
+        {
+          "id": "effect-load-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "click-save-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "dispatch-save-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "thunk-save-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "route-get-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "route-put-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "load-from-effect",
+          "held": false,
+          "reason": "missing:route-get-watchers"
+        },
+        {
+          "id": "save-from-click",
+          "held": false,
+          "reason": "missing:route-put-watchers"
+        }
+      ],
+      "counts": {
+        "sitesResolved": 0,
+        "sitesExpected": 6,
+        "outside": 0,
+        "entryUnresolved": 1,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 2,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "discovery",
+      "evidence": ""
+    },
+    {
+      "id": "mount-load-versus-acknowledge-click",
+      "run": "overview-panel-by-name",
+      "sites": [
+        {
+          "id": "page-zone-overview",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "mount-load-readings",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "click-acknowledge-alarm",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "request-load-readings",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "request-acknowledge-alarm",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        },
+        {
+          "id": "route-get-readings",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "route-ack-alarm",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "readings-from-mount",
+          "held": false,
+          "reason": "missing:route-get-readings"
+        },
+        {
+          "id": "acknowledge-from-click",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 4,
+        "sitesExpected": 7,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 1,
+        "assertionsAsserted": 2,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": true,
+      "classification": "lifecycle",
+      "evidence": ""
+    },
+    {
+      "id": "save-request-alias-join",
+      "run": "watchers-page-by-name",
+      "sites": [
+        {
+          "id": "request-save-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "route-put-watchers",
+          "found": false,
+          "by": null,
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "put-joined-by-alias",
+          "held": false,
+          "reason": "missing:route-put-watchers"
+        }
+      ],
+      "counts": {
+        "sitesResolved": 0,
+        "sitesExpected": 2,
+        "outside": 0,
+        "entryUnresolved": 1,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 1,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "discovery",
+      "evidence": ""
+    },
+    {
+      "id": "identity-before-lookup-access-after",
+      "run": "replace-watchers-walk",
+      "sites": [
+        {
+          "id": "check-identity",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "lookup-zone",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "check-access",
+          "found": true,
+          "by": "both",
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "identity-before-lookup",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "lookup-before-access",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 3,
+        "sitesExpected": 3,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 2,
+        "assertionsAsserted": 2,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
+      "id": "conditional-recompute",
+      "run": "replace-watchers-walk",
+      "sites": [
+        {
+          "id": "guard-irrigation",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "recompute-irrigation",
+          "found": true,
+          "by": "both",
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "guard-and-call-at-site",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 2,
+        "sitesExpected": 2,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 1,
+        "assertionsAsserted": 1,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
+      "id": "repeated-audit-record",
+      "run": "replace-watchers-walk",
+      "sites": [
+        {
+          "id": "audit-requested",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "audit-replaced",
+          "found": true,
+          "by": "both",
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "both-audits-at-site",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "requested-before-replaced",
+          "held": false,
+          "reason": "same-node"
+        }
+      ],
+      "counts": {
+        "sitesResolved": 2,
+        "sitesExpected": 2,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 1,
+        "assertionsAsserted": 2,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "ordering",
+      "evidence": ""
+    },
+    {
+      "id": "save-effects-and-failure",
+      "run": "replace-watchers-walk",
+      "sites": [
+        {
+          "id": "reject-missing-body",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "filter-eligible",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "reject-empty-selection",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "write-watchers",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "refresh-cache",
+          "found": true,
+          "by": "both",
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [],
+      "counts": {
+        "sitesResolved": 5,
+        "sitesExpected": 5,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 0,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
+      "id": "save-feedback-continuation",
+      "run": "watchers-page-expanded",
+      "sites": [
+        {
+          "id": "notice-saved",
+          "found": false,
+          "by": null,
+          "match": null
+        },
+        {
+          "id": "notice-failed",
+          "found": false,
+          "by": null,
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "saved-after-request",
+          "held": false,
+          "reason": "missing:notice-saved"
+        },
+        {
+          "id": "failed-after-request",
+          "held": false,
+          "reason": "missing:notice-failed"
+        }
+      ],
+      "counts": {
+        "sitesResolved": 0,
+        "sitesExpected": 2,
+        "outside": 0,
+        "entryUnresolved": 1,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 2,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "discovery",
+      "evidence": ""
+    },
+    {
+      "id": "harvest-write-small-budget",
+      "run": "harvest-plan-small-budget",
+      "sites": [
+        {
+          "id": "save-harvest-plan",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "write-harvest-plan",
+          "found": false,
+          "by": null,
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [],
+      "counts": {
+        "sitesResolved": 1,
+        "sitesExpected": 2,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 0,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "budget",
+      "evidence": ""
+    },
+    {
+      "id": "harvest-write-large-budget",
+      "run": "harvest-plan-large-budget",
+      "sites": [
+        {
+          "id": "save-harvest-plan",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "write-harvest-plan",
+          "found": true,
+          "by": "both",
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [],
+      "counts": {
+        "sitesResolved": 2,
+        "sitesExpected": 2,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 0,
+        "assertionsAsserted": 0,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    }
+  ]
+}

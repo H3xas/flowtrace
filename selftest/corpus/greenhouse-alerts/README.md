@@ -54,6 +54,80 @@ this source alone, before anything was observed. It holds:
 `selftest/journey-ledger.test.js` checks that the ledger is valid, that every site still sits on
 the line its anchor names, and that every file here is tracked.
 
+## Replaying the pack
+
+`npm test` runs it: `selftest/journey-pack.test.js` copies the pack to a temporary directory,
+captures it, replays it and fails when the projection differs from the committed
+`observed.json`. It needs no network, credentials, code index or runtime collector. By hand, from
+the repository root, with any scratch directory in place of `<scratch>`:
+
+```
+node scripts/journey-pack.mjs capture --config selftest/corpus/greenhouse-alerts/greenhouse.config.json --bundle <scratch>/bundle
+node scripts/journey-pack.mjs replay  --config selftest/corpus/greenhouse-alerts/greenhouse.config.json --bundle <scratch>/bundle \
+  --cases selftest/corpus/greenhouse-alerts/expected.json --out <scratch>/run-1 \
+  --expect selftest/corpus/greenhouse-alerts/observed.json
+```
+
+Capture extracts into a staging directory inside the bundle, takes one `join --snapshot`, and
+promotes it only when the content every extractor could read is unchanged from before
+extraction to after it and nothing else under the roots was written. Promotion is a single rename
+of the `current` pointer, so an interrupted capture leaves the previous bundle as it was. Replay
+copies the promoted bundle, lets flowtrace check the snapshot's own digests, runs only `join` and
+`trace` with a pinned environment and no code index, and ends with a second `join --snapshot`
+whose fact sets must equal the bundle's. Both steps write a manifest (`capture.json` inside the
+bundle, `replay.json` beside the run output) naming the tool build, the Node version, the
+normalised configuration digest, every fact set identity as the snapshot states it, the content
+digest and scope rule per repository, and every command run with its exit code and diagnostics.
+A field the harness cannot establish is written `unknown` and is never accepted as a baseline.
+
+Replaying the same bundle twice produces byte-identical `projection.json` files.
+
+Exit codes: 0 success; 1 the projection drifted from `--expect` (every moved case is named) or a
+classification contradicts its observations; 2 usage, or a ledger that is invalid or no longer
+anchored to its source; 3 a named refusal — `capture-in-progress`, `provider-document-missing`,
+`extract-failed`, `join-failed`, `capture-source-changed`, `source-written-during-capture`,
+`titles-collector-failed`, `bundle-missing`, `bundle-mismatch`, `identity-unknown`,
+`config-changed-since-capture`, `source-unavailable`, `source-changed-since-capture`,
+`facts-digest-mismatch`, `snapshot-refused`, `facts-changed-during-replay` or
+`manifest-path-leak`.
+
+The same harness can replay a configuration kept outside this repository. Its ledger, bundle and
+results stay with that configuration, and its results are reported on their own, never pooled
+with this pack's.
+
+## The observed projection
+
+`observed.json` (`format: "flowtrace-journey-observed"`, `schemaVersion: 1`) is what the
+harness derives from the `--json` answers; it holds no path, sha, digest, timestamp or version,
+and it reads only the fields its match rule names, so a field added to `--json` for another
+reason does not move it.
+
+- `runs`: per run, the exit code, how the start resolved (`resolved`, `ambiguous`,
+  `unresolved`, `error`), `stats.budgetHit`, the number of nodes marked unresolved, and `outside`
+  — each route or sink the run asserts that matches no site in its `reach`.
+- `cases`: per case, each expected site with whether it was `found`, `by` its file and line
+  (`site`), its symbol, or `both`, and the join that reached it (`match`); each unknown with
+  whether a node sits at it (`seen`), carries an unresolved marker (`marked`), or asserts a route
+  anyway (`asserted`); each assertion with whether it `held` and why not; the raw `counts`; and
+  `falselyComplete` — the answer exited 0 with no budget hit and no unresolved marker while an
+  expected site is missing.
+- `classification` and `evidence` are written by a person after reading the case's raw output
+  against its question. A case may read `resolved` only when its start resolved, every site was
+  found, every assertion held, every unknown is marked and none asserted, and it is not falsely
+  complete; `unresolved-cause` must name the evidence that would decide it. The gate checks both.
+
+Match rule `match/1`: a site is found by a node of the walk, in order, when that node sits at the
+site's file and line, when the edge that reached it carries evidence at that file and line (a
+node stands on a declaration; the call that reached it is recorded on its edge), or when the node,
+in the site's repository, answers to the site's symbol. A folded node stands for the node it
+refers to. `before` compares the first matching nodes in the order `trace --json` reports them,
+which is walk order rather than source order; `reached-from` holds when the site's node descends
+from the other site's node or was reached by an edge evidenced at the other site.
+
+The report printed by `replay` (and written as `report.txt`) gives every case on its own line with
+raw counts, then totals whose ratios sit beside their numerators and denominators. It makes no
+accuracy claim.
+
 ## Budgets
 
 The two harvest-plan runs differ only in `--max-nodes`: 24, below the at least thirty-six nodes
@@ -65,6 +139,10 @@ saw the whole program.
 ## Extending the pack
 
 - Case, run, site and unknown ids are stable: never renamed, never reused.
+- A change that alters any observed case fails `npm test` until the same change rewrites
+  `observed.json` (`replay … --write selftest/corpus/greenhouse-alerts/observed.json`) and a person
+  classifies every case the rewrite left `null`, so each repair shows its before and after in its
+  own diff.
 - A change to an expected row lands in its own commit that states the correction and cites the
   source line it follows, never together with a change to an observed result.
 - New cases may be added to the ledger; each new site is written from the source before anything
