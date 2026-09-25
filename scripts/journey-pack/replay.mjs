@@ -211,7 +211,8 @@ export function replay(options) {
       const now = contentIdentity(repo, root);
       content.set(repo.id, stripList(now));
       const then = entries.get(repo.id);
-      if (!then || !sameKnown(now.digest, then.content?.digest)) {
+      if (!then) throw new Refusal('identity-unknown', `repositories[${repo.id}]`, repo.id);
+      if (!sameKnown(now.digest, then.content.digest)) {
         throw new Refusal('source-changed-since-capture', `the content of ${repo.id} differs from the captured content`, repo.id);
       }
     }

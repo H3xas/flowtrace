@@ -294,6 +294,27 @@ test('a capture whose lock was taken over neither promotes nor removes the new h
   assert.equal(readFileSync(lock, 'utf8'), other, 'the new holder keeps its lock');
 });
 
+test('a capture refused after its lock was taken over writes nothing into the bundle', (t) => {
+  const pack = capturedPack(t);
+  const before = treeBytes(pack.bundle);
+  const lock = join(pack.bundle, 'capture.lock');
+  const other = `${JSON.stringify({ pid: process.pid, host: hostname(), token: 'other' })}\n`;
+  const result = capture(
+    { config: pack.config, bundle: pack.bundle, harnessRoot: REPO_ROOT },
+    {
+      afterExtract: () => {
+        writeFileSync(lock, other);
+        appendFileSync(join(pack.dir, 'web', 'src', 'actions', 'notices.ts'), 'export const DURING = 5;\n');
+      },
+    },
+  );
+  assert.equal(result.exit, 3);
+  assert.equal(result.diagnostics[0].name, 'capture-source-changed');
+  assert.equal(readFileSync(lock, 'utf8'), other, 'the new holder keeps its lock');
+  rmSync(lock);
+  assert.deepEqual(treeBytes(pack.bundle), before);
+});
+
 test('a capture stopped by a signal ends at once and the next capture recovers', async (t) => {
   const pack = capturedPack(t);
   const before = readFileSync(join(pack.bundle, 'current'), 'utf8');

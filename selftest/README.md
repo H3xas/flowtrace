@@ -75,6 +75,6 @@ npm test
   `pw-titles-contract.test.js` imports `lib/extract/pw-titles.js` directly for the same
   reason, since the CLI path would spawn the suite's own installed Playwright. The four
   `journey-*.test.js` files run the journey harness as a subprocess where they can, and import
-  its modules (never `lib/`) where they cannot: capture's phase hooks, which is how a source edit
-  or an interruption is placed between two steps of one capture, and the pure ledger and
-  projection functions.
+  its modules (never `lib/`) where they cannot: capture's phase hooks, which is how a source edit,
+  an interruption or a lock taken over by another capture is placed between two steps of one
+  capture, and the pure ledger and projection functions.

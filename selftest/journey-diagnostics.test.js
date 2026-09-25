@@ -250,3 +250,20 @@ test('a capture manifest of another format, schema version or step is a mismatch
     assert.ok(result.stderr.includes(field), `${field}: ${result.stderr}`);
   }
 });
+
+test('a configured repository with no fact set and no manifest entry is unknown', (t) => {
+  const pack = copyPack(t);
+  assert.equal(captureCli(pack).status, 0);
+  const generation = currentGeneration(pack.bundle);
+  const snapshot = readJson(join(generation, 'snapshot.json'));
+  snapshot.factSets = snapshot.factSets.filter((set) => set.repo !== 'web');
+  writeJson(join(generation, 'snapshot.json'), snapshot);
+  editManifest(pack, (m) => {
+    m.repositories = m.repositories.filter((entry) => entry.id !== 'web');
+  });
+  reseal(generation);
+  const result = replayCli(pack, tempDir(t, 'unrecorded'));
+  assert.equal(result.status, 3, result.stderr);
+  assert.deepEqual(diagnosticNames(result.stderr), ['identity-unknown']);
+  assert.match(result.stderr, /repositories\[web\]/);
+});

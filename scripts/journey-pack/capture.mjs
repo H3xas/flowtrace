@@ -209,8 +209,8 @@ export function factSetIdentityOf(set) {
 
 /**
  * Capture `options.config` into `options.bundle`. Returns `{ exit, diagnostics, generation }`;
- * a refusal exits 3 with its diagnostic and, for a refusal after the lock was taken, a
- * `refused-capture.json` manifest in the bundle root. An unexpected error or an interruption
+ * a refusal exits 3 with its diagnostic and, for a refusal while the capture still holds the
+ * lock, a `refused-capture.json` manifest in the bundle root. An unexpected error or an interruption
  * leaves no refusal manifest and no promoted change, only whatever the next capture sweeps.
  */
 export function capture(options, hooks = {}) {
@@ -374,7 +374,7 @@ export function capture(options, hooks = {}) {
   } catch (error) {
     if (!(error instanceof Refusal)) throw error;
     diagnostics.push({ ...error.diagnostic, detail: scrub(error.diagnostic.detail) });
-    if (lock) {
+    if (lock && ownsLock(lock)) {
       const refused = {
         format: MANIFEST_FORMAT,
         schemaVersion: MANIFEST_SCHEMA_VERSION,
