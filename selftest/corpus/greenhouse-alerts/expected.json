@@ -1,0 +1,892 @@
+{
+  "format": "flowtrace-journey-expected",
+  "schemaVersion": 1,
+  "pack": "greenhouse-alerts",
+  "config": "greenhouse.config.json",
+  "vocabulary": [
+    "resolved",
+    "discovery",
+    "lifecycle",
+    "join",
+    "ordering",
+    "budget",
+    "stale-input",
+    "configuration",
+    "unsupported",
+    "unresolved-cause"
+  ],
+  "sites": [
+    {
+      "id": "mount-greenhouse",
+      "kind": "mount",
+      "repo": "web",
+      "file": "src/app/AppRoutes.tsx",
+      "line": 8,
+      "anchor": "<Route path=\"/greenhouse/*\"",
+      "symbol": "GreenhouseShell"
+    },
+    {
+      "id": "mount-zone",
+      "kind": "mount",
+      "repo": "web",
+      "file": "src/shell/GreenhouseShell.tsx",
+      "line": 9,
+      "anchor": "<Route path=\"zones/:zoneId/*\"",
+      "symbol": "ZoneRoutes"
+    },
+    {
+      "id": "mount-watchers",
+      "kind": "mount",
+      "repo": "web",
+      "file": "src/zones/ZoneRoutes.tsx",
+      "line": 12,
+      "anchor": "path=\"alerts/watchers\"",
+      "symbol": null
+    },
+    {
+      "id": "lazy-watchers-import",
+      "kind": "mount",
+      "repo": "web",
+      "file": "src/zones/ZoneRoutes.tsx",
+      "line": 5,
+      "anchor": "lazy(() => import('./alerts/WatcherPreferencesPage'))",
+      "symbol": null
+    },
+    {
+      "id": "page-watcher-preferences",
+      "kind": "page",
+      "repo": "web",
+      "file": "src/zones/alerts/WatcherPreferencesPage.tsx",
+      "line": 8,
+      "anchor": "export default function WatcherPreferencesPage()",
+      "symbol": "WatcherPreferencesPage"
+    },
+    {
+      "id": "effect-load-watchers",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/alerts/WatcherPreferencesPage.tsx",
+      "line": 16,
+      "anchor": "dispatch(loadWatchers(zoneId));",
+      "symbol": "loadWatchers"
+    },
+    {
+      "id": "click-save-watchers",
+      "kind": "handler",
+      "repo": "web",
+      "file": "src/zones/alerts/WatcherPreferencesPage.tsx",
+      "line": 36,
+      "anchor": "onClick={handleSave}",
+      "symbol": "WatcherPreferencesPage.handleSave"
+    },
+    {
+      "id": "dispatch-save-watchers",
+      "kind": "dispatch",
+      "repo": "web",
+      "file": "src/zones/alerts/WatcherPreferencesPage.tsx",
+      "line": 20,
+      "anchor": "dispatch(saveWatchers(zoneId, selected));",
+      "symbol": "saveWatchers"
+    },
+    {
+      "id": "thunk-save-watchers",
+      "kind": "thunk",
+      "repo": "web",
+      "file": "src/actions/watchers.ts",
+      "line": 14,
+      "anchor": "export function saveWatchers(",
+      "symbol": "saveWatchers"
+    },
+    {
+      "id": "request-load-watchers",
+      "kind": "request",
+      "repo": "web",
+      "file": "src/actions/watchers.ts",
+      "line": 10,
+      "anchor": "getGatewayClient().get(`/greenhouse/v1/zones/${zoneId}/watchers`)",
+      "symbol": null
+    },
+    {
+      "id": "request-save-watchers",
+      "kind": "request",
+      "repo": "web",
+      "file": "src/actions/watchers.ts",
+      "line": 16,
+      "anchor": "getGatewayClient().put(`/greenhouse/v1/zones/${zoneId}/watchers`",
+      "symbol": null
+    },
+    {
+      "id": "notice-saved",
+      "kind": "feedback",
+      "repo": "web",
+      "file": "src/actions/watchers.ts",
+      "line": 17,
+      "anchor": "dispatch(showNotice('watchers-saved'))",
+      "symbol": "showNotice"
+    },
+    {
+      "id": "notice-failed",
+      "kind": "feedback",
+      "repo": "web",
+      "file": "src/actions/watchers.ts",
+      "line": 18,
+      "anchor": "dispatch(showNotice('watchers-failed'))",
+      "symbol": "showNotice"
+    },
+    {
+      "id": "page-zone-overview",
+      "kind": "page",
+      "repo": "web",
+      "file": "src/zones/ZoneOverviewPanel.tsx",
+      "line": 14,
+      "anchor": "class ZoneOverviewPanel extends Component",
+      "symbol": "ZoneOverviewPanel"
+    },
+    {
+      "id": "mount-load-readings",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/ZoneOverviewPanel.tsx",
+      "line": 17,
+      "anchor": "this.props.loadZoneReadings(this.props.zoneId);",
+      "symbol": "loadZoneReadings"
+    },
+    {
+      "id": "click-acknowledge-alarm",
+      "kind": "handler",
+      "repo": "web",
+      "file": "src/zones/ZoneOverviewPanel.tsx",
+      "line": 34,
+      "anchor": "onClick={() => this.props.acknowledgeAlarm(zoneId)}",
+      "symbol": "acknowledgeAlarm"
+    },
+    {
+      "id": "request-load-readings",
+      "kind": "request",
+      "repo": "web",
+      "file": "src/actions/zoneReadings.ts",
+      "line": 9,
+      "anchor": "getGatewayClient().get(`/greenhouse/v1/zones/${zoneId}/readings`)",
+      "symbol": null
+    },
+    {
+      "id": "request-acknowledge-alarm",
+      "kind": "request",
+      "repo": "web",
+      "file": "src/actions/zoneReadings.ts",
+      "line": 15,
+      "anchor": "getGatewayClient().post(`/greenhouse/v1/zones/${zoneId}/alarms/ack`",
+      "symbol": null
+    },
+    {
+      "id": "route-get-watchers",
+      "kind": "route",
+      "repo": "backend",
+      "file": "src/Controllers/ZoneWatchersController.cs",
+      "line": 20,
+      "anchor": "[HttpGet(\"{zoneId}/watchers\")]",
+      "symbol": "ZoneWatchersController.GetWatchers"
+    },
+    {
+      "id": "route-put-watchers",
+      "kind": "route",
+      "repo": "backend",
+      "file": "src/Controllers/ZoneWatchersController.cs",
+      "line": 26,
+      "anchor": "[HttpPut(\"{zoneId}/watchers\")]",
+      "symbol": "ZoneWatchersController.ReplaceWatchers"
+    },
+    {
+      "id": "reject-missing-body",
+      "kind": "branch",
+      "repo": "backend",
+      "file": "src/Controllers/ZoneWatchersController.cs",
+      "line": 29,
+      "anchor": "if (request == null || request.GrowerIds == null)",
+      "symbol": null
+    },
+    {
+      "id": "route-get-readings",
+      "kind": "route",
+      "repo": "backend",
+      "file": "src/Controllers/ZoneReadingsController.cs",
+      "line": 19,
+      "anchor": "[HttpGet(\"{zoneId}/readings\")]",
+      "symbol": "ZoneReadingsController.GetReadings"
+    },
+    {
+      "id": "route-ack-alarm",
+      "kind": "route",
+      "repo": "backend",
+      "file": "src/Controllers/ZoneReadingsController.cs",
+      "line": 25,
+      "anchor": "[HttpPost(\"{zoneId}/alarms/ack\")]",
+      "symbol": "ZoneReadingsController.AcknowledgeAlarm"
+    },
+    {
+      "id": "route-harvest-plan",
+      "kind": "route",
+      "repo": "backend",
+      "file": "src/Controllers/HarvestPlanController.cs",
+      "line": 19,
+      "anchor": "[HttpPost(\"{zoneId}/harvest-plan\")]",
+      "symbol": "HarvestPlanController.CommitPlan"
+    },
+    {
+      "id": "check-identity",
+      "kind": "check",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 57,
+      "anchor": "_identity.RequireSignedInGrower()",
+      "symbol": "GrowerIdentity.RequireSignedInGrower"
+    },
+    {
+      "id": "lookup-zone",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 58,
+      "anchor": "_zones.FindZone(zoneId)",
+      "symbol": "ZoneRepository.FindZone"
+    },
+    {
+      "id": "check-access",
+      "kind": "check",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 59,
+      "anchor": "_access.EnsureMayEditZone(growerId, zone)",
+      "symbol": "ZoneAccess.EnsureMayEditZone"
+    },
+    {
+      "id": "audit-requested",
+      "kind": "call",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 60,
+      "anchor": "\"watchers-change-requested\"",
+      "symbol": "AuditTrail.Record"
+    },
+    {
+      "id": "filter-eligible",
+      "kind": "filter",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 61,
+      "anchor": "_eligibility.KeepEligibleWatchers(zone, growerIds)",
+      "symbol": "WatcherEligibility.KeepEligibleWatchers"
+    },
+    {
+      "id": "reject-empty-selection",
+      "kind": "branch",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 62,
+      "anchor": "if (eligible.Count == 0)",
+      "symbol": null
+    },
+    {
+      "id": "write-watchers",
+      "kind": "write",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 63,
+      "anchor": "_watchers.ReplaceWatchers(zoneId, eligible)",
+      "symbol": "WatcherRepository.ReplaceWatchers"
+    },
+    {
+      "id": "guard-irrigation",
+      "kind": "branch",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 64,
+      "anchor": "if (zone.HasIrrigationSchedule)",
+      "symbol": null
+    },
+    {
+      "id": "recompute-irrigation",
+      "kind": "call",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 66,
+      "anchor": "_schedules.Recompute(zoneId)",
+      "symbol": "IrrigationSchedules.Recompute"
+    },
+    {
+      "id": "refresh-cache",
+      "kind": "cache",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 69,
+      "anchor": "_zoneCache.Refresh(zoneId)",
+      "symbol": "ZoneCache.Refresh"
+    },
+    {
+      "id": "audit-replaced",
+      "kind": "call",
+      "repo": "backend",
+      "file": "src/Services/WatcherService.cs",
+      "line": 70,
+      "anchor": "\"watchers-replaced\"",
+      "symbol": "AuditTrail.Record"
+    },
+    {
+      "id": "lookup-airflow",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 21,
+      "anchor": "_source.FindAirflow(zoneId)",
+      "symbol": "AirflowRepository.FindAirflow"
+    },
+    {
+      "id": "lookup-brightness",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 41,
+      "anchor": "_source.FindBrightness(zoneId)",
+      "symbol": "BrightnessRepository.FindBrightness"
+    },
+    {
+      "id": "lookup-carbon",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 61,
+      "anchor": "_source.FindCarbon(zoneId)",
+      "symbol": "CarbonRepository.FindCarbon"
+    },
+    {
+      "id": "lookup-dew-point",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 81,
+      "anchor": "_source.FindDewPoint(zoneId)",
+      "symbol": "DewPointRepository.FindDewPoint"
+    },
+    {
+      "id": "lookup-evaporation",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 101,
+      "anchor": "_source.FindEvaporation(zoneId)",
+      "symbol": "EvaporationRepository.FindEvaporation"
+    },
+    {
+      "id": "lookup-feed",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 121,
+      "anchor": "_source.FindFeed(zoneId)",
+      "symbol": "FeedRepository.FindFeed"
+    },
+    {
+      "id": "lookup-growth-stage",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 141,
+      "anchor": "_source.FindGrowthStage(zoneId)",
+      "symbol": "GrowthStageRepository.FindGrowthStage"
+    },
+    {
+      "id": "lookup-humidity",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 161,
+      "anchor": "_source.FindHumidity(zoneId)",
+      "symbol": "HumidityRepository.FindHumidity"
+    },
+    {
+      "id": "lookup-infestation",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 181,
+      "anchor": "_source.FindInfestation(zoneId)",
+      "symbol": "InfestationRepository.FindInfestation"
+    },
+    {
+      "id": "lookup-junction-valve",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 201,
+      "anchor": "_source.FindJunctionValve(zoneId)",
+      "symbol": "JunctionValveRepository.FindJunctionValve"
+    },
+    {
+      "id": "lookup-kilowatt-load",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 221,
+      "anchor": "_source.FindKilowattLoad(zoneId)",
+      "symbol": "KilowattLoadRepository.FindKilowattLoad"
+    },
+    {
+      "id": "lookup-leaf-temperature",
+      "kind": "lookup",
+      "repo": "backend",
+      "file": "src/Services/HarvestInputs.cs",
+      "line": 241,
+      "anchor": "_source.FindLeafTemperature(zoneId)",
+      "symbol": "LeafTemperatureRepository.FindLeafTemperature"
+    },
+    {
+      "id": "save-harvest-plan",
+      "kind": "call",
+      "repo": "backend",
+      "file": "src/Services/HarvestPlanner.cs",
+      "line": 71,
+      "anchor": "_planWriter.SavePlan(plan)",
+      "symbol": "HarvestPlanWriter.SavePlan"
+    },
+    {
+      "id": "write-harvest-plan",
+      "kind": "write",
+      "repo": "backend",
+      "file": "src/Services/HarvestPlanWriter.cs",
+      "line": 22,
+      "anchor": "_plans.InsertPlan(plan)",
+      "symbol": "HarvestPlanRepository.InsertPlan"
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "report-url",
+      "repo": "web",
+      "file": "src/actions/watchers.ts",
+      "line": 23,
+      "anchor": "getGatewayClient().get(url)",
+      "reason": "the report URL is built at run time by a helper and names an endpoint no repository in the pack declares"
+    }
+  ],
+  "runs": [
+    {
+      "id": "watchers-page-by-url",
+      "start": "/greenhouse/zones/:zoneId/alerts/watchers",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-get-watchers",
+        "route-put-watchers"
+      ]
+    },
+    {
+      "id": "watchers-page-by-name",
+      "start": "WatcherPreferencesPage",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-get-watchers",
+        "route-put-watchers"
+      ]
+    },
+    {
+      "id": "watchers-page-expanded",
+      "start": "WatcherPreferencesPage",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400",
+        "--expand"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-get-watchers",
+        "route-put-watchers"
+      ]
+    },
+    {
+      "id": "overview-panel-by-name",
+      "start": "ZoneOverviewPanel",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-get-readings",
+        "route-ack-alarm"
+      ]
+    },
+    {
+      "id": "replace-watchers-walk",
+      "start": "ZoneWatchersController.ReplaceWatchers",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400"
+      ],
+      "asserts": "sinks",
+      "reach": [
+        "lookup-zone",
+        "write-watchers"
+      ]
+    },
+    {
+      "id": "harvest-plan-small-budget",
+      "start": "HarvestPlanController.CommitPlan",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "24"
+      ],
+      "asserts": "sinks",
+      "reach": [
+        "lookup-airflow",
+        "lookup-brightness",
+        "lookup-carbon",
+        "lookup-dew-point",
+        "lookup-evaporation",
+        "lookup-feed",
+        "lookup-growth-stage",
+        "lookup-humidity",
+        "lookup-infestation",
+        "lookup-junction-valve",
+        "lookup-kilowatt-load",
+        "lookup-leaf-temperature",
+        "write-harvest-plan"
+      ]
+    },
+    {
+      "id": "harvest-plan-large-budget",
+      "start": "HarvestPlanController.CommitPlan",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400"
+      ],
+      "asserts": "sinks",
+      "reach": [
+        "lookup-airflow",
+        "lookup-brightness",
+        "lookup-carbon",
+        "lookup-dew-point",
+        "lookup-evaporation",
+        "lookup-feed",
+        "lookup-growth-stage",
+        "lookup-humidity",
+        "lookup-infestation",
+        "lookup-junction-valve",
+        "lookup-kilowatt-load",
+        "lookup-leaf-temperature",
+        "write-harvest-plan"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "nested-page-by-url",
+      "covers": [
+        "nested-url"
+      ],
+      "run": "watchers-page-by-url",
+      "question": "Does the browser URL of the nested, lazily loaded watcher page resolve to that page and the requests it makes?",
+      "expect": [
+        "page-watcher-preferences",
+        "request-load-watchers",
+        "request-save-watchers",
+        "route-get-watchers",
+        "route-put-watchers"
+      ],
+      "unknowns": [],
+      "assertions": []
+    },
+    {
+      "id": "nested-page-mount-chain",
+      "covers": [
+        "nested-url"
+      ],
+      "run": "watchers-page-by-url",
+      "question": "Does the URL answer name the three route layers and the lazy import that mount the page?",
+      "expect": [
+        "mount-greenhouse",
+        "mount-zone",
+        "mount-watchers",
+        "lazy-watchers-import"
+      ],
+      "unknowns": [],
+      "assertions": []
+    },
+    {
+      "id": "nested-page-by-name",
+      "covers": [
+        "component-name"
+      ],
+      "run": "watchers-page-by-name",
+      "question": "Does the component name of the same page reach the same requests, and leave the report request unresolved?",
+      "expect": [
+        "page-watcher-preferences",
+        "request-load-watchers",
+        "request-save-watchers",
+        "route-get-watchers",
+        "route-put-watchers"
+      ],
+      "unknowns": [
+        "report-url"
+      ],
+      "assertions": []
+    },
+    {
+      "id": "effect-load-versus-save-click",
+      "covers": [
+        "mount-vs-click"
+      ],
+      "run": "watchers-page-by-name",
+      "question": "Is the watcher load reached from the hook effect and the save reached from the selected save handler through its thunk?",
+      "expect": [
+        "effect-load-watchers",
+        "click-save-watchers",
+        "dispatch-save-watchers",
+        "thunk-save-watchers",
+        "route-get-watchers",
+        "route-put-watchers"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "load-from-effect",
+          "kind": "reached-from",
+          "site": "route-get-watchers",
+          "from": "effect-load-watchers"
+        },
+        {
+          "id": "save-from-click",
+          "kind": "reached-from",
+          "site": "route-put-watchers",
+          "from": "click-save-watchers"
+        }
+      ]
+    },
+    {
+      "id": "mount-load-versus-acknowledge-click",
+      "covers": [
+        "mount-vs-click"
+      ],
+      "run": "overview-panel-by-name",
+      "question": "Is the readings load reached from the class component mount and the acknowledgement reached from its click handler?",
+      "expect": [
+        "page-zone-overview",
+        "mount-load-readings",
+        "click-acknowledge-alarm",
+        "request-load-readings",
+        "request-acknowledge-alarm",
+        "route-get-readings",
+        "route-ack-alarm"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "readings-from-mount",
+          "kind": "reached-from",
+          "site": "route-get-readings",
+          "from": "mount-load-readings"
+        },
+        {
+          "id": "acknowledge-from-click",
+          "kind": "reached-from",
+          "site": "route-ack-alarm",
+          "from": "click-acknowledge-alarm"
+        }
+      ]
+    },
+    {
+      "id": "save-request-alias-join",
+      "covers": [
+        "alias-join"
+      ],
+      "run": "watchers-page-by-name",
+      "question": "Is the save request joined to its backend route through the configured alias?",
+      "expect": [
+        "request-save-watchers",
+        "route-put-watchers"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "put-joined-by-alias",
+          "kind": "reached-from",
+          "site": "route-put-watchers",
+          "from": "request-save-watchers",
+          "match": "alias"
+        }
+      ]
+    },
+    {
+      "id": "identity-before-lookup-access-after",
+      "covers": [
+        "check-order"
+      ],
+      "run": "replace-watchers-walk",
+      "question": "Is the identity check shown before the zone lookup and the access check after it?",
+      "expect": [
+        "check-identity",
+        "lookup-zone",
+        "check-access"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "identity-before-lookup",
+          "kind": "before",
+          "first": "check-identity",
+          "then": "lookup-zone"
+        },
+        {
+          "id": "lookup-before-access",
+          "kind": "before",
+          "first": "lookup-zone",
+          "then": "check-access"
+        }
+      ]
+    },
+    {
+      "id": "conditional-recompute",
+      "covers": [
+        "conditional-call"
+      ],
+      "run": "replace-watchers-walk",
+      "question": "Is the schedule recompute shown at its own call site under its guard?",
+      "expect": [
+        "guard-irrigation",
+        "recompute-irrigation"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "guard-and-call-at-site",
+          "kind": "at-site",
+          "sites": [
+            "guard-irrigation",
+            "recompute-irrigation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "repeated-audit-record",
+      "covers": [
+        "repeated-call"
+      ],
+      "run": "replace-watchers-walk",
+      "question": "Are both audit records shown at their own call sites, the request before the completion?",
+      "expect": [
+        "audit-requested",
+        "audit-replaced"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "both-audits-at-site",
+          "kind": "at-site",
+          "sites": [
+            "audit-requested",
+            "audit-replaced"
+          ]
+        },
+        {
+          "id": "requested-before-replaced",
+          "kind": "before",
+          "first": "audit-requested",
+          "then": "audit-replaced"
+        }
+      ]
+    },
+    {
+      "id": "save-effects-and-failure",
+      "covers": [
+        "effects"
+      ],
+      "run": "replace-watchers-walk",
+      "question": "Does the save walk show the eligibility filter, the storage write, the cache refresh and both rejection branches?",
+      "expect": [
+        "reject-missing-body",
+        "filter-eligible",
+        "reject-empty-selection",
+        "write-watchers",
+        "refresh-cache"
+      ],
+      "unknowns": [],
+      "assertions": []
+    },
+    {
+      "id": "save-feedback-continuation",
+      "covers": [
+        "feedback"
+      ],
+      "run": "watchers-page-expanded",
+      "question": "Are the saved and failed notices shown as continuations of the save request?",
+      "expect": [
+        "notice-saved",
+        "notice-failed"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "saved-after-request",
+          "kind": "reached-from",
+          "site": "notice-saved",
+          "from": "request-save-watchers"
+        },
+        {
+          "id": "failed-after-request",
+          "kind": "reached-from",
+          "site": "notice-failed",
+          "from": "request-save-watchers"
+        }
+      ]
+    },
+    {
+      "id": "harvest-write-small-budget",
+      "covers": [
+        "budget-traversal"
+      ],
+      "run": "harvest-plan-small-budget",
+      "question": "With a small node budget, is the business write behind twelve prerequisite lookups reached?",
+      "expect": [
+        "save-harvest-plan",
+        "write-harvest-plan"
+      ],
+      "unknowns": [],
+      "assertions": []
+    },
+    {
+      "id": "harvest-write-large-budget",
+      "covers": [
+        "budget-traversal"
+      ],
+      "run": "harvest-plan-large-budget",
+      "question": "With a large node budget, is the same business write reached?",
+      "expect": [
+        "save-harvest-plan",
+        "write-harvest-plan"
+      ],
+      "unknowns": [],
+      "assertions": []
+    }
+  ]
+}
