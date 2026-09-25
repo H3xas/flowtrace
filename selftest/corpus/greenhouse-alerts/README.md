@@ -89,7 +89,8 @@ anchored to its source; 3 a named refusal — `capture-in-progress`, `provider-d
 `titles-collector-failed`, `bundle-missing`, `bundle-mismatch`, `identity-unknown`,
 `config-changed-since-capture`, `source-unavailable`, `source-changed-since-capture`,
 `facts-digest-mismatch`, `snapshot-refused`, `facts-changed-during-replay` or
-`manifest-path-leak`.
+`manifest-path-leak`; 4 an unexpected internal error. A configuration that cannot be read is a
+usage error.
 
 The same harness can replay a configuration kept outside this repository. Its ledger, bundle and
 results stay with that configuration, and its results are reported on their own, never pooled

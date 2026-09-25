@@ -9,8 +9,10 @@
  * Exit codes: 0 success; 1 the projection drifted from `--expect`, or a classification there
  * contradicts its observations; 2 usage, or a ledger that is invalid or no longer anchored to
  * its source; 3 a named refusal (a capture that cannot be promoted, a bundle that cannot be
- * replayed). Every diagnostic is printed as `journey-pack: <name>: <detail>`.
+ * replayed); 4 an unexpected internal error. Every diagnostic is printed as
+ * `journey-pack: <name>: <detail>`.
  */
+import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { capture } from './journey-pack/capture.mjs';
@@ -49,10 +51,23 @@ function print(diagnostics) {
   }
 }
 
+function readableConfig(file) {
+  try {
+    const parsed = JSON.parse(readFileSync(file, 'utf8'));
+    return parsed && typeof parsed === 'object' && Array.isArray(parsed.repos) ? null : 'has no repos array';
+  } catch (error) {
+    return error.message;
+  }
+}
+
 function main(argv) {
   const parsed = parse(argv);
   if (parsed.error) return usage(parsed.error);
   const { command, options } = parsed;
+  if (options.config) {
+    const problem = readableConfig(options.config);
+    if (problem) return usage(`configuration ${options.config} cannot be read (${problem})`);
+  }
   if (command === 'capture') {
     if (!options.config || !options.bundle) return usage('capture needs --config and --bundle');
     if (options.cases || options.out || options.expect || options.write) return usage('capture takes only --config and --bundle');
@@ -79,4 +94,10 @@ function main(argv) {
 // staging that the next capture sweeps.
 for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => process.exit(130));
 
-process.exitCode = main(process.argv.slice(2));
+// An unexpected failure must not exit 1, which callers read as a drifted projection.
+try {
+  process.exitCode = main(process.argv.slice(2));
+} catch (error) {
+  process.stderr.write(`journey-pack: internal-error: ${error && error.message ? error.message : String(error)}\n`);
+  process.exitCode = 4;
+}

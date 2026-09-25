@@ -117,6 +117,11 @@ export function replay(options) {
     let ledger;
     try {
       ledger = readLedger(ledgerFile);
+      // Sites are anchored against the ledger's own configuration; replaying them against
+      // another one would compare an answer about one tree with expectations about another.
+      if (resolve(dirname(ledgerFile), ledger.config) !== configFile) {
+        throw new LedgerError([`the ledger names another configuration (${ledger.config}) than the one replayed`]);
+      }
     } catch (error) {
       return ledgerInvalid(error);
     }
@@ -126,15 +131,31 @@ export function replay(options) {
       throw new Refusal('bundle-missing', 'the bundle has no promoted generation');
     }
     const bundle = join(work, 'bundle');
-    cpSync(join(bundleRoot, pointer.current), bundle, { recursive: true });
-    const snapshotBytes = readFileSync(join(bundle, 'snapshot.json'));
-    const captured = JSON.parse(readFileSync(join(bundle, 'capture.json'), 'utf8'));
+    let snapshotBytes;
+    let captured;
+    try {
+      cpSync(join(bundleRoot, pointer.current), bundle, { recursive: true });
+      snapshotBytes = readFileSync(join(bundle, 'snapshot.json'));
+      captured = readFileSync(join(bundle, 'capture.json'), 'utf8');
+    } catch (error) {
+      throw new Refusal('bundle-missing', `the promoted generation cannot be read (${error.code ?? 'error'})`);
+    }
+    try {
+      captured = JSON.parse(captured);
+    } catch {
+      throw new Refusal('bundle-mismatch', 'the capture manifest of the promoted generation is not valid JSON');
+    }
     manifest.bundle = { generation: pointer.current, captureSha256: sha256(readFileSync(join(bundle, 'capture.json'))) };
     manifest.snapshot = { format: captured.snapshot?.format, schemaVersion: captured.snapshot?.schemaVersion, sha256: sha256(snapshotBytes) };
     if (captured.result !== 'promoted' || captured.snapshot?.sha256 !== sha256(snapshotBytes)) {
       throw new Refusal('bundle-mismatch', 'the snapshot bytes do not match the capture manifest that promoted them');
     }
-    const snapshot = JSON.parse(snapshotBytes.toString('utf8'));
+    let snapshot;
+    try {
+      snapshot = JSON.parse(snapshotBytes.toString('utf8'));
+    } catch {
+      throw new Refusal('bundle-mismatch', 'the snapshot of the promoted generation is not valid JSON');
+    }
     const bundleSets = new Map((snapshot.factSets || []).map((set) => [set.repo, set]));
     for (const entry of captured.repositories || []) {
       const set = bundleSets.get(entry.id);

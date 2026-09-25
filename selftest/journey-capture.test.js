@@ -341,3 +341,40 @@ test('a sink or branch beneath a folded node is still found, though nothing is s
   assert.deepEqual(entry.assertions, [{ id: 'write-from-route', held: false, reason: 'not-reached' }]);
   assert.equal(project(ledger, outputs).runs[0].outside.length, 0);
 });
+
+test('a ledger written for another configuration is refused before any run', (t) => {
+  const pack = capturedPack(t);
+  const other = copyPack(t);
+  const out = tempDir(t, 'foreign-ledger');
+  const result = replayCli(pack, out, [], { ledger: other.ledger });
+  assert.equal(result.status, 2);
+  assert.deepEqual(diagnosticNames(result.stderr), ['ledger-invalid']);
+  assert.match(result.stderr, /names another configuration/);
+});
+
+test('a promoted generation that cannot be read is refused by name', (t) => {
+  const pack = capturedPack(t);
+  const generation = currentGeneration(pack.bundle);
+  const out = tempDir(t, 'unreadable');
+  writeFileSync(join(generation, 'capture.json'), '{ not json');
+  let result = replayCli(pack, out);
+  assert.equal(result.status, 3);
+  assert.deepEqual(diagnosticNames(result.stderr), ['bundle-mismatch']);
+  rmSync(join(generation, 'capture.json'));
+  result = replayCli(pack, out);
+  assert.equal(result.status, 3);
+  assert.deepEqual(diagnosticNames(result.stderr), ['bundle-missing']);
+});
+
+test('a configuration that cannot be read is a usage error, never a drift or a crash', (t) => {
+  const pack = copyPack(t);
+  writeFileSync(pack.config, '{ "repos": [');
+  let result = captureCli(pack);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /^journey-pack: usage: configuration .* cannot be read/m);
+  const out = tempDir(t, 'bad-config');
+  result = replayCli(pack, out);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /^journey-pack: usage: configuration .* cannot be read/m);
+  assert.doesNotMatch(result.stderr, /at .*\.mjs:\d+/);
+});
