@@ -89,10 +89,9 @@ function main(argv) {
   return usage(command ? `unknown command ${JSON.stringify(command)}` : 'no command');
 }
 
-// A signal reaches the running flowtrace child as well; the capture's own cleanup removes its
-// staging and lock before this handler can run, and a harder kill leaves only a stale lock and
-// staging that the next capture sweeps.
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => process.exit(130));
+// No signal handler: the run is synchronous, so a handler would only run once the work it was
+// meant to interrupt had finished. The default action stops the process where it is; promotion
+// is a single rename, and the next capture reclaims the lock and sweeps the staging left behind.
 
 // An unexpected failure must not exit 1, which callers read as a drifted projection.
 try {

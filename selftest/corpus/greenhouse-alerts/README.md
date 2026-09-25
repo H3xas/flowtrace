@@ -71,14 +71,20 @@ node scripts/journey-pack.mjs replay  --config selftest/corpus/greenhouse-alerts
 Capture extracts into a staging directory inside the bundle, takes one `join --snapshot`, and
 promotes it only when the content every extractor could read is unchanged from before
 extraction to after it and nothing else under the roots was written. Promotion is a single rename
-of the `current` pointer, so an interrupted capture leaves the previous bundle as it was. Replay
+of the `current` pointer, so an interrupted capture leaves the previous bundle as it was; a
+capture stopped by a signal leaves its lock and staging behind, and the next capture reclaims a
+lock whose process no longer runs on this host and sweeps the staging. Replay
 copies the promoted bundle, lets flowtrace check the snapshot's own digests, runs only `join` and
 `trace` with a pinned environment and no code index, and ends with a second `join --snapshot`
 whose fact sets must equal the bundle's. Both steps write a manifest (`capture.json` inside the
 bundle, `replay.json` beside the run output) naming the tool build, the Node version, the
 normalised configuration digest, every fact set identity as the snapshot states it, the content
 digest and scope rule per repository, and every command run with its exit code and diagnostics.
-A field the harness cannot establish is written `unknown` and is never accepted as a baseline.
+A field the harness cannot establish is written `unknown`. A replay refuses a capture manifest
+of another format, schema version or step (`bundle-mismatch`), and one whose tool, Node,
+snapshot, configuration, per-repository fact set or content, or code-index identity is
+`unknown`, missing or null (`identity-unknown`, naming the field), so none of them is ever
+accepted as a baseline.
 
 Replaying the same bundle twice produces byte-identical `projection.json` files.
 

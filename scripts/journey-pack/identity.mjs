@@ -15,7 +15,7 @@ import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 export const UNKNOWN = 'unknown';
 
 export function isUnknown(value) {
-  return value === UNKNOWN || value === undefined;
+  return value === UNKNOWN || value === undefined || value === null;
 }
 
 /** Equality that refuses to vouch for anything the harness could not establish. */
@@ -258,6 +258,57 @@ export function toolIdentity(harnessRoot) {
     checkoutHead: head && /^[0-9a-f]{40,64}$/.test(head) ? head : UNKNOWN,
     sourceDigest: files.length > 0 ? treeDigest(files) : UNKNOWN,
   };
+}
+
+// The identities a capture manifest must establish before its bundle can be a baseline. A fact
+// set's own fields are not listed one by one: they are copied verbatim from the snapshot, where a
+// null `headSha` is how a non-git input is written, and replay compares them with the snapshot.
+const REQUIRED_IDENTITY = [
+  'tool.generatedFrom',
+  'tool.checkoutHead',
+  'tool.sourceDigest',
+  'node',
+  'snapshot.format',
+  'snapshot.schemaVersion',
+  'snapshot.sha256',
+  'config.digest',
+  'codeIndex.state',
+];
+const REQUIRED_REPOSITORY_IDENTITY = ['id', 'factSet.generatedFrom', 'factSet.digest', 'content.digest'];
+
+function unestablished(record, fields, prefix) {
+  const found = [];
+  for (const field of fields) {
+    let value = record;
+    let path = prefix;
+    for (const key of field.split('.')) {
+      path = path ? `${path}.${key}` : key;
+      value = value && typeof value === 'object' && !Array.isArray(value) ? value[key] : undefined;
+      if (isUnknown(value)) {
+        found.push(path);
+        break;
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Every required identity of a capture manifest that is absent, null or `unknown`, as field
+ * paths, naming only the outermost field that is missing. A field that was never written is as
+ * unestablished as one written `unknown`, so both refuse the same way.
+ */
+export function missingIdentity(manifest) {
+  const found = unestablished(manifest, REQUIRED_IDENTITY, '');
+  const repositories = manifest && manifest.repositories;
+  if (!Array.isArray(repositories) || repositories.length === 0) {
+    found.push('repositories');
+  } else {
+    repositories.forEach((entry, index) => {
+      found.push(...unestablished(entry, REQUIRED_REPOSITORY_IDENTITY, `repositories[${index}]`));
+    });
+  }
+  return [...new Set([...found, ...unknownFields(manifest)])];
 }
 
 /** Every `unknown` value in an identity record, as dotted field paths. */

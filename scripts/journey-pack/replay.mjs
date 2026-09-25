@@ -20,8 +20,8 @@ import {
   canonicalJson,
   sameKnown,
   sha256,
+  missingIdentity,
   toolIdentity,
-  unknownFields,
 } from './identity.mjs';
 import { LedgerError, anchorProblems, readLedger } from './ledger.mjs';
 import {
@@ -145,9 +145,31 @@ export function replay(options) {
     } catch {
       throw new Refusal('bundle-mismatch', 'the capture manifest of the promoted generation is not valid JSON');
     }
+    if (!captured || typeof captured !== 'object' || Array.isArray(captured)) {
+      throw new Refusal('bundle-mismatch', 'the capture manifest of the promoted generation is not an object');
+    }
     manifest.bundle = { generation: pointer.current, captureSha256: sha256(readFileSync(join(bundle, 'capture.json'))) };
     manifest.snapshot = { format: captured.snapshot?.format, schemaVersion: captured.snapshot?.schemaVersion, sha256: sha256(snapshotBytes) };
-    if (captured.result !== 'promoted' || captured.snapshot?.sha256 !== sha256(snapshotBytes)) {
+    // Every later read assumes this manifest's layout; one of another format or version could
+    // name the same fields with other meanings, so it is refused before any of them is read.
+    const header = [
+      ['format', MANIFEST_FORMAT],
+      ['schemaVersion', MANIFEST_SCHEMA_VERSION],
+      ['step', 'capture'],
+      ['result', 'promoted'],
+    ].filter(([field, expected]) => captured[field] !== expected);
+    if (header.length > 0) {
+      throw new Refusal(
+        'bundle-mismatch',
+        `the capture manifest is not a promoted ${MANIFEST_FORMAT} capture of schema version ${MANIFEST_SCHEMA_VERSION}: ${header.map(([field]) => field).join(', ')}`,
+      );
+    }
+
+    const { invocations: _invocations, diagnostics: _diagnostics, ...identity } = captured;
+    const unknown = missingIdentity(identity);
+    if (unknown.length > 0) throw new Refusal('identity-unknown', unknown.join(', '));
+
+    if (captured.snapshot.sha256 !== sha256(snapshotBytes)) {
       throw new Refusal('bundle-mismatch', 'the snapshot bytes do not match the capture manifest that promoted them');
     }
     let snapshot;
@@ -156,21 +178,30 @@ export function replay(options) {
     } catch {
       throw new Refusal('bundle-mismatch', 'the snapshot of the promoted generation is not valid JSON');
     }
-    const bundleSets = new Map((snapshot.factSets || []).map((set) => [set.repo, set]));
-    for (const entry of captured.repositories || []) {
+    const headerMoved = ['format', 'schemaVersion'].filter((field) => snapshot?.[field] !== captured.snapshot[field]);
+    if (headerMoved.length > 0) {
+      throw new Refusal('bundle-mismatch', `the snapshot header differs from the capture manifest: ${headerMoved.map((field) => `snapshot.${field}`).join(', ')}`);
+    }
+    const bundleSets = new Map((Array.isArray(snapshot.factSets) ? snapshot.factSets : []).map((set) => [set.repo, set]));
+    const entries = new Map();
+    for (const entry of captured.repositories) {
+      if (entries.has(entry.id)) {
+        throw new Refusal('bundle-mismatch', `repositories: ${entry.id} appears more than once in the capture manifest`, entry.id);
+      }
+      entries.set(entry.id, entry);
+    }
+    const uncovered = [...bundleSets.keys()].filter((repo) => !entries.has(repo));
+    if (uncovered.length > 0) throw new Refusal('identity-unknown', uncovered.map((repo) => `repositories[${repo}]`).join(', '));
+    for (const entry of captured.repositories) {
       const set = bundleSets.get(entry.id);
       if (!set || canonicalJson(factSetIdentityOf(set)) !== canonicalJson(entry.factSet)) {
         throw new Refusal('bundle-mismatch', `the fact set of ${entry.id} is not the one its capture recorded`, entry.id);
       }
     }
 
-    const { invocations: _invocations, diagnostics: _diagnostics, ...identity } = captured;
-    const unknown = unknownFields(identity);
-    if (unknown.length > 0) throw new Refusal('identity-unknown', unknown.join(', '));
-
     const { raw, identity: config } = configIdentity(configFile);
     manifest.config = config;
-    if (!sameKnown(config.digest, captured.config?.digest)) {
+    if (!sameKnown(config.digest, captured.config.digest)) {
       throw new Refusal('config-changed-since-capture', 'the configuration digest differs from the one captured');
     }
     const repos = (raw.repos || []).map((repo) => ({ repo, root: resolve(configDir, repo.root) }));
@@ -179,7 +210,7 @@ export function replay(options) {
       if (!existsSync(root)) throw new Refusal('source-unavailable', `the root of ${repo.id} is not present`, repo.id);
       const now = contentIdentity(repo, root);
       content.set(repo.id, stripList(now));
-      const then = (captured.repositories || []).find((entry) => entry.id === repo.id);
+      const then = entries.get(repo.id);
       if (!then || !sameKnown(now.digest, then.content?.digest)) {
         throw new Refusal('source-changed-since-capture', `the content of ${repo.id} differs from the captured content`, repo.id);
       }

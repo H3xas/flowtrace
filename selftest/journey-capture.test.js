@@ -5,13 +5,14 @@
  * phase hooks cannot be reached through a subprocess, so those cases import the capture module.
  */
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { appendFileSync, cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { REPO_ROOT } from './helpers.js';
 import {
+  HARNESS,
   captureCli,
   copyPack,
   currentGeneration,
@@ -254,6 +255,73 @@ test('a lock held by a running process refuses a second capture', (t) => {
   assert.ok(existsSync(join(pack.bundle, 'capture.lock')), 'the holder keeps its lock');
 });
 
+test('a stale lock another capture reclaimed first is left to that capture', (t) => {
+  const pack = capturedPack(t);
+  const before = treeBytes(pack.bundle);
+  const lock = join(pack.bundle, 'capture.lock');
+  const exited = spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' });
+  writeFileSync(lock, `${JSON.stringify({ pid: Number(exited.stdout), host: hostname() })}\n`);
+  const winner = `${JSON.stringify({ pid: process.pid, host: hostname(), token: 'winner' })}\n`;
+  const result = capture(
+    { config: pack.config, bundle: pack.bundle, harnessRoot: REPO_ROOT },
+    {
+      afterStaleLockRead: () => {
+        rmSync(lock);
+        writeFileSync(lock, winner);
+      },
+    },
+  );
+  assert.equal(result.exit, 3);
+  assert.equal(result.diagnostics[0].name, 'capture-in-progress');
+  assert.equal(readFileSync(lock, 'utf8'), winner, 'the winner keeps its lock');
+  rmSync(lock);
+  assert.deepEqual(treeBytes(pack.bundle), before);
+});
+
+test('a capture whose lock was taken over neither promotes nor removes the new holder', (t) => {
+  const pack = capturedPack(t);
+  const pointer = readFileSync(join(pack.bundle, 'current'), 'utf8');
+  appendFileSync(join(pack.dir, 'web', 'src', 'actions', 'notices.ts'), 'export const TAKEN_OVER = 4;\n');
+  const lock = join(pack.bundle, 'capture.lock');
+  const other = `${JSON.stringify({ pid: process.pid, host: hostname(), token: 'other' })}\n`;
+  const result = capture(
+    { config: pack.config, bundle: pack.bundle, harnessRoot: REPO_ROOT },
+    { beforePromote: () => writeFileSync(lock, other) },
+  );
+  assert.equal(result.exit, 3);
+  assert.equal(result.diagnostics[0].name, 'capture-in-progress');
+  assert.equal(readFileSync(join(pack.bundle, 'current'), 'utf8'), pointer);
+  assert.equal(readFileSync(lock, 'utf8'), other, 'the new holder keeps its lock');
+});
+
+test('a capture stopped by a signal ends at once and the next capture recovers', async (t) => {
+  const pack = capturedPack(t);
+  const before = readFileSync(join(pack.bundle, 'current'), 'utf8');
+  const lock = join(pack.bundle, 'capture.lock');
+  const child = spawn(process.execPath, [HARNESS, 'capture', '--config', pack.config, '--bundle', pack.bundle], {
+    cwd: REPO_ROOT,
+    detached: true,
+    stdio: 'ignore',
+  });
+  const outcome = await new Promise((resolveOutcome) => {
+    const timer = setInterval(() => {
+      if (existsSync(lock)) {
+        clearInterval(timer);
+        process.kill(-child.pid, 'SIGTERM');
+      }
+    }, 1);
+    child.on('exit', (code, signal) => {
+      clearInterval(timer);
+      resolveOutcome({ code, signal });
+    });
+  });
+  assert.deepEqual(outcome, { code: null, signal: 'SIGTERM' });
+  assert.equal(readFileSync(join(pack.bundle, 'current'), 'utf8'), before);
+  const result = captureCli(pack);
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(!readdirSync(pack.bundle).some((name) => name.startsWith('.staging-') || name === 'capture.lock'));
+});
+
 test('replay refuses a missing bundle, a changed configuration, and changed or missing source', (t) => {
   const pack = copyPack(t);
   const out = tempDir(t, 'refusals');
@@ -364,6 +432,20 @@ test('a promoted generation that cannot be read is refused by name', (t) => {
   result = replayCli(pack, out);
   assert.equal(result.status, 3);
   assert.deepEqual(diagnosticNames(result.stderr), ['bundle-missing']);
+});
+
+test('a pointer that names anything but a generation of its own bundle is refused', (t) => {
+  const pack = capturedPack(t);
+  const pointerFile = join(pack.bundle, 'current');
+  const pointer = readJson(pointerFile);
+  const elsewhere = join(pack.work, 'elsewhere');
+  cpSync(join(pack.bundle, pointer.current), join(elsewhere, pointer.current), { recursive: true });
+  for (const current of [`../elsewhere/${pointer.current}`, '.', `${pointer.current}/..`]) {
+    writeFileSync(pointerFile, `${JSON.stringify({ ...pointer, current })}\n`);
+    const result = replayCli(pack, tempDir(t, 'pointer'));
+    assert.equal(result.status, 3, `${current}: ${result.stderr}`);
+    assert.deepEqual(diagnosticNames(result.stderr), ['bundle-missing'], current);
+  }
 });
 
 test('a configuration that cannot be read is a usage error, never a drift or a crash', (t) => {

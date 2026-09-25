@@ -2,8 +2,9 @@
  * Every input a replay must not accept as a baseline yields a named diagnostic and a non-zero
  * status instead of a projection: an edit the tool's own freshness fingerprint cannot see, a
  * snapshot whose facts no longer match their digest, a missing provider document, a failed
- * title collection, a tool build whose identity is unknown, and a fact set swapped in from
- * another capture. The unmutated bundle is the control and replays clean.
+ * title collection, an identity that is unknown or was never written, a capture manifest of
+ * another format or version, and a fact set swapped in from another capture. The unmutated
+ * bundle is the control and replays clean.
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -173,4 +174,79 @@ test('a snapshot edited without resealing its manifest is a mismatched bundle', 
   const result = replayCli(pack, out);
   assert.equal(result.status, 3);
   assert.deepEqual(diagnosticNames(result.stderr), ['bundle-mismatch']);
+});
+
+function editManifest(pack, edit) {
+  const file = join(currentGeneration(pack.bundle), 'capture.json');
+  const original = readFileSync(file, 'utf8');
+  const manifest = JSON.parse(original);
+  edit(manifest);
+  writeJson(file, manifest);
+  return () => writeFileSync(file, original);
+}
+
+test('an identity field missing or null in the capture manifest is unknown, never a baseline', (t) => {
+  const pack = copyPack(t);
+  assert.equal(captureCli(pack).status, 0);
+  const mutations = [
+    ['tool', (m) => delete m.tool],
+    ['tool.generatedFrom', (m) => delete m.tool.generatedFrom],
+    ['tool.checkoutHead', (m) => (m.tool.checkoutHead = null)],
+    ['tool.sourceDigest', (m) => delete m.tool.sourceDigest],
+    ['node', (m) => delete m.node],
+    ['snapshot.format', (m) => delete m.snapshot.format],
+    ['snapshot.schemaVersion', (m) => (m.snapshot.schemaVersion = null)],
+    ['config.digest', (m) => delete m.config.digest],
+    ['repositories', (m) => delete m.repositories],
+    ['repositories[0].id', (m) => delete m.repositories[0].id],
+    ['repositories[0].factSet', (m) => delete m.repositories[0].factSet],
+    ['repositories[0].factSet.digest', (m) => delete m.repositories[0].factSet.digest],
+    ['repositories[1].content.digest', (m) => (m.repositories[1].content.digest = null)],
+    ['codeIndex', (m) => delete m.codeIndex],
+    ['codeIndex.state', (m) => delete m.codeIndex.state],
+  ];
+  for (const [field, edit] of mutations) {
+    const restore = editManifest(pack, edit);
+    const out = tempDir(t, 'absent');
+    const result = replayCli(pack, out);
+    restore();
+    assert.equal(result.status, 3, `${field}: ${result.stderr}`);
+    assert.deepEqual(diagnosticNames(result.stderr), ['identity-unknown'], field);
+    assert.ok(result.stderr.includes(`identity-unknown: ${field}`), `${field}: ${result.stderr}`);
+    assert.equal(existsSync(join(out, 'projection.json')), false, field);
+  }
+  assert.equal(replayCli(pack, tempDir(t, 'restored')).status, 0, 'the restored manifest replays clean');
+});
+
+test('a snapshot fact set without an entry in the capture manifest is unknown', (t) => {
+  const pack = copyPack(t);
+  assert.equal(captureCli(pack).status, 0);
+  editManifest(pack, (m) => {
+    m.repositories = m.repositories.filter((entry) => entry.id !== 'web');
+  });
+  const result = replayCli(pack, tempDir(t, 'uncovered'));
+  assert.equal(result.status, 3, result.stderr);
+  assert.deepEqual(diagnosticNames(result.stderr), ['identity-unknown']);
+  assert.match(result.stderr, /repositories\[web\]/);
+});
+
+test('a capture manifest of another format, schema version or step is a mismatched bundle', (t) => {
+  const pack = copyPack(t);
+  assert.equal(captureCli(pack).status, 0);
+  const mutations = [
+    ['schemaVersion', (m) => (m.schemaVersion = 99)],
+    ['schemaVersion', (m) => delete m.schemaVersion],
+    ['format', (m) => (m.format = 'another-manifest')],
+    ['step', (m) => (m.step = 'replay')],
+    ['snapshot.schemaVersion', (m) => (m.snapshot.schemaVersion += 1)],
+    ['repositories', (m) => m.repositories.push({ ...m.repositories[0] })],
+  ];
+  for (const [field, edit] of mutations) {
+    const restore = editManifest(pack, edit);
+    const result = replayCli(pack, tempDir(t, 'foreign'));
+    restore();
+    assert.equal(result.status, 3, `${field}: ${result.stderr}`);
+    assert.deepEqual(diagnosticNames(result.stderr), ['bundle-mismatch'], field);
+    assert.ok(result.stderr.includes(field), `${field}: ${result.stderr}`);
+  }
 });

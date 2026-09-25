@@ -5,9 +5,10 @@
  *
  * Bundle root layout: `current` (the one promotion pointer), immutable `g-…` generation
  * directories holding `snapshot.json` and `capture.json`, and transient `capture.lock`,
- * `.staging-*` and `current.tmp-*` entries that only a lock holder creates or removes. Every
- * rename stays inside the bundle root, so each is atomic; anything that stops before the
- * pointer is replaced leaves `current` and every generation exactly as they were.
+ * `capture.lock.reclaim`, `.staging-*` and `current.tmp-*` entries that only a capture creates
+ * or removes, the last two only while it holds the lock. Every rename stays inside the bundle
+ * root, so each is atomic; anything that stops before the pointer is replaced leaves `current`
+ * and every generation exactly as they were.
  */
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -65,35 +66,80 @@ function pidAlive(pid) {
   }
 }
 
+function readLockText(lock) {
+  try {
+    return readFileSync(lock, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return null;
+    throw error;
+  }
+}
+
+function parseHolder(text) {
+  try {
+    const holder = JSON.parse(text);
+    return holder && typeof holder === 'object' ? holder : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Remove a lock judged stale, but only if it still holds the bytes that were judged: another
+ * capture may have reclaimed it first and written its own. Reclaimers take turns through an
+ * exclusive guard file, so the re-read and the removal cannot interleave with a second
+ * reclaimer's. The guard is held for two file operations; one left behind by a process killed
+ * in between is reported by name rather than guessed about.
+ */
+function reclaimStale(bundleRoot, lock, judged, body) {
+  const guard = join(bundleRoot, 'capture.lock.reclaim');
+  try {
+    writeFileSync(guard, `${body}\n`, { flag: 'wx' });
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    throw new Refusal('capture-in-progress', 'another capture is reclaiming a stale lock (capture.lock.reclaim exists)');
+  }
+  try {
+    if (readLockText(lock) === judged) rmSync(lock, { force: true });
+  } finally {
+    rmSync(guard, { force: true });
+  }
+}
+
 /**
  * Take the capture lock. A lock left by a process on this host that no longer runs is
- * reclaimed once; a live holder, or a holder on another host whose liveness cannot be
- * checked from here, is a refusal rather than a wait.
+ * reclaimed; a live holder, or a holder on another host whose liveness cannot be checked from
+ * here, is a refusal rather than a wait. The lock carries a token so that a capture only ever
+ * releases or promotes under a lock that is still its own.
  */
-function acquireLock(bundleRoot) {
-  const lock = join(bundleRoot, 'capture.lock');
-  const body = JSON.stringify({ pid: process.pid, host: hostname() });
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+function acquireLock(bundleRoot, hooks = {}) {
+  const path = join(bundleRoot, 'capture.lock');
+  const token = randomBytes(8).toString('hex');
+  const body = JSON.stringify({ pid: process.pid, host: hostname(), token });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      writeFileSync(lock, `${body}\n`, { flag: 'wx' });
-      return lock;
+      writeFileSync(path, `${body}\n`, { flag: 'wx' });
+      return { path, token };
     } catch (error) {
       if (error.code !== 'EEXIST') throw error;
     }
-    let holder = null;
-    try {
-      holder = JSON.parse(readFileSync(lock, 'utf8'));
-    } catch {
-      holder = null;
-    }
+    const judged = readLockText(path);
+    if (judged === null) continue;
+    const holder = parseHolder(judged);
     const stale = holder && holder.host === hostname() && !pidAlive(holder.pid);
-    if (!stale || attempt > 0) {
+    if (!stale) {
       const who = holder ? `pid ${holder.pid} on ${holder.host === hostname() ? 'this host' : 'another host'}` : 'an unreadable holder';
       throw new Refusal('capture-in-progress', `the bundle is locked by ${who}`);
     }
-    rmSync(lock, { force: true });
+    if (hooks.afterStaleLockRead) hooks.afterStaleLockRead();
+    reclaimStale(bundleRoot, path, judged, body);
   }
   throw new Refusal('capture-in-progress', 'the lock could not be taken');
+}
+
+function ownsLock(lock) {
+  const holder = parseHolder(readLockText(lock.path) ?? '');
+  return Boolean(holder) && holder.token === lock.token;
 }
 
 function sweepTransient(bundleRoot) {
@@ -104,15 +150,24 @@ function sweepTransient(bundleRoot) {
   }
 }
 
+const GENERATION_NAME = /^g-[0-9a-f]{16}-[0-9a-f]{8}$/;
+
+/**
+ * The promotion pointer, or null. Only a generation name capture itself would write is
+ * accepted, so a pointer can never lead a replay or a prune outside the bundle root.
+ */
 export function readPointer(bundleRoot) {
   const pointer = join(bundleRoot, 'current');
   if (!existsSync(pointer)) return null;
+  let parsed;
   try {
-    const parsed = JSON.parse(readFileSync(pointer, 'utf8'));
-    return parsed && typeof parsed.current === 'string' ? parsed : null;
+    parsed = JSON.parse(readFileSync(pointer, 'utf8'));
   } catch {
     return null;
   }
+  if (!parsed || typeof parsed.current !== 'string' || !GENERATION_NAME.test(parsed.current)) return null;
+  const previous = typeof parsed.previous === 'string' && GENERATION_NAME.test(parsed.previous) ? parsed.previous : null;
+  return { current: parsed.current, previous };
 }
 
 /** Runs the tool exactly as a user would, under the pinned environment. */
@@ -185,7 +240,7 @@ export function capture(options, hooks = {}) {
   };
 
   try {
-    lock = acquireLock(bundleRoot);
+    lock = acquireLock(bundleRoot, hooks);
     sweepTransient(bundleRoot);
 
     const { raw, identity: config } = configIdentity(configFile);
@@ -283,6 +338,10 @@ export function capture(options, hooks = {}) {
     writeFileSync(join(staging, 'gen', 'capture.json'), text);
 
     if (hooks.beforePromote) hooks.beforePromote();
+    if (!ownsLock(lock)) {
+      lock = null;
+      throw new Refusal('capture-in-progress', 'the capture lock was taken over before promotion');
+    }
     const generation = `g-${sha256(snapshotBytes).slice(0, 16)}-${sha256(text).slice(0, 8)}`;
     const target = join(bundleRoot, generation);
     if (existsSync(target)) {
@@ -302,8 +361,12 @@ export function capture(options, hooks = {}) {
     writeFileSync(temporary, `${JSON.stringify(pointer, null, 2)}\n`);
     renameSync(temporary, join(bundleRoot, 'current'));
 
+    // The pointer is read again rather than trusted from above, so a prune never removes a
+    // generation that the pointer on disk still names.
+    const live = readPointer(bundleRoot);
+    const keep = new Set([pointer.current, pointer.previous, live?.current, live?.previous]);
     for (const name of readdirSync(bundleRoot)) {
-      if (name.startsWith('g-') && name !== pointer.current && name !== pointer.previous) {
+      if (name.startsWith('g-') && !keep.has(name)) {
         rmSync(join(bundleRoot, name), { recursive: true, force: true });
       }
     }
@@ -327,6 +390,6 @@ export function capture(options, hooks = {}) {
     return { exit: REFUSED, diagnostics, generation: null };
   } finally {
     if (staging) rmSync(staging, { recursive: true, force: true });
-    if (lock) rmSync(lock, { force: true });
+    if (lock && ownsLock(lock)) rmSync(lock.path, { force: true });
   }
 }
