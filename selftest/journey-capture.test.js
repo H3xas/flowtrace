@@ -315,6 +315,90 @@ test('a capture refused after its lock was taken over writes nothing into the bu
   assert.deepEqual(treeBytes(pack.bundle), before);
 });
 
+function exitedPid() {
+  return Number(spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], { encoding: 'utf8' }).stdout);
+}
+
+function lockEntries(bundle) {
+  return readdirSync(bundle).filter((name) => name.startsWith('capture.lock') || name.includes('.tmp-') || name.startsWith('.staging-'));
+}
+
+test('a lock is never visible without its content, and a publication stopped short blocks nothing', (t) => {
+  const pack = capturedPack(t);
+  const before = treeBytes(pack.bundle);
+  const lock = join(pack.bundle, 'capture.lock');
+  let staged = null;
+  assert.throws(
+    () =>
+      capture(
+        { config: pack.config, bundle: pack.bundle, harnessRoot: REPO_ROOT },
+        {
+          beforeLockPublish: (temporary) => {
+            staged = readFileSync(temporary, 'utf8');
+            assert.equal(existsSync(lock), false, 'the lock is not visible before its content is complete');
+            throw new Error('stopped before the lock was published');
+          },
+        },
+      ),
+    /stopped before the lock was published/,
+  );
+  assert.equal(JSON.parse(staged).pid, process.pid);
+  assert.deepEqual(treeBytes(pack.bundle), before);
+  const result = captureCli(pack);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(lockEntries(pack.bundle), []);
+});
+
+test('what a stopped lock publication leaves behind is swept by the next capture', (t) => {
+  const pack = capturedPack(t);
+  const dead = exitedPid();
+  const leftovers = {
+    [`capture.lock.tmp-${dead}-0badf00d`]: '{"pid":',
+    [`capture.lock.tmp-${dead}-5eed5eed`]: `${JSON.stringify({ pid: dead, host: hostname(), token: 'left' })}\n`,
+    [`capture.lock.reclaim.tmp-${dead}-0badf00d`]: '',
+    [`refused-capture.json.tmp-${dead}-0badf00d`]: '{',
+  };
+  for (const [name, text] of Object.entries(leftovers)) writeFileSync(join(pack.bundle, name), text);
+  const result = captureCli(pack);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(lockEntries(pack.bundle), []);
+});
+
+test('a lock this harness cannot read is refused by name with the step that clears it', (t) => {
+  for (const text of ['', '{"pid":']) {
+    const pack = capturedPack(t);
+    const lock = join(pack.bundle, 'capture.lock');
+    writeFileSync(lock, text);
+    const before = treeBytes(pack.bundle);
+    const result = captureCli(pack);
+    assert.equal(result.status, 3);
+    assert.deepEqual(diagnosticNames(result.stderr), ['capture-in-progress']);
+    assert.match(result.stderr, /capture\.lock cannot be read.*remove it/);
+    assert.deepEqual(treeBytes(pack.bundle), before);
+    rmSync(lock);
+    assert.equal(captureCli(pack).status, 0);
+  }
+});
+
+test('a reclaim guard left by a stopped capture is refused by name until it is removed', (t) => {
+  const pack = capturedPack(t);
+  const dead = exitedPid();
+  const lock = join(pack.bundle, 'capture.lock');
+  const guard = join(pack.bundle, 'capture.lock.reclaim');
+  writeFileSync(lock, `${JSON.stringify({ pid: dead, host: hostname(), token: 'stale' })}\n`);
+  writeFileSync(guard, `${JSON.stringify({ pid: dead, host: hostname(), token: 'guard' })}\n`);
+  const before = treeBytes(pack.bundle);
+  const result = captureCli(pack);
+  assert.equal(result.status, 3);
+  assert.deepEqual(diagnosticNames(result.stderr), ['capture-in-progress']);
+  assert.match(result.stderr, /capture\.lock\.reclaim exists.*remove it/);
+  assert.deepEqual(treeBytes(pack.bundle), before);
+  rmSync(guard);
+  const recovered = captureCli(pack);
+  assert.equal(recovered.status, 0, recovered.stderr);
+  assert.deepEqual(lockEntries(pack.bundle), []);
+});
+
 test('a capture stopped by a signal ends at once and the next capture recovers', async (t) => {
   const pack = capturedPack(t);
   const before = readFileSync(join(pack.bundle, 'current'), 'utf8');
@@ -324,12 +408,16 @@ test('a capture stopped by a signal ends at once and the next capture recovers',
     detached: true,
     stdio: 'ignore',
   });
+  let seen = null;
   const outcome = await new Promise((resolveOutcome) => {
     const timer = setInterval(() => {
-      if (existsSync(lock)) {
-        clearInterval(timer);
-        process.kill(-child.pid, 'SIGTERM');
+      try {
+        seen = readFileSync(lock, 'utf8');
+      } catch {
+        return;
       }
+      clearInterval(timer);
+      process.kill(-child.pid, 'SIGTERM');
     }, 1);
     child.on('exit', (code, signal) => {
       clearInterval(timer);
@@ -337,10 +425,12 @@ test('a capture stopped by a signal ends at once and the next capture recovers',
     });
   });
   assert.deepEqual(outcome, { code: null, signal: 'SIGTERM' });
+  // The signal lands the moment the lock is first seen, so these bytes are what it leaves behind.
+  assert.equal(JSON.parse(seen).pid, child.pid);
   assert.equal(readFileSync(join(pack.bundle, 'current'), 'utf8'), before);
   const result = captureCli(pack);
   assert.equal(result.status, 0, result.stderr);
-  assert.ok(!readdirSync(pack.bundle).some((name) => name.startsWith('.staging-') || name === 'capture.lock'));
+  assert.deepEqual(lockEntries(pack.bundle), []);
 });
 
 test('replay refuses a missing bundle, a changed configuration, and changed or missing source', (t) => {

@@ -71,9 +71,15 @@ node scripts/journey-pack.mjs replay  --config selftest/corpus/greenhouse-alerts
 Capture extracts into a staging directory inside the bundle, takes one `join --snapshot`, and
 promotes it only when the content every extractor could read is unchanged from before
 extraction to after it and nothing else under the roots was written. Promotion is a single rename
-of the `current` pointer, so an interrupted capture leaves the previous bundle as it was; a
-capture stopped by a signal leaves its lock and staging behind, and the next capture reclaims a
-lock whose process no longer runs on this host and sweeps the staging. Replay
+of the `current` pointer, so an interrupted capture leaves the previous bundle as it was. The
+`capture.lock` file is written under a temporary name and linked into place, so it never exists
+without its holder's process id and host; a capture stopped by a signal at any point leaves
+either no lock or a complete one, plus staging and temporary files, and the next capture
+reclaims a lock whose process no longer runs on this host and sweeps the rest. Two leftovers are
+refused as `capture-in-progress` naming the file rather than guessed about, and need removing by
+hand once no capture is running: a `capture.lock` that cannot be read as a lock (this harness
+never writes one), and a `capture.lock.reclaim` left by a capture stopped while it was removing
+a stale lock. Replay
 copies the promoted bundle, lets flowtrace check the snapshot's own digests, runs only `join` and
 `trace` with a pinned environment and no code index, and ends with a second `join --snapshot`
 whose fact sets must equal the bundle's. Both steps write a manifest (`capture.json` inside the

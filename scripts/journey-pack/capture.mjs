@@ -5,15 +5,16 @@
  *
  * Bundle root layout: `current` (the one promotion pointer), immutable `g-…` generation
  * directories holding `snapshot.json` and `capture.json`, and transient `capture.lock`,
- * `capture.lock.reclaim`, `.staging-*` and `current.tmp-*` entries that only a capture creates
- * or removes, the last two only while it holds the lock. Every rename stays inside the bundle
- * root, so each is atomic; anything that stops before the pointer is replaced leaves `current`
- * and every generation exactly as they were.
+ * `capture.lock.reclaim`, `.staging-*` and `*.tmp-*` entries that only a capture creates, and
+ * whose leftovers of the last two kinds only a lock holder sweeps. Every rename and link stays
+ * inside the bundle root, so each is atomic; anything that stops before the pointer is replaced
+ * leaves `current` and every generation exactly as they were.
  */
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import {
   existsSync,
+  linkSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -56,6 +57,30 @@ export function writeJsonAtomic(target, value) {
   renameSync(temporary, target);
 }
 
+/**
+ * Create `target` holding `text`, or return false when it already exists. The text is written
+ * under a temporary name and linked into place, so `target` is never visible without its full
+ * content; a process stopped before the link leaves only the temporary, which the next lock
+ * holder sweeps. A temporary swept before it was linked means a lock holder exists, which is
+ * the same answer as `EEXIST`.
+ */
+export function publishExclusive(target, text, beforePublish = null) {
+  const temporary = `${target}.tmp-${process.pid}-${randomBytes(4).toString('hex')}`;
+  try {
+    writeFileSync(temporary, text, { flag: 'wx' });
+    if (beforePublish) beforePublish(temporary);
+    try {
+      linkSync(temporary, target);
+    } catch (error) {
+      if (error.code === 'EEXIST' || error.code === 'ENOENT') return false;
+      throw error;
+    }
+    return true;
+  } finally {
+    rmSync(temporary, { force: true });
+  }
+}
+
 function pidAlive(pid) {
   if (!Number.isInteger(pid) || pid <= 0) return false;
   try {
@@ -89,15 +114,16 @@ function parseHolder(text) {
  * capture may have reclaimed it first and written its own. Reclaimers take turns through an
  * exclusive guard file, so the re-read and the removal cannot interleave with a second
  * reclaimer's. The guard is held for two file operations; one left behind by a process killed
- * in between is reported by name rather than guessed about.
+ * in between is reported by name rather than guessed about, since a guard that could itself be
+ * reclaimed would need a guard of its own.
  */
 function reclaimStale(bundleRoot, lock, judged, body) {
   const guard = join(bundleRoot, 'capture.lock.reclaim');
-  try {
-    writeFileSync(guard, `${body}\n`, { flag: 'wx' });
-  } catch (error) {
-    if (error.code !== 'EEXIST') throw error;
-    throw new Refusal('capture-in-progress', 'another capture is reclaiming a stale lock (capture.lock.reclaim exists)');
+  if (!publishExclusive(guard, `${body}\n`)) {
+    throw new Refusal(
+      'capture-in-progress',
+      'another capture is reclaiming a stale lock (capture.lock.reclaim exists); if no capture is running, remove it',
+    );
   }
   try {
     if (readLockText(lock) === judged) rmSync(lock, { force: true });
@@ -117,19 +143,18 @@ function acquireLock(bundleRoot, hooks = {}) {
   const token = randomBytes(8).toString('hex');
   const body = JSON.stringify({ pid: process.pid, host: hostname(), token });
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      writeFileSync(path, `${body}\n`, { flag: 'wx' });
-      return { path, token };
-    } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-    }
+    if (publishExclusive(path, `${body}\n`, hooks.beforeLockPublish)) return { path, token };
     const judged = readLockText(path);
     if (judged === null) continue;
     const holder = parseHolder(judged);
-    const stale = holder && holder.host === hostname() && !pidAlive(holder.pid);
+    // A lock this harness wrote always carries its holder, so one without is not a lock whose
+    // liveness can be judged here; taking the bundle from it could take it from a live capture.
+    if (!holder) {
+      throw new Refusal('capture-in-progress', 'capture.lock cannot be read as a capture lock; if no capture is running, remove it');
+    }
+    const stale = holder.host === hostname() && !pidAlive(holder.pid);
     if (!stale) {
-      const who = holder ? `pid ${holder.pid} on ${holder.host === hostname() ? 'this host' : 'another host'}` : 'an unreadable holder';
-      throw new Refusal('capture-in-progress', `the bundle is locked by ${who}`);
+      throw new Refusal('capture-in-progress', `the bundle is locked by pid ${holder.pid} on ${holder.host === hostname() ? 'this host' : 'another host'}`);
     }
     if (hooks.afterStaleLockRead) hooks.afterStaleLockRead();
     reclaimStale(bundleRoot, path, judged, body);
@@ -142,9 +167,11 @@ function ownsLock(lock) {
   return Boolean(holder) && holder.token === lock.token;
 }
 
+const TRANSIENT = /^(\.staging-|(current|capture\.lock|capture\.lock\.reclaim|refused-capture\.json)\.tmp-)/;
+
 function sweepTransient(bundleRoot) {
   for (const name of readdirSync(bundleRoot)) {
-    if (name.startsWith('.staging-') || name.startsWith('current.tmp-')) {
+    if (TRANSIENT.test(name)) {
       rmSync(join(bundleRoot, name), { recursive: true, force: true });
     }
   }
