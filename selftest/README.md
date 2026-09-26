@@ -78,3 +78,5 @@ npm test
   its modules (never `lib/`) where they cannot: capture's phase hooks, which is how a source edit,
   an interruption or a lock taken over by another capture is placed between two steps of one
   capture, and the pure ledger and projection functions.
+- `path-check.test.js` — runs a repository script, `scripts/path-check.sh`, not the CLI: each
+  case copies it into a disposable tree beside a hand-written linked-worktree `.git` pointer file.

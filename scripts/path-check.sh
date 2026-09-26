@@ -16,8 +16,10 @@ cd "$root"
 
 pattern='/Users/[a-zA-Z0-9._-]+|/home/[a-zA-Z0-9._-]+|[A-Za-z]:\\Users\\|file:///'
 
+# In a linked worktree .git is a pointer file naming a home path, which --exclude-dir cannot match.
 hits="$(grep -rInE "$pattern" . \
   --exclude-dir=.git \
+  --exclude=.git \
   --exclude-dir=node_modules \
   --exclude-dir=dist \
   --exclude-dir=out \
