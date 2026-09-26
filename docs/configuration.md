@@ -57,6 +57,8 @@ checkouts named as siblings of the file.
 | `factsProvider` | no | an external fact document for this repository — a file, or a command that prints one — and how it merges with the extraction; see [External fact provider](#external-fact-provider) |
 | `srcSubpath` | no | `web` only: source subdirectory to walk (default `src`) |
 | `cypressSubpath` | no | `web` only: sibling Cypress suite, relative to `root` |
+| `mounts` | no | `web` only: the browser path a routed component is mounted at when its host is outside this repository; see [Web page mounts and assumptions](#web-page-mounts-and-assumptions) |
+| `routeAssumptions` | no | `web` only: the value of a condition a `<Route>` sits under; see [Web page mounts and assumptions](#web-page-mounts-and-assumptions) |
 | `featureRoots` | no | `mobile` only: source roots to walk instead of the single default |
 | `cypress` | no | `mobile` only: allowlisted Cypress discovery roots, below |
 
@@ -73,6 +75,39 @@ checkouts named as siblings of the file.
   handlers, action creators that issue HTTP, and a sibling Cypress suite.
 - **`playwright`** — a spec suite. Tests, skips, case ids, requests, assertions, stubs, and
   with `"titles": true` the resolved titles of parameterised tests.
+
+### Web page mounts and assumptions
+
+`trace <browser path>` composes a page's path from the `<Route>` declarations the web
+extractor records. The outermost routed component is anchored by source when a root render
+(`createRoot(…).render(…)`, `ReactDOM.render`) or a router `basename` says where it lives.
+A library whose routes are mounted by a host application in another repository states
+neither; its routes are then read from `/` and, when the library's own `navigate()` literals
+agree on a first segment, behind that prefix too — both answers are tagged `inferred mount`.
+`mounts` replaces those guesses with the path the host really uses:
+
+```json
+{
+  "id": "partners-ui",
+  "kind": "web",
+  "root": "partners-ui",
+  "mounts": { "PartnerRoutes": "/portal" },
+  "routeAssumptions": { "features.pruningPlanner": true }
+}
+```
+
+Each key of `mounts` names the component that owns the `<Routes>`; the value is a browser
+path starting with `/`. A configured mount is reported as `configuration` in the answer's
+mount chain, and a start below that component that uses a different prefix no longer
+resolves. A URL that ends in a path declared below an unmounted component, behind a prefix
+nothing declares, fails with `missing-mount` and names the component to list here.
+
+A `<Route>` written inside a condition (`{cond ? <Route …/> : <Route …/>}`, `{cond && <Route …/>}`)
+carries that condition as a guard. Two routes on one path in the two arms of a condition are
+alternatives, and a start that reaches them is ambiguous. `routeAssumptions` maps a
+condition's source text — whitespace collapsed, as the candidates print it — to `true` or
+`false`; the arm that disagrees is dropped and every value used appears under
+`mount.assumptions` in the answer. A leading `!` is honoured; nothing else is evaluated.
 
 ### Mobile Cypress roots
 

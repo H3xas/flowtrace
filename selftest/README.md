@@ -61,6 +61,11 @@ npm test
   (`observed.json`) and a README with the formats, the replay commands and the rules for tickets
   that extend it. The harness that captures and replays it lives in `scripts/journey-pack.mjs`
   and `scripts/journey-pack/`, and is not shipped in the npm package.
+- `corpus/orchard-routes/` — an invented React client whose routes nest every way the
+  browser-path lookup reads (JSX children, a component's own `<Routes>`, index routes,
+  parameters, wildcards, lazy imports, redirects, guarded alternatives, unmounted roots, forms it
+  does not model), with `matrix.json` naming the page entry or failure reason each URL must give;
+  `page-routes.test.js` runs it through the CLI.
 - `journey-helpers.js` — a disposable copy of the journey pack and the harness run as a
   subprocess.
 - `export-invariants.js` — the checks a `flowtrace-edges` document must satisfy on its own,

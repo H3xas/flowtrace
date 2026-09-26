@@ -1,0 +1,29 @@
+{
+  "format": "flowtrace-route-matrix",
+  "schemaVersion": 1,
+  "rows": [
+    { "id": "index-under-app-root", "config": "orchard.config.json", "start": "/orchard", "expect": { "entry": "src/landing/OrchardHome.tsx#OrchardHome" } },
+    { "id": "nested-index", "config": "orchard.config.json", "start": "/orchard/rows", "expect": { "entry": "src/rows/RowList.tsx#RowList" } },
+    { "id": "parameter-template", "config": "orchard.config.json", "start": "/orchard/rows/:rowId", "expect": { "entry": "src/rows/RowDetail.tsx#RowDetail" } },
+    { "id": "parameter-concrete", "config": "orchard.config.json", "start": "/orchard/rows/r-17", "expect": { "entry": "src/rows/RowDetail.tsx#RowDetail" } },
+    { "id": "absolute-child-lazy-page", "config": "orchard.config.json", "start": "/orchard/harvest/crates", "expect": { "entry": "src/harvest/crates/CrateLedgerPage.tsx#CrateLedgerPage" } },
+    { "id": "descendant-parameter", "config": "orchard.config.json", "start": "/orchard/harvest/crates/c-9", "expect": { "entry": "src/harvest/crates/CrateDetail.tsx#CrateDetail" } },
+    { "id": "redirect", "config": "orchard.config.json", "start": "/orchard/old-rows", "expect": { "entry": "src/rows/RowList.tsx#RowList" } },
+    { "id": "wildcard-remainder", "config": "orchard.config.json", "start": "/orchard/reports/2026/summary", "expect": { "entry": "src/reports/ReportViewer.tsx#ReportViewer" } },
+    { "id": "guarded-alternatives", "config": "orchard.config.json", "start": "/orchard/pruning", "expect": { "reason": "ambiguous" } },
+    { "id": "guarded-assumption", "config": "orchard-mounted.config.json", "start": "/orchard/pruning", "expect": { "entry": "src/pruning/PruningPlannerPage.tsx#PruningPlannerPage" } },
+    { "id": "wrapper-guard", "config": "orchard.config.json", "start": "/orchard/irrigation", "expect": { "entry": "src/irrigation/IrrigationPage.tsx#IrrigationPage" } },
+    { "id": "unsupported-path-expression", "config": "orchard.config.json", "start": "/orchard/mystery/shelf", "expect": { "reason": "unsupported-expression" } },
+    { "id": "unsupported-route-object", "config": "orchard.config.json", "start": "/orchard/shed/tools", "expect": { "reason": "unsupported-expression" } },
+    { "id": "unknown-host-read-from-root", "config": "orchard.config.json", "start": "/partners", "expect": { "entry": "src/partners/PartnerDirectory.tsx#PartnerDirectory" } },
+    { "id": "unknown-host-inferred-prefix", "config": "orchard.config.json", "start": "/orchard/partners", "expect": { "entry": "src/partners/PartnerDirectory.tsx#PartnerDirectory" } },
+    { "id": "missing-mount", "config": "orchard.config.json", "start": "/portal/partners", "expect": { "reason": "missing-mount" } },
+    { "id": "configured-mount", "config": "orchard-mounted.config.json", "start": "/portal/partners", "expect": { "entry": "src/partners/PartnerDirectory.tsx#PartnerDirectory" } },
+    { "id": "duplicate-mounts", "config": "orchard.config.json", "start": "/ledger", "expect": { "reason": "ambiguous" } },
+    { "id": "duplicate-mounts-configured", "config": "orchard-mounted.config.json", "start": "/ledger", "expect": { "entry": "src/audit/AuditLedger.tsx#AuditLedger" } },
+    { "id": "no-declaration", "config": "orchard.config.json", "start": "/nowhere/at/all", "expect": { "reason": "no-declaration" } },
+    { "id": "name-matches-url-entry", "config": "orchard.config.json", "start": "CrateLedgerPage", "expect": { "entry": "src/harvest/crates/CrateLedgerPage.tsx#CrateLedgerPage" } },
+    { "id": "duplicate-component-names", "config": "orchard.config.json", "start": "RowDetail", "expect": { "reason": "ambiguous" } },
+    { "id": "conflicting-lazy-aliases", "config": "orchard.config.json", "start": "LedgerPage", "expect": { "reason": "ambiguous" } }
+  ]
+}
