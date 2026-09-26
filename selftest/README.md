@@ -16,6 +16,13 @@ CLI's outer contract:
 - The documented exit codes, including the commands (`routes-of`, `affected`) whose failure
   is itself a JSON envelope rather than a bare stderr line.
 
+It also holds one journey pack (`corpus/greenhouse-alerts/`), which is not a contract check
+but a pinned denominator: a set of cross-repository questions whose expected source sites were
+written from the fixture before anything was observed, replayed through
+`scripts/journey-pack.mjs` and compared with a committed projection of what flowtrace answers
+today. A change that moves any of those answers must update the projection in its own diff; the
+pack's own README says how.
+
 It does not exercise every extractor idiom, every command, or every flag — that is what the
 private suite and the worked example (`examples/demo-shop`) are for. A change to `lib/extract/`
 or to a walk should still make itself visible in the worked example, per
@@ -49,6 +56,13 @@ npm test
   inside a body, a `test` reached through a member access, a title wrapped in a configured
   case-id call, and a title supplied as a table identifier — plus a listing whose positions
   sit below the source so nothing can resolve by line.
+- `corpus/greenhouse-alerts/` — the journey pack: an invented React + Redux client and
+  ASP.NET Core service, the expected ledger (`expected.json`), the committed observed projection
+  (`observed.json`) and a README with the formats, the replay commands and the rules for tickets
+  that extend it. The harness that captures and replays it lives in `scripts/journey-pack.mjs`
+  and `scripts/journey-pack/`, and is not shipped in the npm package.
+- `journey-helpers.js` — a disposable copy of the journey pack and the harness run as a
+  subprocess.
 - `export-invariants.js` — the checks a `flowtrace-edges` document must satisfy on its own,
   with no checkout, no git and no second document to compare against; deliberately
   independent of `lib/`, so an implementation that drifts from its own documentation fails
@@ -59,4 +73,8 @@ npm test
   run is off the table for a public fixture, and the functions it covers are pure parsing
   and selection logic with no process or filesystem behavior of their own to observe; and
   `pw-titles-contract.test.js` imports `lib/extract/pw-titles.js` directly for the same
-  reason, since the CLI path would spawn the suite's own installed Playwright.
+  reason, since the CLI path would spawn the suite's own installed Playwright. The four
+  `journey-*.test.js` files run the journey harness as a subprocess where they can, and import
+  its modules (never `lib/`) where they cannot: capture's phase hooks, which is how a source edit,
+  an interruption or a lock taken over by another capture is placed between two steps of one
+  capture, and the pure ledger and projection functions.

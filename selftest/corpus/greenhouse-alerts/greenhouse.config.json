@@ -1,0 +1,10 @@
+{
+  "out": "out",
+  "aliases": [
+    { "from": "greenhouse/", "to": "glasshouse/" }
+  ],
+  "repos": [
+    { "id": "backend", "kind": "backend", "root": "backend", "role": ["api"] },
+    { "id": "web", "kind": "web", "root": "web" }
+  ]
+}
