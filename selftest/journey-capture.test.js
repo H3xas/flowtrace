@@ -349,6 +349,27 @@ test('a lock is never visible without its content, and a publication stopped sho
   assert.deepEqual(lockEntries(pack.bundle), []);
 });
 
+test('a lock publication whose temporary a holder swept first defers to that holder', (t) => {
+  const pack = capturedPack(t);
+  const lock = join(pack.bundle, 'capture.lock');
+  const holder = `${JSON.stringify({ pid: process.pid, host: hostname(), token: 'holder' })}\n`;
+  const result = capture(
+    { config: pack.config, bundle: pack.bundle, harnessRoot: REPO_ROOT },
+    {
+      beforeLockPublish: (temporary) => {
+        writeFileSync(lock, holder);
+        rmSync(temporary);
+      },
+    },
+  );
+  assert.equal(result.exit, 3);
+  assert.equal(result.diagnostics[0].name, 'capture-in-progress');
+  assert.match(result.diagnostics[0].detail, new RegExp(`locked by pid ${process.pid} on this host`));
+  assert.equal(readFileSync(lock, 'utf8'), holder, 'the holder keeps its lock');
+  rmSync(lock);
+  assert.deepEqual(lockEntries(pack.bundle), []);
+});
+
 test('what a stopped lock publication leaves behind is swept by the next capture', (t) => {
   const pack = capturedPack(t);
   const dead = exitedPid();
