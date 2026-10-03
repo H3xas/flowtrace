@@ -9,6 +9,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { buildPageRouteIndex, createPageLookup } from '../lib/page-routes.js';
 import { copyFixture, runCli } from './helpers.js';
 
 const FIXTURE = 'orchard-routes';
@@ -284,6 +285,75 @@ test('a root rendered through a held createRoot handle is a declared mount', (t)
   assert.equal(document.root.ref, 'Beds', 'a query string and a fragment are not path segments');
   assert.equal(document.root.inferred, false);
   assert.deepEqual(document.root.mount.host, { source: 'declared', path: '/greens', root: 'Shell', file: 'src/main.tsx', line: 8 });
+});
+
+test('an unreadable root basename leaves a source-qualified frontier until configuration supplies the host', (t) => {
+  const files = {
+    'src/main.tsx': [
+      "import React from 'react';",
+      "import { createRoot } from 'react-dom/client';",
+      "import { BrowserRouter } from 'react-router-dom';",
+      "import Shell from './Shell';",
+      'const hostBase = window.location.pathname;',
+      "createRoot(document.getElementById('app')).render(",
+      '  <BrowserRouter basename={hostBase}><Shell /></BrowserRouter>,',
+      ');',
+    ].join('\n'),
+    'src/Shell.tsx': [
+      "import React from 'react';",
+      "import { Route, Routes } from 'react-router-dom';",
+      "import Beds from './Beds';",
+      'export default function Shell() {',
+      '  return <Routes><Route index element={<Beds />} /><Route path="beds" element={<Beds />} /></Routes>;',
+      '}',
+    ].join('\n'),
+    'src/Beds.tsx': page('Beds'),
+  };
+  const trace = inlineRepo(t, files);
+  for (const start of ['/', '/beds', '/host/beds']) {
+    const result = trace(start);
+    assert.equal(result.status, 2, start);
+    assert.equal(result.document.reason, 'unsupported-expression', start);
+    assert.equal(result.document.root, undefined, start);
+    assert.ok(result.document.frontier.some((entry) => entry.file === 'src/main.tsx' && entry.line === 7 && entry.unsupported === 'basename-expression'), start);
+  }
+
+  const configured = inlineRepo(t, files, { mounts: { Shell: '/host' } });
+  const resolved = configured('/host/beds').document;
+  assert.equal(resolved.root.ref, 'Beds');
+  assert.equal(resolved.root.inferred, false);
+  assert.equal(resolved.root.mount.host.source, 'configuration');
+  assert.equal(configured('/beds').document.reason, 'unsupported-expression');
+});
+
+test('an unreadable basename on a router inside a component cannot declare the root mount', (t) => {
+  const trace = inlineRepo(t, {
+    'src/Shell.tsx': [
+      "import React from 'react';",
+      "import { BrowserRouter, Route, Routes } from 'react-router-dom';",
+      "import Beds from './Beds';",
+      'export default function Shell({ hostBase }) {',
+      '  return <BrowserRouter basename={hostBase}><Routes><Route path="beds" element={<Beds />} /></Routes></BrowserRouter>;',
+      '}',
+    ].join('\n'),
+    'src/Beds.tsx': page('Beds'),
+  });
+  const result = trace('/beds');
+  assert.equal(result.status, 2);
+  assert.equal(result.document.reason, 'unsupported-expression');
+  assert.ok(result.document.frontier.some((entry) => entry.file === 'src/Shell.tsx' && entry.line === 5 && entry.unsupported === 'basename-expression'));
+});
+
+test('a stored unsupported mount with an older root placeholder remains non-authoritative', () => {
+  const index = buildPageRouteIndex([{ repo: 'web', kind: 'web', facts: [
+    { type: 'component', file: 'src/Shell.tsx', line: 1, name: 'Shell' },
+    { type: 'component', file: 'src/Beds.tsx', line: 1, name: 'Beds' },
+    { type: 'page_route', file: 'src/Shell.tsx', line: 2, owner: 'Shell', path: 'beds', element: 'Beds', elementFile: 'src/Beds.tsx' },
+    { type: 'page_mount', file: 'src/main.tsx', line: 3, component: 'Shell', path: '/', source: 'app-root', unsupported: 'basename-expression' },
+  ] }]);
+  const result = createPageLookup(index).lookup('/beds');
+  assert.equal(result.reason, 'unsupported-expression');
+  assert.ok(result.frontier.some((entry) => entry.file === 'src/main.tsx' && entry.unsupported === 'basename-expression'));
 });
 
 test('a component holding its own routes answers only at its own path, and a mount cycle ends', (t) => {
