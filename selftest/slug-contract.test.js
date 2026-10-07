@@ -6,8 +6,11 @@
  * later write lands on the file the earlier one wrote.
  */
 import assert from 'node:assert/strict';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
-import { MAX_SLUG_CHARS, routeSlugFor, sanitiseKey } from '../lib/slug.js';
+import { MAX_SLUG_CHARS, keyMeta, pageKeyOf, routeSlugFor, sanitiseKey, writeKeyedPage } from '../lib/slug.js';
 
 /** A source path long enough to spend the cap on its own, before any identity is added. */
 const DEEP_DIR = `deep-${'d'.repeat(96)}`;
@@ -46,7 +49,7 @@ test('a cut that lands on a dash leaves no doubled one behind', () => {
   const slug = sanitiseKey(`${'ab-'.repeat(60)}/end`);
   assert.ok(slug.length <= MAX_SLUG_CHARS, slug);
   assert.doesNotMatch(slug, /--/, slug);
-  assert.match(slug, /-[\da-f]{8}$/, 'the name ends in the digest of the whole key');
+  assert.match(slug, /-[\da-f]{16}$/, 'the name ends in the digest of the whole key');
 });
 
 test('the same key names the same file every run', () => {
@@ -58,4 +61,34 @@ test('two long keys sharing one taken set still take two names', () => {
   const first = routeSlugFor(`trace ${DEEP} one`, taken);
   const second = routeSlugFor(`trace ${DEEP} two`, taken);
   assert.notEqual(first, second);
+});
+
+test('two keys that flatten to one spelling take two names in one taken set', () => {
+  const taken = new Set();
+  assert.notEqual(routeSlugFor('GET zones/a/b', taken), routeSlugFor('GET zones/a-b', taken));
+});
+
+test('a page states the key it was written for, whatever characters the key holds', () => {
+  const key = 'web|Panel:effect:useEffect:null:@src/a "b" & <c>.tsx:25:3';
+  const page = `<!doctype html><html><head>${keyMeta(key)}</head><body></body></html>`;
+  assert.equal(pageKeyOf(page), key);
+  assert.equal(pageKeyOf('<!doctype html><title>no key</title>'), null);
+});
+
+test('a keyed page takes the next free name rather than overwrite another key\'s page', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-slug-'));
+  try {
+    const pageFor = (key) => `<html><head>${keyMeta(key)}</head><body>${key}</body></html>`;
+    const first = writeKeyedPage(dir, 'component-panel', '.html', 'one', pageFor('one'));
+    assert.equal(first, join(dir, 'component-panel.html'));
+    const second = writeKeyedPage(dir, 'component-panel', '.html', 'two', pageFor('two'));
+    assert.equal(second, join(dir, 'component-panel-2.html'), 'a name another key holds is not reused');
+    assert.equal(readFileSync(first, 'utf8'), pageFor('one'));
+    assert.equal(writeKeyedPage(dir, 'component-panel', '.html', 'two', pageFor('two')), second, 'a key finds its own page again');
+    assert.equal(writeKeyedPage(dir, 'component-panel', '.html', 'one', pageFor('one')), first);
+    writeFileSync(first, '<html><body>written before pages carried a key</body></html>');
+    assert.equal(writeKeyedPage(dir, 'component-panel', '.html', 'three', pageFor('three')), first, 'a page without a key is replaced');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

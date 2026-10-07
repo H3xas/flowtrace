@@ -9,7 +9,7 @@ import { basename, dirname, join as joinPath, relative, resolve } from 'node:pat
 import { fileURLToPath } from 'node:url';
 
 import { loadConfig } from '../lib/config.js';
-import { sanitiseKey } from '../lib/slug.js';
+import { routeSlugFor, writeKeyedPage } from '../lib/slug.js';
 import {
   externalLocations, fact, factsDigest, factsHeader, loadFactsProvider, mergeFacts, producerSummary, staleFactsWarnings, validateFacts,
 } from '../lib/facts.js';
@@ -242,7 +242,9 @@ const USAGE = [
   '  one — never by an id the tool invented.',
   '  --out defaults to <out>/span/<route-slug>.html; --specs narrows the evidence exactly as',
   '  it does for trace --cover-overlay. Nothing is fetched and no timestamp is written, so',
-  '  two runs over the same facts produce byte-identical pages.',
+  '  two runs over the same facts produce byte-identical pages. Each page states the key it',
+  '  was written for, and a default name already holding another key\'s page is left alone:',
+  '  the new page takes the next free name (-2, -3, ...).',
   '',
   '  --verdict-facts <file> reads cached surface_verdict facts and annotates each',
   '  observation point the assertion-surface section names outright: confirmed shows the',
@@ -277,7 +279,8 @@ const USAGE = [
   '  resolves the web chain only. --out defaults to',
   '  <out>/span/component-<slug>.html, the slug naming the component, the file that declares',
   '  it and, under --entry, the selected entry\'s own site; a name longer than the',
-  '  120-character cap ends in a digest of the whole name rather than losing that site, so',
+  '  120-character cap ends in a digest of the whole name rather than losing that site, and',
+  '  a name already holding another selection\'s page sends this one to the next free name, so',
   '  two selections never share a page; --repo scopes which component the name resolves to,',
   '  never the routes behind it.',
   '',
@@ -285,7 +288,8 @@ const USAGE = [
   '  command exits non-zero and lists every candidate\'s declaring file so the reader can',
   '  pick one; --file <path-substring> narrows to the declaration whose file path contains',
   '  the substring, and still errors, listing what --file matched, if that leaves anything',
-  '  other than exactly one.',
+  '  other than exactly one. The entries, bindings and requests are then that declaration\'s',
+  '  own: an entry written in another file of the same name is neither listed nor selectable.',
   '',
   'surface "<route key>" [--json] [--hops N] [--out <file>]',
   '  Derives the assertion surface of one entry route: the stores it writes — the',
@@ -1346,9 +1350,10 @@ async function runRender(config) {
   const flowsDir = joinPath(config.out, 'flows');
   mkdirSync(flowsDir, { recursive: true });
   const routeKeys = [...new Set(flow.edges.filter((edge) => edge.kind === 'calls').map((edge) => edge.key))];
+  const taken = new Set();
   for (const key of routeKeys) {
     const body = [`# ${key}`, '', '```mermaid', renderMermaid(flow, { endpoint: key }), '```', ''].join('\n');
-    writeFileSync(joinPath(flowsDir, `${sanitiseKey(key)}.md`), body);
+    writeFileSync(joinPath(flowsDir, `${routeSlugFor(key, taken)}.md`), body);
   }
   log(
     `render ${plural(routeKeys.length, 'flow')} -> ${display(flowsDir)}, report -> ${display(reportTarget)}`,
@@ -1679,9 +1684,8 @@ async function runSpan(config, options) {
   for (const token of model.limits.unmatchedSpecs) {
     process.stderr.write(`flowtrace: --specs "${token}" matches no spec in the facts\n`);
   }
-  const target = resolve(options.out || joinPath(config.out, 'span', `${model.slug}.html`));
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, renderSpanHtml(model, { title: `flowtrace span: ${options.start}` }));
+  const page = renderSpanHtml(model, { title: `flowtrace span: ${options.start}` });
+  const target = writeSpanPage(config, options, model, page);
   const counts = model.ledger.counts;
   log(
     `span ${options.start}: ${plural(counts.total, 'outcome')} — ${counts.tested} tested, ` +
@@ -1700,6 +1704,21 @@ async function runSpan(config, options) {
  * in more than one file; `model.error` and `model.candidates` already print identically to
  * every other ambiguous-start case below.
  */
+/**
+ * A span page goes where `--out` says, or under `out/span/` by its slug. Two keys can share a
+ * slug, and a page written by one run cannot know the keys of the runs before it, so a slug
+ * already holding another key's page leaves that page alone and this one takes the next name.
+ */
+function writeSpanPage(config, options, model, page) {
+  if (options.out) {
+    const target = resolve(options.out);
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, page);
+    return target;
+  }
+  return writeKeyedPage(resolve(joinPath(config.out, 'span')), model.slug, '.html', model.pageKey, page);
+}
+
 async function runComponentSpan(config, options, factSets) {
   const { componentSpan } = componentSpanModule;
   const { renderComponentSpanHtml } = renderComponentSpanHtmlModule;
@@ -1747,9 +1766,8 @@ async function runComponentSpan(config, options, factSets) {
     log(JSON.stringify(componentSpanJson(model), null, 2));
     return 0;
   }
-  const target = resolve(options.out || joinPath(config.out, 'span', `${model.slug}.html`));
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, renderComponentSpanHtml(model, { title: `flowtrace span: ${options.fromComponent}` }));
+  const page = renderComponentSpanHtml(model, { title: `flowtrace span: ${options.fromComponent}` });
+  const target = writeSpanPage(config, options, model, page);
   log(
     `span --from-component ${options.fromComponent}: ${plural(model.header.routesResolved, 'route')} resolved, ` +
       `${plural(model.header.armsUnresolved, 'arm')} unresolved -> ${display(target)}`,

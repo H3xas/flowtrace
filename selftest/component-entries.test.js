@@ -379,6 +379,81 @@ test('two entries of a component declared under a deep path write two pages', ()
   }
 });
 
+test('a file-qualified start states only the entries and requests its own declaration carries', () => {
+  const single = spanJson('WatcherNotesPanel').model;
+  const routesAt = (model, line) =>
+    model.entries.find((entry) => entry.identity.kind === 'effect' && entry.identity.line === line).routes;
+  const mountRoutes = routesAt(single, 25);
+  const refreshRoutes = routesAt(single, 36);
+  assert.notDeepEqual(mountRoutes, refreshRoutes, 'the two effects must request different routes to tell the files apart');
+  const { dir, config: variantConfig } = variant('file-scope', (root) => {
+    const source = readFileSync(join(root, 'web', 'src', 'zones', 'notes', 'WatcherNotesPanel.tsx'), 'utf8');
+    const mount = "dispatch(loadWatchers('latest'));\n  }, []);";
+    assert.ok(source.includes(mount));
+    mkdirSync(join(root, 'web', 'src', 'zones', 'other'), { recursive: true });
+    writeFileSync(
+      join(root, 'web', 'src', 'zones', 'other', 'WatcherNotesPanel.tsx'),
+      source.replace(mount, "dispatch(loadZoneReadings('latest'));\n  }, []);"),
+    );
+  });
+  try {
+    const scoped = [
+      ['zones/notes/', mountRoutes],
+      ['zones/other/', refreshRoutes],
+    ].map(([file, expected]) => {
+      const result = runCli(['span', '--from-component', 'WatcherNotesPanel', '--file', file, '--json', '--config', variantConfig]);
+      assert.equal(result.status, 0, result.stderr);
+      const model = JSON.parse(result.stdout);
+      const foreign = model.entries.filter((entry) => !entry.identity.file.includes(file));
+      assert.deepEqual(foreign.map((entry) => entry.identity.id), [], `--file ${file} may state no other file's entry`);
+      assert.equal(model.entries.length, single.entries.length, `--file ${file} states every entry its own file declares`);
+      assert.deepEqual(routesAt(model, 25), expected, `the mount effect under ${file} requests what that file's effect dispatches`);
+      const strayArms = model.unresolved.filter(
+        (arm) => String(arm.file).endsWith('WatcherNotesPanel.tsx') && !arm.file.includes(file),
+      );
+      assert.deepEqual(strayArms, [], `--file ${file} may carry no arm written in the other declaration`);
+      return model;
+    });
+    const notesMount = scoped[0].entries.find((entry) => entry.identity.kind === 'effect' && entry.identity.line === 25);
+    const crossed = runCli([
+      'span', '--from-component', 'WatcherNotesPanel', '--file', 'zones/other/', '--entry', notesMount.identity.id,
+      '--json', '--config', variantConfig,
+    ]);
+    assert.equal(crossed.status, 2, 'an entry declared in another file is not selectable under this --file');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a selected page never overwrites a page another entry already holds under its name', () => {
+  const { dir, config: variantConfig } = variant('page-claim', () => {});
+  try {
+    const select = (selector) => {
+      const run = runCli(
+        ['span', '--from-component', 'WatcherNotesPanel', '--entry', selector, '--config', variantConfig],
+        { cwd: dir },
+      );
+      assert.equal(run.status, 0, run.stderr);
+      return run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim();
+    };
+    const other = select('useEffect@29');
+    const own = select('useEffect@25');
+    const otherPage = readFileSync(other, 'utf8');
+    // Two keys whose names collide are simulated by handing this entry's name to the other's page.
+    writeFileSync(own, otherPage);
+    const moved = select('useEffect@25');
+    assert.notEqual(moved, own, 'a name held by another entry is not this entry\'s to overwrite');
+    assert.equal(readFileSync(own, 'utf8'), otherPage, 'the page already there is left as it was');
+    assert.ok(readFileSync(moved, 'utf8').includes('useEffect@25'), 'the moved page states its own entry');
+    assert.equal(select('useEffect@25'), moved, 'the same entry finds its own page again on the next run');
+    assert.equal(select('useEffect@29'), other, 'a page keeps its name while it holds its own key');
+    writeFileSync(own, '<!doctype html><title>written before pages carried a key</title>\n');
+    assert.equal(select('useEffect@25'), own, 'a page that carries no key is replaced, as every page was before keys');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('the pack states one entry per trigger and none for the foreign hooks it also calls', () => {
   const triggers = webFacts()
     .filter((fact) => fact.type === 'component_entry')

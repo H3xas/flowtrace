@@ -194,7 +194,9 @@ span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
   one — never by an id the tool invented.
   --out defaults to <out>/span/<route-slug>.html; --specs narrows the evidence exactly as
   it does for trace --cover-overlay. Nothing is fetched and no timestamp is written, so
-  two runs over the same facts produce byte-identical pages.
+  two runs over the same facts produce byte-identical pages. Each page states the key it
+  was written for, and a default name already holding another key's page is left alone:
+  the new page takes the next free name (-2, -3, ...).
 
   --verdict-facts <file> reads cached surface_verdict facts and annotates each
   observation point the assertion-surface section names outright: confirmed shows the
@@ -229,7 +231,8 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   resolves the web chain only. --out defaults to
   <out>/span/component-<slug>.html, the slug naming the component, the file that declares
   it and, under --entry, the selected entry's own site; a name longer than the
-  120-character cap ends in a digest of the whole name rather than losing that site, so
+  120-character cap ends in a digest of the whole name rather than losing that site, and
+  a name already holding another selection's page sends this one to the next free name, so
   two selections never share a page; --repo scopes which component the name resolves to,
   never the routes behind it.
 
@@ -237,7 +240,8 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   command exits non-zero and lists every candidate's declaring file so the reader can
   pick one; --file <path-substring> narrows to the declaration whose file path contains
   the substring, and still errors, listing what --file matched, if that leaves anything
-  other than exactly one.
+  other than exactly one. The entries, bindings and requests are then that declaration's
+  own: an entry written in another file of the same name is neither listed nor selectable.
 
 surface "<route key>" [--json] [--hops N] [--out <file>]
   Derives the assertion surface of one entry route: the stores it writes — the
