@@ -76,11 +76,21 @@ function singleBranchClone(t) {
   return { dir, unsigned };
 }
 
-/** A clone checked out on `main`, standing on `origin/main`: no base sits behind its head. */
+/**
+ * A clone checked out on `main`, standing on `origin/main`: no base sits behind its head. The
+ * checkout under test may carry `main` only as a remote-tracking ref — a clone of a feature
+ * branch has no local `main` — so the branch is established in the clone from that clone's own
+ * head instead of being cloned by a name the checkout may not have.
+ */
 function cloneOfMain(t) {
   const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-main-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
-  gitIn(tmpdir(), ['clone', '--single-branch', '--branch', 'main', '--no-hardlinks', '--local', REPO_ROOT, dir]);
+  gitIn(tmpdir(), ['clone', '--no-hardlinks', '--local', REPO_ROOT, dir]);
+  const tip = gitIn(dir, ['rev-parse', 'HEAD']);
+  gitIn(dir, ['update-ref', 'refs/heads/main', tip]);
+  gitIn(dir, ['update-ref', 'refs/remotes/origin/main', tip]);
+  gitIn(dir, ['symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/main']);
+  gitIn(dir, ['checkout', '-q', 'main']);
   installScript(dir);
   return dir;
 }
@@ -257,6 +267,11 @@ test('verify AC-8: a default range that reads no commit fails both commit stages
 
 test('verify AC-8: a checkout standing on its base branch reads no commit and fails closed', (t) => {
   const dir = cloneOfMain(t);
+  assert.equal(
+    gitIn(dir, ['rev-parse', 'HEAD']),
+    gitIn(dir, ['rev-parse', 'origin/main']),
+    'the fixture head is its own base, so no base sits behind it',
+  );
   const result = verifyIn(dir, ['--only', 'commit-signoff']);
   assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
   assert.match(result.stderr, /^verify: FAILED at commit-signoff /m);
