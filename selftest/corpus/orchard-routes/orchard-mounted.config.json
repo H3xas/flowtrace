@@ -6,7 +6,12 @@
       "kind": "web",
       "root": "web",
       "mounts": { "PartnerRoutes": "/portal" },
-      "routeAssumptions": { "features.pruningPlanner": true }
+      "routeAssumptions": {
+        "features.pruningPlanner": true,
+        "features.tankGauge": true,
+        "features.tankProbe": false,
+        "features.greenhouse": false
+      }
     }
   ]
 }

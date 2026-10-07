@@ -28,10 +28,23 @@ reason expected. Every expectation was written from the source below.
 - Two files declare a component named `RowDetail`; `OrchardApp` imports one of them.
 - Two `navigate('/orchard/…')` literals are the only evidence of an `/orchard` prefix outside
   the router's own `basename`.
+- Seven more trees are declared by route arrays instead of JSX children: `PressRoutes` maps its own
+  module array (`path`/`component`/`isEnabled`, one entry spread from a same-module constant
+  object) through `filter(entry => entry.isEnabled)`, and maps a second array of sidebar links
+  that renders no `<Route>`; `QueueRoutes` interpolates `` `${queue.path}/*` `` and renders
+  `<queue.component/>`; `CellarSettings` passes an imported array, whose first entry spreads an
+  imported constant object, to `CellarLayout` as one prop; `AnnexRoutes` states an entry path as
+  an expression; `SpareRoutes` builds its array with `concat`; `DoubleSettings` passes its own
+  prop on again, a second hop; `StorehouseRoutes` maps an array it imports.
+- `GreenhouseRoutes` returns its `<Route>` from inside an `if`, through a helper, so the route
+  carries that condition as a guard; `LoftyRoutes` builds one inside a `for` loop, which decides
+  when the route exists and so stays unread.
 
 ## Configurations
 
 - `orchard.config.json` supplies nothing beyond the repository.
-- `orchard-mounted.config.json` supplies a mount for `PartnerRoutes` and a value for the
-  `features.pruningPlanner` condition, so the same questions show what a caller-provided
-  mount and assumption change, and that both stay visible in the answer.
+- `orchard-mounted.config.json` supplies a mount for `PartnerRoutes` and values for the
+  `features.pruningPlanner`, `features.tankGauge` and `features.tankProbe` conditions, so the
+  same questions show what a caller-provided mount and assumption change, and that both stay
+  visible in the answer — the two guarded tank entries are alternatives until the assumptions
+  pick one.

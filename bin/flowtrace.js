@@ -163,9 +163,12 @@ const USAGE = [
   '  a backend Class.Method, a backend class, a web component name, or a web page path',
   '  ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page',
   '  path is composed from the <Route> declarations the facts record: JSX-nested routes, a',
-  '  component\'s own <Routes> under the route that renders it, index routes, parameters,',
-  '  wildcards, lazy imports and <Navigate> redirects, each segment a [mount] hop with its',
-  '  file:line. A routed tree is mounted by source (a root render, a router basename), by',
+  '  component\'s own <Routes> under the route that renders it, a route array that component',
+  '  or one it renders maps into <Route> elements, index routes, parameters, wildcards, lazy',
+  '  imports and <Navigate> redirects, each segment a [mount] hop with its file:line. A route',
+  '  array\'s entries carry the site each came from as well, in the mount chain\'s',
+  '  entryFile/entryLine and on that hop, so the rendering .map and the entry it read are',
+  '  both openable. A routed tree is mounted by source (a root render, a router basename), by',
   '  repos[].mounts, or else read from "/" and behind the prefix the library\'s own',
   '  navigate() literals agree on — both tagged "inferred mount". A route under a condition',
   '  carries it as a guard; routes in the two arms of one condition stay candidates unless',
@@ -1410,6 +1413,8 @@ function traceNodeFields(node) {
     'mount',
     'segment',
     'source',
+    'entryFile',
+    'entryLine',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }

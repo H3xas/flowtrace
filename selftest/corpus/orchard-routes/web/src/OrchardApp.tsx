@@ -14,6 +14,20 @@ import IrrigationPage from './irrigation/IrrigationPage';
 import ReportViewer from './reports/ReportViewer';
 import Mystery from './mystery/Mystery';
 import { ShedRoutes } from './shed/ShedRoutes';
+import { AnnexRoutes } from './annex/AnnexRoutes';
+import CellarSettings from './cellar/CellarSettings';
+import { DoubleSettings } from './double/DoubleSettings';
+import { PressRoutes } from './pressing/PressRoutes';
+import { QueueRoutes } from './queues/QueueRoutes';
+import { SpareRoutes } from './spare/SpareRoutes';
+import GatePost from './double/GatePost';
+import { GreenhouseRoutes } from './greenhouse/GreenhouseRoutes';
+import { LoftyRoutes } from './lofty/LoftyRoutes';
+import { StorehouseRoutes } from './storehouse/StorehouseRoutes';
+
+const gateEntries = [
+  { path: '/gate', component: <GatePost /> },
+];
 
 export function OrchardApp() {
   return (
@@ -42,6 +56,15 @@ export function OrchardApp() {
         <Route path="reports/*" element={<ReportViewer />} />
         <Route path={sectionPath} element={<Mystery />} />
         <Route path="shed/*" element={<ShedRoutes />} />
+        <Route path="pressing/*" element={<PressRoutes />} />
+        <Route path="queues/*" element={<QueueRoutes />} />
+        <Route path="cellar/*" element={<CellarSettings />} />
+        <Route path="annex/*" element={<AnnexRoutes />} />
+        <Route path="spare/*" element={<SpareRoutes />} />
+        <Route path="double" element={<DoubleSettings entries={gateEntries} />} />
+        <Route path="storehouse/*" element={<StorehouseRoutes />} />
+        <Route path="greenhouse/*" element={<GreenhouseRoutes />} />
+        <Route path="lofty/*" element={<LoftyRoutes />} />
       </Route>
     </Routes>
   );

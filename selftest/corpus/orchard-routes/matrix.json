@@ -24,6 +24,21 @@
     { "id": "no-declaration", "config": "orchard.config.json", "start": "/nowhere/at/all", "expect": { "reason": "no-declaration" } },
     { "id": "name-matches-url-entry", "config": "orchard.config.json", "start": "CrateLedgerPage", "expect": { "entry": "src/harvest/crates/CrateLedgerPage.tsx#CrateLedgerPage" } },
     { "id": "duplicate-component-names", "config": "orchard.config.json", "start": "RowDetail", "expect": { "reason": "ambiguous" } },
-    { "id": "conflicting-lazy-aliases", "config": "orchard.config.json", "start": "LedgerPage", "expect": { "reason": "ambiguous" } }
+    { "id": "conflicting-lazy-aliases", "config": "orchard.config.json", "start": "LedgerPage", "expect": { "reason": "ambiguous" } },
+    { "id": "array-route-literal-entry", "config": "orchard.config.json", "start": "/orchard/pressing/ferment", "expect": { "entry": "src/pressing/FermentList.tsx#FermentList" } },
+    { "id": "array-route-unguarded-entry", "config": "orchard.config.json", "start": "/orchard/pressing/press-bench", "expect": { "entry": "src/pressing/PressBench.tsx#PressBench" } },
+    { "id": "array-route-spread-entry", "config": "orchard.config.json", "start": "/orchard/pressing/press-archive", "expect": { "entry": "src/pressing/PressArchive.tsx#PressArchive" } },
+    { "id": "array-route-guarded-alternatives", "config": "orchard.config.json", "start": "/orchard/pressing/tank", "expect": { "reason": "ambiguous" } },
+    { "id": "array-route-guarded-assumption", "config": "orchard-mounted.config.json", "start": "/orchard/pressing/tank", "expect": { "entry": "src/pressing/TankGauge.tsx#TankGauge" } },
+    { "id": "array-route-wildcard-leaf", "config": "orchard.config.json", "start": "/orchard/queues/42", "expect": { "entry": "src/queues/QueuePane.tsx#QueuePane" } },
+    { "id": "array-route-wildcard-head", "config": "orchard.config.json", "start": "/orchard/queues/head", "expect": { "entry": "src/queues/QueueHead.tsx#QueueHead" } },
+    { "id": "array-route-prop-hop-imported-spread", "config": "orchard.config.json", "start": "/orchard/cellar/rack", "expect": { "entry": "src/cellar/RackList.tsx#RackList" } },
+    { "id": "array-route-prop-hop-plain-entry", "config": "orchard.config.json", "start": "/orchard/cellar/casks", "expect": { "entry": "src/cellar/CaskShelf.tsx#CaskShelf" } },
+    { "id": "array-route-unreadable-path", "config": "orchard.config.json", "start": "/orchard/annex/annex-ledger", "expect": { "reason": "unsupported-expression" } },
+    { "id": "array-route-computed-array", "config": "orchard.config.json", "start": "/orchard/spare/shelf", "expect": { "reason": "unsupported-expression" } },
+    { "id": "array-route-second-prop-hop", "config": "orchard.config.json", "start": "/orchard/double/gate", "expect": { "reason": "unsupported-expression" } },
+    { "id": "array-route-imported-array", "config": "orchard.config.json", "start": "/orchard/storehouse/bins", "expect": { "entry": "src/storehouse/BinList.tsx#BinList" } },
+    { "id": "if-guarded-route", "config": "orchard.config.json", "start": "/orchard/greenhouse/glasshouse", "expect": { "entry": "src/greenhouse/GlassHousePage.tsx#GlassHousePage" } },
+    { "id": "loop-container-route", "config": "orchard.config.json", "start": "/orchard/lofty/upper", "expect": { "reason": "unsupported-expression" } }
   ]
 }
