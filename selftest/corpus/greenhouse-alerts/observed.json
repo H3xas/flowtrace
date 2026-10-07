@@ -67,7 +67,7 @@
       "exit": 0,
       "entry": "resolved",
       "budgetHit": false,
-      "unresolvedMarkers": 4,
+      "unresolvedMarkers": 5,
       "outside": []
     },
     {
@@ -80,6 +80,14 @@
     },
     {
       "id": "zones-landing-by-name",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
+      "id": "save-thunk-by-name",
       "exit": 0,
       "entry": "resolved",
       "budgetHit": false,
@@ -323,7 +331,7 @@
         {
           "id": "mount-load-readings",
           "found": true,
-          "by": "symbol",
+          "by": "both",
           "match": null
         },
         {
@@ -589,17 +597,39 @@
           "found": true,
           "by": "both",
           "match": null
+        },
+        {
+          "id": "reject-not-permitted",
+          "found": true,
+          "by": "symbol",
+          "match": null
         }
       ],
       "unknowns": [],
-      "assertions": [],
+      "assertions": [
+        {
+          "id": "storage-before-cache-refresh",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "rejection-before-write",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "access-guard-reached-from-call",
+          "held": true,
+          "reason": null
+        }
+      ],
       "counts": {
-        "sitesResolved": 5,
-        "sitesExpected": 5,
+        "sitesResolved": 6,
+        "sitesExpected": 6,
         "outside": 0,
         "entryUnresolved": 0,
-        "assertionsHeld": 0,
-        "assertionsAsserted": 0,
+        "assertionsHeld": 3,
+        "assertionsAsserted": 3,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
@@ -609,18 +639,24 @@
     },
     {
       "id": "save-feedback-continuation",
-      "run": "watchers-page-expanded",
+      "run": "save-thunk-by-name",
       "sites": [
         {
+          "id": "notice-unconfirmed",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
           "id": "notice-saved",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "both",
           "match": null
         },
         {
           "id": "notice-failed",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "both",
           "match": null
         }
       ],
@@ -628,27 +664,32 @@
       "assertions": [
         {
           "id": "saved-after-request",
-          "held": false,
-          "reason": "missing:notice-saved"
+          "held": true,
+          "reason": null
         },
         {
           "id": "failed-after-request",
-          "held": false,
-          "reason": "missing:notice-failed"
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "unconfirmed-after-request",
+          "held": true,
+          "reason": null
         }
       ],
       "counts": {
-        "sitesResolved": 0,
-        "sitesExpected": 2,
+        "sitesResolved": 3,
+        "sitesExpected": 3,
         "outside": 0,
-        "entryUnresolved": 1,
-        "assertionsHeld": 0,
-        "assertionsAsserted": 2,
+        "entryUnresolved": 0,
+        "assertionsHeld": 3,
+        "assertionsAsserted": 3,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
       "falselyComplete": false,
-      "classification": "discovery",
+      "classification": "resolved",
       "evidence": ""
     },
     {
@@ -762,6 +803,18 @@
           "found": true,
           "by": "site",
           "match": null
+        },
+        {
+          "id": "effect-same-line",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "hook-unread-again",
+          "found": true,
+          "by": "site",
+          "match": null
         }
       ],
       "unknowns": [],
@@ -773,8 +826,8 @@
         }
       ],
       "counts": {
-        "sitesResolved": 7,
-        "sitesExpected": 7,
+        "sitesResolved": 9,
+        "sitesExpected": 9,
         "outside": 0,
         "entryUnresolved": 0,
         "assertionsHeld": 1,
@@ -883,6 +936,67 @@
       "evidence": ""
     },
     {
+      "id": "notes-same-line-and-repeated-triggers",
+      "run": "watcher-notes-by-name",
+      "sites": [
+        {
+          "id": "effect-same-line",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "hook-unread-again",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "route-get-watchers",
+          "found": true,
+          "by": "both",
+          "match": "alias"
+        },
+        {
+          "id": "route-get-readings",
+          "found": true,
+          "by": "both",
+          "match": "alias"
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "watchers-from-same-line-effect",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "readings-from-same-line-effect",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "repeated-hook-at-its-own-site",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 4,
+        "sitesExpected": 4,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 3,
+        "assertionsAsserted": 3,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
       "id": "overview-selecting-a-handler-excludes-mount",
       "run": "overview-acknowledge-only",
       "sites": [
@@ -944,7 +1058,7 @@
         {
           "id": "mount-load-primary-zone",
           "found": true,
-          "by": "symbol",
+          "by": "both",
           "match": null
         },
         {
