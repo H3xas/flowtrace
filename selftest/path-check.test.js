@@ -11,7 +11,7 @@
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
@@ -103,6 +103,27 @@ test('a home path in a nested file is reported by name', { skip }, (t) => {
 test('a file whose name only ends in .git is still scanned', { skip }, (t) => {
   const dir = tree(t, { 'vendor.git': `origin ${HOME}/mirrors/vendor\n`, 'nested/lib.git': `${HOME}/x\n` });
   assertNames(pathCheck(dir), ['./nested/lib.git', './vendor.git']);
+});
+
+test('a tree the scan cannot read is a failure, not a clean tree', { skip }, (t) => {
+  // Built here rather than through `tree()`: its cleanup removes the directory, which a
+  // directory with the read bit cleared would stop.
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-path-check-'));
+  t.after(() => {
+    chmodSync(join(dir, 'locked'), 0o700);
+    rmSync(dir, { recursive: true, force: true });
+  });
+  mkdirSync(join(dir, 'scripts'));
+  copyFileSync(SCRIPT, join(dir, 'scripts', 'path-check.sh'));
+  writeFileSync(join(dir, 'notes.md'), 'nothing machine-shaped here\n');
+  mkdirSync(join(dir, 'locked'));
+  writeFileSync(join(dir, 'locked', 'hidden.md'), 'nothing machine-shaped here\n');
+  chmodSync(join(dir, 'locked'), 0o000);
+
+  const result = pathCheck(dir);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /path-check: the scan could not read the tree \(grep exit 2\)/);
+  assert.equal(result.stdout, '');
 });
 
 test('every machine-path shape is still reported beside the pointer', { skip }, (t) => {

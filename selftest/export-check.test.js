@@ -73,6 +73,22 @@ function topology(document) {
   return document.edges.map(({ provenance, ...record }) => record);
 }
 
+test('an input that is absent, or is not JSON, is named with its repair', (t) => {
+  const absent = spawnSync(process.execPath, [CHECK, 'absent-generated.json', 'absent-pinned.json'], { cwd: REPO_ROOT, encoding: 'utf8' });
+  assert.notEqual(absent.status, 0);
+  assert.match(absent.stderr, /check-pinned-export: cannot read absent-generated\.json \(ENOENT/);
+  assert.match(absent.stderr, /repair: pass the file the commands in RELEASING\.md wrote/);
+  assert.doesNotMatch(absent.stderr, /at Module\./, 'a missing input must be reported, not thrown');
+
+  const dir = mkdtempSync(joinPath(tmpdir(), 'flowtrace-bad-export-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const truncated = joinPath(dir, 'truncated.json');
+  writeFileSync(truncated, '{"edges": [\n');
+  const malformed = spawnSync(process.execPath, [CHECK, truncated, truncated], { cwd: REPO_ROOT, encoding: 'utf8' });
+  assert.notEqual(malformed.status, 0);
+  assert.match(malformed.stderr, /check-pinned-export: cannot read .+truncated\.json \(Unexpected end of JSON input\)/);
+});
+
 test('check-pinned-export fails on every provenance mutation that leaves the edges untouched', async (t) => {
   const dir = checkoutWorkspace(t);
   const pinned = regenerate(dir, 'out/pinned.json');

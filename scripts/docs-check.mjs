@@ -48,14 +48,25 @@ function renderCliDoc() {
   return CLI_DOC_HEADER + helpText() + CLI_DOC_FOOTER;
 }
 
+/**
+ * True when the tree being checked sits inside a git checkout. The distinction decides
+ * whether a failed `git ls-files` is an unpacked tarball, where the walk below is the
+ * documented fallback, or a checkout whose enumeration broke, where falling back would
+ * quietly check a different and possibly smaller set of files.
+ */
+function inGitCheckout() {
+  try {
+    return execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() === 'true';
+  } catch {
+    return false;
+  }
+}
+
 /** Markdown files to check: tracked ones when git answers, a filtered walk otherwise. */
 function markdownFiles() {
-  try {
-    const out = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '*.md'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    const files = out.split('\0').filter(Boolean).map((file) => join(ROOT, file));
-    if (files.length > 0) return files;
-  } catch {
-    // Not a git checkout (an unpacked tarball, say); fall through to the walk.
+  if (inGitCheckout()) {
+    const out = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '*.md'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    return out.split('\0').filter(Boolean).map((file) => join(ROOT, file));
   }
   const skip = new Set(['.git', 'node_modules', 'dist', 'out', 'corpora', 'test', 'fixtures']);
   const found = [];
@@ -111,15 +122,25 @@ function relativeLinks(markdown) {
   return links;
 }
 
-function checkLinks() {
+/** Read a markdown file, recording the file itself when it cannot be read. */
+function readText(file, failures) {
+  try {
+    return readFileSync(file, 'utf8');
+  } catch (error) {
+    failures.push(`${relative(ROOT, file)}: cannot be read (${error.message}); restore it or fix its permissions`);
+    return '';
+  }
+}
+
+function checkLinks(files) {
   const failures = [];
   const slugCache = new Map();
   const slugsOf = (file) => {
-    if (!slugCache.has(file)) slugCache.set(file, headingSlugs(readFileSync(file, 'utf8')));
+    if (!slugCache.has(file)) slugCache.set(file, headingSlugs(readText(file, failures)));
     return slugCache.get(file);
   };
-  for (const file of markdownFiles()) {
-    const markdown = readFileSync(file, 'utf8');
+  for (const file of files) {
+    const markdown = readText(file, failures);
     for (const { target, line } of relativeLinks(markdown)) {
       const [pathPart, fragment] = target.split('#');
       const targetFile = pathPart === '' ? file : resolve(dirname(file), decodeURIComponent(pathPart));
@@ -146,10 +167,19 @@ function main() {
     console.log(`docs-check: wrote ${relative(ROOT, CLI_DOC)}`);
   } else if (!existsSync(CLI_DOC)) {
     failures.push(`${relative(ROOT, CLI_DOC)} is missing; run: node scripts/docs-check.mjs --write`);
-  } else if (readFileSync(CLI_DOC, 'utf8') !== expected) {
+  } else if (readText(CLI_DOC, failures) !== expected) {
     failures.push(`${relative(ROOT, CLI_DOC)} is behind \`flowtrace --help\`; run: node scripts/docs-check.mjs --write`);
   }
-  failures.push(...checkLinks());
+  let files;
+  try {
+    files = markdownFiles();
+  } catch (error) {
+    // A checkout whose own file listing fails would otherwise be reported as a tree with
+    // nothing to link-check, which is a pass for a check that never ran.
+    console.error(`docs-check: could not list the markdown files (${error.message}); fix the git failure and rerun`);
+    process.exit(1);
+  }
+  failures.push(...checkLinks(files));
   if (failures.length > 0) {
     console.error('docs-check: failed');
     for (const failure of failures) console.error(`  ${failure}`);

@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  smoke:
+  verify:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -19,99 +19,33 @@ jobs:
       matrix:
         node-version: ['20.x', '22.x', '24.x']
     steps:
+      # Full history, so the commit-artifact stages can read the range under review.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
 
       - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ matrix.node-version }}
 
-      # Zero runtime dependencies: no install step needed.
-      - name: Public contract suite
-        run: npm test
-
-      - name: Smoke test CLI help
-        run: node bin/flowtrace.js --help
-
-      - name: Worked example extract and edge export
-        working-directory: examples/demo-shop
+      # The range whose commits the canonical command reads. A pull request is checked
+      # against its base; a push against the commits it added, falling back to the pushed
+      # head alone when the branch has no earlier tip to compare with.
+      - name: Resolve the commit range under review
         run: |
-          set -e
-          node ../../bin/flowtrace.js extract  --config flowtrace.config.json
-          node ../../bin/flowtrace.js join     --config flowtrace.config.json --export-edges out/flowtrace-edges.json
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
+            range="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)..$(git rev-parse HEAD)"
+          else
+            range="${{ github.event.before }}..${{ github.event.after }}"
+          fi
+          echo "VERIFY_COMMIT_RANGE=$range" >> "$GITHUB_ENV"
 
-      - name: Pinned export, canonical structural and provenance equality against the pinned copy
-        working-directory: examples/demo-shop
-        run: node ../../scripts/check-pinned-export.mjs out/flowtrace-edges.json exports/flowtrace-edges.json
-
-      - name: Repeat export, literal byte equality within one checkout
-        working-directory: examples/demo-shop
-        run: |
-          set -e
-          node ../../bin/flowtrace.js join     --config flowtrace.config.json --export-edges out/flowtrace-edges-again.json
-          cmp out/flowtrace-edges.json out/flowtrace-edges-again.json
-
-      - name: Worked example end to end
-        run: |
-          set -e
-          cd examples/demo-shop
-          node ../../bin/flowtrace.js cover    --config flowtrace.config.json --area ../../areas/checkout.txt
-          node ../../bin/flowtrace.js span     --config flowtrace.config.json "POST orders/v1/checkout"
-          node ../../bin/flowtrace.js surface  --config flowtrace.config.json "POST orders/v1/checkout"
-          node ../../bin/flowtrace.js skeleton --config flowtrace.config.json "POST orders/v1/checkout"
-          node ../../bin/flowtrace.js check    --config flowtrace.config.json --area ../../areas/checkout.txt --baseline out/checkout.baseline.json --write-baseline
-          node ../../bin/flowtrace.js check    --config flowtrace.config.json --area ../../areas/checkout.txt --baseline out/checkout.baseline.json
-          node ../../bin/flowtrace.js calibrate --golden calibration --verdicts calibration/reference
-
-      - name: No machine paths in the tree
-        run: bash scripts/path-check.sh
-
-      - name: Documentation matches the CLI and links resolve
-        run: node scripts/docs-check.mjs
-
-  dco:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-
-      - name: Every commit is signed off
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          set -e
-          missing=0
-          for sha in $(git rev-list "$BASE_SHA..$HEAD_SHA"); do
-            if ! git log -1 --format=%B "$sha" | grep -q '^Signed-off-by: '; then
-              echo "::error::commit $sha has no Signed-off-by trailer — run: git commit --amend -s"
-              missing=1
-            fi
-          done
-          exit "$missing"
-
-  comment-hygiene:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-
-      - name: Comment hygiene
-        run: python3 .claude/hooks/comment-hygiene.py --scan
-
-      - name: Comment hygiene (commit messages)
-        if: github.event_name == 'pull_request'
-        run: python3 .claude/hooks/comment-hygiene.py --scan-commits origin/${{ github.base_ref }}..HEAD
-
-      - name: Comment hygiene selfcheck
-        run: python3 .claude/hooks/comment-hygiene.py --selfcheck
+      # Zero runtime dependencies: no install step needed. Everything CI requires of a
+      # change is in this command, which is the same one CONTRIBUTING.md tells a
+      # contributor to run.
+      - name: Verify
+        run: npm run verify
