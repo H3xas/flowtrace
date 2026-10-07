@@ -16,6 +16,10 @@ the worked example (`examples/demo-shop` is).
   the zone routes mount a lazily imported watcher page inside a per-route `Suspense` wrapper.
 - Two initialisation styles: a class component that loads readings in `componentDidMount`, and a
   function component that loads watchers in a `useEffect`.
+- A second function component exercising every effect declaration the extractor distinguishes: an
+  empty dependency list, a watched list, a callback named by identifier, a cleanup returned by an
+  effect, and the two triggers it states without following — a hook it does not read and a
+  callback passed as an expression.
 - Click handlers beside them: an acknowledge button on the class component and the selected save
   handler on the watcher page, which dispatches a thunk.
 - Gateway requests under `greenhouse/`, served by backend routes under `glasshouse/`, joined only

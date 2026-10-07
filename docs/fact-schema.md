@@ -83,6 +83,21 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `action_dispatch` | `class`, `method`, `action` | a body dispatches an action |
 | `effect_handler` | `class`, `field`, `actions`, `endLine` | a body handles dispatched actions and issues HTTP |
 | `props_bind` | `component`, `prop`, `target` | a `connect` map binds a creator to a prop |
+| `component_entry` | `component`, `kind`, `trigger`, `handler`, `guards` | execution reaches a component: a class lifecycle callback, a hook effect, the cleanup an effect returns, or a trigger the extractor cannot read |
+
+A `component_entry` names one way execution reaches a component, on the site it was
+written at. `kind` is `mount`, `update`, `unmount`, `effect`, `cleanup`, `event` or
+`unknown`; `trigger` is the name it was written under (`componentDidMount`, `useEffect`,
+a hook the extractor does not read); `handler` is the callback or handler it names, and is
+`null` when the trigger *is* its own callback. `guards` lists, in source order, the
+conditions that gate the calls inside the entry. Optional: `deps` is an effect's
+dependency list as written — `[]` when none was written — `endLine` closes the entry's
+span, `unresolved` names why the trigger could not be followed (`custom-hook`,
+`dynamic-callback`), and `method` is the key the calls inside the entry attribute to.
+
+An entry states a declaration, never how many times React runs the body and never an
+order between two entries. A JSX `on*` binding is an entry too; its identity comes from
+the `template_handler` fact that states it, with the event as its trigger.
 
 ### Test evidence
 

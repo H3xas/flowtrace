@@ -250,8 +250,8 @@ const USAGE = [
   '  confirmed/refused/pending counts. Without the flag the page has no verdict annotations',
   '  or verdict counts.',
   '',
-  'span --from-component <name> [--file <path-substring>] [--out <file>] [--specs <list|file>]',
-  '            [--repo <id>]',
+  'span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json]',
+  '            [--out <file>] [--specs <list|file>] [--repo <id>]',
   '  Web kind only. Resolves a web component, page or service name through the',
   '  existing chain — component → handler or method body → action_dispatch → action_def →',
   '  effect_handler → gateway_call → route — and writes one page: a header naming the',
@@ -264,6 +264,14 @@ const USAGE = [
   '  pinned the template, so a matchRoute guess is not trusted even when one lands);',
   '  it dispatches an action no effect_handler answers (no-effect); or the walk\'s own',
   '  depth or node budget ran out before the arm could be explored (walk-limit).',
+  '  Every arm is attributed to the entry that reached it — one way execution reaches the',
+  '  component, named by its component, trigger kind, source site and guards. A mount-time',
+  '  request and a request a click makes are two entries with two arm sets. --entry <entry>',
+  '  narrows the page to one of them, written as its id, its trigger (`componentDidMount`,',
+  '  `useEffect`), a trigger qualified by its line (`useEffect@15`) or a handler name; a',
+  '  selector matching anything other than exactly one entry is refused and lists them all.',
+  '  A trigger the extractor read but could not follow prints as an `entry-unresolved` arm.',
+  '  --json prints the same entries, arms and reasons without the per-route sections.',
   '  A mobile-kind name is refused with its reason and writes no page — this verb',
   '  resolves the web chain only. --out defaults to',
   '  <out>/span/component-<slug>.html; --repo scopes which component the name resolves to,',
@@ -602,6 +610,7 @@ function parseArgs(argv) {
     baseline: undefined,
     writeBaseline: false,
     fromComponent: undefined,
+    entry: undefined,
     file: undefined,
     observe: undefined,
     helpers: undefined,
@@ -758,6 +767,10 @@ function parseArgs(argv) {
       const value = argument.startsWith('--from-component=') ? argument.slice('--from-component='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--from-component requires a component name');
       options.fromComponent = value;
+    } else if (argument === '--entry' || argument.startsWith('--entry=')) {
+      const value = argument.startsWith('--entry=') ? argument.slice('--entry='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--entry requires an entry id, trigger or handler');
+      options.entry = value;
     } else if (argument === '--file' || argument.startsWith('--file=')) {
       const value = argument.startsWith('--file=') ? argument.slice('--file='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--file requires a path substring');
@@ -1389,6 +1402,7 @@ function traceNodeFields(node) {
     'selfCall',
     'attach',
     'event',
+    'entry',
     'endLine',
     'methods',
     'methodDepth',
@@ -1401,6 +1415,25 @@ function traceNodeFields(node) {
 
 function traceNode(node) {
   return { id: node.id, ...traceNodeFields(node) };
+}
+
+/**
+ * `span --from-component --json` — the same entries, arms and unresolved reasons the page
+ * prints, without the per-route `span()` models: a route's own behaviour belongs to that
+ * route's page. This view exists so two runs can be compared on identity rather than on
+ * rendered HTML, and so an entry can be named by id instead of by its line number.
+ */
+function componentSpanJson(model) {
+  return {
+    component: model.component,
+    header: model.header,
+    entries: model.entries,
+    selectedEntry: model.selectedEntry,
+    orphans: model.orphans,
+    routes: model.routes.map((entry) => ({ key: entry.key, arms: entry.arms })),
+    unresolved: model.unresolved,
+    limits: model.limits,
+  };
 }
 
 const INVENTORY_KINDS = new Set(['page', 'component', 'service']);
@@ -1686,6 +1719,7 @@ async function runComponentSpan(config, options, factSets) {
   const model = componentSpan(factSets, options.fromComponent, {
     repo: options.repo,
     file: options.file,
+    entry: options.entry,
     aliases: config.aliases,
     specs: specsText,
     traceOptions: {
@@ -1713,6 +1747,10 @@ async function runComponentSpan(config, options, factSets) {
   }
   for (const token of unmatched) {
     process.stderr.write(`flowtrace: --specs "${token}" matches no spec in the facts\n`);
+  }
+  if (options.json) {
+    log(JSON.stringify(componentSpanJson(model), null, 2));
+    return 0;
   }
   const target = resolve(options.out || joinPath(config.out, 'span', `${model.slug}.html`));
   mkdirSync(dirname(target), { recursive: true });
@@ -2399,6 +2437,9 @@ async function main() {
   }
   if (options.command === 'span' && options.file && !options.fromComponent) {
     return usage('span --file requires --from-component <name>');
+  }
+  if (options.command === 'span' && options.entry && !options.fromComponent) {
+    return usage('span --entry requires --from-component <name>');
   }
   if (options.command === 'surface' && !options.start) {
     return usage('surface requires a route key, e.g. surface "POST orders/v1/checkout"');

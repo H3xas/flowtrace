@@ -298,21 +298,21 @@
         },
         {
           "id": "mount-load-readings",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "symbol",
           "match": null
         },
         {
           "id": "click-acknowledge-alarm",
           "found": true,
-          "by": "both",
+          "by": "symbol",
           "match": null
         },
         {
           "id": "request-load-readings",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "request-acknowledge-alarm",
@@ -322,9 +322,9 @@
         },
         {
           "id": "route-get-readings",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "route-ack-alarm",
@@ -337,8 +337,8 @@
       "assertions": [
         {
           "id": "readings-from-mount",
-          "held": false,
-          "reason": "missing:route-get-readings"
+          "held": true,
+          "reason": null
         },
         {
           "id": "acknowledge-from-click",
@@ -347,17 +347,17 @@
         }
       ],
       "counts": {
-        "sitesResolved": 4,
+        "sitesResolved": 7,
         "sitesExpected": 7,
         "outside": 0,
         "entryUnresolved": 0,
-        "assertionsHeld": 1,
+        "assertionsHeld": 2,
         "assertionsAsserted": 2,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
-      "falselyComplete": true,
-      "classification": "lifecycle",
+      "falselyComplete": false,
+      "classification": "resolved",
       "evidence": ""
     },
     {

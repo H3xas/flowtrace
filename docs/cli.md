@@ -203,8 +203,8 @@ span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
   confirmed/refused/pending counts. Without the flag the page has no verdict annotations
   or verdict counts.
 
-span --from-component <name> [--file <path-substring>] [--out <file>] [--specs <list|file>]
-            [--repo <id>]
+span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json]
+            [--out <file>] [--specs <list|file>] [--repo <id>]
   Web kind only. Resolves a web component, page or service name through the
   existing chain — component → handler or method body → action_dispatch → action_def →
   effect_handler → gateway_call → route — and writes one page: a header naming the
@@ -217,6 +217,14 @@ span --from-component <name> [--file <path-substring>] [--out <file>] [--specs <
   pinned the template, so a matchRoute guess is not trusted even when one lands);
   it dispatches an action no effect_handler answers (no-effect); or the walk's own
   depth or node budget ran out before the arm could be explored (walk-limit).
+  Every arm is attributed to the entry that reached it — one way execution reaches the
+  component, named by its component, trigger kind, source site and guards. A mount-time
+  request and a request a click makes are two entries with two arm sets. --entry <entry>
+  narrows the page to one of them, written as its id, its trigger (`componentDidMount`,
+  `useEffect`), a trigger qualified by its line (`useEffect@15`) or a handler name; a
+  selector matching anything other than exactly one entry is refused and lists them all.
+  A trigger the extractor read but could not follow prints as an `entry-unresolved` arm.
+  --json prints the same entries, arms and reasons without the per-route sections.
   A mobile-kind name is refused with its reason and writes no page — this verb
   resolves the web chain only. --out defaults to
   <out>/span/component-<slug>.html; --repo scopes which component the name resolves to,
