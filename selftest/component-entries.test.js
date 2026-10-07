@@ -56,13 +56,24 @@ test('a class lifecycle callback is one entry carrying its guard and its site', 
 test('each useEffect states its own declaration: an empty list, a watched list, or a callback by name', () => {
   const effects = entriesOf('WatcherNotesPanel').filter((entry) => entry.kind === 'effect');
   assert.deepEqual(
-    effects.map((entry) => [entry.line, entry.deps, entry.handler]),
+    effects.map((entry) => [entry.line, entry.deps, entry.handler, entry.depsUnknown]),
     [
-      [25, [], null],
-      [29, ['draft'], null],
-      [36, ['readings'], 'refresh'],
+      [25, [], null, undefined],
+      [29, ['draft'], null, undefined],
+      [36, ['readings'], 'refresh', undefined],
+      [42, undefined, null, true],
     ],
   );
+});
+
+test('a dependency list written as an expression is stated as unread, never as absent', () => {
+  const [withExpression] = entriesOf('WatcherNotesPanel').filter((entry) => entry.depsUnknown === true);
+  assert.equal(withExpression.line, 42);
+  assert.equal(withExpression.deps, undefined);
+  const { model } = spanJson('WatcherNotesPanel');
+  const identity = model.entries.find((entry) => entry.identity.line === 42).identity;
+  assert.equal(identity.depsUnknown, true);
+  assert.equal(identity.deps, undefined);
 });
 
 test('an effect that returns a function states a cleanup entry of its own', () => {
@@ -192,12 +203,14 @@ test('the pack states one entry per trigger and none for the foreign hooks it al
     .map((fact) => `${fact.component}|${fact.trigger}@${fact.line}`);
   assert.deepEqual(triggers, [
     'ZoneOverviewPanel|componentDidMount@15',
+    'ZonesLandingPanel|componentDidMount@13',
     'WatcherPreferencesPage|useEffect@15',
     'WatcherNotesPanel|useEffect@25',
     'WatcherNotesPanel|useEffect@29',
     'WatcherNotesPanel|useEffect@31',
     'WatcherNotesPanel|useEffect@36',
     'WatcherNotesPanel|useEffect@38',
+    'WatcherNotesPanel|useEffect@42',
     'WatcherNotesPanel|useNoteDraft@19',
   ]);
 });

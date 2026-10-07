@@ -188,6 +188,10 @@ function projectAssertion(walk, assertion, sitesById) {
     if (reached.some((occurrence) => joinValue(occurrence) === assertion.match)) return result(true);
     return result(false, `match:${joinValue(reached[0]) ?? 'none'}`);
   }
+  if (assertion.kind === 'not-reached') {
+    const hits = matching(walk, sitesById.get(assertion.site));
+    return hits.length === 0 ? result(true) : result(false, `reached:${assertion.site}`);
+  }
   for (const id of assertion.sites) {
     if (!matching(walk, sitesById.get(id)).some((hit) => hit.bySite)) return result(false, `not-at-site:${id}`);
   }

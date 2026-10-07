@@ -16,6 +16,9 @@ the worked example (`examples/demo-shop` is).
   the zone routes mount a lazily imported watcher page inside a per-route `Suspense` wrapper.
 - Two initialisation styles: a class component that loads readings in `componentDidMount`, and a
   function component that loads watchers in a `useEffect`.
+- A class component whose mount callback makes a guarded request and whose response handler
+  dispatches a follow-up only once the first record comes back, so the initial request and the
+  conditional follow-up are two arms of one trigger rather than one list.
 - A second function component exercising every effect declaration the extractor distinguishes: an
   empty dependency list, a watched list, a callback named by identifier, a cleanup returned by an
   effect, and the two triggers it states without following — a hook it does not read and a
@@ -47,11 +50,17 @@ this source alone, before anything was observed. It holds:
   mount whose element is a wrapper — has `symbol: null` and can only be found by its file and line.
 - `unknowns`: statements whose target cannot be established from source, with the reason.
 - `runs`: one `flowtrace trace` start per question, the walk flags it uses (`--depth`,
-  `--max-nodes`, `--seeds`, `--expand` only), whether its assertions are the routes or the sinks it
-  reports, and `reach` — every site of that kind the source says the start reaches.
+  `--max-nodes`, `--seeds`, `--expand`, and `--from-handler <event>:<method>` to narrow a walk to
+  one handler), whether its assertions are the routes or the sinks it reports, and `reach` — every
+  site of that kind the source says the start reaches.
+  A component start is walked in inventory mode, which folds branches that reach no route; a
+  question about a trigger that reaches nothing — a cleanup, a hook the extractor cannot read —
+  passes `--expand` so those entries are still answered for.
 - `cases`: the question, the sites and unknowns it expects, and its assertions — `before` (one site
   is reported ahead of another), `reached-from` (a site is reached from another, optionally through
-  a named join such as `alias`) and `at-site` (each listed site is found at its own line).
+  a named join such as `alias`), `at-site` (each listed site is found at its own line) and
+  `not-reached` (a site is absent from the answer altogether — how a walk narrowed to one handler
+  is held to leaving the rest of the component out).
 - `vocabulary`: the ten classifications a case may carry — `resolved`, `discovery`, `lifecycle`,
   `join`, `ordering`, `budget`, `stale-input`, `configuration`, `unsupported`, `unresolved-cause`.
 

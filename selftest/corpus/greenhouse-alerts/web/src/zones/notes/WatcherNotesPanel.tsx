@@ -37,6 +37,12 @@ export default function WatcherNotesPanel(props: WatcherNotesPanelProps) {
 
   useEffect(props.onRefresh, []);
 
+  const watched = [draft];
+
+  useEffect(() => {
+    setDraft(draft.trim());
+  }, watched);
+
   return (
     <section className="watcher-notes">
       <span>{readings.length} readings</span>

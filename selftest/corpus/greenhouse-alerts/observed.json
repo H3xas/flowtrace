@@ -61,6 +61,30 @@
       "budgetHit": false,
       "unresolvedMarkers": 0,
       "outside": []
+    },
+    {
+      "id": "watcher-notes-by-name",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 4,
+      "outside": []
+    },
+    {
+      "id": "overview-acknowledge-only",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
+      "id": "zones-landing-by-name",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 0,
+      "outside": []
     }
   ],
   "cases": [
@@ -686,6 +710,293 @@
         "entryUnresolved": 0,
         "assertionsHeld": 0,
         "assertionsAsserted": 0,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
+      "id": "notes-entries-by-declaration",
+      "run": "watcher-notes-by-name",
+      "sites": [
+        {
+          "id": "page-watcher-notes",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "effect-empty-deps",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "effect-cleanup",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "effect-named-callback",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "hook-unread",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "effect-dynamic-callback",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "effect-expression-deps",
+          "found": true,
+          "by": "site",
+          "match": null
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "every-entry-at-site",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 7,
+        "sitesExpected": 7,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 1,
+        "assertionsAsserted": 1,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
+      "id": "notes-empty-deps-reaches-load",
+      "run": "watcher-notes-by-name",
+      "sites": [
+        {
+          "id": "effect-empty-deps",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "request-load-watchers",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        },
+        {
+          "id": "route-get-watchers",
+          "found": true,
+          "by": "both",
+          "match": "alias"
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "load-from-empty-deps",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 3,
+        "sitesExpected": 3,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 1,
+        "assertionsAsserted": 1,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
+      "id": "notes-named-callback-reaches-readings",
+      "run": "watcher-notes-by-name",
+      "sites": [
+        {
+          "id": "effect-named-callback",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "dispatch-refresh-readings",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "request-load-readings",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        },
+        {
+          "id": "route-get-readings",
+          "found": true,
+          "by": "both",
+          "match": "alias"
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "readings-from-named-callback",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 4,
+        "sitesExpected": 4,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 1,
+        "assertionsAsserted": 1,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
+      "id": "overview-selecting-a-handler-excludes-mount",
+      "run": "overview-acknowledge-only",
+      "sites": [
+        {
+          "id": "request-acknowledge-alarm",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        },
+        {
+          "id": "route-ack-alarm",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "mount-route-absent",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "mount-request-absent",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "acknowledge-at-site",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 2,
+        "sitesExpected": 2,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 3,
+        "assertionsAsserted": 3,
+        "unknownsMarked": 0,
+        "unknownsExpected": 0
+      },
+      "falselyComplete": false,
+      "classification": "resolved",
+      "evidence": ""
+    },
+    {
+      "id": "zones-landing-guarded-initial-and-follow-up",
+      "run": "zones-landing-by-name",
+      "sites": [
+        {
+          "id": "page-zones-landing",
+          "found": true,
+          "by": "both",
+          "match": null
+        },
+        {
+          "id": "mount-load-primary-zone",
+          "found": true,
+          "by": "symbol",
+          "match": null
+        },
+        {
+          "id": "request-load-primary-zone",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        },
+        {
+          "id": "dispatch-primary-zone-follow-up",
+          "found": true,
+          "by": "site",
+          "match": null
+        },
+        {
+          "id": "route-get-watchers",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        },
+        {
+          "id": "route-get-readings",
+          "found": true,
+          "by": "site",
+          "match": "alias"
+        }
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "watchers-from-mount",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "follow-up-reached-from-mount",
+          "held": true,
+          "reason": null
+        },
+        {
+          "id": "follow-up-at-site",
+          "held": true,
+          "reason": null
+        }
+      ],
+      "counts": {
+        "sitesResolved": 6,
+        "sitesExpected": 6,
+        "outside": 0,
+        "entryUnresolved": 0,
+        "assertionsHeld": 3,
+        "assertionsAsserted": 3,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
