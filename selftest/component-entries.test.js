@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_ROOT, runCli } from './helpers.js';
@@ -41,6 +41,22 @@ function entriesOf(component) {
 function spanJson(name, extra = []) {
   const result = runCli(['span', '--from-component', name, '--json', '--config', config, ...extra]);
   return { ...result, model: result.status === 0 ? JSON.parse(result.stdout) : null };
+}
+
+/**
+ * A disposable copy of the corpus with one source file rewritten and freshly extracted, for a
+ * source shape the committed pack does not carry. The copy never reaches the pack's own ledger.
+ */
+function variant(name, mutate) {
+  const dir = mkdtempSync(join(tmpdir(), `flowtrace-entries-${name}-`));
+  cpSync(FIXTURE, dir, { recursive: true });
+  mutate(dir);
+  const variantConfig = join(dir, 'greenhouse.config.json');
+  const extracted = runCli(['extract', '--config', variantConfig], { cwd: dir });
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const joined = runCli(['join', '--config', variantConfig], { cwd: dir });
+  assert.equal(joined.status, 0, joined.stderr);
+  return { dir, config: variantConfig };
 }
 
 test('a class lifecycle callback is one entry carrying its guard and its site', () => {
@@ -244,6 +260,89 @@ test('every entry fact validates against the fact schema', () => {
     assert.ok(Number.isInteger(entry.line) && entry.line > 0);
     assert.ok(Array.isArray(entry.guards));
     assert.ok(['mount', 'update', 'unmount', 'effect', 'cleanup', 'event', 'unknown'].includes(entry.kind));
+  }
+});
+
+const WATCHER_PAGE = 'web/src/zones/alerts/WatcherPreferencesPage.tsx';
+const SAVE_BUTTON = '      <button type="button" onClick={handleSave}>\n        Save watchers\n      </button>\n';
+
+/** Every `handleSave` entry the watcher page states once the save button is written again. */
+function saveEntries(writtenAgain) {
+  const { dir, config: variantConfig } = variant('binding', (root) => {
+    const page = join(root, ...WATCHER_PAGE.split('/'));
+    const source = readFileSync(page, 'utf8');
+    assert.ok(source.includes(SAVE_BUTTON), 'the fixture should still bind handleSave once');
+    writeFileSync(page, source.replace(SAVE_BUTTON, SAVE_BUTTON + writtenAgain));
+  });
+  try {
+    const result = runCli([
+      'span', '--from-component', 'WatcherPreferencesPage',
+      '--file', 'alerts/WatcherPreferencesPage.tsx', '--json', '--config', variantConfig,
+    ]);
+    assert.equal(result.status, 0, result.stderr);
+    return JSON.parse(result.stdout).entries
+      .filter((entry) => entry.identity.handler === 'handleSave')
+      .map((entry) => entry.identity);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('a handler bound at two sites is two entries, one per binding', () => {
+  const saves = saveEntries(
+    '      <button type="button" onClick={handleSave}>\n        Save from the toolbar\n      </button>\n',
+  );
+  assert.equal(saves.length, 2, 'each binding of one handler is its own entry');
+  assert.notEqual(saves[0].id, saves[1].id, 'two bindings may not share one identity');
+  assert.notEqual(saves[0].line, saves[1].line, 'each entry keeps the line it was written at');
+});
+
+test('two bindings written on one line are two entries, at two columns', () => {
+  const saves = saveEntries(
+    '      <button onClick={handleSave}>Save</button><button onClick={handleSave}>Again</button>\n',
+  );
+  assert.equal(saves.length, 3, 'the pack’s own binding and both new ones are stated');
+  const oneLine = saves.filter((entry) => saves.filter((other) => other.line === entry.line).length === 2);
+  assert.equal(oneLine.length, 2, 'one line is not one site');
+  assert.notEqual(oneLine[0].column, oneLine[1].column, 'the two bindings are two columns of it');
+  assert.notEqual(oneLine[0].id, oneLine[1].id, 'two bindings on one line may not share one identity');
+});
+
+test('two same-named components in different files write two pages', () => {
+  const { dir, config: variantConfig } = variant('same-name', (root) => {
+    cpSync(
+      join(root, 'web', 'src', 'zones', 'notes', 'WatcherNotesPanel.tsx'),
+      join(root, 'web', 'src', 'zones', 'other', 'WatcherNotesPanel.tsx'),
+      { recursive: false },
+    );
+  });
+  try {
+    const entriesAt = (file) => {
+      const result = runCli([
+        'span', '--from-component', 'WatcherNotesPanel', '--file', file, '--json', '--config', variantConfig,
+      ]);
+      assert.equal(result.status, 0, result.stderr);
+      return JSON.parse(result.stdout).entries.map((entry) => entry.identity);
+    };
+    const selected = ['zones/notes/', 'zones/other/'].map((file) => {
+      const at = entriesAt(file).filter((entry) => entry.file.includes(file) && entry.line === 25);
+      assert.equal(at.length, 1, `the file ${file} should carry one effect at line 25`);
+      return at[0];
+    });
+    assert.notEqual(selected[0].id, selected[1].id, 'the two declarations are two identities');
+    const written = selected.map((identity) => {
+      const file = identity.file.replace(/^src\//, '');
+      const run = runCli(
+        ['span', '--from-component', 'WatcherNotesPanel', '--file', file, '--entry', identity.id, '--config', variantConfig],
+        { cwd: dir },
+      );
+      assert.equal(run.status, 0, run.stderr);
+      return run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim();
+    });
+    assert.notEqual(written[0], written[1], 'a page may not be overwritten by another file’s entry');
+    assert.notEqual(readFileSync(written[0], 'utf8'), readFileSync(written[1], 'utf8'));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 
