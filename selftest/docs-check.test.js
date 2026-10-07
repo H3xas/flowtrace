@@ -2,9 +2,10 @@
  * `scripts/docs-check.mjs` fails, naming the file and the line, for every way the
  * documentation can drift from the code it describes: a link to something that is not
  * there, a fragment naming no heading, `docs/cli.md` behind `--help`, a file that cannot be
- * read, and a checkout whose own file listing fails. The last two matter most: a
+ * read, a checkout whose own listing or pointer fails, git pointed at another checkout by the
+ * environment, and a directory the walk cannot list. Those last five matter most: a
  * documentation check that cannot read what it is checking must fail rather than report a
- * tree with nothing to check.
+ * tree with nothing to check, and its repair must name the subsystem that actually failed.
  *
  * Each case runs against a disposable copy of the checkout's `bin/`, `lib/`, the script and
  * its markdown, because the check derives the tree it reads from its own location.
@@ -147,14 +148,65 @@ test('a git that cannot answer at all fails instead of walking a tree it may hav
   assert.doesNotMatch(result.stdout, /docs-check: ok/);
 });
 
+test('a checkout whose own pointer no longer resolves fails instead of reporting clean', (t) => {
+  const dir = tree(t, { 'docs/README.md': '# Docs\n' });
+  writtenCliDoc(dir);
+  // The pointer is this checkout's own evidence and it is still there, so git reporting no
+  // repository beside it is this checkout failing to answer, not an unpacked tree.
+  rmSync(join(dir, '.git'), { recursive: true, force: true });
+  writeFileSync(join(dir, '.git'), `gitdir: ${join(dir, 'no-such-gitdir')}\n`);
+  const result = docsCheck(dir);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /docs-check: could not list the markdown files \([\s\S]+\); fix the git failure and rerun/);
+  assert.doesNotMatch(result.stdout, /docs-check: ok/);
+});
+
+test('git pointed at another checkout by the environment fails instead of reporting clean', (t) => {
+  const dir = tree(t, { 'docs/README.md': '# Docs\n' });
+  writtenCliDoc(dir);
+  const other = tree(t, { 'docs/README.md': '# Other\n' });
+  // Each of these changes what git enumerates, so a check that trusted the answer would be
+  // vouching for a scope it never read.
+  for (const [name, value] of [
+    ['GIT_DIR', join(other, '.git')],
+    ['GIT_INDEX_FILE', join(other, '.git', 'index')],
+    ['GIT_WORK_TREE', other],
+  ]) {
+    const result = docsCheck(dir, [], { [name]: value });
+    assert.equal(result.status, 1, `${name} was trusted`);
+    assert.match(result.stderr, new RegExp(`docs-check: could not list the markdown files \\(git answers for another checkout while ${name} is set\\); unset ${name} and rerun`));
+    assert.doesNotMatch(result.stdout, /docs-check: ok/);
+  }
+});
+
+test('a directory the walk cannot read is named with its own repair, not git', (t) => {
+  const dir = tree(t, { 'docs/README.md': '# Docs\n' }, { git: false });
+  writtenCliDoc(dir);
+  if (cannotWithholdReads(t)) return;
+  const unreadable = join(dir, 'docs', 'unreadable');
+  mkdirSync(unreadable, { recursive: true });
+  chmodSync(unreadable, 0o000);
+  let result;
+  try {
+    result = docsCheck(dir);
+  } finally {
+    // Restored before the tree's own cleanup: a directory that cannot be listed also cannot
+    // be removed.
+    chmodSync(unreadable, 0o700);
+  }
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /docs\/unreadable cannot be listed \(.+\); restore it or fix its permissions and rerun/);
+  assert.doesNotMatch(result.stderr, /fix the git failure/);
+  assert.doesNotMatch(result.stdout, /docs-check: ok/);
+});
+
 test('a checkout that cannot list its own files fails instead of checking the few it can walk', (t) => {
   const dir = tree(t, { 'docs/README.md': '# Docs\n' });
   writtenCliDoc(dir);
   // An index git refuses to parse still leaves the tree "inside a work tree", which is the
   // state that must not fall back to the walk: the listing broke, not the checkout.
-  const index = join(dir, 'unreadable-index');
-  writeFileSync(index, 'not an index\n');
-  const result = docsCheck(dir, [], { GIT_INDEX_FILE: index });
+  writeFileSync(join(dir, '.git', 'index'), 'not an index\n');
+  const result = docsCheck(dir);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /docs-check: could not list the markdown files \([\s\S]+\); fix the git failure and rerun/);
   assert.doesNotMatch(result.stdout, /docs-check: ok/);
