@@ -11,7 +11,7 @@
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -43,6 +43,68 @@ function gitIn(cwd, args, env = {}) {
   return result.stdout.trim();
 }
 
+const IDENTITY = {
+  GIT_AUTHOR_NAME: 'Selftest',
+  GIT_AUTHOR_EMAIL: 'selftest@example.invalid',
+  GIT_COMMITTER_NAME: 'Selftest',
+  GIT_COMMITTER_EMAIL: 'selftest@example.invalid',
+};
+
+/** The command under test, copied into a fixture so it reads the file being edited. */
+function installScript(dir) {
+  mkdirSync(join(dir, 'scripts'), { recursive: true });
+  cpSync(SCRIPT, join(dir, 'scripts', 'verify.mjs'));
+}
+
+/**
+ * A single-branch clone: the only remote ref it fetches is the branch it was made from, so
+ * `origin/HEAD` points at the checkout's own head and no base branch sits behind it. The tip is
+ * an unsigned commit, so a range that read it would name it.
+ */
+function singleBranchClone(t) {
+  const source = mkdtempSync(join(tmpdir(), 'flowtrace-verify-single-source-'));
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-single-'));
+  t.after(() => rmSync(source, { recursive: true, force: true }));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  gitIn(tmpdir(), ['clone', '--no-hardlinks', '--local', REPO_ROOT, source]);
+  const tip = gitIn(source, ['rev-parse', 'HEAD']);
+  const unsigned = gitIn(source, ['commit-tree', `${tip}^{tree}`, '-p', tip, '-m', 'test: an unsigned commit'], IDENTITY);
+  gitIn(source, ['symbolic-ref', 'HEAD', 'refs/heads/selftest-single']);
+  gitIn(source, ['update-ref', 'refs/heads/selftest-single', unsigned]);
+  gitIn(tmpdir(), ['clone', '--single-branch', '--branch', 'selftest-single', '--no-hardlinks', '--local', source, dir]);
+  installScript(dir);
+  return { dir, unsigned };
+}
+
+/** A clone checked out on `main`, standing on `origin/main`: no base sits behind its head. */
+function cloneOfMain(t) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-main-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  gitIn(tmpdir(), ['clone', '--single-branch', '--branch', 'main', '--no-hardlinks', '--local', REPO_ROOT, dir]);
+  installScript(dir);
+  return dir;
+}
+
+/** A checkout with no remote and no base branch: nothing to compare this head against. */
+function checkoutWithNoBase(t) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-baseless-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  gitIn(dir, ['init', '-q']);
+  gitIn(dir, ['symbolic-ref', 'HEAD', 'refs/heads/work']);
+  writeFileSync(join(dir, 'README.md'), 'a checkout with no base branch\n');
+  gitIn(dir, ['add', 'README.md']);
+  gitIn(dir, ['commit', '-q', '-m', 'docs: start a checkout with no base branch'], IDENTITY);
+  installScript(dir);
+  return dir;
+}
+
+/** The command run inside a fixture checkout, with its own output. */
+function verifyIn(dir, args) {
+  const result = spawnSync(process.execPath, [join(dir, 'scripts', 'verify.mjs'), ...args], { cwd: dir, encoding: 'utf8' });
+  if (result.error) throw result.error;
+  return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
+}
+
 /**
  * A disposable clone whose default base resolves to its own branch, with an unsigned commit at
  * that branch's tip and a base one commit behind. A clone records the branch it was made from
@@ -54,15 +116,9 @@ function clonePointingAtItself(t) {
   const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-clone-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   gitIn(tmpdir(), ['clone', '--no-hardlinks', '--local', REPO_ROOT, dir]);
-  cpSync(SCRIPT, join(dir, 'scripts', 'verify.mjs'));
+  installScript(dir);
   const tip = gitIn(dir, ['rev-parse', 'HEAD']);
-  const identity = {
-    GIT_AUTHOR_NAME: 'Selftest',
-    GIT_AUTHOR_EMAIL: 'selftest@example.invalid',
-    GIT_COMMITTER_NAME: 'Selftest',
-    GIT_COMMITTER_EMAIL: 'selftest@example.invalid',
-  };
-  const unsigned = gitIn(dir, ['commit-tree', `${tip}^{tree}`, '-p', tip, '-m', 'test: an unsigned commit'], identity);
+  const unsigned = gitIn(dir, ['commit-tree', `${tip}^{tree}`, '-p', tip, '-m', 'test: an unsigned commit'], IDENTITY);
   gitIn(dir, ['symbolic-ref', 'HEAD', 'refs/heads/selftest-clone']);
   gitIn(dir, ['update-ref', 'refs/heads/selftest-clone', unsigned]);
   gitIn(dir, ['update-ref', 'refs/remotes/origin/selftest-clone', unsigned]);
@@ -166,10 +222,9 @@ test('the default comparison passes over a base that resolves to this checkout o
   assert.deepEqual(pickRange(head, ['origin/HEAD', 'origin/main', 'main'], resolve), {
     base: 'origin/main',
     range: `${main}..HEAD`,
-    behind: true,
   });
   const selfOnly = pickRange(head, ['origin/HEAD', 'origin/main'], (base) => (base === 'origin/HEAD' ? head : null));
-  assert.deepEqual(selfOnly, { base: 'origin/HEAD', range: `${head}..HEAD`, behind: false });
+  assert.equal(selfOnly, null, 'a base at this checkout own head leaves no range to read');
   assert.equal(pickRange(head, ['origin/HEAD'], () => null), null);
   assert.equal(pickRange(null, ['origin/HEAD'], () => head), null);
 });
@@ -186,6 +241,44 @@ test('a caller range that is a git option is refused rather than read as a range
   assert.equal(result.status, 1);
   assert.match(result.stderr, /--all names a git option, not a range of commits/);
   assert.match(result.stderr, /repair: pass the commits to read/);
+});
+
+test('verify AC-8: a default range that reads no commit fails both commit stages and names the flag', (t) => {
+  const { dir, unsigned } = singleBranchClone(t);
+  assert.equal(gitIn(dir, ['rev-parse', 'HEAD']), unsigned, 'the fixture head is the unsigned tip');
+  for (const stage of ['public-text', 'commit-signoff']) {
+    const result = verifyIn(dir, ['--only', stage]);
+    assert.equal(result.status, 1, `${stage} must not read as a clean scan: ${result.stdout}${result.stderr}`);
+    assert.match(result.stderr, new RegExp(`^verify: FAILED at ${stage} `, 'm'));
+    assert.match(result.stderr, /tried origin\/HEAD, origin\/main, main/);
+    assert.match(result.stderr, /--commit-range/);
+  }
+});
+
+test('verify AC-8: a checkout standing on its base branch reads no commit and fails closed', (t) => {
+  const dir = cloneOfMain(t);
+  const result = verifyIn(dir, ['--only', 'commit-signoff']);
+  assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
+  assert.match(result.stderr, /^verify: FAILED at commit-signoff /m);
+  assert.match(result.stderr, /tried origin\/HEAD, origin\/main, main/);
+});
+
+test('verify AC-8: a checkout with no base branch at all reads no commit and fails closed', (t) => {
+  const dir = checkoutWithNoBase(t);
+  const result = verifyIn(dir, ['--only', 'public-text']);
+  assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
+  assert.match(result.stderr, /^verify: FAILED at public-text /m);
+  assert.match(result.stderr, /tried origin\/HEAD, origin\/main, main/);
+  assert.match(result.stderr, /--commit-range/);
+});
+
+test('verify AC-5: a single-branch clone with an unsigned tip never passes the commit stage', (t) => {
+  const { dir, unsigned } = singleBranchClone(t);
+  const defaulted = verifyIn(dir, ['--only', 'commit-signoff']);
+  assert.equal(defaulted.status, 1, 'a self-pointing default base must not vouch for the tip');
+  const named = verifyIn(dir, ['--only', 'commit-signoff', '--commit-range', 'HEAD~1..HEAD']);
+  assert.equal(named.status, 1);
+  assert.match(named.stderr, new RegExp(`${unsigned.slice(0, 12)}: missing Signed-off-by trailer`));
 });
 
 test('a clone whose default base is its own branch still reads the commits under review', (t) => {

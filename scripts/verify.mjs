@@ -17,10 +17,10 @@
  * under review; without one, the range runs from the first base branch this checkout is
  * genuinely ahead of to HEAD. A base that resolves to HEAD is passed over while a candidate
  * behind it exists, because a clone records the branch it was made from in `origin/HEAD` and a
- * comparison against that branch's own tip reads no commit. A checkout standing on its base is
- * ahead of none, so it has nothing under review and the stages say which base they compared
- * against; a checkout with no base branch fails naming the flag that supplies the range, rather
- * than reporting commits it never read.
+ * comparison against that branch's own tip reads no commit. A default range that reads no
+ * commit -- no base resolves, or every base it resolves sits at HEAD -- is refused, naming the
+ * bases it tried and the flag that supplies the range, rather than reporting commits it never
+ * read.
  *
  * A linked worktree is a first-class checkout: every stage reads tracked content through
  * git or an explicit exclusion, so the `.git` pointer file a worktree carries is never
@@ -363,20 +363,19 @@ function machinePathsStage() {
  * The comparison the default reads from. `origin/HEAD` records the branch a clone was made from,
  * so a clone of a feature branch points it at that branch's own tip: comparing against it reads
  * no commit while looking exactly like a clean scan. A candidate that resolves to HEAD is
- * therefore passed over while one this checkout is genuinely ahead of exists. When none is
- * ahead, the first candidate that resolves is the answer and `behind` says the comparison is
- * empty, so the stages can name that base instead of reporting a clean scan.
+ * therefore passed over while one this checkout is genuinely ahead of exists. When no candidate
+ * is ahead, the comparison would read nothing, so there is no range and `null` says so rather
+ * than naming the empty one: a stage that vouched for zero commit messages would vouch for a
+ * tree it never inspected.
  */
 export function pickRange(head, candidates, resolve) {
   if (head === null) return null;
-  let first = null;
   for (const base of candidates) {
     const mergeBase = resolve(base);
-    if (mergeBase === null) continue;
-    if (first === null) first = base;
-    if (mergeBase !== head) return { base, range: `${mergeBase}..HEAD`, behind: true };
+    if (mergeBase === null || mergeBase === head) continue;
+    return { base, range: `${mergeBase}..HEAD` };
   }
-  return first === null ? null : { base: first, range: `${head}..HEAD`, behind: false };
+  return null;
 }
 
 function defaultRange() {
@@ -392,13 +391,13 @@ function resolvedRange(explicit) {
       repair: 'pass the commits to read: --commit-range origin/main..HEAD',
     });
   }
-  const picked = explicit ? { range: explicit, base: '', behind: true } : defaultRange();
+  const picked = explicit ? { range: explicit } : defaultRange();
   if (picked === null) {
     throw new StageFailure({
       command: 'git merge-base <base> HEAD',
       status: null,
-      output: `no base branch resolved (tried ${BASE_BRANCHES.join(', ')})`,
-      repair: 'fetch the base branch, or pass the range to read: node scripts/verify.mjs --commit-range <base>..HEAD',
+      output: `no commit to read: no base branch this checkout is ahead of (tried ${BASE_BRANCHES.join(', ')})`,
+      repair: 'pass the commits to read: node scripts/verify.mjs --commit-range <base>..HEAD',
     });
   }
   const { range } = picked;
@@ -412,16 +411,19 @@ function resolvedRange(explicit) {
     });
   }
   const commits = Number(count);
-  if (commits === 0 && explicit) {
+  if (commits === 0) {
     throw new StageFailure({
       command: shell('git', ['rev-list', '--count', range]),
       status: null,
-      output: `${range} names no commit, so the stages that read commits would vouch for none`,
-      repair: 'name the commits to read, for example --commit-range origin/main..HEAD',
+      output: explicit
+        ? `${range} names no commit, so the stages that read commits would vouch for none`
+        : `${range} names no commit: no base branch this checkout is ahead of (tried ${BASE_BRANCHES.join(', ')})`,
+      repair: explicit
+        ? 'name the commits to read, for example --commit-range origin/main..HEAD'
+        : 'pass the commits to read: node scripts/verify.mjs --commit-range <base>..HEAD',
     });
   }
-  const note = picked.behind ? '' : ` (no commit is ahead of ${picked.base})`;
-  return { range, commits, note };
+  return { range, commits };
 }
 
 /**
@@ -462,7 +464,7 @@ function readableTree() {
 }
 
 function publicTextStage(context) {
-  const { range, commits, note } = resolvedRange(context.range);
+  const { range, commits } = resolvedRange(context.range);
   const tracked = readableTree();
   const steps = [
     { label: 'the scanner agrees with itself', args: ['--selfcheck'] },
@@ -483,12 +485,12 @@ function publicTextStage(context) {
     }
   }
   return {
-    line: `public-text ok — ${tracked} tracked files and ${commits} commit message${commits === 1 ? '' : 's'} clean${note}`,
+    line: `public-text ok — ${tracked} tracked files and ${commits} commit message${commits === 1 ? '' : 's'} clean`,
   };
 }
 
 function commitSignoffStage(context) {
-  const { range, commits, note } = resolvedRange(context.range);
+  const { range, commits } = resolvedRange(context.range);
   const result = run(PYTHON, [HYGIENE, '--require-signoff', range]);
   if (result.spawnError || result.status !== 0) {
     throw new StageFailure({
@@ -498,7 +500,7 @@ function commitSignoffStage(context) {
       repair: 'each commit needs its Developer Certificate of Origin trailer: git commit --amend -s, or the rebase CONTRIBUTING.md gives for several commits',
     });
   }
-  return { line: `commit-signoff ok — ${commits} commit${commits === 1 ? '' : 's'} in ${range} carry Signed-off-by${note}` };
+  return { line: `commit-signoff ok — ${commits} commit${commits === 1 ? '' : 's'} in ${range} carry Signed-off-by` };
 }
 
 function docsStage() {
