@@ -105,9 +105,13 @@ the suite.
 | `package` | `npm pack --dry-run` describes a tarball carrying what a reader needs and nothing that belongs to the checkout |
 
 The commit stages read the commits under review: CI passes the pull request's range, and a
-local run reads the commits on the current branch. Outside a checkout, or with no base branch
-to compare against, they fail naming `--commit-range` rather than reporting commits they
-never read.
+local run reads what the current branch adds on top of the first base branch it is genuinely
+ahead of (`origin/HEAD`, `origin/main`, `main`). A clone records the branch it was made from as
+`origin/HEAD`, so a base that resolves to this checkout's own head is passed over in favour of
+one behind it — comparing against the branch's own tip would read no commit at all. A checkout
+standing on its base adds nothing, and the stage says which base it compared against. Outside a
+checkout, with no base branch to compare against, or with a `--commit-range` that names no
+commit, the stages fail naming `--commit-range` rather than reporting commits they never read.
 
 A release additionally builds and signs the single-file executables and the npm tarball; see
 [RELEASING.md](RELEASING.md).

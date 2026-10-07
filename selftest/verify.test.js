@@ -20,6 +20,7 @@ import {
   PACKAGE_REQUIRED_FILES,
   STAGES,
   packageProblems,
+  pickRange,
   reportFailure,
   stageFailure,
   suiteProblems,
@@ -34,6 +35,40 @@ function verify(args) {
   const result = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
   if (result.error) throw result.error;
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
+}
+
+function gitIn(cwd, args, env = {}) {
+  const result = spawnSync('git', args, { cwd, encoding: 'utf8', env: { ...process.env, ...env } });
+  if (result.status !== 0) throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`);
+  return result.stdout.trim();
+}
+
+/**
+ * A disposable clone whose default base resolves to its own branch, with an unsigned commit at
+ * that branch's tip and a base one commit behind. A clone records the branch it was made from
+ * as `origin/HEAD`, so a clone taken after that commit existed has exactly these refs. The
+ * command under test is copied in, so the fixture reads the file being edited rather than the
+ * one in the last commit.
+ */
+function clonePointingAtItself(t) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-clone-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  gitIn(tmpdir(), ['clone', '--no-hardlinks', '--local', REPO_ROOT, dir]);
+  cpSync(SCRIPT, join(dir, 'scripts', 'verify.mjs'));
+  const tip = gitIn(dir, ['rev-parse', 'HEAD']);
+  const identity = {
+    GIT_AUTHOR_NAME: 'Selftest',
+    GIT_AUTHOR_EMAIL: 'selftest@example.invalid',
+    GIT_COMMITTER_NAME: 'Selftest',
+    GIT_COMMITTER_EMAIL: 'selftest@example.invalid',
+  };
+  const unsigned = gitIn(dir, ['commit-tree', `${tip}^{tree}`, '-p', tip, '-m', 'test: an unsigned commit'], identity);
+  gitIn(dir, ['symbolic-ref', 'HEAD', 'refs/heads/selftest-clone']);
+  gitIn(dir, ['update-ref', 'refs/heads/selftest-clone', unsigned]);
+  gitIn(dir, ['update-ref', 'refs/remotes/origin/selftest-clone', unsigned]);
+  gitIn(dir, ['symbolic-ref', 'refs/remotes/origin/HEAD', 'refs/remotes/origin/selftest-clone']);
+  gitIn(dir, ['update-ref', 'refs/remotes/origin/main', tip]);
+  return { dir, unsigned };
 }
 
 /** The branch patterns one workflow event filters on, read out of the workflow's `on:` block. */
@@ -122,6 +157,46 @@ test('a revision range git cannot read fails the stage that reads commits, with 
   assert.match(result.stderr, /verify: FAILED at public-text/);
   assert.match(result.stderr, /no-such-base\.\.HEAD is not a revision range git can read/);
   assert.match(result.stderr, /pass a range that resolves, for example --commit-range origin\/main\.\.HEAD/);
+});
+
+test('the default comparison passes over a base that resolves to this checkout own head', () => {
+  const head = 'a'.repeat(40);
+  const main = 'b'.repeat(40);
+  const resolve = (base) => ({ 'origin/HEAD': head, 'origin/main': main, main })[base] ?? null;
+  assert.deepEqual(pickRange(head, ['origin/HEAD', 'origin/main', 'main'], resolve), {
+    base: 'origin/main',
+    range: `${main}..HEAD`,
+    behind: true,
+  });
+  const selfOnly = pickRange(head, ['origin/HEAD', 'origin/main'], (base) => (base === 'origin/HEAD' ? head : null));
+  assert.deepEqual(selfOnly, { base: 'origin/HEAD', range: `${head}..HEAD`, behind: false });
+  assert.equal(pickRange(head, ['origin/HEAD'], () => null), null);
+  assert.equal(pickRange(null, ['origin/HEAD'], () => head), null);
+});
+
+test('a caller range that names no commit is refused rather than read as a clean scan', () => {
+  const result = verify(['--only', 'commit-signoff', '--commit-range', 'HEAD..HEAD']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /HEAD\.\.HEAD names no commit/);
+  assert.match(result.stderr, /repair: name the commits to read/);
+});
+
+test('a caller range that is a git option is refused rather than read as a range', () => {
+  const result = verify(['--only', 'commit-signoff', '--commit-range', '--all']);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /--all names a git option, not a range of commits/);
+  assert.match(result.stderr, /repair: pass the commits to read/);
+});
+
+test('a clone whose default base is its own branch still reads the commits under review', (t) => {
+  const { dir, unsigned } = clonePointingAtItself(t);
+  const result = spawnSync(process.execPath, [join(dir, 'scripts', 'verify.mjs'), '--only', 'commit-signoff'], {
+    cwd: dir,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 1, `an unsigned commit must not read as clean: ${result.stdout}${result.stderr}`);
+  assert.match(result.stderr, /verify: FAILED at commit-signoff/);
+  assert.match(result.stderr, new RegExp(`${unsigned.slice(0, 12)}: missing Signed-off-by trailer`));
 });
 
 test('the inventory CI runs adds no checklist of its own beside the command', () => {

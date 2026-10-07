@@ -33,14 +33,18 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       # The range whose commits the canonical command reads. A pull request is checked
-      # against its base; a push against the commits it added, falling back to the pushed
-      # head alone when the branch has no earlier tip to compare with.
+      # against its base; a push against the commits it added. A branch with no earlier tip
+      # names its single commit, because a range that names no commit is refused, not read.
       - name: Resolve the commit range under review
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
           elif [ "${{ github.event.before }}" = "0000000000000000000000000000000000000000" ]; then
-            range="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)..$(git rev-parse HEAD)"
+            if git rev-parse --verify --quiet HEAD~1 >/dev/null; then
+              range="HEAD~1..HEAD"
+            else
+              range="HEAD"
+            fi
           else
             range="${{ github.event.before }}..${{ github.event.after }}"
           fi
