@@ -21,7 +21,7 @@ import { REPO_ROOT } from './helpers.js';
 const SCRIPT = join(REPO_ROOT, 'scripts', 'docs-check.mjs');
 
 /** A disposable checkout carrying the CLI, the check and the given files. */
-function tree(t, files) {
+function tree(t, files, { git = true } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'flowtrace-docs-check-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   mkdirSync(join(dir, 'scripts'));
@@ -35,8 +35,16 @@ function tree(t, files) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), text);
   }
-  spawnSync('git', ['init', '-q'], { cwd: dir, encoding: 'utf8' });
+  if (git) spawnSync('git', ['init', '-q'], { cwd: dir, encoding: 'utf8' });
   return dir;
+}
+
+/** A `git` earlier on PATH than the real one, standing in for a git that cannot answer. */
+function brokenGit(t, body) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-git-shim-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  writeFileSync(join(dir, 'git'), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
+  return { PATH: `${dir}:${process.env.PATH}` };
 }
 
 function docsCheck(dir, args = [], env = {}) {
@@ -116,6 +124,27 @@ test('a markdown file that cannot be read is reported by name', (t) => {
   const result = docsCheck(dir);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /docs\/README\.md: cannot be read \(.+\); restore it or fix its permissions/);
+});
+
+test('a tree outside any git checkout is walked, and its links are checked', (t) => {
+  const dir = tree(t, { 'docs/README.md': '# Docs\n\nSee [the guide](guide.md).\n', 'docs/guide.md': '# The Guide\n' }, { git: false });
+  writtenCliDoc(dir);
+  const result = docsCheck(dir);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, 'docs-check: ok\n');
+});
+
+test('a git that cannot answer at all fails instead of walking a tree it may have failed to list', (t) => {
+  if (process.platform === 'win32') {
+    t.skip('a shell shim needs a POSIX system');
+    return;
+  }
+  const dir = tree(t, { 'docs/README.md': '# Docs\n' });
+  writtenCliDoc(dir);
+  const result = docsCheck(dir, [], brokenGit(t, 'exit 1'));
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /docs-check: could not list the markdown files \([\s\S]+\); fix the git failure and rerun/);
+  assert.doesNotMatch(result.stdout, /docs-check: ok/);
 });
 
 test('a checkout that cannot list its own files fails instead of checking the few it can walk', (t) => {

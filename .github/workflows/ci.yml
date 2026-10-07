@@ -1,10 +1,12 @@
 name: CI
 
+# A release branch takes integration pull requests of its own, so the gate runs there too:
+# otherwise a change merged into one arrives with no canonical check to require.
 on:
   push:
-    branches: [main]
+    branches: [main, 'release/*']
   pull_request:
-    branches: [main]
+    branches: [main, 'release/*']
 
 permissions:
   contents: read

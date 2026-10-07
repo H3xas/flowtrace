@@ -9,9 +9,10 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
 
+import { exampleProblems } from '../scripts/config-check.mjs';
 import { REPO_ROOT } from './helpers.js';
 
 const CHECK = join(REPO_ROOT, 'scripts', 'config-check.mjs');
@@ -73,6 +74,32 @@ test('an example that is not JSON is reported rather than compared', (t) => {
   const result = configCheck(path);
   assert.equal(result.status, 1);
   assert.match(result.stderr, /is not valid JSON \(.+\); fix the syntax/);
+});
+
+test('a document that is not there is named once, not once per key', (t) => {
+  const shipped = JSON.parse(readFileSync(EXAMPLE, 'utf8'));
+  const path = example(t, JSON.stringify(shipped));
+  const problems = exampleProblems({ examplePath: path, documentPath: join(dirname(path), 'configuration.md') });
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /configuration\.md is missing; restore it/);
+});
+
+test('a document that cannot be read is reported by name', (t) => {
+  if (process.platform === 'win32' || typeof process.getuid !== 'function' || process.getuid() === 0) {
+    t.skip('a permission failure needs a non-root account on a POSIX system');
+    return;
+  }
+  const shipped = JSON.parse(readFileSync(EXAMPLE, 'utf8'));
+  const path = example(t, JSON.stringify(shipped));
+  const document = join(dirname(path), 'configuration.md');
+  writeFileSync(document, '# Configuration\n');
+  chmodSync(document, 0o000);
+  t.after(() => {
+    if (existsSync(document)) chmodSync(document, 0o600);
+  });
+  const problems = exampleProblems({ examplePath: path, documentPath: document });
+  assert.equal(problems.length, 1);
+  assert.match(problems[0], /configuration\.md cannot be read \(.+\); restore it or fix its permissions/);
 });
 
 test('an example that cannot be read is reported by name', (t) => {

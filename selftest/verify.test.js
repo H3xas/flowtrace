@@ -11,7 +11,8 @@
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
@@ -20,6 +21,7 @@ import {
   STAGES,
   packageProblems,
   reportFailure,
+  stageFailure,
   suiteProblems,
   tapNames,
   tapSummary,
@@ -32,6 +34,18 @@ function verify(args) {
   const result = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
   if (result.error) throw result.error;
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
+}
+
+/** The branch patterns one workflow event filters on, read out of the workflow's `on:` block. */
+function triggerBranches(workflow, event) {
+  const block = new RegExp(`^ {2}${event}:\\n((?: {4,}\\S.*\\n?)*)`, 'm').exec(workflow);
+  assert.ok(block, `${event} is not a trigger of this workflow`);
+  const filter = /branches:\s*\[([^\]]*)\]/.exec(block[1]);
+  assert.ok(filter, `${event} carries no branch filter`);
+  return filter[1]
+    .split(',')
+    .map((entry) => entry.trim().replace(/^['"]|['"]$/g, ''))
+    .filter(Boolean);
 }
 
 test('a test file the suite list omits is named, with the list as the repair', () => {
@@ -122,6 +136,67 @@ test('the inventory CI runs adds no checklist of its own beside the command', ()
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('#'));
   assert.deepEqual(commands, ['run: npm run verify']);
+});
+
+test('the workflow runs for every branch a change is integrated through', () => {
+  const workflow = readFileSync(join(REPO_ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+  const contributing = readFileSync(join(REPO_ROOT, 'CONTRIBUTING.md'), 'utf8');
+  for (const event of ['push', 'pull_request']) {
+    const patterns = triggerBranches(workflow, event);
+    assert.ok(patterns.includes('main'), `${event} must cover main`);
+    assert.ok(
+      patterns.some((pattern) => pattern.startsWith('release/')),
+      `${event} must cover the release branches a change is integrated into`,
+    );
+    for (const pattern of patterns) {
+      assert.ok(contributing.includes(pattern), `CONTRIBUTING.md never says CI runs for ${pattern}`);
+    }
+  }
+});
+
+test('a stage whose own input is missing is named rather than left as a stack trace', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-input-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  mkdirSync(join(dir, 'scripts'));
+  cpSync(SCRIPT, join(dir, 'scripts', 'verify.mjs'));
+  const result = spawnSync(process.execPath, [join(dir, 'scripts', 'verify.mjs'), '--only', 'suite'], {
+    cwd: dir,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /^verify: FAILED at suite — the public contract suite$/m);
+  assert.match(result.stderr, /package\.json/);
+  assert.match(result.stderr, /^ {2}repair: .+$/m);
+  assert.doesNotMatch(result.stderr, /^\s+at .+:\d+:\d+$/m, 'a stage report is not a stack trace');
+});
+
+test('the command still runs when the path to it is a symlinked spelling of the same file', (t) => {
+  if (process.platform === 'win32') {
+    t.skip('creating a symbolic link needs a POSIX system or elevated rights');
+    return;
+  }
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-link-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const link = `${dir}-link`;
+  symlinkSync(dir, link);
+  t.after(() => rmSync(link, { force: true }));
+  mkdirSync(join(dir, 'scripts'));
+  cpSync(SCRIPT, join(dir, 'scripts', 'verify.mjs'));
+  const result = spawnSync(process.execPath, [join(link, 'scripts', 'verify.mjs'), '--only', 'suite'], {
+    cwd: link,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 1, `a check that never ran must not read as a pass: ${result.stdout}${result.stderr}`);
+  assert.match(result.stderr, /^verify: FAILED at suite/m);
+});
+
+test('an unexpected failure inside a stage is still reported as that stage', () => {
+  const stage = { id: 'suite', title: 'the public contract suite' };
+  const report = reportFailure(stage, stageFailure(stage, new TypeError('boom')), []);
+  assert.match(report, /^verify: FAILED at suite — the public contract suite$/m);
+  assert.match(report, /^ {2}exit: did not run$/m);
+  assert.match(report, /^ {4}\| boom$/m);
+  assert.match(report, /^ {2}repair: .+$/m);
 });
 
 test('the contributor document names every stage the command runs', () => {

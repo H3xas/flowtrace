@@ -14,6 +14,7 @@
  * No dependencies. Markdown files come from `git ls-files` (tracked, plus untracked files
  * .gitignore does not exclude) so a gitignored local note is never checked; outside a git
  * checkout the tree is walked instead, skipping the directories .gitignore already excludes.
+ * A git that cannot answer whether this is a checkout fails the run rather than choose one.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
@@ -49,22 +50,26 @@ function renderCliDoc() {
 }
 
 /**
- * True when the tree being checked sits inside a git checkout. The distinction decides
- * whether a failed `git ls-files` is an unpacked tarball, where the walk below is the
- * documented fallback, or a checkout whose enumeration broke, where falling back would
- * quietly check a different and possibly smaller set of files.
+ * Where this tree stands with git: `inside`, `outside`, or a thrown error. The distinction
+ * decides whether a failed `git ls-files` is an unpacked source tree, where the walk below is
+ * the documented fallback, or a checkout whose enumeration broke, where falling back would
+ * quietly check a different and possibly smaller set of files. Only git itself reporting no
+ * repository here means `outside`; every other way it can fail is an inspection error.
  */
-function inGitCheckout() {
+function gitCheckoutState() {
   try {
-    return execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() === 'true';
-  } catch {
-    return false;
+    const answer = execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    return answer.trim() === 'true' ? 'inside' : 'outside';
+  } catch (error) {
+    const stderr = String(error.stderr ?? '').trim();
+    if (typeof error.status === 'number' && /not a git repository/i.test(stderr)) return 'outside';
+    throw new Error(stderr.split('\n')[0] || error.message);
   }
 }
 
-/** Markdown files to check: tracked ones when git answers, a filtered walk otherwise. */
+/** Markdown files to check: tracked ones when git answers, a filtered walk outside a checkout. */
 function markdownFiles() {
-  if (inGitCheckout()) {
+  if (gitCheckoutState() === 'inside') {
     const out = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '*.md'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
     return out.split('\0').filter(Boolean).map((file) => join(ROOT, file));
   }
@@ -174,8 +179,8 @@ function main() {
   try {
     files = markdownFiles();
   } catch (error) {
-    // A checkout whose own file listing fails would otherwise be reported as a tree with
-    // nothing to link-check, which is a pass for a check that never ran.
+    // A checkout whose own file listing — or whose git — broke would otherwise be answered
+    // by the walk, a pass for a check that read a different and possibly smaller tree.
     console.error(`docs-check: could not list the markdown files (${error.message}); fix the git failure and rerun`);
     process.exit(1);
   }

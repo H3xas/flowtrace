@@ -87,9 +87,10 @@ maintainer looks at it. See [selftest/README.md](selftest/README.md).
 
 ## What CI verifies
 
-Every push and pull request against `main` runs `npm run verify` on Node 20, 22 and 24: that
-command and no step of its own. This list and the workflow therefore cannot drift apart —
-adding a check means adding a stage, and a stage no one documents fails the suite.
+Every push and pull request against `main` or a `release/*` branch runs `npm run verify` on
+Node 20, 22 and 24: that command and no step of its own. This list and the workflow therefore
+cannot drift apart — adding a check means adding a stage, and a stage no one documents fails
+the suite.
 
 | stage | what it proves |
 |---|---|

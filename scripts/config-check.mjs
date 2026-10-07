@@ -17,7 +17,7 @@
  *
  * Zero dependencies: Node built-ins and the repository's own loader.
  */
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, realpathSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,6 +43,22 @@ export function exampleKeys(example) {
  */
 export function undocumentedKeys(example, document) {
   return exampleKeys(example).filter((key) => !document.includes(`\`${key}\``));
+}
+
+/**
+ * The document the example's keys must be named in, read once. A document that is not there,
+ * or that cannot be read, is a problem of its own rather than an empty one: reporting it as a
+ * document that mentions no key would turn one unreadable file into one problem per key.
+ */
+function readDocument(path) {
+  if (!existsSync(path)) {
+    return { text: '', problem: `${relative(ROOT, path)} is missing; restore it or the example's keys have nowhere to be documented` };
+  }
+  try {
+    return { text: readFileSync(path, 'utf8'), problem: '' };
+  } catch (error) {
+    return { text: '', problem: `${relative(ROOT, path)} cannot be read (${error.message}); restore it or fix its permissions` };
+  }
 }
 
 /** The shipped example reads as a repository path; anything else is named where it is. */
@@ -72,17 +88,20 @@ export function exampleProblems({ examplePath = DEFAULT_EXAMPLE, documentPath = 
     problems.push(`${shown} is not valid JSON (${error.message}); fix the syntax`);
     return problems;
   }
-  const document = existsSync(documentPath) ? readFileSync(documentPath, 'utf8') : '';
+  const document = readDocument(documentPath);
+  if (document.problem) problems.push(document.problem);
   try {
     validateConfig(raw, { baseDir: dirname(examplePath), file: shown });
   } catch (error) {
     problems.push(`${shown} is rejected by the loader: ${error.message}`);
   }
-  for (const key of undocumentedKeys(raw, document)) {
-    problems.push(
-      `${shown} sets "${key}" and ${relative(ROOT, documentPath)} never mentions it; ` +
-        'document the key or drop it from the example',
-    );
+  if (!document.problem) {
+    for (const key of undocumentedKeys(raw, document.text)) {
+      problems.push(
+        `${shown} sets "${key}" and ${relative(ROOT, documentPath)} never mentions it; ` +
+          'document the key or drop it from the example',
+      );
+    }
   }
   return problems;
 }
@@ -99,6 +118,24 @@ function main(argv) {
   return 0;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+/**
+ * Whether this file was invoked as the process's entry point, however the path to it was
+ * spelled. A checkout reached through a symlinked directory spells that path differently
+ * from the module's own resolved location, and a guard that compares the two spellings
+ * would check nothing and exit zero, which reads exactly like an accepted example.
+ */
+function invokedDirectly() {
+  if (!process.argv[1]) return false;
+  const physical = (path) => {
+    try {
+      return realpathSync(path);
+    } catch {
+      return path;
+    }
+  };
+  return physical(resolve(process.argv[1])) === physical(fileURLToPath(import.meta.url));
+}
+
+if (invokedDirectly()) {
   process.exit(main(process.argv.slice(2)));
 }

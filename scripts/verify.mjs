@@ -26,8 +26,8 @@
  * Zero dependencies: Node built-ins, and the same interpreter each repository script needs.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -123,6 +123,41 @@ function ok(step, repair) {
   return step;
 }
 
+/**
+ * What a stage reads for itself. An input that is missing, unreadable or not the shape the
+ * stage needs is that stage's own failure, named where it can be repaired: an error escaping
+ * from here would leave the run with a stack trace where a stage report belongs.
+ */
+function readInput(path, repair, encoding = 'utf8') {
+  try {
+    return readFileSync(path, encoding);
+  } catch (error) {
+    throw new StageFailure({ command: `read ${relative(ROOT, path)}`, status: null, output: error.message, repair });
+  }
+}
+
+function readJsonInput(path, repair) {
+  const text = readInput(path, repair);
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    throw new StageFailure({
+      command: `read ${relative(ROOT, path)}`,
+      status: null,
+      output: `${relative(ROOT, path)} is not valid JSON (${error.message})`,
+      repair,
+    });
+  }
+}
+
+function listDirectory(path, repair) {
+  try {
+    return readdirSync(path);
+  } catch (error) {
+    throw new StageFailure({ command: `list ${relative(ROOT, path)}`, status: null, output: error.message, repair });
+  }
+}
+
 function git(args) {
   const result = spawnSync('git', args, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   return result.status === 0 ? result.stdout.trim() : null;
@@ -169,11 +204,17 @@ export function tapNames(output, kind) {
 }
 
 function suiteStage() {
-  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+  const pkg = readJsonInput(
+    join(ROOT, 'package.json'),
+    'the suite is the file list in package.json; restore the file or the repository cannot state what its suite is',
+  );
   const listed = String(pkg.scripts?.test ?? '')
     .split(/\s+/)
     .filter((token) => token.endsWith('.test.js'));
-  const present = readdirSync(join(ROOT, 'selftest'))
+  const present = listDirectory(
+    join(ROOT, 'selftest'),
+    'the public suite lives in selftest/; restore the directory or the repository has no suite to run',
+  )
     .filter((name) => name.endsWith('.test.js'))
     .map((name) => `selftest/${name}`)
     .sort();
@@ -277,8 +318,9 @@ function workedExampleStage() {
   for (const step of EXAMPLE_STEPS) {
     if (step.compare) {
       const [first, second] = step.compare.map((path) => join(EXAMPLE, path));
-      const left = readFileSync(first);
-      const right = readFileSync(second);
+      const written = 'both exports are written by the steps above; rerun the worked example from its own directory';
+      const left = readInput(first, written, null);
+      const right = readInput(second, written, null);
       if (!left.equals(right)) {
         throw new StageFailure({
           command: `compare ${step.compare.join(' with ')}`,
@@ -548,6 +590,21 @@ function selectedStages(only) {
   return STAGES.filter((stage) => only.includes(stage.id));
 }
 
+/**
+ * A stage that stops for any reason other than a StageFailure still reports as that stage.
+ * Anything else would print a stack trace where the stage, its command and its repair go,
+ * and a reader could not tell which check stopped the run.
+ */
+export function stageFailure(stage, error) {
+  if (error instanceof StageFailure) return error;
+  return new StageFailure({
+    command: `node scripts/verify.mjs --only ${stage.id}`,
+    status: null,
+    output: error instanceof Error ? error.message : String(error),
+    repair: `nothing here shows ${stage.id} passed: rerun that stage alone and fix what it names`,
+  });
+}
+
 export function reportFailure(stage, failure, ran) {
   const lines = [`verify: FAILED at ${stage.id} — ${stage.title}`];
   lines.push(`  command: ${failure.command}`);
@@ -596,8 +653,7 @@ function main(argv) {
       console.log(`verify: ${result.line}`);
       ran.push(stage);
     } catch (error) {
-      if (!(error instanceof StageFailure)) throw error;
-      console.error(reportFailure(stage, error, ran));
+      console.error(reportFailure(stage, stageFailure(stage, error), ran));
       return 1;
     }
   }
@@ -609,7 +665,25 @@ function main(argv) {
   return 0;
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+/**
+ * Whether this file was invoked as the process's entry point, however the path to it was
+ * spelled. A checkout reached through a symlinked directory spells that path differently
+ * from the module's own resolved location, and a guard that compares the two spellings
+ * would run nothing and exit zero, which reads exactly like a passing run.
+ */
+function invokedDirectly() {
+  if (!process.argv[1]) return false;
+  const physical = (path) => {
+    try {
+      return realpathSync(path);
+    } catch {
+      return path;
+    }
+  };
+  return physical(resolve(process.argv[1])) === physical(fileURLToPath(import.meta.url));
+}
+
+if (invokedDirectly()) {
   process.exit(main(process.argv.slice(2)));
 }
 
