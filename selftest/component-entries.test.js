@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_ROOT, runCli } from './helpers.js';
@@ -341,6 +341,39 @@ test('two same-named components in different files write two pages', () => {
     });
     assert.notEqual(written[0], written[1], 'a page may not be overwritten by another file’s entry');
     assert.notEqual(readFileSync(written[0], 'utf8'), readFileSync(written[1], 'utf8'));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('two entries of a component declared under a deep path write two pages', () => {
+  const deep = `deep-${'d'.repeat(96)}`;
+  const { dir, config: variantConfig } = variant('deep-path', (root) => {
+    const target = join(root, 'web', 'src', 'zones', deep);
+    mkdirSync(target, { recursive: true });
+    cpSync(join(root, 'web', 'src', 'zones', 'notes', 'WatcherNotesPanel.tsx'), join(target, 'WatcherNotesPanel.tsx'));
+  });
+  try {
+    const scope = ['--from-component', 'WatcherNotesPanel', '--file', `zones/${deep}/`];
+    const narrowed = runCli(['span', ...scope, '--json', '--config', variantConfig]);
+    assert.equal(narrowed.status, 0, narrowed.stderr);
+    const effects = JSON.parse(narrowed.stdout).entries
+      .map((entry) => entry.identity)
+      .filter((identity) => identity.kind === 'effect');
+    assert.ok(effects.length >= 2, 'the deep declaration states both of its effects');
+    const written = effects.slice(0, 2).map((identity) => {
+      const run = runCli(['span', ...scope, '--entry', identity.id, '--config', variantConfig], { cwd: dir });
+      assert.equal(run.status, 0, run.stderr);
+      return { identity, target: run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim() };
+    });
+    assert.notEqual(
+      written[0].target,
+      written[1].target,
+      'a path deep enough to spend the name cap may not fold two entries onto one page',
+    );
+    for (const { identity, target } of written) {
+      assert.ok(readFileSync(target, 'utf8').includes(identity.id), `the page of ${identity.id} should state it`);
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

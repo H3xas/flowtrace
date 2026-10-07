@@ -228,8 +228,10 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   A mobile-kind name is refused with its reason and writes no page — this verb
   resolves the web chain only. --out defaults to
   <out>/span/component-<slug>.html, the slug naming the component, the file that declares
-  it and, under --entry, the selected entry's own site; --repo scopes which component the
-  name resolves to, never the routes behind it.
+  it and, under --entry, the selected entry's own site; a name longer than the
+  120-character cap ends in a digest of the whole name rather than losing that site, so
+  two selections never share a page; --repo scopes which component the name resolves to,
+  never the routes behind it.
 
   A name declared in more than one file is ambiguous: with no --file, the
   command exits non-zero and lists every candidate's declaring file so the reader can
