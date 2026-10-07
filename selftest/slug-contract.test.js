@@ -92,3 +92,21 @@ test('a keyed page takes the next free name rather than overwrite another key\'s
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('an empty page under a name is another run still writing it, not a page to replace', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-slug-'));
+  try {
+    writeFileSync(join(dir, 'component-panel.html'), '');
+    const page = `<html><head>${keyMeta('one')}</head></html>`;
+    assert.equal(writeKeyedPage(dir, 'component-panel', '.html', 'one', page), join(dir, 'component-panel-2.html'));
+    assert.equal(readFileSync(join(dir, 'component-panel.html'), 'utf8'), '');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a key that already reads like escaped text round-trips unchanged', () => {
+  for (const key of ['a &quot; b', 'a &amp;lt; b', 'line one\nline two']) {
+    assert.equal(pageKeyOf(`<head>${keyMeta(key)}</head>`), key);
+  }
+});
