@@ -538,7 +538,7 @@ test('Page routes C8: a computed array, a second prop hop and an unreadable path
   const dir = prepare(t);
   const computed = traceJson(dir, '/orchard/spare/shelf').document;
   assert.equal(computed.reason, 'unsupported-expression');
-  assert.ok(computed.frontier.some((entry) => entry.file === 'src/spare/SpareRoutes.tsx' && entry.line === 15 && entry.unsupported === 'route-array-expression'));
+  assert.ok(computed.frontier.some((entry) => entry.file === 'src/spare/SpareRoutes.tsx' && entry.line === 29 && entry.unsupported === 'route-array-expression'));
 
   const hop = traceJson(dir, '/orchard/double/gate').document;
   assert.equal(hop.reason, 'unsupported-expression');
@@ -547,6 +547,39 @@ test('Page routes C8: a computed array, a second prop hop and an unreadable path
   const unreadable = traceJson(dir, '/orchard/annex/annex-ledger').document;
   assert.equal(unreadable.reason, 'unsupported-expression');
   assert.ok(unreadable.frontier.some((entry) => entry.file === 'src/annex/AnnexRoutes.tsx' && entry.line === 15 && entry.unsupported === 'path-expression' && entry.pathText === 'annexSection'), 'the unreadable path is named, not guessed');
+});
+
+test('Page routes C8: a literal that is only part of a larger expression declares no route', (t) => {
+  const dir = prepare(t);
+  const facts = routeFacts(dir).filter((fact) => fact.owner === 'SpareRoutes');
+  for (const path of ['/ledge', '/joist', '/post', '/sill']) {
+    assert.equal(
+      facts.filter((fact) => fact.type === 'page_route' && fact.path === path).length,
+      0,
+      `${path} is not the whole of what its site states`,
+    );
+  }
+
+  const concatenated = traceJson(dir, '/orchard/spare/ledge').document;
+  assert.equal(concatenated.reason, 'unsupported-expression');
+  assert.ok(
+    concatenated.frontier.some((entry) => entry.file === 'src/spare/SpareRoutes.tsx' && entry.line === 32 && entry.unsupported === 'route-array-expression'),
+    'the first operand of a concatenation is not the array the .map iterates',
+  );
+
+  const tailed = traceJson(dir, '/orchard/spare/post').document;
+  assert.equal(tailed.reason, 'unsupported-expression');
+  assert.ok(
+    tailed.frontier.some((entry) => entry.file === 'src/spare/SpareRoutes.tsx' && entry.line === 35 && entry.unsupported === 'route-array-expression'),
+    'an entry read off an object literal is not that object',
+  );
+
+  const spread = traceJson(dir, '/orchard/spare/sill').document;
+  assert.equal(spread.reason, 'unsupported-expression');
+  assert.ok(
+    spread.frontier.some((entry) => entry.file === 'src/spare/SpareRoutes.tsx' && entry.line === 38 && entry.unsupported === 'route-array-expression'),
+    'a spread of a value read off an object literal is not that object',
+  );
 });
 
 test('Page routes C8: a .map that renders no <Route> declares no route, even when its objects carry a path', (t) => {

@@ -34,7 +34,9 @@ reason expected. Every expectation was written from the source below.
   that renders no `<Route>`; `QueueRoutes` interpolates `` `${queue.path}/*` `` and renders
   `<queue.component/>`; `CellarSettings` passes an imported array, whose first entry spreads an
   imported constant object, to `CellarLayout` as one prop; `AnnexRoutes` states an entry path as
-  an expression; `SpareRoutes` builds its array with `concat`; `DoubleSettings` passes its own
+  an expression; `SpareRoutes` builds one array with `concat`, states a second whose entry is read
+  off an object literal, and spreads a third from a name read off one, each of which is only part
+  of a larger expression and so declares nothing; `DoubleSettings` passes its own
   prop on again, a second hop; `StorehouseRoutes` maps an array it imports.
 - `GreenhouseRoutes` returns its `<Route>` from inside an `if`, through a helper, so the route
   carries that condition as a guard; `LoftyRoutes` builds one inside a `for` loop, which decides
