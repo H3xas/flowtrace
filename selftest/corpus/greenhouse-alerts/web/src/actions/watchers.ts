@@ -15,7 +15,7 @@ export function saveWatchers(zoneId: string, growerIds: string[]) {
   return (dispatch: Dispatch) =>
     httpClient.getGatewayClient().put(`/greenhouse/v1/zones/${zoneId}/watchers`, { growerIds })
       .then((response) => {
-        if (!response.body.stored) {
+        if (!response.stored) {
           dispatch(showNotice('watchers-unconfirmed'));
           return;
         }

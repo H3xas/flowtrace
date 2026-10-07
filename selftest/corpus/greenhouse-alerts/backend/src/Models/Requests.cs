@@ -12,4 +12,10 @@ namespace Greenhouse.Alerts.Models
         public string Sensor { get; set; }
         public double Value { get; set; }
     }
+
+    public class ReplaceWatchersResult
+    {
+        public bool Stored { get; set; }
+        public int StoredCount { get; set; }
+    }
 }

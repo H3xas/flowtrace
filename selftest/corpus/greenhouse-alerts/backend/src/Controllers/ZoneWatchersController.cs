@@ -31,8 +31,8 @@ namespace Greenhouse.Alerts.Controllers
                 return BadRequest("growerIds is required");
             }
 
-            _watchers.ReplaceWatchers(zoneId, request.GrowerIds);
-            return NoContent();
+            var result = _watchers.ReplaceWatchers(zoneId, request.GrowerIds);
+            return Ok(result);
         }
     }
 }

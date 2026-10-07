@@ -33,14 +33,18 @@ the worked example (`examples/demo-shop` is).
   through the configured alias in `greenhouse.config.json`.
 - A save that checks the caller's identity, looks the zone up, checks edit access, records an
   audit entry, filters the selected watchers for eligibility, rejects an empty selection, writes
-  the watchers, recomputes an irrigation schedule only when the zone has one, refreshes a cache and
-  records a second audit entry — each statement on its own line.
+  the watchers, recomputes an irrigation schedule only when the zone has one, refreshes a cache,
+  records a second audit entry and answers with what it stored — each statement on its own line.
 - Three notices in the UI after the save request settles: one the response handler dispatches when
-  the body does not report the watchers as stored, one it dispatches when they are, and one the
-  rejection handler dispatches when the request itself fails. The stored-or-not question is asked
-  of the response body; nothing in the pack asserts an HTTP status for it, and no `exception_map`
-  fact in it maps one — the backend's own faults are reported as unhandled, which is what the
-  source says.
+  the answer does not report every selected watcher as stored, one it dispatches when it does, and
+  one the rejection handler dispatches when the request itself fails. Each is reachable for its own
+  source reason: the endpoint answers `Ok` with `Stored = eligible.Count == growerIds.Count`, so a
+  selection the eligibility filter trimmed comes back `Stored: false` through the same `200` a full
+  one does; the gateway resolves with the parsed body, and with no value for the `204` the
+  acknowledgement answers, so the stored-or-not question is asked of the body and never of a
+  status; and a rejected request throws before either handler runs. Nothing
+  in the pack asserts an HTTP status for the stored question, and no `exception_map` fact in it
+  maps one — the backend's own faults are reported as unhandled, which is what the source says.
 - A report request whose URL is built at run time for an endpoint no repository in the pack
   declares: the honest answer there is an unresolved marker, never a concrete edge.
 - A harvest-plan route whose handler performs twelve prerequisite lookups, each through its own

@@ -13,7 +13,7 @@ namespace Greenhouse.Alerts.Services
     public interface IWatcherService
     {
         IReadOnlyList<string> ListWatchers(string zoneId);
-        void ReplaceWatchers(string zoneId, IReadOnlyList<string> growerIds);
+        ReplaceWatchersResult ReplaceWatchers(string zoneId, IReadOnlyList<string> growerIds);
     }
 
     public class WatcherService : IWatcherService
@@ -52,7 +52,7 @@ namespace Greenhouse.Alerts.Services
             return _watchers.ListWatchers(zoneId);
         }
 
-        public void ReplaceWatchers(string zoneId, IReadOnlyList<string> growerIds)
+        public ReplaceWatchersResult ReplaceWatchers(string zoneId, IReadOnlyList<string> growerIds)
         {
             var growerId = _identity.RequireSignedInGrower();
             var zone = _zones.FindZone(zoneId);
@@ -68,6 +68,11 @@ namespace Greenhouse.Alerts.Services
 
             _zoneCache.Refresh(zoneId);
             _audit.Record(zoneId, "watchers-replaced");
+            return new ReplaceWatchersResult
+            {
+                Stored = eligible.Count == growerIds.Count,
+                StoredCount = eligible.Count,
+            };
         }
     }
 }
