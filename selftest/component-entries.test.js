@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { cpSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { REPO_ROOT, runCli } from './helpers.js';
@@ -56,13 +56,35 @@ test('a class lifecycle callback is one entry carrying its guard and its site', 
 test('each useEffect states its own declaration: an empty list, a watched list, or a callback by name', () => {
   const effects = entriesOf('WatcherNotesPanel').filter((entry) => entry.kind === 'effect');
   assert.deepEqual(
-    effects.map((entry) => [entry.line, entry.deps, entry.handler, entry.depsUnknown]),
+    effects.map((entry) => [entry.line, entry.column, entry.deps, entry.handler, entry.depsUnknown]),
     [
-      [25, [], null, undefined],
-      [29, ['draft'], null, undefined],
-      [36, ['readings'], 'refresh', undefined],
-      [42, undefined, null, true],
+      [25, 3, [], null, undefined],
+      [29, 3, ['draft'], null, undefined],
+      [36, 3, ['readings'], 'refresh', undefined],
+      [42, 3, undefined, null, true],
+      [46, 3, [], null, undefined],
+      [46, 63, [], null, undefined],
     ],
+  );
+});
+
+test('two effect declarations on one line are two entries, each with its own site and request', () => {
+  const [first, second] = entriesOf('WatcherNotesPanel').filter((entry) => entry.line === 46);
+  assert.notEqual(first.column, second.column, 'the two declarations are two columns of one line');
+  assert.notEqual(first.method, second.method, 'each declaration owns its own method key');
+  const { model } = spanJson('WatcherNotesPanel');
+  const byColumn = new Map(
+    model.entries.filter((entry) => entry.identity.line === 46).map((entry) => [entry.identity.column, entry]),
+  );
+  assert.deepEqual(
+    [byColumn.get(first.column).unresolved, byColumn.get(second.column).unresolved],
+    [1, 1],
+    'neither same-line effect may be answered with the other one’s arms',
+  );
+  assert.notDeepEqual(
+    byColumn.get(first.column).routes,
+    byColumn.get(second.column).routes,
+    'the two declarations reach their own routes',
   );
 });
 
@@ -90,8 +112,17 @@ test('a trigger the extractor cannot follow is stated with its reason, never dro
     [
       ['useEffect', 'dynamic-callback', 38],
       ['useNoteDraft', 'custom-hook', 19],
+      ['useNoteDraft', 'custom-hook', 48],
     ],
   );
+});
+
+test('a repeated unread hook keeps one entry per call site', () => {
+  const calls = entriesOf('WatcherNotesPanel').filter((entry) => entry.trigger === 'useNoteDraft');
+  assert.deepEqual(calls.map((entry) => entry.line), [19, 48]);
+  const { model } = spanJson('WatcherNotesPanel');
+  const arms = model.unresolved.filter((arm) => arm.cause === 'custom-hook');
+  assert.deepEqual(arms.map((arm) => arm.line), [19, 48], 'both sites are unanswered, neither replaces the other');
 });
 
 test('a foreign hook is not an entry: the component does not reach anything through it', () => {
@@ -140,7 +171,7 @@ test('a selector that is not exactly one entry is refused and lists them all', (
 test('an unread trigger prints as its own unresolved reason instead of vanishing', () => {
   const { model } = spanJson('WatcherNotesPanel');
   const unread = model.unresolved.filter((arm) => arm.reason === 'entry-unresolved');
-  assert.deepEqual(unread.map((arm) => arm.cause).sort(), ['custom-hook', 'dynamic-callback']);
+  assert.deepEqual(unread.map((arm) => arm.cause).sort(), ['custom-hook', 'custom-hook', 'dynamic-callback']);
   for (const arm of unread) assert.ok(arm.entry, 'an unresolved entry arm names its entry');
 });
 
@@ -174,6 +205,25 @@ test('the page states where a trigger fires, never how often React runs it', () 
   assert.doesNotMatch(page, /one run after mount|runs once after mount|on every render|runs before the|then runs the/);
 });
 
+test('two selected entries of one component write two pages, never one', () => {
+  const written = ['useEffect@25', 'useEffect@29'].map((selector) => {
+    const run = runCli(
+      ['span', '--from-component', 'WatcherNotesPanel', '--entry', selector, '--config', config],
+      { cwd: pack },
+    );
+    assert.equal(run.status, 0, run.stderr);
+    const target = run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim();
+    assert.ok(existsSync(target), `the page ${selector} selected should have been written at ${target}`);
+    return target;
+  });
+  assert.notEqual(
+    written[0],
+    written[1],
+    'two entries of one component are two journeys, so the second selection may not overwrite the first page',
+  );
+  assert.notEqual(readFileSync(written[0], 'utf8'), readFileSync(written[1], 'utf8'));
+});
+
 test('two runs over the same facts write the same page', () => {
   const first = join(pack, 'span-1.html');
   const second = join(pack, 'span-2.html');
@@ -200,17 +250,20 @@ test('every entry fact validates against the fact schema', () => {
 test('the pack states one entry per trigger and none for the foreign hooks it also calls', () => {
   const triggers = webFacts()
     .filter((fact) => fact.type === 'component_entry')
-    .map((fact) => `${fact.component}|${fact.trigger}@${fact.line}`);
+    .map((fact) => `${fact.component}|${fact.trigger}@${fact.line}:${fact.column}`);
   assert.deepEqual(triggers, [
-    'ZoneOverviewPanel|componentDidMount@15',
-    'ZonesLandingPanel|componentDidMount@13',
-    'WatcherPreferencesPage|useEffect@15',
-    'WatcherNotesPanel|useEffect@25',
-    'WatcherNotesPanel|useEffect@29',
-    'WatcherNotesPanel|useEffect@31',
-    'WatcherNotesPanel|useEffect@36',
-    'WatcherNotesPanel|useEffect@38',
-    'WatcherNotesPanel|useEffect@42',
-    'WatcherNotesPanel|useNoteDraft@19',
+    'ZoneOverviewPanel|componentDidMount@15:3',
+    'ZonesLandingPanel|componentDidMount@13:3',
+    'WatcherPreferencesPage|useEffect@15:3',
+    'WatcherNotesPanel|useEffect@25:3',
+    'WatcherNotesPanel|useEffect@29:3',
+    'WatcherNotesPanel|useEffect@31:5',
+    'WatcherNotesPanel|useEffect@36:3',
+    'WatcherNotesPanel|useEffect@38:3',
+    'WatcherNotesPanel|useEffect@42:3',
+    'WatcherNotesPanel|useEffect@46:3',
+    'WatcherNotesPanel|useEffect@46:63',
+    'WatcherNotesPanel|useNoteDraft@19:31',
+    'WatcherNotesPanel|useNoteDraft@48:3',
   ]);
 });

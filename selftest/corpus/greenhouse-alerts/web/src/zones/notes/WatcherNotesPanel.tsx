@@ -43,6 +43,10 @@ export default function WatcherNotesPanel(props: WatcherNotesPanelProps) {
     setDraft(draft.trim());
   }, watched);
 
+  useEffect(() => { dispatch(loadWatchers('latest')); }, []); useEffect(() => { dispatch(loadZoneReadings('latest')); }, []);
+
+  useNoteDraft('second');
+
   return (
     <section className="watcher-notes">
       <span>{readings.length} readings</span>

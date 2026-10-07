@@ -90,14 +90,24 @@ written at. `kind` is `mount`, `update`, `unmount`, `effect`, `cleanup`, `event`
 `unknown`; `trigger` is the name it was written under (`componentDidMount`, `useEffect`,
 a hook the extractor does not read); `handler` is the callback or handler it names, and is
 `null` when the trigger *is* its own callback. `guards` lists, in source order, the
-conditions that gate the calls inside the entry. Optional: `deps` is an effect's
-dependency list as written — `[]` when none was written — `endLine` closes the entry's
-span, `unresolved` names why the trigger could not be followed (`custom-hook`,
-`dynamic-callback`), and `method` is the key the calls inside the entry attribute to.
+conditions that gate the calls inside the entry. Optional: `column` is the trigger's
+1-based column, which with `line` is the site — two declarations can share a line, and one
+line is then not a site; `deps` is an effect's dependency list as written — `[]` when none
+was written — `endLine` closes the entry's span, `unresolved` names why the trigger could
+not be followed (`custom-hook`, `dynamic-callback`), and `method` is the key the calls
+inside the entry attribute to.
 
 An entry states a declaration, never how many times React runs the body and never an
 order between two entries. A JSX `on*` binding is an entry too; its identity comes from
-the `template_handler` fact that states it, with the event as its trigger.
+the `template_handler` fact that states it, with the event as its trigger. A `use…` call
+the extractor does not read is one entry per call site, so two calls of one unread hook
+are two sites rather than one name.
+
+Optional on `action_dispatch`: `continuesFile` and `continuesLine` name the gateway call
+whose response handler this dispatch is written inside, and `outcome` is `success` or
+`failure` for which of that call's handlers it is. The field is stated only where the
+source states the relation — a `.then` or `.catch` callback — never inferred from two
+statements sharing a body. Optional on `template_handler`: the `column` of the binding.
 
 ### Test evidence
 

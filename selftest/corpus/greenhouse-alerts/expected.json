@@ -120,7 +120,7 @@
       "kind": "feedback",
       "repo": "web",
       "file": "src/actions/watchers.ts",
-      "line": 17,
+      "line": 23,
       "anchor": "dispatch(showNotice('watchers-saved'))",
       "symbol": "showNotice"
     },
@@ -129,8 +129,17 @@
       "kind": "feedback",
       "repo": "web",
       "file": "src/actions/watchers.ts",
-      "line": 18,
+      "line": 25,
       "anchor": "dispatch(showNotice('watchers-failed'))",
+      "symbol": "showNotice"
+    },
+    {
+      "id": "notice-unconfirmed",
+      "kind": "feedback",
+      "repo": "web",
+      "file": "src/actions/watchers.ts",
+      "line": 19,
+      "anchor": "dispatch(showNotice('watchers-unconfirmed'))",
       "symbol": "showNotice"
     },
     {
@@ -257,6 +266,15 @@
       "file": "src/Services/WatcherService.cs",
       "line": 59,
       "anchor": "_access.EnsureMayEditZone(growerId, zone)",
+      "symbol": "ZoneAccess.EnsureMayEditZone"
+    },
+    {
+      "id": "reject-not-permitted",
+      "kind": "check",
+      "repo": "backend",
+      "file": "src/Access/ZoneAccess.cs",
+      "line": 18,
+      "anchor": "throw new UnauthorizedAccessException",
       "symbol": "ZoneAccess.EnsureMayEditZone"
     },
     {
@@ -476,6 +494,15 @@
       "symbol": "useNoteDraft"
     },
     {
+      "id": "hook-unread-again",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 48,
+      "anchor": "useNoteDraft('second')",
+      "symbol": "useNoteDraft"
+    },
+    {
       "id": "dispatch-refresh-readings",
       "kind": "dispatch",
       "repo": "web",
@@ -530,6 +557,15 @@
       "symbol": null
     },
     {
+      "id": "effect-same-line",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 46,
+      "anchor": "useEffect(() => { dispatch(loadWatchers('latest')); }, []);",
+      "symbol": null
+    },
+    {
       "id": "page-zones-landing",
       "kind": "page",
       "repo": "web",
@@ -571,7 +607,7 @@
       "id": "report-url",
       "repo": "web",
       "file": "src/actions/watchers.ts",
-      "line": 23,
+      "line": 30,
       "anchor": "getGatewayClient().get(url)",
       "reason": "the report URL is built at run time by a helper and names an endpoint no repository in the pack declares"
     }
@@ -750,6 +786,20 @@
       "reach": [
         "route-get-watchers",
         "route-get-readings"
+      ]
+    },
+    {
+      "id": "save-thunk-by-name",
+      "start": "Watchers.saveWatchers",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-put-watchers"
       ]
     }
   ],
@@ -983,19 +1033,40 @@
         "filter-eligible",
         "reject-empty-selection",
         "write-watchers",
-        "refresh-cache"
+        "refresh-cache",
+        "reject-not-permitted"
       ],
       "unknowns": [],
-      "assertions": []
+      "assertions": [
+        {
+          "id": "storage-before-cache-refresh",
+          "kind": "before",
+          "first": "write-watchers",
+          "then": "refresh-cache"
+        },
+        {
+          "id": "rejection-before-write",
+          "kind": "before",
+          "first": "reject-empty-selection",
+          "then": "write-watchers"
+        },
+        {
+          "id": "access-guard-reached-from-call",
+          "kind": "reached-from",
+          "site": "reject-not-permitted",
+          "from": "check-access"
+        }
+      ]
     },
     {
       "id": "save-feedback-continuation",
       "covers": [
         "feedback"
       ],
-      "run": "watchers-page-expanded",
+      "run": "save-thunk-by-name",
       "question": "Are the saved and failed notices shown as continuations of the save request?",
       "expect": [
+        "notice-unconfirmed",
         "notice-saved",
         "notice-failed"
       ],
@@ -1011,6 +1082,12 @@
           "id": "failed-after-request",
           "kind": "reached-from",
           "site": "notice-failed",
+          "from": "request-save-watchers"
+        },
+        {
+          "id": "unconfirmed-after-request",
+          "kind": "reached-from",
+          "site": "notice-unconfirmed",
           "from": "request-save-watchers"
         }
       ]
@@ -1057,7 +1134,9 @@
         "effect-named-callback",
         "hook-unread",
         "effect-dynamic-callback",
-        "effect-expression-deps"
+        "effect-expression-deps",
+        "effect-same-line",
+        "hook-unread-again"
       ],
       "unknowns": [],
       "assertions": [
@@ -1071,7 +1150,9 @@
             "effect-named-callback",
             "hook-unread",
             "effect-dynamic-callback",
-            "effect-expression-deps"
+            "effect-expression-deps",
+            "effect-same-line",
+            "hook-unread-again"
           ]
         }
       ]
@@ -1118,6 +1199,42 @@
           "kind": "reached-from",
           "site": "route-get-readings",
           "from": "effect-named-callback"
+        }
+      ]
+    },
+    {
+      "id": "notes-same-line-and-repeated-triggers",
+      "covers": [
+        "effects"
+      ],
+      "run": "watcher-notes-by-name",
+      "question": "Do two effect declarations written on one line stay two entries, each reaching its own request, and does a second call of an unread hook keep its own site?",
+      "expect": [
+        "effect-same-line",
+        "hook-unread-again",
+        "route-get-watchers",
+        "route-get-readings"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "watchers-from-same-line-effect",
+          "kind": "reached-from",
+          "site": "route-get-watchers",
+          "from": "effect-same-line"
+        },
+        {
+          "id": "readings-from-same-line-effect",
+          "kind": "reached-from",
+          "site": "route-get-readings",
+          "from": "effect-same-line"
+        },
+        {
+          "id": "repeated-hook-at-its-own-site",
+          "kind": "at-site",
+          "sites": [
+            "hook-unread-again"
+          ]
         }
       ]
     },

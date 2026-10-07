@@ -23,6 +23,10 @@ the worked example (`examples/demo-shop` is).
   empty dependency list, a watched list, a callback named by identifier, a cleanup returned by an
   effect, and the two triggers it states without following — a hook it does not read and a
   callback passed as an expression.
+- Two further declarations on one line of that component: two inline `useEffect` calls, the first
+  loading watchers and the second loading readings. They are one line but two entries with two
+  requests, and neither may be answered with the other's route. The same component calls its
+  unread custom hook twice, so one unread trigger name still means two sites.
 - Click handlers beside them: an acknowledge button on the class component and the selected save
   handler on the watcher page, which dispatches a thunk.
 - Gateway requests under `greenhouse/`, served by backend routes under `glasshouse/`, joined only
@@ -31,7 +35,12 @@ the worked example (`examples/demo-shop` is).
   audit entry, filters the selected watchers for eligibility, rejects an empty selection, writes
   the watchers, recomputes an irrigation schedule only when the zone has one, refreshes a cache and
   records a second audit entry — each statement on its own line.
-- Success and failure notices in the UI after the save request settles.
+- Three notices in the UI after the save request settles: one the response handler dispatches when
+  the body does not report the watchers as stored, one it dispatches when they are, and one the
+  rejection handler dispatches when the request itself fails. The stored-or-not question is asked
+  of the response body; nothing in the pack asserts an HTTP status for it, and no `exception_map`
+  fact in it maps one — the backend's own faults are reported as unhandled, which is what the
+  source says.
 - A report request whose URL is built at run time for an endpoint no repository in the pack
   declares: the honest answer there is an unresolved marker, never a concrete edge.
 - A harvest-plan route whose handler performs twelve prerequisite lookups, each through its own
@@ -52,7 +61,13 @@ this source alone, before anything was observed. It holds:
 - `runs`: one `flowtrace trace` start per question, the walk flags it uses (`--depth`,
   `--max-nodes`, `--seeds`, `--expand`, and `--from-handler <event>:<method>` to narrow a walk to
   one handler), whether its assertions are the routes or the sinks it reports, and `reach` — every
-  site of that kind the source says the start reaches.
+  site of that kind the source says the start reaches. A start need not be a component or a
+  route: `save-thunk-by-name` starts at the action creator `Watchers.saveWatchers`, which is what
+  answers a save request's settling, so the notices that handler dispatches are answered without
+  first resolving the page that dispatched the thunk. The three `watchers-page-*` runs start at
+  the watcher page, whose name the pack declares twice — the lazy import in `ZoneRoutes.tsx` is
+  the other declaration — and stay unanswered until page-root discovery tells the two apart; they
+  are kept as the record of that gap.
   A component start is walked in inventory mode, which folds branches that reach no route; a
   question about a trigger that reaches nothing — a cleanup, a hook the extractor cannot read —
   passes `--expand` so those entries are still answered for.
