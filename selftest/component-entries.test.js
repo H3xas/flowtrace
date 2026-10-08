@@ -563,6 +563,191 @@ test('a lazy binding renders the module its import names', () => {
   assert.ok(!model.unresolved.some((arm) => arm.reason === 'component-ambiguous'));
 });
 
+/** What a span states, without the component it started from: the comparable part of an answer. */
+function reached(model) {
+  return {
+    entries: model.entries.map((entry) => ({ ...entry.identity, routes: entry.routes })),
+    unresolved: model.unresolved.map((arm) => arm.reason),
+  };
+}
+
+function writeParents(root, parents) {
+  for (const [parent, clause, specifier, tag] of parents) {
+    writeFileSync(
+      join(root, 'web', 'src', 'zones', `${parent}.tsx`),
+      `import React from 'react';\nimport ${clause} from '${specifier}';\n\n` +
+        `export function ${parent}() {\n  return <${tag} />;\n}\n`,
+    );
+  }
+}
+
+test('a child imported under another local name is the child its module exports', () => {
+  const direct = (name) => reached(spanJson(name).model);
+  const parents = [
+    ['ChosenNotesParent', 'ChosenNotes', './notes/WatcherNotesPanel', 'ChosenNotes', 'WatcherNotesPanel'],
+    ['OverviewParent', 'Overview', './ZoneOverviewPanel', 'Overview', 'ZoneOverviewPanel'],
+    ['ZonesParent', '{ ZoneRoutes as Zones }', './ZoneRoutes', 'Zones', 'ZoneRoutes'],
+    ['RoutesParent', '* as Zoning', './ZoneRoutes', 'Zoning.ZoneRoutes', 'ZoneRoutes'],
+  ];
+  const { dir, config: variantConfig } = variant('render-alias', (root) => writeParents(root, parents));
+  try {
+    for (const [parent, , , , child] of parents) {
+      const result = runCli(['span', '--from-component', parent, '--json', '--config', variantConfig]);
+      assert.equal(result.status, 0, result.stderr);
+      const model = JSON.parse(result.stdout);
+      assert.ok(model.entries.length > 0, `${parent} states the entries of ${child}`);
+      assert.deepEqual(reached(model), direct(child), `${parent} reaches what ${child} reaches`);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  const twin = twinChildVariant('render-alias-twin', []);
+  try {
+    writeParents(join(twin.dir), [
+      ['PickedParent', 'Picked', './other/WatcherNotesPanel', 'Picked'],
+      ['ChosenParent', 'Chosen', './notes/WatcherNotesPanel', 'Chosen'],
+    ]);
+    for (const verb of ['extract', 'join']) {
+      const ran = runCli([verb, '--config', twin.config], { cwd: twin.dir });
+      assert.equal(ran.status, 0, ran.stderr);
+    }
+    for (const [parent, folder] of [['PickedParent', 'other'], ['ChosenParent', 'notes']]) {
+      const result = runCli(['span', '--from-component', parent, '--json', '--config', twin.config]);
+      assert.equal(result.status, 0, result.stderr);
+      const files = [...new Set(JSON.parse(result.stdout).entries.map((entry) => entry.identity.file))];
+      assert.deepEqual(files, [`src/zones/${folder}/WatcherNotesPanel.tsx`], parent);
+    }
+  } finally {
+    rmSync(twin.dir, { recursive: true, force: true });
+  }
+});
+
+test('the extractor states the binding a render imports and the component a module exports by default', () => {
+  const facts = webFacts();
+  const defaults = facts.filter((entry) => entry.type === 'component' && entry.default === true).map((entry) => entry.name).sort();
+  assert.deepEqual(defaults, ['GreenhouseShell', 'WatcherNotesPanel', 'WatcherPreferencesPage', 'ZoneOverviewPanel', 'ZonesLandingPanel']);
+  const imported = (to) => facts.find((entry) => entry.type === 'renders' && entry.to === to).imported;
+  assert.equal(imported('GreenhouseShell'), 'default');
+  assert.equal(imported('ZoneOverviewPanel'), 'default');
+  assert.equal(imported('ZoneRoutes'), undefined, 'a named import under its own name says nothing more');
+});
+
+test('a module default export is flagged on the component it binds, through any wrapper', () => {
+  const forms = {
+    Anonymous: 'export function Named() {\n  return <div />;\n}\nexport default class extends React.Component {\n  render() {\n    return <div />;\n  }\n}\n',
+    Memo: 'function MemoInner() {\n  return <div />;\n}\nexport default memo(MemoInner);\n',
+    Renamed: 'const RenamedInner = () => <div />;\nexport { RenamedInner as default };\n',
+    Wrapped: 'function WrappedInner() {\n  return <div />;\n}\nexport default withRouter(connect(mapState)(WrappedInner))\n',
+    Declared: 'export default function DeclaredInner() {\n  return <div />;\n}\n',
+  };
+  const { dir } = variant('default-forms', (root) => {
+    mkdirSync(join(root, 'web', 'src', 'forms'), { recursive: true });
+    for (const [file, body] of Object.entries(forms)) {
+      writeFileSync(join(root, 'web', 'src', 'forms', `${file}.tsx`), `import React, { memo } from 'react';\n${body}`);
+    }
+  });
+  try {
+    const facts = JSON.parse(readFileSync(join(dir, 'out', 'facts', 'web.json'), 'utf8')).facts;
+    const flagged = facts
+      .filter((entry) => entry.type === 'component' && entry.file.startsWith('src/forms/') && entry.default === true)
+      .map((entry) => entry.name)
+      .sort();
+    assert.deepEqual(flagged, ['DeclaredInner', 'MemoInner', 'RenamedInner', 'WrappedInner']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a rendered child no declaration settles is stated at its render site', () => {
+  const { dir, config: variantConfig } = variant('render-unfound', (root) => {
+    writeFileSync(
+      join(root, 'web', 'src', 'zones', 'GhostParent.tsx'),
+      "import React from 'react';\nimport { Link } from 'react-router-dom';\n" +
+        "import Missing from './notes/MissingPanel';\nimport Elsewhere from './notes/WatcherNotesPanel';\n\n" +
+        'export function GhostParent() {\n  return (\n    <div>\n      <Missing />\n      <Link to="/zones" />\n' +
+        '      <Unknown />\n      <Elsewhere />\n    </div>\n  );\n}\n',
+    );
+    const notes = join(root, 'web', 'src', 'zones', 'notes', 'WatcherNotesPanel.tsx');
+    writeFileSync(notes, readFileSync(notes, 'utf8').replace('export default function', 'export function'));
+  });
+  try {
+    const result = runCli(['span', '--from-component', 'GhostParent', '--json', '--config', variantConfig]);
+    assert.equal(result.status, 0, result.stderr);
+    const model = JSON.parse(result.stdout);
+    assert.deepEqual(model.entries, []);
+    const arms = model.unresolved.map(({ reason, attempted, file, line, source }) => ({ reason, attempted, file, line, source }));
+    assert.deepEqual(arms, [
+      {
+        reason: 'component-unresolved', attempted: 'Elsewhere', file: 'src/zones/GhostParent.tsx', line: 12,
+        source: './notes/WatcherNotesPanel',
+      },
+      { reason: 'component-unresolved', attempted: 'Missing', file: 'src/zones/GhostParent.tsx', line: 9, source: './notes/MissingPanel' },
+      { reason: 'component-unresolved', attempted: 'Unknown', file: 'src/zones/GhostParent.tsx', line: 11, source: undefined },
+    ]);
+    const out = join(dir, 'ghost-parent.html');
+    const page = runCli(['span', '--from-component', 'GhostParent', '--out', out, '--config', variantConfig]);
+    assert.equal(page.status, 0, page.stderr);
+    const html = readFileSync(out, 'utf8');
+    assert.match(html, /3 arms unresolved/);
+    assert.match(html, /component not found/);
+    assert.match(html, /imported from \.\/notes\/MissingPanel/);
+    assert.match(html, /src\/zones\/GhostParent\.tsx:11/);
+    const tree = runCli(['trace', 'GhostParent', '--expand', '--config', variantConfig]);
+    assert.equal(tree.status, 0, tree.stderr);
+    assert.match(tree.stdout, /Missing.*unresolved.*imported from \.\/notes\/MissingPanel/);
+    assert.match(tree.stdout, /Link/, 'a foreign child stays in the tree, only out of the arms');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('an aliased render settles by its module and export, never by fact order or a borrowed local name', () => {
+  const component = (file, name, extra = {}) => ({ type: 'component', file, line: 1, name, selector: name, role: 'component', ...extra });
+  const entry = (file, name) => ({
+    type: 'component_entry', file, line: 3, column: 3, component: name, kind: 'unknown',
+    trigger: 'useLiveFeed', handler: null, guards: [], unresolved: 'custom-hook',
+  });
+  const module = (file, name, extra) => [component(file, name, extra), entry(file, name)];
+  const parent = (render) => [
+    component('src/Parent.tsx', 'Parent'),
+    { type: 'renders', file: 'src/Parent.tsx', line: 5, from: 'Parent', ...render },
+  ];
+  const files = (model) => [...new Set(model.entries.map((view) => view.identity.file))];
+  const declared = [
+    ...module('src/a/Child.tsx', 'Child', { default: true }),
+    ...module('src/b/Child.tsx', 'Child'),
+    ...module('src/b/Child.tsx', 'Helper', { default: true }),
+    ...module('src/Picked.tsx', 'Picked'),
+  ];
+  for (const [render, expected] of [
+    [{ to: 'Picked', source: './a/Child', imported: 'default' }, ['src/a/Child.tsx']],
+    [{ to: 'Picked', source: './b/Child', imported: 'default' }, ['src/b/Child.tsx']],
+    [{ to: 'Picked', source: './b/Child', imported: 'Child' }, ['src/b/Child.tsx']],
+    [{ to: 'Gone', source: './b/Missing', imported: 'default' }, []],
+    [{ to: 'Picked', source: './a/Child', imported: 'Absent' }, []],
+    [{ to: 'Picked', source: './barrel', imported: 'Helper' }, ['src/b/Child.tsx']],
+  ]) {
+    const label = JSON.stringify(render);
+    for (const order of [declared, declared.slice().reverse()]) {
+      const model = componentSpan([{ repo: 'web', kind: 'web', facts: [...parent(render), ...order] }], 'Parent');
+      const names = [...new Set(model.entries.map((view) => view.identity.component))];
+      assert.deepEqual(files(model), expected, label);
+      if (expected.length > 0) assert.equal(names.length, 1, `${label} enters one declaration`);
+      const reasons = expected.length > 0 ? ['entry-unresolved'] : ['component-unresolved'];
+      assert.deepEqual(model.unresolved.map((arm) => arm.reason), reasons, label);
+    }
+  }
+  const loaded = componentSpan(
+    [{ repo: 'web', kind: 'web', facts: [
+      ...parent({ to: 'Lazy' }),
+      component('src/Parent.tsx', 'Lazy', { line: 2, lazy: './b/Child' }),
+      ...declared,
+    ] }],
+    'Parent',
+  );
+  assert.deepEqual([...new Set(loaded.entries.map((view) => view.identity.component))], ['Helper'], 'a lazy binding loads the default export');
+});
+
 test('a selected page never overwrites a page another entry already holds under its name', () => {
   const { dir, config: variantConfig } = variant('page-claim', () => {});
   try {

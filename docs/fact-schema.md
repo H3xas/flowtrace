@@ -74,8 +74,8 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 
 | type | fields | stated when |
 |---|---|---|
-| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads |
-| `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from |
+| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; optional `default` is `true` on the component the module's default export names |
+| `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself — `default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>` |
 | `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler |
 | `injects` | `from`, `to` | a class is given another as a dependency |
 | `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal |
