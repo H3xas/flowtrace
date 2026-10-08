@@ -10,6 +10,7 @@ import { after, before, test } from 'node:test';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { componentSpan } from '../lib/component-span.js';
 import { REPO_ROOT, runCli } from './helpers.js';
 
 const FIXTURE = join(REPO_ROOT, 'selftest', 'corpus', 'greenhouse-alerts');
@@ -423,6 +424,143 @@ test('a file-qualified start states only the entries and requests its own declar
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+/**
+ * The pack with a second `WatcherNotesPanel` under `zones/other/` whose mount effect loads
+ * readings instead of watchers, plus one parent per given import specifier, each rendering
+ * `<WatcherNotesPanel />` through that import.
+ */
+function twinChildVariant(name, parents) {
+  return variant(name, (root) => {
+    const zones = join(root, 'web', 'src', 'zones');
+    const source = readFileSync(join(zones, 'notes', 'WatcherNotesPanel.tsx'), 'utf8');
+    const mount = "dispatch(loadWatchers('latest'));\n  }, []);";
+    assert.ok(source.includes(mount));
+    mkdirSync(join(zones, 'other'), { recursive: true });
+    writeFileSync(
+      join(zones, 'other', 'WatcherNotesPanel.tsx'),
+      source.replace(mount, "dispatch(loadZoneReadings('latest'));\n  }, []);"),
+    );
+    for (const [parent, specifier] of parents) {
+      writeFileSync(
+        join(zones, `${parent}.tsx`),
+        `import React from 'react';\nimport WatcherNotesPanel from '${specifier}';\n\n` +
+          `export function ${parent}() {\n  return <WatcherNotesPanel />;\n}\n`,
+      );
+    }
+  });
+}
+
+test('a parent walks into the same-named child its own import names, whichever was declared last', () => {
+  const single = spanJson('WatcherNotesPanel').model;
+  const watchersRoutes = single.entries.find((entry) => entry.identity.kind === 'effect' && entry.identity.line === 25).routes;
+  const { dir, config: variantConfig } = twinChildVariant('render-import', [
+    ['NotesParent', './notes/WatcherNotesPanel'],
+    ['OtherParent', './other/WatcherNotesPanel'],
+  ]);
+  try {
+    for (const [parent, folder, mountRoutes] of [
+      ['NotesParent', 'zones/notes/', watchersRoutes],
+      ['OtherParent', 'zones/other/', null],
+    ]) {
+      const result = runCli(['span', '--from-component', parent, '--json', '--config', variantConfig]);
+      assert.equal(result.status, 0, result.stderr);
+      const model = JSON.parse(result.stdout);
+      const files = [...new Set(model.entries.map((entry) => entry.identity.file))];
+      assert.deepEqual(files, [`src/${folder}WatcherNotesPanel.tsx`], `${parent} reaches only the child it imports`);
+      assert.equal(model.entries.length, single.entries.length, `${parent} states every entry of its child`);
+      const mount = model.entries.find((entry) => entry.identity.kind === 'effect' && entry.identity.line === 25);
+      if (mountRoutes) assert.deepEqual(mount.routes, mountRoutes, `${parent} keeps the request its child makes on mount`);
+      else assert.ok(!mount.routes.some((route) => watchersRoutes.includes(route)), `${parent} borrows no request from the other child`);
+      assert.ok(!model.unresolved.some((arm) => arm.reason === 'component-ambiguous'));
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a rendered name its source does not settle is an unknown target at its own site', () => {
+  const { dir, config: variantConfig } = twinChildVariant('render-unsettled', [
+    ['AliasParent', '@zones/notes/WatcherNotesPanel'],
+  ]);
+  try {
+    const result = runCli(['span', '--from-component', 'AliasParent', '--json', '--config', variantConfig]);
+    assert.equal(result.status, 0, result.stderr);
+    const model = JSON.parse(result.stdout);
+    assert.deepEqual(model.entries, [], 'no declaration is entered on a guess');
+    const arms = model.unresolved.filter((arm) => arm.reason === 'component-ambiguous');
+    assert.equal(arms.length, 1, JSON.stringify(model.unresolved));
+    assert.equal(arms[0].attempted, 'WatcherNotesPanel');
+    assert.equal(arms[0].file, 'src/zones/AliasParent.tsx');
+    assert.equal(arms[0].line, 5);
+    assert.deepEqual(arms[0].candidates, [
+      'src/zones/notes/WatcherNotesPanel.tsx',
+      'src/zones/other/WatcherNotesPanel.tsx',
+    ]);
+    const out = join(dir, 'alias-parent.html');
+    const page = runCli(['span', '--from-component', 'AliasParent', '--out', out, '--config', variantConfig]);
+    assert.equal(page.status, 0, page.stderr);
+    const html = readFileSync(out, 'utf8');
+    assert.match(html, /component not settled/);
+    assert.match(html, /declared in src\/zones\/notes\/WatcherNotesPanel\.tsx, src\/zones\/other\/WatcherNotesPanel\.tsx/);
+    assert.match(html, /src\/zones\/AliasParent\.tsx:5/);
+    const tree = runCli(['trace', 'AliasParent', '--expand', '--config', variantConfig]);
+    assert.equal(tree.status, 0, tree.stderr);
+    assert.match(tree.stdout, /WatcherNotesPanel.*declared in 2 files/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('which same-named child a parent reaches never depends on the order its facts were read', () => {
+  const entry = (file) => ({
+    type: 'component_entry', file, line: 3, column: 3, component: 'Child', kind: 'unknown',
+    trigger: 'useLiveFeed', handler: null, guards: [], unresolved: 'custom-hook',
+  });
+  const child = (file) => [{ type: 'component', file, line: 1, name: 'Child', selector: 'Child', role: 'component' }, entry(file)];
+  const parent = ({ source, lazy }) => [
+    { type: 'component', file: 'src/Parent.tsx', line: 4, name: 'Parent', selector: 'Parent', role: 'component' },
+    ...(lazy ? [{ type: 'component', file: 'src/Parent.tsx', line: 2, name: 'Child', selector: 'Child', role: 'component', lazy }] : []),
+    { type: 'renders', file: 'src/Parent.tsx', line: 5, from: 'Parent', to: 'Child', ...(source ? { source } : {}) },
+  ];
+  const files = (model) => [...new Set(model.entries.map((view) => view.identity.file))];
+  for (const [statement, expected] of [
+    [{ source: './b/Child' }, ['src/b/Child.tsx']],
+    [{ source: '../src/a/Child.tsx' }, ['src/a/Child.tsx']],
+    [{ lazy: './b/Child' }, ['src/b/Child.tsx']],
+    [{ source: '@app/b/Child' }, []],
+    [{}, []],
+  ]) {
+    const answers = [
+      [...child('src/a/Child.tsx'), ...child('src/b/Child.tsx')],
+      [...child('src/b/Child.tsx'), ...child('src/a/Child.tsx')],
+    ].map((children) => componentSpan([{ repo: 'web', kind: 'web', facts: [...parent(statement), ...children] }], 'Parent'));
+    for (const model of answers) {
+      const label = JSON.stringify(statement);
+      assert.deepEqual(files(model), expected, label);
+      const ambiguous = model.unresolved.filter((arm) => arm.reason === 'component-ambiguous');
+      assert.equal(ambiguous.length, expected.length === 0 ? 1 : 0, label);
+    }
+  }
+  const forwarded = [
+    ...parent({ lazy: './a/Child' }),
+    { type: 'component', file: 'src/a/Child.tsx', line: 1, name: 'Child', selector: 'Child', role: 'component', lazy: '../b/Child' },
+    ...child('src/b/Child.tsx'),
+  ];
+  const chained = componentSpan([{ repo: 'web', kind: 'web', facts: forwarded }], 'Parent');
+  assert.deepEqual(files(chained), ['src/b/Child.tsx'], 'a lazy binding that loads another lazy binding is followed to the body');
+  const looped = forwarded.slice(0, -2).concat({ ...forwarded[forwarded.length - 3], file: 'src/b/Child.tsx', lazy: '../a/Child' });
+  const cycle = componentSpan([{ repo: 'web', kind: 'web', facts: looped }], 'Parent');
+  assert.deepEqual(files(cycle), []);
+  assert.equal(cycle.unresolved.filter((arm) => arm.reason === 'component-ambiguous').length, 1, 'a lazy cycle is an unknown target');
+});
+
+test('a lazy binding renders the module its import names', () => {
+  const model = spanJson('ZoneRoutes').model;
+  const files = [...new Set(model.entries.map((entry) => entry.identity.file))];
+  assert.ok(files.includes('src/zones/alerts/WatcherPreferencesPage.tsx'), JSON.stringify(files));
+  assert.ok(!model.unresolved.some((arm) => arm.reason === 'component-ambiguous'));
 });
 
 test('a selected page never overwrites a page another entry already holds under its name', () => {
