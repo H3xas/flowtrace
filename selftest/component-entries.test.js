@@ -663,9 +663,16 @@ test('a rendered child no declaration settles is stated at its render site', () 
     writeFileSync(
       join(root, 'web', 'src', 'zones', 'GhostParent.tsx'),
       "import React from 'react';\nimport { Link } from 'react-router-dom';\n" +
-        "import Missing from './notes/MissingPanel';\nimport Elsewhere from './notes/WatcherNotesPanel';\n\n" +
+        "import Missing from './notes/MissingPanel';\nimport Elsewhere from './notes/WatcherNotesPanel';\n" +
+        "import WatcherNotesPanel from './NoDefault';\nimport { ZoneOverviewPanel } from './NoDefault';\n" +
+        "import ZoneRoutes from './Gone';\n\n" +
         'export function GhostParent() {\n  return (\n    <div>\n      <Missing />\n      <Link to="/zones" />\n' +
-        '      <Unknown />\n      <Elsewhere />\n    </div>\n  );\n}\n',
+        '      <Unknown />\n      <Elsewhere />\n      <WatcherNotesPanel />\n      <ZoneOverviewPanel />\n' +
+        '      <ZoneRoutes />\n    </div>\n  );\n}\n',
+    );
+    writeFileSync(
+      join(root, 'web', 'src', 'zones', 'NoDefault.tsx'),
+      "import React from 'react';\n\nexport function OtherPanel() {\n  return <div />;\n}\n",
     );
     const notes = join(root, 'web', 'src', 'zones', 'notes', 'WatcherNotesPanel.tsx');
     writeFileSync(notes, readFileSync(notes, 'utf8').replace('export default function', 'export function'));
@@ -676,25 +683,30 @@ test('a rendered child no declaration settles is stated at its render site', () 
     const model = JSON.parse(result.stdout);
     assert.deepEqual(model.entries, []);
     const arms = model.unresolved.map(({ reason, attempted, file, line, source }) => ({ reason, attempted, file, line, source }));
+    const unresolvedAt = (attempted, line, source) => ({ reason: 'component-unresolved', attempted, file: 'src/zones/GhostParent.tsx', line, source });
     assert.deepEqual(arms, [
-      {
-        reason: 'component-unresolved', attempted: 'Elsewhere', file: 'src/zones/GhostParent.tsx', line: 12,
-        source: './notes/WatcherNotesPanel',
-      },
-      { reason: 'component-unresolved', attempted: 'Missing', file: 'src/zones/GhostParent.tsx', line: 9, source: './notes/MissingPanel' },
-      { reason: 'component-unresolved', attempted: 'Unknown', file: 'src/zones/GhostParent.tsx', line: 11, source: undefined },
+      unresolvedAt('Elsewhere', 15, './notes/WatcherNotesPanel'),
+      unresolvedAt('Missing', 12, './notes/MissingPanel'),
+      unresolvedAt('Unknown', 14, undefined),
+      unresolvedAt('WatcherNotesPanel', 16, './NoDefault'),
+      unresolvedAt('ZoneOverviewPanel', 17, './NoDefault'),
+      unresolvedAt('ZoneRoutes', 18, './Gone'),
     ]);
     const out = join(dir, 'ghost-parent.html');
     const page = runCli(['span', '--from-component', 'GhostParent', '--out', out, '--config', variantConfig]);
     assert.equal(page.status, 0, page.stderr);
     const html = readFileSync(out, 'utf8');
-    assert.match(html, /3 arms unresolved/);
+    assert.match(html, /6 arms unresolved/);
     assert.match(html, /component not found/);
     assert.match(html, /imported from \.\/notes\/MissingPanel/);
-    assert.match(html, /src\/zones\/GhostParent\.tsx:11/);
+    assert.match(html, /imported from \.\/NoDefault/);
+    assert.match(html, /src\/zones\/GhostParent\.tsx:14/);
+    assert.doesNotMatch(html, /zones\/notes\/WatcherNotesPanel\.tsx|ZoneOverviewPanel\.tsx|ZoneRoutes\.tsx/);
     const tree = runCli(['trace', 'GhostParent', '--expand', '--config', variantConfig]);
     assert.equal(tree.status, 0, tree.stderr);
     assert.match(tree.stdout, /Missing.*unresolved.*imported from \.\/notes\/MissingPanel/);
+    assert.match(tree.stdout, /WatcherNotesPanel.*unresolved.*imported from \.\/NoDefault/);
+    assert.match(tree.stdout, /ZoneRoutes.*unresolved.*imported from \.\/Gone/);
     assert.match(tree.stdout, /Link/, 'a foreign child stays in the tree, only out of the arms');
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -718,14 +730,24 @@ test('an aliased render settles by its module and export, never by fact order or
     ...module('src/b/Child.tsx', 'Child'),
     ...module('src/b/Child.tsx', 'Helper', { default: true }),
     ...module('src/Picked.tsx', 'Picked'),
+    ...module('src/NoDefault.tsx', 'Other'),
+    ...module('src/c/Mod.tsx', 'ModFile', { default: true }),
+    ...module('src/c/Mod/index.tsx', 'ModFolder', { default: true }),
   ];
-  for (const [render, expected] of [
+  for (const [render, expected, reason] of [
     [{ to: 'Picked', source: './a/Child', imported: 'default' }, ['src/a/Child.tsx']],
     [{ to: 'Picked', source: './b/Child', imported: 'default' }, ['src/b/Child.tsx']],
     [{ to: 'Picked', source: './b/Child', imported: 'Child' }, ['src/b/Child.tsx']],
     [{ to: 'Gone', source: './b/Missing', imported: 'default' }, []],
     [{ to: 'Picked', source: './a/Child', imported: 'Absent' }, []],
     [{ to: 'Picked', source: './barrel', imported: 'Helper' }, ['src/b/Child.tsx']],
+    [{ to: 'Picked', source: './NoDefault', imported: 'default' }, []],
+    [{ to: 'Picked', source: './b/Missing', imported: 'default' }, []],
+    [{ to: 'Picked', source: './NoDefault', imported: 'Helper' }, []],
+    [{ to: 'Other', source: './NoDefault', imported: 'default' }, []],
+    [{ to: 'Helper', source: './a/Child' }, []],
+    [{ to: 'Picked', source: './c/Mod', imported: 'default' }, [], 'component-ambiguous'],
+    [{ to: 'Helper', source: '@app/Helper', imported: 'default' }, ['src/b/Child.tsx']],
   ]) {
     const label = JSON.stringify(render);
     for (const order of [declared, declared.slice().reverse()]) {
@@ -733,10 +755,33 @@ test('an aliased render settles by its module and export, never by fact order or
       const names = [...new Set(model.entries.map((view) => view.identity.component))];
       assert.deepEqual(files(model), expected, label);
       if (expected.length > 0) assert.equal(names.length, 1, `${label} enters one declaration`);
-      const reasons = expected.length > 0 ? ['entry-unresolved'] : ['component-unresolved'];
+      const reasons = expected.length > 0 ? ['entry-unresolved'] : [reason || 'component-unresolved'];
       assert.deepEqual(model.unresolved.map((arm) => arm.reason), reasons, label);
     }
   }
+  const lazyFrom = (module, facts) => componentSpan(
+    [{ repo: 'web', kind: 'web', facts: [
+      ...parent({ to: 'Lazy' }),
+      component('src/Parent.tsx', 'Lazy', { line: 2, lazy: module }),
+      ...facts,
+    ] }],
+    'Parent',
+  );
+  const noDefault = lazyFrom('./NoDefault', [...declared, ...module('src/Lazy.tsx', 'Lazy')]);
+  assert.deepEqual(files(noDefault), [], 'a lazy binding of a module with no default enters no other declaration');
+  assert.deepEqual(noDefault.unresolved.map((arm) => arm.reason), ['component-unresolved']);
+  const unflagged = declared.map((fact) => {
+    const { default: _flag, ...rest } = fact;
+    return rest;
+  });
+  const legacy = lazyFrom('./NoDefault', [...unflagged, ...module('src/Lazy.tsx', 'Lazy')]);
+  assert.deepEqual(files(legacy), [], 'facts without the default flag still enter nothing the named module does not declare');
+  assert.deepEqual(legacy.unresolved.map((arm) => arm.reason), ['component-unresolved']);
+  const named = componentSpan(
+    [{ repo: 'web', kind: 'web', facts: [...parent({ to: 'Picked', source: './NoDefault' }), ...unflagged] }],
+    'Parent',
+  );
+  assert.deepEqual(files(named), [], 'a named import its module does not declare enters no same-named declaration');
   const loaded = componentSpan(
     [{ repo: 'web', kind: 'web', facts: [
       ...parent({ to: 'Lazy' }),
