@@ -518,7 +518,10 @@ test('which same-named child a parent reaches never depends on the order its fac
     type: 'component_entry', file, line: 3, column: 3, component: 'Child', kind: 'unknown',
     trigger: 'useLiveFeed', handler: null, guards: [], unresolved: 'custom-hook',
   });
-  const child = (file) => [{ type: 'component', file, line: 1, name: 'Child', selector: 'Child', role: 'component' }, entry(file)];
+  const child = (file) => [
+    { type: 'component', file, line: 1, name: 'Child', selector: 'Child', role: 'component', exports: ['Child', 'default'] },
+    entry(file),
+  ];
   const parent = ({ source, lazy }) => [
     { type: 'component', file: 'src/Parent.tsx', line: 4, name: 'Parent', selector: 'Parent', role: 'component' },
     ...(lazy ? [{ type: 'component', file: 'src/Parent.tsx', line: 2, name: 'Child', selector: 'Child', role: 'component', lazy }] : []),
@@ -545,7 +548,7 @@ test('which same-named child a parent reaches never depends on the order its fac
   }
   const forwarded = [
     ...parent({ lazy: './a/Child' }),
-    { type: 'component', file: 'src/a/Child.tsx', line: 1, name: 'Child', selector: 'Child', role: 'component', lazy: '../b/Child' },
+    { type: 'component', file: 'src/a/Child.tsx', line: 1, name: 'Child', selector: 'Child', role: 'component', lazy: '../b/Child', exports: ['default'] },
     ...child('src/b/Child.tsx'),
   ];
   const chained = componentSpan([{ repo: 'web', kind: 'web', facts: forwarded }], 'Parent');
@@ -553,7 +556,7 @@ test('which same-named child a parent reaches never depends on the order its fac
   const looped = forwarded.slice(0, -2).concat({ ...forwarded[forwarded.length - 3], file: 'src/b/Child.tsx', lazy: '../a/Child' });
   const cycle = componentSpan([{ repo: 'web', kind: 'web', facts: looped }], 'Parent');
   assert.deepEqual(files(cycle), []);
-  assert.equal(cycle.unresolved.filter((arm) => arm.reason === 'component-ambiguous').length, 1, 'a lazy cycle is an unknown target');
+  assert.deepEqual(cycle.unresolved.map((arm) => arm.reason), ['component-unresolved'], 'a lazy cycle is an unknown target');
 });
 
 test('a lazy binding renders the module its import names', () => {
@@ -622,25 +625,36 @@ test('a child imported under another local name is the child its module exports'
   }
 });
 
-test('the extractor states the binding a render imports and the component a module exports by default', () => {
+test('the extractor states the binding a render imports and every name a module exports a component under', () => {
   const facts = webFacts();
-  const defaults = facts.filter((entry) => entry.type === 'component' && entry.default === true).map((entry) => entry.name).sort();
+  const defaults = facts
+    .filter((entry) => entry.type === 'component' && entry.exports.includes('default'))
+    .map((entry) => entry.name)
+    .sort();
   assert.deepEqual(defaults, ['GreenhouseShell', 'WatcherNotesPanel', 'WatcherPreferencesPage', 'ZoneOverviewPanel', 'ZonesLandingPanel']);
+  const web = facts.filter((entry) => entry.type === 'component');
+  assert.ok(web.every((entry) => Array.isArray(entry.exports)), 'every component states its exports, an empty list included');
   const imported = (to) => facts.find((entry) => entry.type === 'renders' && entry.to === to).imported;
   assert.equal(imported('GreenhouseShell'), 'default');
   assert.equal(imported('ZoneOverviewPanel'), 'default');
   assert.equal(imported('ZoneRoutes'), undefined, 'a named import under its own name says nothing more');
 });
 
-test('a module default export is flagged on the component it binds, through any wrapper', () => {
+test('a component states each name its module exports it under, and none it only declares', () => {
   const forms = {
     Anonymous: 'export function Named() {\n  return <div />;\n}\nexport default class extends React.Component {\n  render() {\n    return <div />;\n  }\n}\n',
     Memo: 'function MemoInner() {\n  return <div />;\n}\nexport default memo(MemoInner);\n',
     Renamed: 'const RenamedInner = () => <div />;\nexport { RenamedInner as default };\n',
     Wrapped: 'function WrappedInner() {\n  return <div />;\n}\nexport default withRouter(connect(mapState)(WrappedInner))\n',
     Declared: 'export default function DeclaredInner() {\n  return <div />;\n}\n',
+    DefaultClass: 'export default class DefaultClass extends React.Component {\n  render() {\n    return <div />;\n  }\n}\n',
+    Private: 'function PrivatePanel() {\n  return <div />;\n}\nexport function Listed() {\n  return <PrivatePanel />;\n}\n',
+    Arrow: 'export const ArrowPanel = () => <div />;\nexport async function AsyncPanel() {\n  return <div />;\n}\n',
+    Listed: 'function ListedInner() {\n  return <div />;\n}\nfunction Both() {\n  return <div />;\n}\nexport { ListedInner as Shown, Both };\nexport default Both;\n',
+    Relayed: "function RelayedLocal() {\n  return <div />;\n}\nexport { RelayedLocal } from './Elsewhere';\n",
+    Classy: 'export class ClassyPanel extends React.Component {\n  render() {\n    return <div />;\n  }\n}\n',
   };
-  const { dir } = variant('default-forms', (root) => {
+  const { dir } = variant('export-forms', (root) => {
     mkdirSync(join(root, 'web', 'src', 'forms'), { recursive: true });
     for (const [file, body] of Object.entries(forms)) {
       writeFileSync(join(root, 'web', 'src', 'forms', `${file}.tsx`), `import React, { memo } from 'react';\n${body}`);
@@ -648,11 +662,82 @@ test('a module default export is flagged on the component it binds, through any 
   });
   try {
     const facts = JSON.parse(readFileSync(join(dir, 'out', 'facts', 'web.json'), 'utf8')).facts;
-    const flagged = facts
-      .filter((entry) => entry.type === 'component' && entry.file.startsWith('src/forms/') && entry.default === true)
-      .map((entry) => entry.name)
-      .sort();
-    assert.deepEqual(flagged, ['DeclaredInner', 'MemoInner', 'RenamedInner', 'WrappedInner']);
+    const stated = Object.fromEntries(
+      facts
+        .filter((entry) => entry.type === 'component' && entry.file.startsWith('src/forms/'))
+        .map((entry) => [entry.name, entry.exports]),
+    );
+    assert.deepEqual(stated.Named, ['Named']);
+    assert.deepEqual(stated.MemoInner, ['default']);
+    assert.deepEqual(stated.RenamedInner, ['default']);
+    assert.deepEqual(stated.WrappedInner, ['default']);
+    assert.deepEqual(stated.DeclaredInner, ['default']);
+    assert.deepEqual(stated.DefaultClass, ['default'], 'a default-exported class is not also exported under its name');
+    assert.deepEqual(stated.PrivatePanel, [], 'a declaration its module does not export states no export');
+    assert.deepEqual(stated.Listed, ['Listed']);
+    assert.deepEqual(stated.ArrowPanel, ['ArrowPanel']);
+    assert.deepEqual(stated.AsyncPanel, ['AsyncPanel']);
+    assert.deepEqual(stated.ListedInner, ['Shown']);
+    assert.deepEqual(stated.Both, ['Both', 'default']);
+    assert.deepEqual(stated.RelayedLocal, [], 'a list re-exported from another module names no binding of this one');
+    assert.deepEqual(stated.ClassyPanel, ['ClassyPanel']);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+/**
+ * A disposable web repository holding only the files given, freshly extracted: a fact set
+ * whose shape the corpus cannot give, such as one with no default export anywhere.
+ */
+function bareWeb(name, files) {
+  const dir = mkdtempSync(join(tmpdir(), `flowtrace-entries-${name}-`));
+  for (const [file, body] of Object.entries(files)) {
+    mkdirSync(join(dir, 'web', 'src', file, '..'), { recursive: true });
+    writeFileSync(join(dir, 'web', 'src', file), body);
+  }
+  const bareConfig = join(dir, 'bare.config.json');
+  writeFileSync(bareConfig, JSON.stringify({ out: 'out', repos: [{ id: 'web', kind: 'web', root: 'web' }] }));
+  for (const verb of ['extract', 'join']) {
+    const ran = runCli([verb, '--config', bareConfig], { cwd: dir });
+    assert.equal(ran.status, 0, ran.stderr);
+  }
+  return { dir, config: bareConfig };
+}
+
+test('an import binds only a child its module exports under the imported name', () => {
+  const panel = (name, hook, exported) =>
+    `import React from 'react';\n\n${exported ? 'export ' : ''}function ${name}() {\n  ${hook}();\n  return <div />;\n}\n`;
+  const { dir, config: bareConfig } = bareWeb('export-evidence', {
+    'Child.tsx': panel('Child', 'useChildFeed', true),
+    'PrivatePanel.tsx': `${panel('PrivatePanel', 'useMysterious', false)}\nexport function Other() {\n  return <PrivatePanel />;\n}\n`,
+    'Aliased.tsx': `${panel('Inner', 'useAliasFeed', false)}\nexport { Inner as Shown };\n`,
+    'Kit.tsx': `${panel('Hidden', 'useHiddenFeed', false)}\n${panel('Open', 'useOpenFeed', true)}`,
+    'Parent.tsx':
+      "import React from 'react';\nimport Child from './Child';\nimport { PrivatePanel } from './PrivatePanel';\n" +
+      "import { Shown } from './Aliased';\nimport { Child as Named } from './Child';\nimport * as Kit from './Kit';\n\n" +
+      'export function Parent() {\n  return (\n    <div>\n      <Child />\n      <PrivatePanel />\n      <Shown />\n' +
+      '      <Named />\n      <Kit.Hidden />\n      <Kit.Open />\n    </div>\n  );\n}\n',
+  });
+  try {
+    const result = runCli(['span', '--from-component', 'Parent', '--json', '--config', bareConfig]);
+    assert.equal(result.status, 0, result.stderr);
+    const model = JSON.parse(result.stdout);
+    const entered = [...new Set(model.entries.map((view) => `${view.identity.component}@${view.identity.file}`))].sort();
+    assert.deepEqual(entered, ['Child@src/Child.tsx', 'Inner@src/Aliased.tsx', 'Open@src/Kit.tsx']);
+    const arms = model.unresolved
+      .filter((arm) => arm.reason === 'component-unresolved')
+      .map(({ attempted, file, line, source }) => ({ attempted, file, line, source }));
+    assert.deepEqual(arms, [
+      { attempted: 'Child', file: 'src/Parent.tsx', line: 11, source: './Child' },
+      { attempted: 'Kit', file: 'src/Parent.tsx', line: 15, source: './Kit' },
+      { attempted: 'PrivatePanel', file: 'src/Parent.tsx', line: 12, source: './PrivatePanel' },
+    ]);
+    const tree = runCli(['trace', 'Parent', '--expand', '--config', bareConfig]);
+    assert.equal(tree.status, 0, tree.stderr);
+    assert.match(tree.stdout, /PrivatePanel.*unresolved.*imported from \.\/PrivatePanel/);
+    assert.match(tree.stdout, /Child.*unresolved.*imported from \.\/Child/);
+    assert.doesNotMatch(tree.stdout, /useMysterious|useHiddenFeed/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -726,13 +811,18 @@ test('an aliased render settles by its module and export, never by fact order or
   ];
   const files = (model) => [...new Set(model.entries.map((view) => view.identity.file))];
   const declared = [
-    ...module('src/a/Child.tsx', 'Child', { default: true }),
-    ...module('src/b/Child.tsx', 'Child'),
-    ...module('src/b/Child.tsx', 'Helper', { default: true }),
-    ...module('src/Picked.tsx', 'Picked'),
-    ...module('src/NoDefault.tsx', 'Other'),
-    ...module('src/c/Mod.tsx', 'ModFile', { default: true }),
-    ...module('src/c/Mod/index.tsx', 'ModFolder', { default: true }),
+    ...module('src/a/Child.tsx', 'Child', { exports: ['default'] }),
+    ...module('src/b/Child.tsx', 'Child', { exports: ['Child'] }),
+    ...module('src/b/Child.tsx', 'Helper', { exports: ['default'] }),
+    ...module('src/Picked.tsx', 'Picked', { exports: ['Picked'] }),
+    ...module('src/NoDefault.tsx', 'Other', { exports: ['Other'] }),
+    ...module('src/c/Mod.tsx', 'ModFile', { exports: ['default'] }),
+    ...module('src/c/Mod/index.tsx', 'ModFolder', { exports: ['default'] }),
+    ...module('src/Private.tsx', 'Secret', { exports: [] }),
+    ...module('src/Listed.tsx', 'Inner', { exports: ['Shown'] }),
+    component('src/Relay.tsx', 'Relay', { lazy: '', exports: ['Relay'] }),
+    ...module('src/elsewhere/Relay.tsx', 'Relay', { exports: ['Relay'] }),
+    component('src/Deferred.tsx', 'Deferred', { lazy: './b/Child', exports: ['Deferred'] }),
   ];
   for (const [render, expected, reason] of [
     [{ to: 'Picked', source: './a/Child', imported: 'default' }, ['src/a/Child.tsx']],
@@ -748,6 +838,14 @@ test('an aliased render settles by its module and export, never by fact order or
     [{ to: 'Helper', source: './a/Child' }, []],
     [{ to: 'Picked', source: './c/Mod', imported: 'default' }, [], 'component-ambiguous'],
     [{ to: 'Helper', source: '@app/Helper', imported: 'default' }, ['src/b/Child.tsx']],
+    [{ to: 'Secret', source: './Private' }, []],
+    [{ to: 'Picked', source: './Private', imported: 'default' }, []],
+    [{ to: 'Shown', source: './Listed' }, ['src/Listed.tsx']],
+    [{ to: 'Inner', source: './Listed' }, []],
+    [{ to: 'Relay', source: './Relay' }, []],
+    [{ to: 'Deferred', source: './Deferred' }, ['src/b/Child.tsx']],
+    [{ to: 'Secret', source: '@app/Private' }, []],
+    [{ to: 'Picked', source: './barrel', imported: 'Secret' }, []],
   ]) {
     const label = JSON.stringify(render);
     for (const order of [declared, declared.slice().reverse()]) {
@@ -770,18 +868,24 @@ test('an aliased render settles by its module and export, never by fact order or
   const noDefault = lazyFrom('./NoDefault', [...declared, ...module('src/Lazy.tsx', 'Lazy')]);
   assert.deepEqual(files(noDefault), [], 'a lazy binding of a module with no default enters no other declaration');
   assert.deepEqual(noDefault.unresolved.map((arm) => arm.reason), ['component-unresolved']);
-  const unflagged = declared.map((fact) => {
-    const { default: _flag, ...rest } = fact;
+  const unstated = declared.map((fact) => {
+    const { exports: _list, ...rest } = fact;
     return rest;
   });
-  const legacy = lazyFrom('./NoDefault', [...unflagged, ...module('src/Lazy.tsx', 'Lazy')]);
-  assert.deepEqual(files(legacy), [], 'facts without the default flag still enter nothing the named module does not declare');
+  const legacy = lazyFrom('./NoDefault', [...unstated, ...module('src/Lazy.tsx', 'Lazy')]);
+  assert.deepEqual(files(legacy), [], 'facts that state no exports enter nothing the named module does not declare');
   assert.deepEqual(legacy.unresolved.map((arm) => arm.reason), ['component-unresolved']);
-  const named = componentSpan(
-    [{ repo: 'web', kind: 'web', facts: [...parent({ to: 'Picked', source: './NoDefault' }), ...unflagged] }],
-    'Parent',
-  );
-  assert.deepEqual(files(named), [], 'a named import its module does not declare enters no same-named declaration');
+  for (const render of [
+    { to: 'Picked', source: './NoDefault' },
+    { to: 'Child', source: './b/Child' },
+    { to: 'Secret', source: './Private' },
+    { to: 'Helper', source: '@app/Helper', imported: 'default' },
+    { to: 'Picked', source: './barrel', imported: 'Helper' },
+  ]) {
+    const unproven = componentSpan([{ repo: 'web', kind: 'web', facts: [...parent(render), ...unstated] }], 'Parent');
+    assert.deepEqual(files(unproven), [], `${JSON.stringify(render)}: a module that states no exports binds no import`);
+    assert.deepEqual(unproven.unresolved.map((arm) => arm.reason), ['component-unresolved']);
+  }
   const loaded = componentSpan(
     [{ repo: 'web', kind: 'web', facts: [
       ...parent({ to: 'Lazy' }),

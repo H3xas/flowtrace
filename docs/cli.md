@@ -229,9 +229,11 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   A rendered child is the component the rendering file names: its own declaration or
   lazy() binding of the tag, or the relative module it imports the tag from and the name
   that module exports it under, so `import Notes from './WatcherNotesPanel'` renders
-  that module's default export whatever the tag is called. A module that does not
-  export the child it is imported for (a file without that export, a relative path no
-  component file answers for a default import) prints as a `component-unresolved` arm
+  that module's default export whatever the tag is called. A module binds only a
+  component its facts state it exports under the imported name. Any other import (a
+  component the module declares without exporting, a name it does not export, a
+  relative path no component file answers for a default import, a module whose facts
+  were extracted before exports were stated) prints as a `component-unresolved` arm
   naming the render site and the module, never as a same-named component elsewhere. A
   child no statement names a file for is looked up by the name it is exported under; one
   more than one file declares, like an import path two files answer, prints as a

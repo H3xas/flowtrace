@@ -74,7 +74,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 
 | type | fields | stated when |
 |---|---|---|
-| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; optional `default` is `true` on the component the module's default export names |
+| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; `exports`, on every web component, lists each name its module exports it under, `default` included, and is `[]` for a component the module declares without exporting; a render's `source` binds only a component whose `exports` holds the imported name, and a web component without `exports` binds no import |
 | `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself — `default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>` |
 | `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler |
 | `injects` | `from`, `to` | a class is given another as a dependency |
