@@ -114,8 +114,21 @@ trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand
 trace --area <file>
   <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),
   a backend Class.Method, a backend class, a web component name, or a web page path
-  ("/catalog/collections/:collectionId" — the mount prefix is inferred from the library's own
-  navigate() literals, so such a start prints tagged "inferred mount"). Facts are read
+  ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page
+  path is composed from the <Route> declarations the facts record: JSX-nested routes, a
+  component's own <Routes> under the route that renders it, a route array that component
+  or one it renders maps into <Route> elements, index routes, parameters, wildcards, lazy
+  imports and <Navigate> redirects, each segment a [mount] hop with its file:line. A route
+  array's entries carry the site each came from as well, in the mount chain's
+  entryFile/entryLine and on that hop, so the rendering .map and the entry it read are
+  both openable. A routed tree is mounted by source (a root render, a router basename), by
+  repos[].mounts, or else read from "/" and behind the prefix the library's own
+  navigate() literals agree on — both tagged "inferred mount". A route under a condition
+  carries it as a guard; routes in the two arms of one condition stay candidates unless
+  repos[].routeAssumptions supplies its value. A start that does not resolve exits 2 with
+  one reason — no-declaration, missing-mount, unsupported-expression or ambiguous — as a
+  "reason:" line on stderr, in a JSON envelope under --json and on the --html page; no
+  tree is drawn for it. Facts are read
   from out/facts, never re-extracted. A page, component or service start prints a route
   inventory; --expand walks every route in full. --expand-infra prints the shared-dependency and
   code-index hops the tree collapses to one line; folding (below) still applies on top

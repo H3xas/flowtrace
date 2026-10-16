@@ -104,8 +104,19 @@ if (head === null) {
   process.exit(1);
 }
 
-const generated = JSON.parse(readFileSync(generatedPath, 'utf8'));
-const pinned = JSON.parse(readFileSync(pinnedPath, 'utf8'));
+/** Both files are inputs a reader hands over; a bad one is named, never guessed at. */
+function readExport(file) {
+  try {
+    return JSON.parse(readFileSync(file, 'utf8'));
+  } catch (error) {
+    console.error(`check-pinned-export: cannot read ${file} (${error.message})`);
+    console.error(`  repair: pass the file the commands in RELEASING.md wrote, in the order they write them`);
+    process.exit(1);
+  }
+}
+
+const generated = readExport(generatedPath);
+const pinned = readExport(pinnedPath);
 const problems = [
   ...exportProblems(generated).map((problem) => `${generatedPath}: ${problem}`),
   ...exportProblems(pinned).map((problem) => `${pinnedPath}: ${problem}`),

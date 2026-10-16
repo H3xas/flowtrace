@@ -8,27 +8,45 @@
   "runs": [
     {
       "id": "watchers-page-by-url",
-      "exit": 2,
-      "entry": "unresolved",
-      "budgetHit": null,
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
       "unresolvedMarkers": 0,
-      "outside": []
+      "outside": [
+        {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "GET glasshouse/v1/zones/*/readings"
+        }
+      ]
     },
     {
       "id": "watchers-page-by-name",
-      "exit": 2,
-      "entry": "ambiguous",
-      "budgetHit": null,
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
       "unresolvedMarkers": 0,
-      "outside": []
+      "outside": [
+        {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "GET glasshouse/v1/zones/*/readings"
+        }
+      ]
     },
     {
       "id": "watchers-page-expanded",
-      "exit": 2,
-      "entry": "ambiguous",
-      "budgetHit": null,
-      "unresolvedMarkers": 0,
-      "outside": []
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 4,
+      "outside": [
+        {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "GET glasshouse/v1/zones/*/readings"
+        }
+      ]
     },
     {
       "id": "overview-panel-by-name",
@@ -102,49 +120,49 @@
       "sites": [
         {
           "id": "page-watcher-preferences",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "both",
           "match": null
         },
         {
           "id": "request-load-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "request-save-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "route-get-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "route-put-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         }
       ],
       "unknowns": [],
       "assertions": [],
       "counts": {
-        "sitesResolved": 0,
+        "sitesResolved": 5,
         "sitesExpected": 5,
-        "outside": 0,
-        "entryUnresolved": 1,
+        "outside": 1,
+        "entryUnresolved": 0,
         "assertionsHeld": 0,
         "assertionsAsserted": 0,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
       "falselyComplete": false,
-      "classification": "discovery",
+      "classification": "resolved",
       "evidence": ""
     },
     {
@@ -153,43 +171,43 @@
       "sites": [
         {
           "id": "mount-greenhouse",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "site",
           "match": null
         },
         {
           "id": "mount-zone",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "site",
           "match": null
         },
         {
           "id": "mount-watchers",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "site",
           "match": null
         },
         {
           "id": "lazy-watchers-import",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "site",
           "match": null
         }
       ],
       "unknowns": [],
       "assertions": [],
       "counts": {
-        "sitesResolved": 0,
+        "sitesResolved": 4,
         "sitesExpected": 4,
-        "outside": 0,
-        "entryUnresolved": 1,
+        "outside": 1,
+        "entryUnresolved": 0,
         "assertionsHeld": 0,
         "assertionsAsserted": 0,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
       "falselyComplete": false,
-      "classification": "discovery",
+      "classification": "resolved",
       "evidence": ""
     },
     {
@@ -198,56 +216,56 @@
       "sites": [
         {
           "id": "page-watcher-preferences",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "both",
           "match": null
         },
         {
           "id": "request-load-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "request-save-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "route-get-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "route-put-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         }
       ],
       "unknowns": [
         {
           "id": "report-url",
-          "seen": false,
+          "seen": true,
           "marked": false,
-          "asserted": false
+          "asserted": true
         }
       ],
       "assertions": [],
       "counts": {
-        "sitesResolved": 0,
+        "sitesResolved": 5,
         "sitesExpected": 5,
-        "outside": 0,
-        "entryUnresolved": 1,
+        "outside": 1,
+        "entryUnresolved": 0,
         "assertionsHeld": 0,
         "assertionsAsserted": 0,
         "unknownsMarked": 0,
         "unknownsExpected": 1
       },
       "falselyComplete": false,
-      "classification": "discovery",
+      "classification": "join",
       "evidence": ""
     },
     {
@@ -256,66 +274,66 @@
       "sites": [
         {
           "id": "effect-load-watchers",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "site",
           "match": null
         },
         {
           "id": "click-save-watchers",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "symbol",
           "match": null
         },
         {
           "id": "dispatch-save-watchers",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "site",
           "match": null
         },
         {
           "id": "thunk-save-watchers",
-          "found": false,
-          "by": null,
+          "found": true,
+          "by": "site",
           "match": null
         },
         {
           "id": "route-get-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "route-put-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         }
       ],
       "unknowns": [],
       "assertions": [
         {
           "id": "load-from-effect",
-          "held": false,
-          "reason": "missing:route-get-watchers"
+          "held": true,
+          "reason": null
         },
         {
           "id": "save-from-click",
-          "held": false,
-          "reason": "missing:route-put-watchers"
+          "held": true,
+          "reason": null
         }
       ],
       "counts": {
-        "sitesResolved": 0,
+        "sitesResolved": 6,
         "sitesExpected": 6,
-        "outside": 0,
-        "entryUnresolved": 1,
-        "assertionsHeld": 0,
+        "outside": 1,
+        "entryUnresolved": 0,
+        "assertionsHeld": 2,
         "assertionsAsserted": 2,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
       "falselyComplete": false,
-      "classification": "discovery",
+      "classification": "resolved",
       "evidence": ""
     },
     {
@@ -398,37 +416,37 @@
       "sites": [
         {
           "id": "request-save-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         },
         {
           "id": "route-put-watchers",
-          "found": false,
-          "by": null,
-          "match": null
+          "found": true,
+          "by": "site",
+          "match": "alias"
         }
       ],
       "unknowns": [],
       "assertions": [
         {
           "id": "put-joined-by-alias",
-          "held": false,
-          "reason": "missing:route-put-watchers"
+          "held": true,
+          "reason": null
         }
       ],
       "counts": {
-        "sitesResolved": 0,
+        "sitesResolved": 2,
         "sitesExpected": 2,
-        "outside": 0,
-        "entryUnresolved": 1,
-        "assertionsHeld": 0,
+        "outside": 1,
+        "entryUnresolved": 0,
+        "assertionsHeld": 1,
         "assertionsAsserted": 1,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
       "falselyComplete": false,
-      "classification": "discovery",
+      "classification": "resolved",
       "evidence": ""
     },
     {

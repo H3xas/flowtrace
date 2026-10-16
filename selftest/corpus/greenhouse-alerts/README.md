@@ -70,8 +70,9 @@ this source alone, before anything was observed. It holds:
   answers a save request's settling, so the notices that handler dispatches are answered without
   first resolving the page that dispatched the thunk. The three `watchers-page-*` runs start at
   the watcher page, whose name the pack declares twice — the lazy import in `ZoneRoutes.tsx` is
-  the other declaration — and stay unanswered until page-root discovery tells the two apart; they
-  are kept as the record of that gap.
+  the other declaration — and page-root discovery tells the two apart. `nested-page-by-name`
+  still reads `join`: the report call's whole URL is a run-time value, and the join matches it to
+  a backend route by prefix instead of leaving `report-url` unresolved.
   A component start is walked in inventory mode, which folds branches that reach no route; a
   question about a trigger that reaches nothing — a cleanup, a hook the extractor cannot read —
   passes `--expand` so those entries are still answered for.

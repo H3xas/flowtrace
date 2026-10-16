@@ -13,8 +13,13 @@ Scan: `python3 .claude/hooks/comment-hygiene.py --scan`
 Scan commits: `python3 .claude/hooks/comment-hygiene.py --scan-commits origin/main..HEAD`
 Verify the scanner itself: `python3 .claude/hooks/comment-hygiene.py --selfcheck`
 
+The authoritative check of both is `npm run verify`, the one command CI runs;
+the hook and the scan modes above are the fast, partial views of the same
+policy. See CONTRIBUTING.md for the stages it runs.
+
 # Commit sign-off
 
 Every commit needs a `Signed-off-by:` trailer (see CONTRIBUTING.md). A local
 hook refuses a `git commit` that carries neither `-s`/`--signoff` nor a
-literal `Signed-off-by:` trailer before it ever reaches the DCO check in CI.
+literal `Signed-off-by:` trailer before it ever reaches the DCO check in CI,
+which reads the trailer out of the commit object.
