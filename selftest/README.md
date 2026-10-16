@@ -85,3 +85,22 @@ npm test
   capture, and the pure ledger and projection functions.
 - `path-check.test.js` — runs a repository script, `scripts/path-check.sh`, not the CLI: each
   case copies it into a disposable tree beside a hand-written linked-worktree `.git` pointer file.
+- `verify.test.js` — covers the canonical command, `scripts/verify.mjs`: the pure functions
+  that decide whether the suite is the whole suite and whether the package carries what it
+  should, the report a failing stage prints, and the command itself spawned over the stages
+  that need no suite run — including a copy of the command whose own input is missing, which
+  must report the stage rather than a stack trace. Its cases read the repository rather than a
+  fixture too: the workflow must run that command and nothing else and must cover every branch
+  a change is integrated through, and CONTRIBUTING.md must name every stage and every branch,
+  so the documented coverage and the enforced one move together.
+- `docs-check.test.js` — runs `scripts/docs-check.mjs` against a disposable copy of the
+  checkout's `bin/`, `lib/` and markdown, one case per way the documentation drifts or the
+  check loses sight of the tree: a link to a file that is not there, a fragment naming no
+  heading, `docs/cli.md` missing or behind `--help`, a file that cannot be read, a checkout
+  whose own file listing fails, a git that cannot say whether this is a checkout, a checkout
+  whose own pointer no longer resolves, git pointed at another checkout by the environment, a
+  directory the walk cannot list, and a tree outside git, which is walked.
+- `config-check.test.js` — runs `scripts/config-check.mjs` against the shipped example and
+  against examples written into a disposable directory: a shape the loader rejects, a
+  repository kind that does not exist, a key the documentation never names, a file that is
+  absent, malformed or unreadable, and a document that is missing or unreadable.
