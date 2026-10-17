@@ -120,7 +120,7 @@
       "kind": "feedback",
       "repo": "web",
       "file": "src/actions/watchers.ts",
-      "line": 17,
+      "line": 23,
       "anchor": "dispatch(showNotice('watchers-saved'))",
       "symbol": "showNotice"
     },
@@ -129,8 +129,17 @@
       "kind": "feedback",
       "repo": "web",
       "file": "src/actions/watchers.ts",
-      "line": 18,
+      "line": 25,
       "anchor": "dispatch(showNotice('watchers-failed'))",
+      "symbol": "showNotice"
+    },
+    {
+      "id": "notice-unconfirmed",
+      "kind": "feedback",
+      "repo": "web",
+      "file": "src/actions/watchers.ts",
+      "line": 19,
+      "anchor": "dispatch(showNotice('watchers-unconfirmed'))",
       "symbol": "showNotice"
     },
     {
@@ -257,6 +266,15 @@
       "file": "src/Services/WatcherService.cs",
       "line": 59,
       "anchor": "_access.EnsureMayEditZone(growerId, zone)",
+      "symbol": "ZoneAccess.EnsureMayEditZone"
+    },
+    {
+      "id": "reject-not-permitted",
+      "kind": "check",
+      "repo": "backend",
+      "file": "src/Access/ZoneAccess.cs",
+      "line": 18,
+      "anchor": "throw new UnauthorizedAccessException",
       "symbol": "ZoneAccess.EnsureMayEditZone"
     },
     {
@@ -456,6 +474,132 @@
       "line": 22,
       "anchor": "_plans.InsertPlan(plan)",
       "symbol": "HarvestPlanRepository.InsertPlan"
+    },
+    {
+      "id": "page-watcher-notes",
+      "kind": "page",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 16,
+      "anchor": "export default function WatcherNotesPanel(",
+      "symbol": "WatcherNotesPanel"
+    },
+    {
+      "id": "hook-unread",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 19,
+      "anchor": "useNoteDraft('')",
+      "symbol": "useNoteDraft"
+    },
+    {
+      "id": "hook-unread-again",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 48,
+      "anchor": "useNoteDraft('second')",
+      "symbol": "useNoteDraft"
+    },
+    {
+      "id": "dispatch-refresh-readings",
+      "kind": "dispatch",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 22,
+      "anchor": "dispatch(loadZoneReadings('latest'));",
+      "symbol": "loadZoneReadings"
+    },
+    {
+      "id": "effect-empty-deps",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 25,
+      "anchor": "useEffect(() => {",
+      "symbol": null
+    },
+    {
+      "id": "effect-cleanup",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 31,
+      "anchor": "return () => {",
+      "symbol": null
+    },
+    {
+      "id": "effect-named-callback",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 36,
+      "anchor": "useEffect(refresh, [readings]);",
+      "symbol": "refresh"
+    },
+    {
+      "id": "effect-dynamic-callback",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 38,
+      "anchor": "useEffect(props.onRefresh, []);",
+      "symbol": null
+    },
+    {
+      "id": "effect-expression-deps",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 42,
+      "anchor": "useEffect(() => {",
+      "symbol": null
+    },
+    {
+      "id": "effect-same-line",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/notes/WatcherNotesPanel.tsx",
+      "line": 46,
+      "anchor": "useEffect(() => { dispatch(loadWatchers('latest')); }, []);",
+      "symbol": null
+    },
+    {
+      "id": "page-zones-landing",
+      "kind": "page",
+      "repo": "web",
+      "file": "src/zones/ZonesLandingPanel.tsx",
+      "line": 12,
+      "anchor": "class ZonesLandingPanel extends Component",
+      "symbol": "ZonesLandingPanel"
+    },
+    {
+      "id": "mount-load-primary-zone",
+      "kind": "lifecycle",
+      "repo": "web",
+      "file": "src/zones/ZonesLandingPanel.tsx",
+      "line": 15,
+      "anchor": "this.props.loadPrimaryZone(this.props.growerId);",
+      "symbol": "loadPrimaryZone"
+    },
+    {
+      "id": "request-load-primary-zone",
+      "kind": "request",
+      "repo": "web",
+      "file": "src/actions/primaryZone.ts",
+      "line": 9,
+      "anchor": "getGatewayClient().get(`/greenhouse/v1/zones/${growerId}/watchers`)",
+      "symbol": null
+    },
+    {
+      "id": "dispatch-primary-zone-follow-up",
+      "kind": "dispatch",
+      "repo": "web",
+      "file": "src/actions/primaryZone.ts",
+      "line": 13,
+      "anchor": "dispatch(loadZoneReadings(growers[0].id));",
+      "symbol": "loadZoneReadings"
     }
   ],
   "unknowns": [
@@ -463,7 +607,7 @@
       "id": "report-url",
       "repo": "web",
       "file": "src/actions/watchers.ts",
-      "line": 23,
+      "line": 30,
       "anchor": "getGatewayClient().get(url)",
       "reason": "the report URL is built at run time by a helper and names an endpoint no repository in the pack declares"
     }
@@ -595,6 +739,67 @@
         "lookup-kilowatt-load",
         "lookup-leaf-temperature",
         "write-harvest-plan"
+      ]
+    },
+    {
+      "id": "watcher-notes-by-name",
+      "start": "WatcherNotesPanel",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400",
+        "--expand"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-get-watchers",
+        "route-get-readings"
+      ]
+    },
+    {
+      "id": "overview-acknowledge-only",
+      "start": "ZoneOverviewPanel",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400",
+        "--from-handler",
+        "onClick:acknowledgeAlarm"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-ack-alarm"
+      ]
+    },
+    {
+      "id": "zones-landing-by-name",
+      "start": "ZonesLandingPanel",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-get-watchers",
+        "route-get-readings"
+      ]
+    },
+    {
+      "id": "save-thunk-by-name",
+      "start": "Watchers.saveWatchers",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400"
+      ],
+      "asserts": "routes",
+      "reach": [
+        "route-put-watchers"
       ]
     }
   ],
@@ -828,19 +1033,40 @@
         "filter-eligible",
         "reject-empty-selection",
         "write-watchers",
-        "refresh-cache"
+        "refresh-cache",
+        "reject-not-permitted"
       ],
       "unknowns": [],
-      "assertions": []
+      "assertions": [
+        {
+          "id": "storage-before-cache-refresh",
+          "kind": "before",
+          "first": "write-watchers",
+          "then": "refresh-cache"
+        },
+        {
+          "id": "rejection-before-write",
+          "kind": "before",
+          "first": "reject-empty-selection",
+          "then": "write-watchers"
+        },
+        {
+          "id": "access-guard-reached-from-call",
+          "kind": "reached-from",
+          "site": "reject-not-permitted",
+          "from": "check-access"
+        }
+      ]
     },
     {
       "id": "save-feedback-continuation",
       "covers": [
         "feedback"
       ],
-      "run": "watchers-page-expanded",
+      "run": "save-thunk-by-name",
       "question": "Are the saved and failed notices shown as continuations of the save request?",
       "expect": [
+        "notice-unconfirmed",
         "notice-saved",
         "notice-failed"
       ],
@@ -856,6 +1082,12 @@
           "id": "failed-after-request",
           "kind": "reached-from",
           "site": "notice-failed",
+          "from": "request-save-watchers"
+        },
+        {
+          "id": "unconfirmed-after-request",
+          "kind": "reached-from",
+          "site": "notice-unconfirmed",
           "from": "request-save-watchers"
         }
       ]
@@ -887,6 +1119,195 @@
       ],
       "unknowns": [],
       "assertions": []
+    },
+    {
+      "id": "notes-entries-by-declaration",
+      "covers": [
+        "effects"
+      ],
+      "run": "watcher-notes-by-name",
+      "question": "Does the notes panel state each of its effect declarations, the cleanup one of them returns, and the three triggers or declarations it cannot read, each at its own site?",
+      "expect": [
+        "page-watcher-notes",
+        "effect-empty-deps",
+        "effect-cleanup",
+        "effect-named-callback",
+        "hook-unread",
+        "effect-dynamic-callback",
+        "effect-expression-deps",
+        "effect-same-line",
+        "hook-unread-again"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "every-entry-at-site",
+          "kind": "at-site",
+          "sites": [
+            "page-watcher-notes",
+            "effect-empty-deps",
+            "effect-cleanup",
+            "effect-named-callback",
+            "hook-unread",
+            "effect-dynamic-callback",
+            "effect-expression-deps",
+            "effect-same-line",
+            "hook-unread-again"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "notes-empty-deps-reaches-load",
+      "covers": [
+        "effects"
+      ],
+      "run": "watcher-notes-by-name",
+      "question": "Is the watcher load reached from the effect declared with an empty dependency list?",
+      "expect": [
+        "effect-empty-deps",
+        "request-load-watchers",
+        "route-get-watchers"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "load-from-empty-deps",
+          "kind": "reached-from",
+          "site": "route-get-watchers",
+          "from": "effect-empty-deps"
+        }
+      ]
+    },
+    {
+      "id": "notes-named-callback-reaches-readings",
+      "covers": [
+        "effects"
+      ],
+      "run": "watcher-notes-by-name",
+      "question": "Is the readings request reached from the effect that names its callback by identifier?",
+      "expect": [
+        "effect-named-callback",
+        "dispatch-refresh-readings",
+        "request-load-readings",
+        "route-get-readings"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "readings-from-named-callback",
+          "kind": "reached-from",
+          "site": "route-get-readings",
+          "from": "effect-named-callback"
+        }
+      ]
+    },
+    {
+      "id": "notes-same-line-and-repeated-triggers",
+      "covers": [
+        "effects"
+      ],
+      "run": "watcher-notes-by-name",
+      "question": "Do two effect declarations written on one line stay two entries, each reaching its own request, and does a second call of an unread hook keep its own site?",
+      "expect": [
+        "effect-same-line",
+        "hook-unread-again",
+        "route-get-watchers",
+        "route-get-readings"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "watchers-from-same-line-effect",
+          "kind": "reached-from",
+          "site": "route-get-watchers",
+          "from": "effect-same-line"
+        },
+        {
+          "id": "readings-from-same-line-effect",
+          "kind": "reached-from",
+          "site": "route-get-readings",
+          "from": "effect-same-line"
+        },
+        {
+          "id": "repeated-hook-at-its-own-site",
+          "kind": "at-site",
+          "sites": [
+            "hook-unread-again"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "overview-selecting-a-handler-excludes-mount",
+      "covers": [
+        "mount-vs-click"
+      ],
+      "run": "overview-acknowledge-only",
+      "question": "Starting from the acknowledge handler, does the answer leave the mount-time readings request out entirely?",
+      "expect": [
+        "request-acknowledge-alarm",
+        "route-ack-alarm"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "mount-route-absent",
+          "kind": "not-reached",
+          "site": "route-get-readings"
+        },
+        {
+          "id": "mount-request-absent",
+          "kind": "not-reached",
+          "site": "request-load-readings"
+        },
+        {
+          "id": "acknowledge-at-site",
+          "kind": "at-site",
+          "sites": [
+            "request-acknowledge-alarm",
+            "route-ack-alarm"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zones-landing-guarded-initial-and-follow-up",
+      "covers": [
+        "mount-vs-click"
+      ],
+      "run": "zones-landing-by-name",
+      "question": "Does the class component's mount callback discover both its guarded initial request and the follow-up dispatch its response makes once a first record comes back?",
+      "expect": [
+        "page-zones-landing",
+        "mount-load-primary-zone",
+        "request-load-primary-zone",
+        "dispatch-primary-zone-follow-up",
+        "route-get-watchers",
+        "route-get-readings"
+      ],
+      "unknowns": [],
+      "assertions": [
+        {
+          "id": "watchers-from-mount",
+          "kind": "reached-from",
+          "site": "route-get-watchers",
+          "from": "mount-load-primary-zone"
+        },
+        {
+          "id": "follow-up-reached-from-mount",
+          "kind": "reached-from",
+          "site": "route-get-readings",
+          "from": "mount-load-primary-zone"
+        },
+        {
+          "id": "follow-up-at-site",
+          "kind": "at-site",
+          "sites": [
+            "dispatch-primary-zone-follow-up"
+          ]
+        }
+      ]
     }
   ]
 }

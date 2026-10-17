@@ -207,7 +207,9 @@ span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
   one — never by an id the tool invented.
   --out defaults to <out>/span/<route-slug>.html; --specs narrows the evidence exactly as
   it does for trace --cover-overlay. Nothing is fetched and no timestamp is written, so
-  two runs over the same facts produce byte-identical pages.
+  two runs over the same facts produce byte-identical pages. Each page states the key it
+  was written for, and a default name already holding another key's page is left alone:
+  the new page takes the next free name (-2, -3, ...).
 
   --verdict-facts <file> reads cached surface_verdict facts and annotates each
   observation point the assertion-surface section names outright: confirmed shows the
@@ -216,8 +218,8 @@ span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
   confirmed/refused/pending counts. Without the flag the page has no verdict annotations
   or verdict counts.
 
-span --from-component <name> [--file <path-substring>] [--out <file>] [--specs <list|file>]
-            [--repo <id>]
+span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json]
+            [--out <file>] [--specs <list|file>] [--repo <id>]
   Web kind only. Resolves a web component, page or service name through the
   existing chain — component → handler or method body → action_dispatch → action_def →
   effect_handler → gateway_call → route — and writes one page: a header naming the
@@ -230,16 +232,43 @@ span --from-component <name> [--file <path-substring>] [--out <file>] [--specs <
   pinned the template, so a matchRoute guess is not trusted even when one lands);
   it dispatches an action no effect_handler answers (no-effect); or the walk's own
   depth or node budget ran out before the arm could be explored (walk-limit).
+  Every arm is attributed to the entry that reached it — one way execution reaches the
+  component, named by its component, trigger kind, source site and guards. A mount-time
+  request and a request a click makes are two entries with two arm sets. --entry <entry>
+  narrows the page to one of them, written as its id, its trigger (`componentDidMount`,
+  `useEffect`), a trigger qualified by its line (`useEffect@15`) or a handler name; a
+  selector matching anything other than exactly one entry is refused and lists them all.
+  A trigger the extractor read but could not follow prints as an `entry-unresolved` arm.
+  A rendered child is the component the rendering file names: its own declaration or
+  lazy() binding of the tag, or the relative module it imports the tag from and the name
+  that module exports it under, so `import Notes from './WatcherNotesPanel'` renders
+  that module's default export whatever the tag is called. A module binds only a
+  component its facts state it exports under the imported name. Any other import (a
+  component the module declares without exporting, a name it does not export, a
+  relative path no component file answers for a default import, a module whose facts
+  were extracted before exports were stated) prints as a `component-unresolved` arm
+  naming the render site and the module, never as a same-named component elsewhere. A
+  child no statement names a file for is looked up by the name it is exported under; one
+  more than one file declares, like an import path two files answer, prints as a
+  `component-ambiguous` arm naming the render site and every such file, and one nothing
+  declares prints as a `component-unresolved` arm. Neither is entered. A tag imported
+  from a module outside the repository (react, react-router-dom, ...) is no arm.
+  --json prints the same entries, arms and reasons without the per-route sections.
   A mobile-kind name is refused with its reason and writes no page — this verb
   resolves the web chain only. --out defaults to
-  <out>/span/component-<slug>.html; --repo scopes which component the name resolves to,
+  <out>/span/component-<slug>.html, the slug naming the component, the file that declares
+  it and, under --entry, the selected entry's own site; a name longer than the
+  120-character cap ends in a digest of the whole name rather than losing that site, and
+  a name already holding another selection's page sends this one to the next free name, so
+  two selections never share a page; --repo scopes which component the name resolves to,
   never the routes behind it.
 
   A name declared in more than one file is ambiguous: with no --file, the
   command exits non-zero and lists every candidate's declaring file so the reader can
   pick one; --file <path-substring> narrows to the declaration whose file path contains
   the substring, and still errors, listing what --file matched, if that leaves anything
-  other than exactly one.
+  other than exactly one. The entries, bindings and requests are then that declaration's
+  own: an entry written in another file of the same name is neither listed nor selectable.
 
 surface "<route key>" [--json] [--hops N] [--out <file>]
   Derives the assertion surface of one entry route: the stores it writes — the

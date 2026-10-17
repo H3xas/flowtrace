@@ -41,6 +41,9 @@ const ID_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 // row decide its own evidence, so a run may only narrow or widen the walk itself.
 const VALUED_FLAGS = new Set(['--depth', '--max-nodes']);
 const BARE_FLAGS = new Set(['--seeds', '--expand']);
+// A selector narrows the walk to one handler rather than changing what the run prints, so it
+// belongs in the same family as the flags above; it is checked as a name, not as a number.
+const SELECTOR_FLAGS = new Set(['--from-handler']);
 
 export class LedgerError extends Error {
   constructor(problems) {
@@ -162,8 +165,10 @@ export function ledgerProblems(ledger) {
         if (!Array.isArray(assertion.sites) || assertion.sites.length === 0 || !assertion.sites.every(known)) {
           fail(`${at}: at-site needs a non-empty list of known sites`);
         }
+      } else if (assertion.kind === 'not-reached') {
+        if (!known(assertion.site)) fail(`${at}: not-reached needs a known site`);
       } else {
-        fail(`${at}: kind ${JSON.stringify(assertion.kind)} is not before, reached-from or at-site`);
+        fail(`${at}: kind ${JSON.stringify(assertion.kind)} is not before, reached-from, at-site or not-reached`);
       }
     });
   });
@@ -187,6 +192,14 @@ export function argProblems(args) {
       continue;
     }
     if (BARE_FLAGS.has(arg)) continue;
+    if (SELECTOR_FLAGS.has(arg)) {
+      const value = args[index + 1];
+      if (typeof value !== 'string' || value.trim() === '' || value.startsWith('-')) {
+        problems.push(`${arg} needs a selector`);
+      }
+      index += 1;
+      continue;
+    }
     problems.push(`argument ${JSON.stringify(arg)} is not allowed in a run`);
   }
   return problems;

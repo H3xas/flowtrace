@@ -14,7 +14,14 @@ export function loadWatchers(zoneId: string) {
 export function saveWatchers(zoneId: string, growerIds: string[]) {
   return (dispatch: Dispatch) =>
     httpClient.getGatewayClient().put(`/greenhouse/v1/zones/${zoneId}/watchers`, { growerIds })
-      .then(() => dispatch(showNotice('watchers-saved')))
+      .then((response) => {
+        if (!response.stored) {
+          dispatch(showNotice('watchers-unconfirmed'));
+          return;
+        }
+
+        dispatch(showNotice('watchers-saved'));
+      })
       .catch(() => dispatch(showNotice('watchers-failed')));
 }
 

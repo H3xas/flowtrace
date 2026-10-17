@@ -1,7 +1,7 @@
 const request = (method: string, url: string, body?: unknown) =>
   fetch(url, { method, body: body === undefined ? undefined : JSON.stringify(body) }).then((response) => {
     if (!response.ok) throw new Error(`${method} ${url} answered ${response.status}`);
-    return response.json();
+    return response.status === 204 ? null : response.json();
   });
 
 const gateway = {

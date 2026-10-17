@@ -130,7 +130,7 @@ test('the report states every case with raw counts and never pools packs', (t) =
     assert.match(line, new RegExp(`assertions ${entry.counts.assertionsHeld}/${entry.counts.assertionsAsserted} `));
     assert.match(line, new RegExp(`${entry.classification}$`));
   }
-  assert.match(text, /^totals over 13 cases: sites \d+\/\d+ \(\d\.\d\d\)/m);
+  assert.match(text, new RegExp(`^totals over ${observed.cases.length} cases: sites \\d+\\/\\d+ \\(\\d\\.\\d\\d\\)`, 'm'));
   for (const run of observed.runs) assert.match(text, new RegExp(`^run ${run.id}: exit ${run.exit}, `, 'm'));
   assert.match(text, /never pooled/);
   assert.doesNotMatch(text, /accura|strength|precision|recall|score/i);

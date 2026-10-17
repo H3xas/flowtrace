@@ -16,15 +16,35 @@ the worked example (`examples/demo-shop` is).
   the zone routes mount a lazily imported watcher page inside a per-route `Suspense` wrapper.
 - Two initialisation styles: a class component that loads readings in `componentDidMount`, and a
   function component that loads watchers in a `useEffect`.
+- A class component whose mount callback makes a guarded request and whose response handler
+  dispatches a follow-up only once the first record comes back, so the initial request and the
+  conditional follow-up are two arms of one trigger rather than one list.
+- A second function component exercising every effect declaration the extractor distinguishes: an
+  empty dependency list, a watched list, a callback named by identifier, a cleanup returned by an
+  effect, and the two triggers it states without following — a hook it does not read and a
+  callback passed as an expression.
+- Two further declarations on one line of that component: two inline `useEffect` calls, the first
+  loading watchers and the second loading readings. They are one line but two entries with two
+  requests, and neither may be answered with the other's route. The same component calls its
+  unread custom hook twice, so one unread trigger name still means two sites.
 - Click handlers beside them: an acknowledge button on the class component and the selected save
   handler on the watcher page, which dispatches a thunk.
 - Gateway requests under `greenhouse/`, served by backend routes under `glasshouse/`, joined only
   through the configured alias in `greenhouse.config.json`.
 - A save that checks the caller's identity, looks the zone up, checks edit access, records an
   audit entry, filters the selected watchers for eligibility, rejects an empty selection, writes
-  the watchers, recomputes an irrigation schedule only when the zone has one, refreshes a cache and
-  records a second audit entry — each statement on its own line.
-- Success and failure notices in the UI after the save request settles.
+  the watchers, recomputes an irrigation schedule only when the zone has one, refreshes a cache,
+  records a second audit entry and answers with what it stored — each statement on its own line.
+- Three notices in the UI after the save request settles: one the response handler dispatches when
+  the answer does not report every selected watcher as stored, one it dispatches when it does, and
+  one the rejection handler dispatches when the request itself fails. Each is reachable for its own
+  source reason: the endpoint answers `Ok` with `Stored = eligible.Count == growerIds.Count`, so a
+  selection the eligibility filter trimmed comes back `Stored: false` through the same `200` a full
+  one does; the gateway resolves with the parsed body, and with no value for the `204` the
+  acknowledgement answers, so the stored-or-not question is asked of the body and never of a
+  status; and a rejected request throws before either handler runs. Nothing
+  in the pack asserts an HTTP status for the stored question, and no `exception_map` fact in it
+  maps one — the backend's own faults are reported as unhandled, which is what the source says.
 - A report request whose URL is built at run time for an endpoint no repository in the pack
   declares: the honest answer there is an unresolved marker, never a concrete edge.
 - A harvest-plan route whose handler performs twelve prerequisite lookups, each through its own
@@ -43,11 +63,24 @@ this source alone, before anything was observed. It holds:
   mount whose element is a wrapper — has `symbol: null` and can only be found by its file and line.
 - `unknowns`: statements whose target cannot be established from source, with the reason.
 - `runs`: one `flowtrace trace` start per question, the walk flags it uses (`--depth`,
-  `--max-nodes`, `--seeds`, `--expand` only), whether its assertions are the routes or the sinks it
-  reports, and `reach` — every site of that kind the source says the start reaches.
+  `--max-nodes`, `--seeds`, `--expand`, and `--from-handler <event>:<method>` to narrow a walk to
+  one handler), whether its assertions are the routes or the sinks it reports, and `reach` — every
+  site of that kind the source says the start reaches. A start need not be a component or a
+  route: `save-thunk-by-name` starts at the action creator `Watchers.saveWatchers`, which is what
+  answers a save request's settling, so the notices that handler dispatches are answered without
+  first resolving the page that dispatched the thunk. The three `watchers-page-*` runs start at
+  the watcher page, whose name the pack declares twice — the lazy import in `ZoneRoutes.tsx` is
+  the other declaration — and page-root discovery tells the two apart. `nested-page-by-name`
+  still reads `join`: the report call's whole URL is a run-time value, and the join matches it to
+  a backend route by prefix instead of leaving `report-url` unresolved.
+  A component start is walked in inventory mode, which folds branches that reach no route; a
+  question about a trigger that reaches nothing — a cleanup, a hook the extractor cannot read —
+  passes `--expand` so those entries are still answered for.
 - `cases`: the question, the sites and unknowns it expects, and its assertions — `before` (one site
   is reported ahead of another), `reached-from` (a site is reached from another, optionally through
-  a named join such as `alias`) and `at-site` (each listed site is found at its own line).
+  a named join such as `alias`), `at-site` (each listed site is found at its own line) and
+  `not-reached` (a site is absent from the answer altogether — how a walk narrowed to one handler
+  is held to leaving the rest of the component out).
 - `vocabulary`: the ten classifications a case may carry — `resolved`, `discovery`, `lifecycle`,
   `join`, `ordering`, `budget`, `stale-input`, `configuration`, `unsupported`, `unresolved-cause`.
 

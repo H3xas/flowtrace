@@ -74,8 +74,8 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 
 | type | fields | stated when |
 |---|---|---|
-| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service` |
-| `renders` | `from`, `to` | one component's template renders another |
+| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; `exports`, on every web component, lists each name its module exports it under, `default` included, and is `[]` for a component the module declares without exporting; a render's `source` binds only a component whose `exports` holds the imported name, and a web component without `exports` binds no import |
+| `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself — `default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>` |
 | `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler |
 | `injects` | `from`, `to` | a class is given another as a dependency |
 | `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal |
@@ -83,9 +83,34 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `action_dispatch` | `class`, `method`, `action` | a body dispatches an action |
 | `effect_handler` | `class`, `field`, `actions`, `endLine` | a body handles dispatched actions and issues HTTP |
 | `props_bind` | `component`, `prop`, `target` | a `connect` map binds a creator to a prop |
+| `component_entry` | `component`, `kind`, `trigger`, `handler`, `guards` | execution reaches a component: a class lifecycle callback, a hook effect, the cleanup an effect returns, or a trigger the extractor cannot read |
 | `page_route` | `owner`, `path` | a web `<Route>` element, as written: `owner` is the component declaring it and `path` its own path (`''` for an index or pathless route). Optional: `index`, `layout` (it has child routes), `parentLine`/`parentColumn` (the enclosing `<Route>`), `pathLine`, `element` with `elementFile`/`elementName` when the element's import resolves, `lazyLine`/`lazySpecifier` when the element is a lazy binding, `wrappers`, `guards` (`{ kind: "condition", text, branch }` or `{ kind: "wrapper", text }`), `redirect`/`redirectLine` for a `<Navigate>`, and `unsupported` — `path-expression`, `optional-segment`, `element-expression`, `redirect-expression`, `route-expression` or `route-object` — for a form the lookup will not guess through. A `<Route>` held by an `if (…) { … }` block carries that test as a `guards` condition, unevaluated like any other; one built inside a loop, a `switch` or an object literal keeps `route-expression` |
 | `page_route` (from a route array) | as above | the same fact for an entry of an array a `.map` renders as `<Route>`: `file`/`line`/`column` stay the rendering `.map`'s `<Route>` site, and `entryFile`/`entryLine`/`entryColumn` name the array entry the values came from, with `arrayFile`/`arrayName` naming the iterated constant or the prop it arrived as. An entry's guard carries its own `file`, which is the entry's, not the render site's. `unsupported` adds `route-array-expression` (a computed or concatenated array, or an entry that is not an object literal), `route-array-unresolved` (no readable array behind the iterated name), `route-array-ambiguous` (more than one prop site supplies it), `filter-expression` (a `.filter` predicate that is not one property of the loop binding) and `filter-property` (an entry the filter names by a property it does not state) |
 | `page_mount` | `path`, `source` | where a routed tree is mounted: `source` `app-root` (a root render; `component` names what it renders) or `router` (a router element inside `component`), with `path` the router's literal `basename` or `/`; an unreadable basename has `path: ""` and `unsupported: "basename-expression"` and cannot anchor a page; or `inferred`, the prefix the library's own `navigate()` literals agree on, with `evidence` counting them |
+
+A `component_entry` names one way execution reaches a component, on the site it was
+written at. `kind` is `mount`, `update`, `unmount`, `effect`, `cleanup`, `event` or
+`unknown`; `trigger` is the name it was written under (`componentDidMount`, `useEffect`,
+a hook the extractor does not read); `handler` is the callback or handler it names, and is
+`null` when the trigger *is* its own callback. `guards` lists, in source order, the
+conditions that gate the calls inside the entry. Optional: `column` is the trigger's
+1-based column, which with `line` is the site — two declarations can share a line, and one
+line is then not a site; `deps` is an effect's dependency list as written — `[]` when none
+was written — `endLine` closes the entry's span, `unresolved` names why the trigger could
+not be followed (`custom-hook`, `dynamic-callback`), and `method` is the key the calls
+inside the entry attribute to.
+
+An entry states a declaration, never how many times React runs the body and never an
+order between two entries. A JSX `on*` binding is an entry too; its identity comes from
+the `template_handler` fact that states it, with the event as its trigger. A `use…` call
+the extractor does not read is one entry per call site, so two calls of one unread hook
+are two sites rather than one name.
+
+Optional on `action_dispatch`: `continuesFile` and `continuesLine` name the gateway call
+whose response handler this dispatch is written inside, and `outcome` is `success` or
+`failure` for which of that call's handlers it is. The field is stated only where the
+source states the relation — a `.then` or `.catch` callback — never inferred from two
+statements sharing a body. Optional on `template_handler`: the `column` of the binding.
 
 ### Test evidence
 
