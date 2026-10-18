@@ -11,7 +11,6 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { copyFixture, runCli } from './helpers.js';
-import { dispositionToken } from '../lib/trace.js';
 import { GOLDEN_CORPORA, captureSeedGoldens, readSeedGolden } from './seed-goldens.js';
 
 const CONFIG = 'bakery.config.json';
@@ -324,7 +323,12 @@ test('Pipeline rejects AC-13: a resolved step counts only its refusals at its pi
   const styles = new Set(shallow.seeds.flatMap((seed) => seed.dispositions.filter((entry) => entry.line === nonRefusals[1]).map((entry) => entry.disposition)));
   assert.deepEqual([...styles].sort(), ['not-sourdough', 'sourdough'], 'one level up, the step\'s discriminator multiplies');
 
-  const tokens = (seed) => seed.dispositions.map(dispositionToken).filter(Boolean).sort().join(' ');
+  const tokens = (seed) =>
+    seed.dispositions
+      .filter((entry) => entry.kind !== 'reject')
+      .map((entry) => `${entry.kind}@${site(entry)}=${entry.disposition}`)
+      .sort()
+      .join(' ');
   const unrejected = shallow.seeds.filter((seed) => !seed.dispositions.some((entry) => entry.kind === 'reject' && entry.disposition === 'taken'));
   const unresolved = traceJson(env, 'POST bakery/v1/proofs/loose');
   assert.equal(unresolved.nodes.find((node) => node.composition).composition.state, 'unresolved');

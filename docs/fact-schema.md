@@ -67,8 +67,38 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
 | `exception_map` | `scope`, `class`, `exception`, `status` | an exception type is converted to a status — `scope` is `global` for a registered exception filter, `action` for a `catch` inside one controller action |
 
+| `step_composition` | `class`, `field`, `source`, `steps` | the source names the ordered steps of one pipeline's collection field: `source` is `factory` (registration calls on the instance a DI factory lambda builds and returns), `typeof-list` (a literal `typeof(...)` list resolved through the container) or `enumerable` (an injected `IEnumerable<T>` and its `Add*<T, X>()` registrations); `steps` is `[{ type, file, line }]` in run order, or `null` with a `reason` (`step-expression`, `registration-order`, `no-registration`, `factory-count`) when the list cannot be read |
+| `loop_stop` | `class`, `method`, `field`, `form`, `step` | a `foreach` over a collection field calls `step` on each element; `form` is `flag-return` (with `flag`, `negated`, `position` `before` or `after` the call, and `returns`), `flag-break` (with `flag`, `negated` and `after`, the line after the loop that tests the flag), `bool-return` (with `returns`), `none`, or `unresolved` with `reason: "stop-rule"`; `endLine`, `stepLine`, `arg` and `argType` describe the loop and its argument |
+| `flag_write` | `class`, `method`, `member`, `value` | a body writes `param.member = value;` for a member that a loop's stop rule reads; `value` is `true`, `false` or `expression`, and `param` names the receiver |
+| `sentinel_return` | `class`, `method`, `value` | a body returns `false` or `null`; `ifLine` names the `if` it answers, when it has one |
+| `return_flow` | `class`, `method`, `field`, `calledMethod` | a method returns a call's value unchanged, so a sentinel passes through it to its caller |
+| `sentinel_map` | `class`, `method`, `field`, `calledMethod`, `sentinel`, `status` | an action answers `status` when the call it names returns `sentinel` (`null` or `false`), read from a `?:` conditional or an `if` on the value; `local` names the variable that holds the value |
+| `auth_filter` | `class`, `name`, `stage`, `method`, `exemptions` | a class with a source body implements an authorization or action filter: `stage` is `authorization` or `action`, `method` its entry method, `name` the filter as an attribute names it, and `exemptions` the attribute names its early return tests through `typeof(XAttribute)`; `order` holds a literal `Order` value. An exception filter gives no fact |
+| `filter_result` | `class`, `method`, `status` | a filter's entry method assigns `context.Result` a result whose status the status rules read |
+| `filter_use` | `filter`, `scope` | a filter applies: `scope` is `global` (an `options.Filters.Add(typeof(X))` registration, with its `position`), or `controller` or `action` for an attribute on that class or method (with `class`, and `method` for an action) |
+| `class_base` | `class`, `base` | a class header names a base class that the repository declares; a framework base such as `ControllerBase` gives no fact |
+
 `param_source` is what makes seed reachability answerable: a branch reading only `jwt` or
 `injected` values cannot be forced by a black-box caller.
+
+The walk reads the last ten types only at a pipeline loop, a sentinel return or a filter. A
+fact set without them gives the same tree and seeds as before, and each pipeline loop then
+shows `composition-not-extracted`. From these facts the walk adds reject decisions: a branch
+of kind `reject` with the sides `taken` and `not-taken`, whose `rejectForm` is `flag-write`,
+`bool-false`, `sentinel`, `filter-result` or `no-grant`. A reject on its `not-taken` side adds
+no token to a seed key. In `trace --json` and `trace --seeds --json`, these fields appear
+only where they apply:
+
+- A collection node carries `composition`: `{ state: "resolved", source, steps }` or
+  `{ state: "unresolved", reason }`. The class node of each resolved step carries `step`, its
+  position.
+- A reject decision carries `rejectForm`. It also carries `statusVia`, the file and line that
+  gave the status, or `statusReason: "status-unmapped"` with a `null` response.
+- A seed that a filter decides carries `gate: { filter, scope, stage, shared }`. The value of
+  `shared` is `true` for a global filter. A seed with no readable status carries
+  `statusReason`.
+- `stats.pipelines` gives the resolved count and the unresolved pipelines with their reasons.
+  `stats.gates` gives the filters that the route ran.
 
 ### Caller side (mobile and web)
 
