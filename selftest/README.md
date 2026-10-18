@@ -66,6 +66,11 @@ npm test
   parameters, wildcards, lazy imports, redirects, guarded alternatives, unmounted roots, forms it
   does not model), with `matrix.json` naming the page entry or failure reason each URL must give;
   `page-routes.test.js` runs it through the CLI.
+- `corpus/nursery-mobile/` — an invented Ionic app (a page, a rendered child component, one
+  injected service, NgRx actions and an effect) and a small ASP.NET Core backend it calls.
+  `mobile-component-span.test.js` runs `span --from-component` over it. The fixture's README
+  states the header counts each run must give and how the two committed `trace` goldens were
+  captured.
 - `journey-helpers.js` — a disposable copy of the journey pack and the harness run as a
   subprocess.
 - `export-invariants.js` — the checks a `flowtrace-edges` document must satisfy on its own,
