@@ -12,7 +12,7 @@
     "flowtrace": "bin/flowtrace.js"
   },
   "scripts": {
-    "test": "node --test selftest/affected.test.js selftest/branch-point-contract.test.js selftest/cli-contract.test.js selftest/component-entries.test.js selftest/config-check.test.js selftest/docs-check.test.js selftest/export-check.test.js selftest/graph-hop.test.js selftest/join-contract.test.js selftest/json-contract.test.js selftest/path-check.test.js selftest/pw-declarations-contract.test.js selftest/pw-titles-contract.test.js selftest/routes-of.test.js selftest/scout-contract.test.js selftest/slug-contract.test.js selftest/verify.test.js selftest/journey-ledger.test.js selftest/journey-capture.test.js selftest/journey-diagnostics.test.js selftest/journey-pack.test.js selftest/save-outcome-contract.test.js selftest/page-routes.test.js",
+    "test": "node --test selftest/affected.test.js selftest/branch-point-contract.test.js selftest/cli-contract.test.js selftest/component-entries.test.js selftest/mobile-component-span.test.js selftest/config-check.test.js selftest/docs-check.test.js selftest/export-check.test.js selftest/graph-hop.test.js selftest/join-contract.test.js selftest/json-contract.test.js selftest/path-check.test.js selftest/pw-declarations-contract.test.js selftest/pw-titles-contract.test.js selftest/routes-of.test.js selftest/scout-contract.test.js selftest/slug-contract.test.js selftest/verify.test.js selftest/journey-ledger.test.js selftest/journey-capture.test.js selftest/journey-diagnostics.test.js selftest/journey-pack.test.js selftest/save-outcome-contract.test.js selftest/page-routes.test.js",
     "verify": "node scripts/verify.mjs"
   },
   "files": [
