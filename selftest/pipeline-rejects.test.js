@@ -11,6 +11,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { copyFixture, runCli } from './helpers.js';
+import { dispositionToken } from '../lib/trace.js';
 import { GOLDEN_CORPORA, captureSeedGoldens, readSeedGolden } from './seed-goldens.js';
 
 const CONFIG = 'bakery.config.json';
@@ -286,4 +287,46 @@ test('Pipeline rejects AC-9: every existing corpus keeps its seed keys, and one 
     for (const key of golden.keys) assert.equal(now.trace[key], golden.trace[key], `${corpusEntry.name} ${key}: byte-identical`);
     assert.equal(now.cover, golden.cover, `${corpusEntry.name} cover: byte-identical`);
   }
+});
+
+test('Pipeline rejects AC-13: a resolved step counts only its refusals at its pipeline\'s depth', (t) => {
+  const env = corpus(t, 'bakery-orders');
+  const step = 'src/Steps/ProofSteps.cs';
+  const lineOf = (pattern) => sourceLine(env.dir, step, pattern);
+  const flagLine = lineOf(/dough\.Valid = false;/);
+  const throwLine = lineOf(/throw new OverProofedException/);
+  const nonRefusals = [
+    lineOf(/if \(dough\.Notes == null\) return/),
+    lineOf(/if \(dough\.Style == DoughStyle\.Sourdough\)/),
+    lineOf(/IsToggleEnabled\("LongProof"\)/),
+    lineOf(/if \(dough\.Shape == LoafShape\.Boule\)/),
+  ];
+
+  const deep = traceJson(env, 'POST bakery/v1/proofs');
+  const flag = deep.seeds.find((seed) => deciding(seed).rejectForm === 'flag-write');
+  const thrown = deep.seeds.find((seed) => deciding(seed).kind === 'error_return' && deciding(seed).disposition === 'taken');
+  assert.ok(flag && thrown, JSON.stringify(deep.seeds.map(deciding)));
+  assert.equal(site(deciding(flag)), `${step}:${flagLine}`);
+  assert.equal(flag.response, '400 BadRequest');
+  assert.equal(site(deciding(thrown)), `${step}:${throwLine}`);
+  assert.match(thrown.response, /OverProofedException/);
+
+  const decided = deep.seeds.flatMap((seed) => seed.dispositions.filter((entry) => entry.file === step).map((entry) => entry.line));
+  for (const line of nonRefusals) assert.ok(!decided.includes(line), `${step}:${line} decides no seed and adds no key token`);
+  const method = deep.nodes.find((node) => node.kind === 'method' && node.ref === 'ProofDoughStep.ProcessAsync');
+  assert.equal(method.methodDepth, 3);
+  const branches = deep.nodes.filter((node) => node.kind === 'branch' && node.file === step);
+  for (const line of nonRefusals) assert.equal(branches.find((node) => node.line === line).primary, false, `${step}:${line}`);
+  const tree = traceText(env, 'POST bakery/v1/proofs');
+  for (const line of nonRefusals) assert.match(tree, new RegExp(`◇ ${line}(?:-\\d+)?  .*\\(depth\\)`), `${step}:${line} is demoted by depth`);
+
+  const shallow = traceJson(env, 'POST bakery/v1/proofs/quick');
+  const styles = new Set(shallow.seeds.flatMap((seed) => seed.dispositions.filter((entry) => entry.line === nonRefusals[1]).map((entry) => entry.disposition)));
+  assert.deepEqual([...styles].sort(), ['not-sourdough', 'sourdough'], 'one level up, the step\'s discriminator multiplies');
+
+  const tokens = (seed) => seed.dispositions.map(dispositionToken).filter(Boolean).sort().join(' ');
+  const unrejected = shallow.seeds.filter((seed) => !seed.dispositions.some((entry) => entry.kind === 'reject' && entry.disposition === 'taken'));
+  const unresolved = traceJson(env, 'POST bakery/v1/proofs/loose');
+  assert.equal(unresolved.nodes.find((node) => node.composition).composition.state, 'unresolved');
+  assert.deepEqual(unrejected.map(tokens).sort(), unresolved.seeds.map(tokens).sort(), 'the resolved walk adds only its reject seeds');
 });

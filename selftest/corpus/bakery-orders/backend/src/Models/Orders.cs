@@ -76,7 +76,49 @@ namespace Bakery.Api.Models
         public bool Valid { get; set; } = true;
     }
 
+    public enum DoughStyle
+    {
+        Plain,
+        Sourdough,
+    }
+
+    public enum LoafShape
+    {
+        Batard,
+        Boule,
+    }
+
+    public class DoughRequest
+    {
+        public DoughStyle Style { get; set; }
+        public LoafShape Shape { get; set; }
+        public int Starter { get; set; }
+        public string Notes { get; set; }
+    }
+
+    public class Dough
+    {
+        public Dough(DoughRequest request)
+        {
+            Style = request.Style;
+            Shape = request.Shape;
+            Starter = request.Starter;
+            Notes = request.Notes;
+        }
+
+        public DoughStyle Style { get; set; }
+        public LoafShape Shape { get; set; }
+        public int Starter { get; set; }
+        public string Notes { get; set; }
+        public int Hours { get; set; }
+        public bool Valid { get; set; } = true;
+    }
+
     public class OvenBusyException : Exception
+    {
+    }
+
+    public class OverProofedException : Exception
     {
     }
 

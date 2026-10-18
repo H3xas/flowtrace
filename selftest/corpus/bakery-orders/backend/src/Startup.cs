@@ -107,12 +107,34 @@ namespace Bakery.Api
                 return pipeline;
             });
 
+            services.AddScoped<IProofService, ProofService>();
+            services.AddScoped<IStarterRepository, StarterRepository>();
+
+            services.AddScoped<IProofPipeline>(ctx =>
+            {
+                var pipeline = new ProofPipeline();
+                pipeline.RegisterStep(ctx.GetRequiredService<ProofDoughStep>());
+                return pipeline;
+            });
+
+            services.AddScoped<ILooseProofPipeline>(ctx =>
+            {
+                var pipeline = new LooseProofPipeline();
+                pipeline.RegisterStep(BuildProofStep(ctx));
+                return pipeline;
+            });
+
             AddCrumbExtras(services);
         }
 
         private static void AddCrumbExtras(IServiceCollection services)
         {
             services.AddScoped<ICrumbStep, OatCrumbStep>();
+        }
+
+        private static IProofStep BuildProofStep(System.IServiceProvider provider)
+        {
+            return provider.GetRequiredService<ProofDoughStep>();
         }
 
         private static IFrostingStep BuildFrostingStep(System.IServiceProvider provider)
