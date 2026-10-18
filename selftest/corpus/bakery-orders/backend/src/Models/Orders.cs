@@ -110,6 +110,7 @@ namespace Bakery.Api.Models
         public LoafShape Shape { get; set; }
         public int Starter { get; set; }
         public string Notes { get; set; }
+        public string ForbiddenTopping { get; set; }
         public int Hours { get; set; }
         public bool Valid { get; set; } = true;
     }

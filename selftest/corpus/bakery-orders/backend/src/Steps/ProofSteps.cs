@@ -24,6 +24,7 @@ namespace Bakery.Api.Steps
         public Task ProcessAsync(Dough dough)
         {
             if (dough.Notes == null) return Task.CompletedTask;
+            if (dough.ForbiddenTopping == null) return Task.CompletedTask;
 
             if (dough.Style == DoughStyle.Sourdough)
             {

@@ -294,9 +294,11 @@ test('Pipeline rejects AC-13: a resolved step counts only its refusals at its pi
   const lineOf = (pattern) => sourceLine(env.dir, step, pattern);
   const flagLine = lineOf(/dough\.Valid = false;/);
   const throwLine = lineOf(/throw new OverProofedException/);
+  const styleLine = lineOf(/if \(dough\.Style == DoughStyle\.Sourdough\)/);
   const nonRefusals = [
     lineOf(/if \(dough\.Notes == null\) return/),
-    lineOf(/if \(dough\.Style == DoughStyle\.Sourdough\)/),
+    lineOf(/if \(dough\.ForbiddenTopping == null\) return/),
+    styleLine,
     lineOf(/IsToggleEnabled\("LongProof"\)/),
     lineOf(/if \(dough\.Shape == LoafShape\.Boule\)/),
   ];
@@ -320,7 +322,7 @@ test('Pipeline rejects AC-13: a resolved step counts only its refusals at its pi
   for (const line of nonRefusals) assert.match(tree, new RegExp(`◇ ${line}(?:-\\d+)?  .*\\(depth\\)`), `${step}:${line} is demoted by depth`);
 
   const shallow = traceJson(env, 'POST bakery/v1/proofs/quick');
-  const styles = new Set(shallow.seeds.flatMap((seed) => seed.dispositions.filter((entry) => entry.line === nonRefusals[1]).map((entry) => entry.disposition)));
+  const styles = new Set(shallow.seeds.flatMap((seed) => seed.dispositions.filter((entry) => entry.line === styleLine).map((entry) => entry.disposition)));
   assert.deepEqual([...styles].sort(), ['not-sourdough', 'sourdough'], 'one level up, the step\'s discriminator multiplies');
 
   const tokens = (seed) =>
