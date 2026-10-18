@@ -51,6 +51,23 @@ function spanJson(name, extra = [], configPath = config) {
   return { ...result, model: result.status === 0 ? JSON.parse(result.stdout) : null };
 }
 
+/**
+ * A disposable copy of the fixture with one source file rewritten and freshly extracted, for
+ * a source shape the committed fixture does not carry.
+ */
+function variant(file, mutate) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-mobile-span-variant-'));
+  cpSync(FIXTURE, dir, { recursive: true });
+  const target = join(dir, 'mobile', file);
+  writeFileSync(target, mutate(readFileSync(target, 'utf8')));
+  const variantConfig = join(dir, 'nursery.config.json');
+  const extracted = runCli(['extract', '--config', variantConfig], { cwd: dir });
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const joined = runCli(['join', '--config', variantConfig], { cwd: dir });
+  assert.equal(joined.status, 0, joined.stderr);
+  return { dir, config: variantConfig };
+}
+
 function expectedCounts() {
   const readme = readFileSync(join(FIXTURE, 'README.md'), 'utf8');
   const block = /```json\n([\s\S]*?)\n```/.exec(readme);
@@ -75,6 +92,8 @@ test('Mobile component span AC-1: a mobile page start exits 0 and names its repo
   assert.equal(run.status, 0, run.stderr);
   assert.deepEqual(run.model.component, { name: 'PlotDetailPage', repo: 'mobile', kind: 'page', file: PAGE_TS, line: 6 });
   assert.doesNotMatch(run.stderr, /refused|web kind only/i);
+  assert.deepEqual(Object.keys(run.model), ['component', 'header', 'entries', 'selectedEntry', 'orphans', 'routes', 'unresolved', 'limits']);
+  for (const view of run.model.entries) assert.deepEqual(Object.keys(view), ['identity', 'routes', 'arms', 'unresolved']);
 });
 
 test('Mobile component span AC-1: a rendered child and an injected service start as a component and a service', () => {
@@ -173,6 +192,21 @@ test('Mobile component span AC-2: a handler reaching two methods of one service 
   assert.equal(tend.arms, 2);
 });
 
+test('Mobile component span AC-2: one handler bound at two sites is two entries, each with its own arm', () => {
+  const { dir, config: twice } = variant('src/app/features/plots/plot-detail.page.html', (text) =>
+    text.replace('  <app-seedling-badge>', '  <ion-button (click)="onWater()">Water again</ion-button>\n  <app-seedling-badge>'),
+  );
+  try {
+    const run = spanJson('PlotDetailPage', [], twice);
+    assert.equal(run.status, 0, run.stderr);
+    const water = run.model.entries.filter((view) => view.identity.handler === 'onWater');
+    assert.deepEqual(water.map((view) => view.identity.line).sort((a, b) => a - b), [6, 15]);
+    for (const view of water) assert.deepEqual([view.routes, view.arms], [['POST nursery/v1/plots/*/water'], 1]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("Mobile component span AC-2: a rendered child's entries carry the child's own name", () => {
   const mark = entryNamed(base, 'onMark');
   assert.equal(mark.identity.component, 'SeedlingBadgeComponent');
@@ -268,6 +302,16 @@ test('Mobile component span AC-5: a depth cut prints walk-limit at a store actio
     [entryNamed(run.model, 'onWater').identity.id, entryNamed(run.model, 'onTend').identity.id].includes(method.entry),
   );
   for (const arm of run.model.unresolved) assert.ok(BASE_REASONS.has(arm.reason), arm.reason);
+});
+
+test('Mobile component span AC-5: a node budget cut prints walk-limit arms and says the budget was hit', () => {
+  const run = spanJson('PlotDetailPage', ['--max-nodes', '12']);
+  assert.equal(run.status, 0, run.stderr);
+  assert.equal(run.model.limits.budgetHit, true);
+  const cut = run.model.unresolved.filter((arm) => arm.reason === 'walk-limit' && arm.entry !== null);
+  assert.ok(cut.length > 0, 'an entry walk the budget cut is a walk-limit arm');
+  for (const arm of cut) assert.ok(['method', 'entry', 'store_action'].includes(arm.breadcrumb.at(-1).kind), arm.attempted);
+  assert.equal(run.model.header.entries, base.header.entries, 'every entry is still listed');
 });
 
 test('Mobile component span AC-5: a handler whose service method holds only a two-line gateway call reaches no route', () => {
