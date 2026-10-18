@@ -1142,6 +1142,7 @@ async function runExtract(config, repoFilter) {
       srcSubpath: repo.srcSubpath,
       cypressSubpath: repo.cypressSubpath,
       caseIdCalls: config.caseId ? config.caseId.calls : [],
+      backendCalls: config.backend,
       workerPatterns: config.workerPatterns,
     });
     let count;
