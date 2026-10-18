@@ -2,6 +2,47 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## [Unreleased]
+
+Extraction:
+
+- A `playwright` repository writes one `pw_backend` fact for each `pw_test`. Its class is
+  `real`, `patched` or `mocked`. If the reader cannot tell, the class is `unknown` with a
+  `reason`.
+  The fact lists the call sites that decided the class. The reader follows the test body and
+  the hooks of the file and of each enclosing `test.describe` block. It also follows the
+  helpers that those regions call, in the same file and across the repository. Comments and
+  string contents never count.
+- The new top-level `backend` configuration key names the calls that mock (`mockCalls`) or
+  patch (`patchCalls`) a backend, for a suite whose mock lives outside the repository. No call
+  name is built in. A malformed value is refused with one message that names `backend`.
+- `pw_stub` gains `handler`: what its route handler does (`fulfill`, `fetch-fulfill`,
+  `abort`, `spy` or `unresolved`). The set of `pw_stub` facts and the `cover` output do not
+  change.
+
+Worked example:
+
+- `examples/demo-shop/e2e/ui/storefront.pw.ts` adds a UI spec with a hook that patches the
+  catalog response and a block on the live catalog.
+
+Component span:
+
+- `span --from-component` accepts a mobile (Ionic) component, page or service and writes the
+  same page and `--json` model as for a web one. A mobile name no longer exits `2` with a
+  refusal. A start in a repository that is neither web nor mobile still exits `2`, and its
+  message names both kinds.
+- On a mobile start, each template event binding of kind `call` is an `event` entry, and each
+  Angular or Ionic lifecycle hook the class itself declares is a `mount`, `update` or
+  `unmount` entry. Each entry keeps its own arms, so two handlers that call two methods of one
+  injected service no longer fold into one.
+- A request that no entry reaches prints once as an arm without entry. A request that an entry
+  reaches is not counted again there. A method, service or component node that the depth or
+  node budget cut prints as a `walk-limit` arm.
+- Known gap: a gateway call written over more than one line states no fact, so a handler that
+  reaches only such a call shows as an entry that reaches no route.
+- `trace` and `--from-handler` output on a mobile start, and web `span --from-component`
+  output, do not change.
+
 ## 0.4.1
 
 The first 0.4 release. The `v0.4.0` tag was created in error on the 0.3.0 tree and was never

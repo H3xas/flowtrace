@@ -268,7 +268,7 @@ const USAGE = [
   '',
   'span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json]',
   '            [--out <file>] [--specs <list|file>] [--repo <id>]',
-  '  Web kind only. Resolves a web component, page or service name through the',
+  '  Resolves a web or mobile component, page or service name through the',
   '  existing chain — component → handler or method body → action_dispatch → action_def →',
   '  effect_handler → gateway_call → route — and writes one page: a header naming the',
   '  component, the number of routes it resolves to and the number of arms that do not,',
@@ -302,8 +302,19 @@ const USAGE = [
   '  declares prints as a `component-unresolved` arm. Neither is entered. A tag imported',
   '  from a module outside the repository (react, react-router-dom, ...) is no arm.',
   '  --json prints the same entries, arms and reasons without the per-route sections.',
-  '  A mobile-kind name is refused with its reason and writes no page — this verb',
-  '  resolves the web chain only. --out defaults to',
+  '  On a mobile (Ionic) start, each template event binding of kind call is an `event`',
+  '  entry with the handler it calls, and each lifecycle hook the class itself declares is',
+  '  an entry with the hook as its trigger: ngOnInit, ngAfterContentInit, ngAfterViewInit,',
+  '  ionViewWillEnter and ionViewDidEnter (mount), ngOnChanges, ngDoCheck,',
+  '  ngAfterContentChecked and ngAfterViewChecked (update), ngOnDestroy, ionViewWillLeave',
+  '  and ionViewDidLeave (unmount). The chain follows this. calls, injected service calls',
+  '  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call on one',
+  '  line, also inside pipe or mergeMap. A request no entry reaches, such as one a method',
+  '  only a decorator, a subscription or an inherited hook runs, prints once as an arm',
+  '  without entry, and a request an entry reaches is never counted again there. A method,',
+  '  service or component node the depth or node budget cut is a walk-limit arm too. A',
+  '  gateway call written over more than one line states no fact, so its handler shows as',
+  '  an entry that reaches no route; assign and prop bindings are no entries. --out defaults to',
   '  <out>/span/component-<slug>.html, the slug naming the component, the file that declares',
   '  it and, under --entry, the selected entry\'s own site; a name longer than the',
   '  120-character cap ends in a digest of the whole name rather than losing that site, and',
@@ -1131,6 +1142,7 @@ async function runExtract(config, repoFilter) {
       srcSubpath: repo.srcSubpath,
       cypressSubpath: repo.cypressSubpath,
       caseIdCalls: config.caseId ? config.caseId.calls : [],
+      backendCalls: config.backend,
       workerPatterns: config.workerPatterns,
     });
     let count;
@@ -1791,10 +1803,10 @@ async function runSpan(config, options) {
 }
 
 /**
- * `span --from-component <name>` (web kind only) — one page per component, carrying one
- * `span()` section per route the component's own walk resolves to. `--repo` here scopes
- * which component the name resolves to, never the routes behind it — a web component and
- * the backend route it calls always live in different repositories, so that scoping is
+ * `span --from-component <name>` (a web or mobile component) — one page per component,
+ * carrying one `span()` section per route the component's own walk resolves to. `--repo`
+ * here scopes which component the name resolves to, never the routes behind it — a client
+ * component and the backend route it calls always live in different repositories, so that scoping is
  * never forwarded into the per-route walk. `--file` disambiguates a name declared
  * in more than one file; `model.error` and `model.candidates` already print identically to
  * every other ambiguous-start case below.
@@ -1841,10 +1853,6 @@ async function runComponentSpan(config, options, factSets) {
       outbound: scout.outbound,
     },
   });
-  if (model.refused) {
-    process.stderr.write(`flowtrace: ${model.refused}\n`);
-    return 2;
-  }
   if (model.error) {
     process.stderr.write(`flowtrace: "${options.fromComponent}" ${model.error}\n`);
     for (const candidate of model.candidates || []) process.stderr.write(`  ${candidate}\n`);
@@ -1861,7 +1869,11 @@ async function runComponentSpan(config, options, factSets) {
     log(JSON.stringify(componentSpanJson(model), null, 2));
     return 0;
   }
-  const page = renderComponentSpanHtml(model, { title: `flowtrace span: ${options.fromComponent}` });
+  const startRepo = config.repos.find((repo) => repo.id === model.component.repo);
+  const page = renderComponentSpanHtml(model, {
+    title: `flowtrace span: ${options.fromComponent}`,
+    repoKind: startRepo ? startRepo.kind : 'web',
+  });
   const target = writeSpanPage(config, options, model, page);
   log(
     `span --from-component ${options.fromComponent}: ${plural(model.header.routesResolved, 'route')} resolved, ` +
