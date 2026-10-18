@@ -38,6 +38,7 @@ checkouts named as siblings of the file.
 | `aliases` | no | route-prefix rewrites the join step applies when a call finds no route |
 | `sinks` | no | what makes a class a data sink, below |
 | `caseId` | no | call shapes whose literal arguments are test-management case ids, below |
+| `backend` | no | the calls that mock or patch the backend of a browser test, below |
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
@@ -332,6 +333,38 @@ A configured callee is also read in title position. A test declared as
 wrapper, so title collection compares against `refunds a sale` rather than against the whole
 call. Without the entry the wrapper is opaque and the declaration resolves on its position in
 the file alone.
+
+## `backend`
+
+The playwright extractor writes one `pw_backend` fact for each test. The fact says whether
+the test runs on a real backend, on patched responses or on a mocked backend
+([fact-schema.md](fact-schema.md#test-evidence)). It reads `.route(` handlers, `routeFromHAR(`
+calls and the helpers of the repository by itself. A suite can also mock its backend through
+a call that it cannot read, such as a fixture package outside the repository. `backend` names
+those calls. Both lists default to none, so no call name is built in.
+
+```json
+"backend": {
+  "mockCalls": ["mockAllEndpoints"],
+  "patchCalls": ["seedCart", "fixtures.priceList"]
+}
+```
+
+- `mockCalls`: calls that replace every endpoint the test reaches. A test that reaches one of
+  them is `mocked`.
+- `patchCalls`: calls that answer some requests and let the others through. A test that
+  reaches one of them is `patched`, unless a mock call also reaches it.
+
+An entry is a callee as written: an identifier, or a dotted chain of identifiers. A bare entry
+matches a bare call and a member call (`seedCart` matches `seedCart(page)` and
+`fixtures.seedCart(page)`). A dotted entry matches that callee (`fixtures.priceList` matches
+`fixtures.priceList(page)` and not `catalog.priceList(page)`). The extractor does not read
+the body of a function with a configured name, because the entry decides the call. A name in
+a comment or in a string never matches.
+
+The loader refuses, with one message that names `backend`, a value that is not an object, a
+key other than `mockCalls` and `patchCalls`, a list that is not an array of call names, and a
+name in both lists. A repeated name in one list counts once.
 
 ## `workerPatterns`
 
