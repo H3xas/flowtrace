@@ -143,8 +143,9 @@ basis for it.
   decides the class. `reason` says which region: `body-by-reference` (a test body or a hook
   passed by name), `named-handler` (a route handler named by a function that its file does
   not declare), `unread-handler` (a handler that calls none of `fulfill`, `fetch`, `continue`,
-  `fallback` and `abort` on its route), or `ambiguous-helper` (a bare call name whose
-  repo-wide functions reach different kinds).
+  `fallback` and `abort` on its route), `ambiguous-helper` (a bare call name whose
+  repo-wide functions reach different kinds), or `unread-file` (the reader could not parse the
+  spec file).
 - `real`: none of the above.
 
 The precedence is `mocked`, then `patched`, then `unknown`, then `real`, and only an `unknown`
