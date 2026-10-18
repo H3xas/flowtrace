@@ -119,7 +119,8 @@ statements sharing a body. Optional on `template_handler`: the `column` of the b
 | `pw_test` | `spec`, `test`, `skipped` | a Playwright test is declared — not a `test.skip(condition, reason)` guard written inside a test body, and not a `test` reached through a member access (a regular expression's `.test(...)`, a matcher object's) |
 | `pw_request` | `spec`, `test`, `verb`, `template`, `resolved` | a test issues a request |
 | `pw_assert` | `spec`, `test`, `kind` | a test asserts something |
-| `pw_stub` | `spec`, `test`, `kind` | a test stubs a response |
+| `pw_stub` | `spec`, `test`, `kind` | a test stubs a response; `handler` says what its route handler does |
+| `pw_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `pw_test`: whether the test runs on a real backend, on patched responses or on a mocked backend |
 | `cypress_test` | `spec`, `test`, `skipped` | a Cypress test is declared |
 | `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL |
 | `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal argument of a configured case-id call, `table` for one row of a same-file data table the test iterates |
@@ -129,6 +130,55 @@ A `cypress_intercept` written in a support command carries no enclosing test and
 as much proof that a route is exercised as one written inline. There is no Cypress assertion
 fact, which is why Cypress evidence can never reach the `path` tier — the schema records no
 basis for it.
+
+`pw_backend` is written for every `pw_test`, at the same `file` and `line` and with the same
+`spec`, `test` and `skipped`. `backend` is one of four classes:
+
+- `mocked`: a call named in `backend.mockCalls` reaches the test
+  ([configuration.md](configuration.md#backend)).
+- `patched`: a route handler answers a request (`route.fulfill`, with or without
+  `route.fetch` first), a `routeFromHAR(` call replays an archive, or a call named in
+  `backend.patchCalls` reaches the test.
+- `unknown`: the test reaches a region that the reader cannot read, and no mock or patch
+  decides the class. `reason` says which region: `body-by-reference` (a test body or a hook
+  passed by name), `named-handler` (a route handler named by a function that its file does
+  not declare), `unread-handler` (a handler that calls none of `fulfill`, `fetch`, `continue`,
+  `fallback` and `abort` on its route), or `ambiguous-helper` (a bare call name whose
+  repo-wide functions reach different kinds).
+- `real`: none of the above.
+
+The precedence is `mocked`, then `patched`, then `unknown`, then `real`, and only an `unknown`
+fact carries `reason`. A test is read through its own body, the `beforeEach` and `beforeAll`
+hooks at file level and of every `test.describe` block that encloses it, and every function
+that those regions call. A function of the same file wins over a repo-wide class method or
+top-level function of the same name. The walk follows calls to a fixed point, so a cycle
+ends it. Comments and string contents are never read as calls.
+
+`sites` lists the calls that decided the class, sorted by line. A site has `line`, `where`
+(`test`, `hook` or `helper`) and `kind`, and can have `call`, `via` and `at`:
+
+| `kind` | the deciding call |
+|---|---|
+| `mock` | a call named in `backend.mockCalls` |
+| `patch` | a call named in `backend.patchCalls` |
+| `fulfill` | a `.route(` handler that calls `fulfill` |
+| `fetch-fulfill` | a `.route(` handler that calls `fetch` and then `fulfill` |
+| `har` | a `routeFromHAR(` call |
+| `abort` | a `.route(` handler that calls `abort` and not `fulfill` |
+| `spy` | a `.route(` handler that calls only `continue` or `fallback` |
+| `unresolved` | a region the reader cannot read |
+
+An `abort` or a `spy` site never changes the class: a spy shows that the test makes the
+request, and an abort removes a request. `call` is the callee as written. `via` lists the
+functions between the test and the deciding call, in call order, with a method written as
+`Class.method`. `at` gives the `file` and `line` of the deciding call when another file holds
+it. A site `line` is always a line of the spec: the deciding call's own line when the spec
+holds it, else the line of the test's call into `via`.
+
+`pw_stub.handler` comes from the same reader: `fulfill`, `fetch-fulfill`, `abort`, `spy` or
+`unresolved`. A direct `page.route(` stub takes the kind of its own handler. A stub helper call
+takes the kind that every repo-wide helper of that name agrees on, else `unresolved`. The field
+adds nothing to the set of `pw_stub` facts, and `cover` reads neither field.
 
 `case_id` resolves only three shapes and refuses the rest: a
 `test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is
