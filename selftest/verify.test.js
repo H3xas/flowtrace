@@ -31,8 +31,18 @@ import { REPO_ROOT } from './helpers.js';
 
 const SCRIPT = join(REPO_ROOT, 'scripts', 'verify.mjs');
 
-function verify(args) {
-  const result = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: REPO_ROOT, encoding: 'utf8' });
+/**
+ * CI exports VERIFY_COMMIT_RANGE for the checkout it verifies, and this suite runs inside that
+ * verification. A spawned command that inherited it would read CI's commits in place of the
+ * history a test built, so every spawn starts without it and names the range it wants.
+ */
+function commandEnv(env = {}) {
+  const { VERIFY_COMMIT_RANGE: _outer, ...inherited } = process.env;
+  return { ...inherited, ...env };
+}
+
+function verify(args, env) {
+  const result = spawnSync(process.execPath, [SCRIPT, ...args], { cwd: REPO_ROOT, encoding: 'utf8', env: commandEnv(env) });
   if (result.error) throw result.error;
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 }
@@ -110,7 +120,11 @@ function checkoutWithNoBase(t) {
 
 /** The command run inside a fixture checkout, with its own output. */
 function verifyIn(dir, args) {
-  const result = spawnSync(process.execPath, [join(dir, 'scripts', 'verify.mjs'), ...args], { cwd: dir, encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [join(dir, 'scripts', 'verify.mjs'), ...args], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: commandEnv(),
+  });
   if (result.error) throw result.error;
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 }
@@ -298,13 +312,34 @@ test('verify AC-5: a single-branch clone with an unsigned tip never passes the c
 
 test('a clone whose default base is its own branch still reads the commits under review', (t) => {
   const { dir, unsigned } = clonePointingAtItself(t);
-  const result = spawnSync(process.execPath, [join(dir, 'scripts', 'verify.mjs'), '--only', 'commit-signoff'], {
-    cwd: dir,
-    encoding: 'utf8',
-  });
+  const result = verifyIn(dir, ['--only', 'commit-signoff']);
   assert.equal(result.status, 1, `an unsigned commit must not read as clean: ${result.stdout}${result.stderr}`);
   assert.match(result.stderr, /verify: FAILED at commit-signoff/);
   assert.match(result.stderr, new RegExp(`${unsigned.slice(0, 12)}: missing Signed-off-by trailer`));
+});
+
+test('a range CI exports for the checkout under test never reaches a fixture checkout', (t) => {
+  const head = gitIn(REPO_ROOT, ['rev-parse', 'HEAD']);
+  const outer = `${gitIn(REPO_ROOT, ['rev-parse', 'HEAD~1'])}..${head}`;
+  const saved = process.env.VERIFY_COMMIT_RANGE;
+  process.env.VERIFY_COMMIT_RANGE = outer;
+  t.after(() => {
+    if (saved === undefined) delete process.env.VERIFY_COMMIT_RANGE;
+    else process.env.VERIFY_COMMIT_RANGE = saved;
+  });
+  const { dir, unsigned } = clonePointingAtItself(t);
+  const result = verifyIn(dir, ['--only', 'commit-signoff']);
+  assert.equal(result.status, 1, `the fixture's own unsigned tip must be read: ${result.stdout}${result.stderr}`);
+  assert.match(result.stderr, new RegExp(`${unsigned.slice(0, 12)}: missing Signed-off-by trailer`));
+  const baseless = verifyIn(checkoutWithNoBase(t), ['--only', 'public-text']);
+  assert.equal(baseless.status, 1, `${baseless.stdout}${baseless.stderr}`);
+  assert.match(baseless.stderr, /tried origin\/HEAD, origin\/main, main/);
+});
+
+test('a range the caller exports is the one the command reads when no flag names one', () => {
+  const result = verify(['--only', 'public-text'], { VERIFY_COMMIT_RANGE: 'no-such-base..HEAD' });
+  assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
+  assert.match(result.stderr, /no-such-base\.\.HEAD is not a revision range git can read/);
 });
 
 test('the inventory CI runs adds no checklist of its own beside the command', () => {
