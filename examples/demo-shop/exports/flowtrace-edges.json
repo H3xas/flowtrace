@@ -6,7 +6,7 @@
     "version": "0.4.1"
   },
   "provenance": {
-    "id": "b6c38f94948d01c2",
+    "id": "19fd98971dcf67b5",
     "producer": "flowtrace-cli 0.4.1",
     "formatVersion": 1,
     "config": {
@@ -58,7 +58,7 @@
         "repo": "api",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.4.1",
-        "headSha": "5eb1e17f051f8cad2d3f8c015c0019c213f027dc",
+        "headSha": "a5929c6f1fadf8e3d8205dab1e3e2b6d76c16cb3",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 17,
@@ -68,21 +68,21 @@
         "repo": "e2e",
         "kind": "playwright",
         "generatedFrom": "flowtrace 0.4.1",
-        "headSha": "5eb1e17f051f8cad2d3f8c015c0019c213f027dc",
+        "headSha": "a5929c6f1fadf8e3d8205dab1e3e2b6d76c16cb3",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-        "fileCount": 2,
+        "fileCount": 3,
         "titles": {
           "status": "failed",
           "reason": "@playwright/test not resolvable from the repository root"
         },
-        "digest": "1fe8e0afb3f3642db88b399f8bc6d4bcc88e5ea9"
+        "digest": "1bcc69900789295e0e6c7dcb8acda386a0810a09"
       },
       {
         "repo": "shopfront",
         "kind": "web",
         "generatedFrom": "flowtrace 0.4.1",
-        "headSha": "5eb1e17f051f8cad2d3f8c015c0019c213f027dc",
+        "headSha": "a5929c6f1fadf8e3d8205dab1e3e2b6d76c16cb3",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
@@ -92,7 +92,7 @@
         "repo": "stock",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.4.1",
-        "headSha": "5eb1e17f051f8cad2d3f8c015c0019c213f027dc",
+        "headSha": "a5929c6f1fadf8e3d8205dab1e3e2b6d76c16cb3",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 5,
@@ -119,7 +119,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "consumes",
@@ -136,7 +136,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "consumes",
@@ -153,7 +153,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "consumes",
@@ -170,7 +170,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "consumes",
@@ -187,7 +187,7 @@
         "line": 7
       },
       "key": "StockReservedEvent",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "publishes",
@@ -204,7 +204,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "publishes",
@@ -221,7 +221,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "publishes",
@@ -238,7 +238,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "publishes",
@@ -255,7 +255,7 @@
         "line": null
       },
       "key": "StockReservedEvent",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     },
     {
       "kind": "tests",
@@ -272,7 +272,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "b6c38f94948d01c2"
+      "provenance": "19fd98971dcf67b5"
     }
   ]
 }
