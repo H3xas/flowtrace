@@ -66,6 +66,11 @@ npm test
   parameters, wildcards, lazy imports, redirects, guarded alternatives, unmounted roots, forms it
   does not model), with `matrix.json` naming the page entry or failure reason each URL must give;
   `page-routes.test.js` runs it through the CLI.
+- `corpus/kettle-market/`: an invented storefront suite with the shapes that decide whether a
+  browser test runs on a real backend, on patched responses or on a mocked backend. Its
+  `base-facts.json` holds the `pw_stub` and `pw_test` facts that the extractor wrote before it
+  read backends, and `golden.mjs` writes that file. `backend-class.test.js` runs the corpus
+  through the CLI. The corpus README lists its spec groups.
 - `journey-helpers.js` — a disposable copy of the journey pack and the harness run as a
   subprocess.
 - `export-invariants.js` — the checks a `flowtrace-edges` document must satisfy on its own,

@@ -2,6 +2,29 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## [Unreleased]
+
+Extraction:
+
+- A `playwright` repository writes one `pw_backend` fact for each `pw_test`. Its class is
+  `real`, `patched` or `mocked`. If the reader cannot tell, the class is `unknown` with a
+  `reason`.
+  The fact lists the call sites that decided the class. The reader follows the test body and
+  the hooks of the file and of each enclosing `test.describe` block. It also follows the
+  helpers that those regions call, in the same file and across the repository. Comments and
+  string contents never count.
+- The new top-level `backend` configuration key names the calls that mock (`mockCalls`) or
+  patch (`patchCalls`) a backend, for a suite whose mock lives outside the repository. No call
+  name is built in. A malformed value is refused with one message that names `backend`.
+- `pw_stub` gains `handler`: what its route handler does (`fulfill`, `fetch-fulfill`,
+  `abort`, `spy` or `unresolved`). The set of `pw_stub` facts and the `cover` output do not
+  change.
+
+Worked example:
+
+- `examples/demo-shop/e2e/ui/storefront.pw.ts` adds a UI spec with a hook that patches the
+  catalog response and a block on the live catalog.
+
 ## 0.4.1
 
 The first 0.4 release. The `v0.4.0` tag was created in error on the 0.3.0 tree and was never
