@@ -1443,6 +1443,11 @@ function traceNodeFields(node) {
     'source',
     'entryFile',
     'entryLine',
+    'composition',
+    'step',
+    'rejectForm',
+    'statusReason',
+    'statusVia',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }
