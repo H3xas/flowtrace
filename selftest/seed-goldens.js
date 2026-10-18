@@ -25,6 +25,8 @@ export const GOLDEN_CORPORA = Object.freeze([
   { name: 'gizmo-shop', source: join(HERE, 'corpus', 'gizmo-shop'), config: 'gizmo.config.json' },
   { name: 'greenhouse-alerts', source: join(HERE, 'corpus', 'greenhouse-alerts'), config: 'greenhouse.config.json' },
   { name: 'demo-shop', source: join(REPO_ROOT, 'examples', 'demo-shop'), config: 'flowtrace.config.json' },
+  { name: 'nursery-mobile', source: join(HERE, 'corpus', 'nursery-mobile'), config: 'nursery.config.json' },
+  { name: 'kettle-market', source: join(HERE, 'corpus', 'kettle-market'), config: 'kettle.config.json' },
 ]);
 
 function cli(args, cwd) {
