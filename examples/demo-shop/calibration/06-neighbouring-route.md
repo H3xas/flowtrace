@@ -1,6 +1,6 @@
 # 06 · a verdict for the route next door
 
-Packet: `POST orders/v1/checkout` — three seeds; two executing tests.
+Packet: `POST orders/v1/checkout` — four seeds; two executing tests.
 Reference: every seed stays at `route`; the file refused once as `unknown-id`.
 
 The verdict is a correct reading of the cart route — the one 02 accepts — filed against the

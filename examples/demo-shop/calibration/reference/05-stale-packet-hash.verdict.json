@@ -1,7 +1,7 @@
 {
   "route": "POST orders/v1/checkout",
   "reader": "reference",
-  "packetHash": "3fb01b567485",
+  "packetHash": "2d9147e238f5",
   "seeds": [
     {
       "id": "U1",
@@ -29,6 +29,18 @@
     },
     {
       "id": "U3",
+      "level": "route",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "places an order when the cart holds an item",
+          "line": 8,
+          "reason": "the refused save is not arranged"
+        }
+      ]
+    },
+    {
+      "id": "U4",
       "level": "route",
       "evidence": [
         {

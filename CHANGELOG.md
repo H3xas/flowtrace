@@ -64,6 +64,9 @@ Worked example:
 - Three routes gain one sentinel outcome each: `POST orders/v1/checkout` (403),
   `POST orders/v1/replay` (404) and `POST stock/v1/reservations` (409). The pinned edge export
   is written again for the new fact types.
+- The checkout entries 03, 05 and 06 of the calibration golden set hold the fresh checkout
+  packet, which has four seeds. Their verdicts, expected outcomes and notes name the new 403
+  seed. The stale hash of entry 05 is again the hash of the swapped enumeration.
 - The golden packet `calibration/01-status-only.packet.json` is again the packet that
   `cover --area checkout --packets` writes for `GET catalog/v1/products`. It now holds the
   route patch of the storefront spec as a third candidate, and its note says why that patch
