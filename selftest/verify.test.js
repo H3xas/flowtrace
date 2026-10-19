@@ -17,8 +17,10 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import {
+  EXAMPLE_STEPS,
   PACKAGE_REQUIRED_FILES,
   STAGES,
+  goldenPacketProblems,
   packageProblems,
   pickRange,
   reportFailure,
@@ -199,6 +201,127 @@ test('a package missing what it must carry, or carrying what it must not, is nam
   const leaked = packageProblems([...present, 'selftest/verify.test.js', 'scripts/verify.mjs', 'examples/demo-shop/out/facts.json']);
   assert.equal(leaked.length, 3);
   for (const problem of leaked) assert.match(problem, /must not ship; exclude it in the "files" list/);
+});
+
+function packet(name, route, body = { packetHash: 'b8e5e6885cc8' }) {
+  return { name, bytes: Buffer.from(`${JSON.stringify({ route, ...body }, null, 2)}\n`) };
+}
+
+function goldenSet() {
+  return {
+    golden: [
+      packet('calibration/01-status-only.packet.json', 'GET catalog/v1/products'),
+      packet('calibration/02-follow-up-read.packet.json', 'GET orders/v1/cart'),
+      packet('calibration/03-disposition-status.packet.json', 'POST orders/v1/checkout'),
+      packet('calibration/05-stale-packet-hash.packet.json', 'POST orders/v1/checkout'),
+      packet('calibration/07-missing-evidence.packet.json', 'GET orders/v1/cart'),
+    ],
+    written: [
+      packet('out/get-catalog-v1-products.packet.json', 'GET catalog/v1/products'),
+      packet('out/get-orders-v1-cart.packet.json', 'GET orders/v1/cart'),
+      packet('out/post-orders-v1-checkout.packet.json', 'POST orders/v1/checkout'),
+    ],
+  };
+}
+
+function withBytes(entry, bytes) {
+  return { name: entry.name, bytes: Buffer.from(bytes) };
+}
+
+test('Golden packets AC-5: a golden set that is the fresh run, shared routes included, has no problem', () => {
+  const { golden, written } = goldenSet();
+  assert.deepEqual(goldenPacketProblems(golden, written), []);
+});
+
+test('Golden packets AC-5: one changed byte or a missing final newline names the golden file, the route and the written file', () => {
+  for (const change of [(text) => text.replace('b8e5e6885cc8', 'b8e5e6885cc9'), (text) => text.slice(0, -1)]) {
+    const { golden, written } = goldenSet();
+    golden[0] = withBytes(golden[0], change(golden[0].bytes.toString()));
+    const problems = goldenPacketProblems(golden, written);
+    assert.equal(problems.length, 1, problems.join('\n'));
+    assert.match(problems[0], /calibration\/01-status-only\.packet\.json/);
+    assert.match(problems[0], /GET catalog\/v1\/products/);
+    assert.match(problems[0], /out\/get-catalog-v1-products\.packet\.json/);
+  }
+});
+
+test('Golden packets AC-5: the same bytes in another order still differ, because the comparison reads bytes and not JSON', () => {
+  const { golden, written } = goldenSet();
+  written[0] = packet(written[0].name, 'GET catalog/v1/products', { packetHash: 'b8e5e6885cc8', seeds: [] });
+  golden[0] = { name: golden[0].name, bytes: Buffer.from(`${JSON.stringify({ seeds: [], packetHash: 'b8e5e6885cc8', route: 'GET catalog/v1/products' }, null, 2)}\n`) };
+  const problems = goldenPacketProblems(golden, written);
+  assert.equal(problems.length, 1, problems.join('\n'));
+  assert.match(problems[0], /01-status-only\.packet\.json/);
+});
+
+test('Golden packets AC-5: each golden packet that shares a route is compared on its own', () => {
+  const { golden, written } = goldenSet();
+  golden[3] = withBytes(golden[3], golden[3].bytes.toString().replace('b8e5e6885cc8', '000000000000'));
+  const problems = goldenPacketProblems(golden, written);
+  assert.equal(problems.length, 1, problems.join('\n'));
+  assert.match(problems[0], /05-stale-packet-hash\.packet\.json/);
+  assert.match(problems[0], /POST orders\/v1\/checkout/);
+  assert.match(problems[0], /out\/post-orders-v1-checkout\.packet\.json/);
+});
+
+test('Golden packets AC-5: a golden route with no written packet, and a written route with no golden packet, are each named', () => {
+  const { golden, written } = goldenSet();
+  const missing = goldenPacketProblems(golden, written.filter((entry) => !entry.name.includes('cart')));
+  assert.equal(missing.length, 2, missing.join('\n'));
+  for (const name of ['02-follow-up-read', '07-missing-evidence']) {
+    assert.ok(missing.some((line) => line.includes(`calibration/${name}.packet.json`) && line.includes('GET orders/v1/cart')), missing.join('\n'));
+  }
+
+  const extra = goldenPacketProblems(golden, [...written, packet('out/post-orders-v1-cart-items.packet.json', 'POST orders/v1/cart/items')]);
+  assert.equal(extra.length, 1, extra.join('\n'));
+  assert.match(extra[0], /out\/post-orders-v1-cart-items\.packet\.json/);
+  assert.match(extra[0], /POST orders\/v1\/cart\/items/);
+});
+
+test('Golden packets AC-5: two written packets with one route give one problem naming both', () => {
+  const { golden, written } = goldenSet();
+  const problems = goldenPacketProblems(golden, [...written, packet('out/copy.packet.json', 'GET orders/v1/cart')]);
+  assert.equal(problems.length, 1, problems.join('\n'));
+  assert.match(problems[0], /out\/get-orders-v1-cart\.packet\.json/);
+  assert.match(problems[0], /out\/copy\.packet\.json/);
+  assert.match(problems[0], /GET orders\/v1\/cart/);
+  assert.match(problems[0], /calibration\/02-follow-up-read\.packet\.json/);
+  assert.match(problems[0], /calibration\/07-missing-evidence\.packet\.json/);
+});
+
+test('Golden packets AC-5: a packet that cannot be read, is not JSON or has no route gives one problem naming it, on either side', () => {
+  const broken = [null, '', '{', '[]', 'null', '{"route": ""}', '{"route": 7}', '{"seeds": []}'];
+  for (const side of ['golden', 'written']) {
+    for (const bytes of broken) {
+      const set = goldenSet();
+      const name = `${side}/broken.packet.json`;
+      set[side].push({ name, bytes: bytes === null ? null : Buffer.from(bytes) });
+      const problems = goldenPacketProblems(set.golden, set.written);
+      assert.equal(problems.length, 1, `${side} ${JSON.stringify(bytes)}: ${problems.join('\n')}`);
+      assert.match(problems[0], new RegExp(`^${name}`));
+    }
+  }
+});
+
+test('Golden packets AC-5: an empty side is a problem, never an agreement', () => {
+  const { golden, written } = goldenSet();
+  assert.ok(goldenPacketProblems(golden, []).some((line) => /wrote no packet/.test(line)));
+  assert.ok(goldenPacketProblems([], written).some((line) => /no golden packet/.test(line)));
+  assert.ok(goldenPacketProblems([], []).length >= 1);
+});
+
+test('Golden packets AC-4: the worked example writes the checkout packets into an emptied directory and compares them with the golden set', () => {
+  const extract = EXAMPLE_STEPS.findIndex((step) => step.cli?.[0] === 'extract');
+  const write = EXAMPLE_STEPS.findIndex((step) => step.cli?.[0] === 'cover' && step.cli.includes('--packets'));
+  const compare = EXAMPLE_STEPS.findIndex((step) => step.golden);
+  assert.ok(extract >= 0 && write > extract && compare > write, `extract ${extract}, write ${write}, compare ${compare}`);
+
+  const cli = EXAMPLE_STEPS[write].cli;
+  assert.deepEqual(cli.slice(0, 5), ['cover', '--config', 'flowtrace.config.json', '--area', 'checkout']);
+  const dir = cli[cli.indexOf('--packets') + 1];
+  assert.match(dir, /^out\/[^/]+$/);
+  assert.equal(EXAMPLE_STEPS[write].empty, dir);
+  assert.deepEqual(EXAMPLE_STEPS[compare].golden, { golden: 'calibration', written: dir });
 });
 
 test('a failure report names the stage, the command, the output and the repair', () => {
