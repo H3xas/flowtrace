@@ -30,7 +30,7 @@
  * Zero dependencies: Node built-ins, and the same interpreter each repository script needs.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -285,7 +285,75 @@ function cliSmokeStage() {
   return { line: 'cli-smoke ok — node bin/flowtrace.js --help' };
 }
 
-const EXAMPLE_STEPS = Object.freeze([
+/**
+ * The calibration README promises that its golden packets are, byte for byte, what the worked
+ * example writes for the checkout area. Bytes and not parsed JSON, because a reader is handed
+ * the file and a key order or a final newline is part of what it reads. Golden entries may
+ * share a route (a refusal copies a reading), so each one is compared on its own. A packet the
+ * comparison cannot pair -- unreadable, not JSON, no route, or a route two written packets
+ * claim -- is a problem in itself: skipping it would let the set shrink without a failure.
+ */
+export function goldenPacketProblems(golden, written) {
+  const problems = [];
+  const routeOf = (entry) => {
+    if (!Buffer.isBuffer(entry.bytes)) return null;
+    let parsed;
+    try {
+      parsed = JSON.parse(entry.bytes.toString('utf8'));
+    } catch {
+      return null;
+    }
+    const route = parsed?.route;
+    return typeof route === 'string' && route.length > 0 ? route : null;
+  };
+  const paired = (entries) =>
+    entries.flatMap((entry) => {
+      const route = routeOf(entry);
+      if (route !== null) return [{ ...entry, route }];
+      problems.push(`${entry.name} is not a packet: it cannot be read, is not JSON or has no non-empty string route`);
+      return [];
+    });
+
+  const goldenPackets = paired(golden);
+  const writtenPackets = paired(written);
+  if (golden.length === 0) problems.push('there is no golden packet to compare the run with');
+  if (written.length === 0) problems.push('the run wrote no packet to compare with the golden set');
+
+  const byRoute = new Map();
+  for (const entry of writtenPackets) byRoute.set(entry.route, [...(byRoute.get(entry.route) ?? []), entry]);
+  for (const [route, entries] of byRoute) {
+    if (entries.length > 1) {
+      problems.push(`${entries.map((entry) => entry.name).join(' and ')} share the route ${route}; a run writes one packet per route`);
+    }
+  }
+
+  const goldenRoutes = new Set(goldenPackets.map((entry) => entry.route));
+  for (const entry of goldenPackets) {
+    const matches = byRoute.get(entry.route);
+    if (!matches) {
+      problems.push(`${entry.name} holds ${entry.route}, and the run wrote no packet for that route`);
+      continue;
+    }
+    if (matches.length > 1) continue;
+    const [fresh] = matches;
+    if (!entry.bytes.equals(fresh.bytes)) {
+      let at = 0;
+      while (at < entry.bytes.length && at < fresh.bytes.length && entry.bytes[at] === fresh.bytes[at]) at += 1;
+      problems.push(
+        `${entry.name} differs from ${fresh.name}, the fresh packet for ${entry.route} ` +
+          `(${entry.bytes.length} and ${fresh.bytes.length} bytes, first difference at byte ${at})`,
+      );
+    }
+  }
+  for (const entry of writtenPackets) {
+    if (!goldenRoutes.has(entry.route)) {
+      problems.push(`${entry.name} holds ${entry.route}, and no golden packet holds that route`);
+    }
+  }
+  return problems;
+}
+
+export const EXAMPLE_STEPS = Object.freeze([
   { label: 'extract the worked example', cli: ['extract', '--config', 'flowtrace.config.json'] },
   {
     label: 'join and export the edges',
@@ -302,6 +370,12 @@ const EXAMPLE_STEPS = Object.freeze([
   },
   { label: 'compare the two exports byte for byte', compare: ['out/flowtrace-edges.json', 'out/flowtrace-edges-again.json'] },
   { label: 'cover the checkout area', cli: ['cover', '--config', 'flowtrace.config.json', '--area', '../../areas/checkout.txt'] },
+  {
+    label: 'write the checkout packets',
+    cli: ['cover', '--config', 'flowtrace.config.json', '--area', 'checkout', '--packets', 'out/checkout-packets'],
+    empty: 'out/checkout-packets',
+  },
+  { label: 'compare the packets with the golden set', golden: { golden: 'calibration', written: 'out/checkout-packets' } },
   { label: 'span the checkout route', cli: ['span', '--config', 'flowtrace.config.json', 'POST orders/v1/checkout'] },
   { label: 'surface the checkout route', cli: ['surface', '--config', 'flowtrace.config.json', 'POST orders/v1/checkout'] },
   { label: 'skeleton the checkout route', cli: ['skeleton', '--config', 'flowtrace.config.json', 'POST orders/v1/checkout'] },
@@ -315,6 +389,43 @@ const EXAMPLE_STEPS = Object.freeze([
   },
   { label: 'calibrate against the golden verdicts', cli: ['calibrate', '--golden', 'calibration', '--verdicts', 'calibration/reference'] },
 ]);
+
+function packetFiles(dir, keep) {
+  const listed = listDirectory(
+    join(EXAMPLE, dir),
+    'the golden set and the packets the run writes both live in examples/demo-shop; rerun the worked example from its own directory',
+  );
+  return listed
+    .filter(keep)
+    .sort()
+    .map((name) => {
+      const path = join(EXAMPLE, dir, name);
+      let bytes = null;
+      try {
+        bytes = readFileSync(path);
+      } catch {
+        // An unreadable packet stays in the set, where the comparison names it.
+      }
+      return { name: relative(ROOT, path), bytes };
+    });
+}
+
+function goldenComparison({ golden, written }) {
+  const goldenPackets = packetFiles(golden, (name) => name.endsWith('.packet.json'));
+  const writtenPackets = packetFiles(written, () => true);
+  const problems = goldenPacketProblems(goldenPackets, writtenPackets);
+  if (problems.length > 0) {
+    throw new StageFailure({
+      command: `compare examples/demo-shop/${written} with examples/demo-shop/${golden}`,
+      status: 1,
+      output: problems.join('\n'),
+      repair:
+        'a golden packet is a fresh run of the worked example: if the change that moved it is intended, ' +
+        `copy the packet from examples/demo-shop/${written} over the golden file byte for byte, ` +
+        'then reread its verdict and note and rerun calibrate; otherwise fix the change',
+    });
+  }
+}
 
 function workedExampleStage() {
   const exampleRepair =
@@ -334,6 +445,15 @@ function workedExampleStage() {
         });
       }
       continue;
+    }
+    if (step.golden) {
+      goldenComparison(step.golden);
+      continue;
+    }
+    if (step.empty) {
+      const dir = join(EXAMPLE, step.empty);
+      rmSync(dir, { recursive: true, force: true });
+      mkdirSync(dir, { recursive: true });
     }
     const args = step.cli
       ? [join(ROOT, 'bin', 'flowtrace.js'), ...step.cli]

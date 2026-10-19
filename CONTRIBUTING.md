@@ -96,7 +96,7 @@ the suite.
 |---|---|
 | `suite` | every test file under `selftest/` is named by the `test` script, and all of them pass with none skipped |
 | `cli-smoke` | `node bin/flowtrace.js --help` answers from a checkout with no install step |
-| `worked-example` | `examples/demo-shop` extracts, joins, exports twice byte-identically, matches its pinned export, and runs cover, span, surface, skeleton, check and calibrate |
+| `worked-example` | `examples/demo-shop` extracts, joins, exports twice byte-identically, matches its pinned export, writes the checkout packets and compares each golden packet under `calibration/` byte for byte with the written packet of its route, and runs cover, span, surface, skeleton, check and calibrate |
 | `machine-paths` | no absolute home path, Windows user path or `file://` URL anywhere in the tree |
 | `public-text` | every tracked file can be read, and the shared comment and commit-message policy is clean |
 | `commit-signoff` | every commit in the range carries its `Signed-off-by:` trailer |
