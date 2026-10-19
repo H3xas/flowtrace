@@ -76,6 +76,17 @@ npm test
   `mobile-component-span.test.js` runs `span --from-component` over it. The fixture's README
   states the header counts each run must give and how the two committed `trace` goldens were
   captured.
+- `corpus/bakery-orders/` and `corpus/bakery-gates/`: an invented bakery backend. Its
+  pipelines take their steps from a DI factory, a `typeof(...)` list or an injected
+  `IEnumerable<T>`. Their steps write a stop flag, return `false` or `null`, or throw. The
+  gates corpus adds authorization and action filters, registered globally or set as
+  attributes. `pipeline-rejects.test.js` runs both through the CLI, one `Pipeline rejects
+  AC-n:` test for each acceptance rule.
+- `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
+  output of each corpus with backend routes, written by `node selftest/seed-goldens.js
+  --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure
+  that each corpus still prints every golden seed key. A corpus with no pipeline, sentinel or
+  filter must print the same bytes.
 - `journey-helpers.js` — a disposable copy of the journey pack and the harness run as a
   subprocess.
 - `export-invariants.js` — the checks a `flowtrace-edges` document must satisfy on its own,
