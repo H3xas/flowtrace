@@ -323,7 +323,11 @@ export function goldenPacketProblems(golden, written) {
   for (const entry of writtenPackets) byRoute.set(entry.route, [...(byRoute.get(entry.route) ?? []), entry]);
   for (const [route, entries] of byRoute) {
     if (entries.length > 1) {
-      problems.push(`${entries.map((entry) => entry.name).join(' and ')} share the route ${route}; a run writes one packet per route`);
+      const uncompared = goldenPackets.filter((entry) => entry.route === route).map((entry) => entry.name);
+      problems.push(
+        `${entries.map((entry) => entry.name).join(' and ')} share the route ${route}; a run writes one packet per route` +
+          (uncompared.length > 0 ? `, so ${uncompared.join(' and ')} cannot be compared` : ''),
+      );
     }
   }
 

@@ -285,6 +285,8 @@ test('Golden packets AC-5: two written packets with one route give one problem n
   assert.match(problems[0], /out\/get-orders-v1-cart\.packet\.json/);
   assert.match(problems[0], /out\/copy\.packet\.json/);
   assert.match(problems[0], /GET orders\/v1\/cart/);
+  assert.match(problems[0], /calibration\/02-follow-up-read\.packet\.json/);
+  assert.match(problems[0], /calibration\/07-missing-evidence\.packet\.json/);
 });
 
 test('Golden packets AC-5: a packet that cannot be read, is not JSON or has no route gives one problem naming it, on either side', () => {
