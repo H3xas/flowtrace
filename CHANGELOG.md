@@ -64,6 +64,14 @@ Worked example:
 - Three routes gain one sentinel outcome each: `POST orders/v1/checkout` (403),
   `POST orders/v1/replay` (404) and `POST stock/v1/reservations` (409). The pinned edge export
   is written again for the new fact types.
+- The golden packet `calibration/01-status-only.packet.json` is again the packet that
+  `cover --area checkout --packets` writes for `GET catalog/v1/products`. It now holds the
+  route patch of the storefront spec as a third candidate, and its note says why that patch
+  promotes no seed. The packet hash, the seeds and the verdict do not change. The
+  `worked-example` stage of `npm run verify` now writes the checkout packets into
+  `examples/demo-shop/out/checkout-packets/` and compares each golden packet byte for byte with
+  the written packet of its route. A golden packet that differs, a route with no packet on one
+  side, or a packet that cannot be read or paired fails the stage.
 
 Component span:
 
