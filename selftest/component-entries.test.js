@@ -7,18 +7,21 @@
  */
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 import { componentSpan } from '../lib/component-span.js';
 import { REPO_ROOT, runCli } from './helpers.js';
 
 const FIXTURE = join(REPO_ROOT, 'selftest', 'corpus', 'greenhouse-alerts');
+// Under a symlinked temporary directory the CLI's real working directory is not a prefix of the
+// page path it writes, so it prints that path absolute and the relative form CI sees goes unread.
+const TEMP = realpathSync(tmpdir());
 let pack = '';
 let config = '';
 
 before(() => {
-  pack = mkdtempSync(join(tmpdir(), 'flowtrace-entries-'));
+  pack = mkdtempSync(join(TEMP, 'flowtrace-entries-'));
   cpSync(FIXTURE, pack, { recursive: true });
   config = join(pack, 'greenhouse.config.json');
   const extracted = runCli(['extract', '--config', config]);
@@ -39,6 +42,17 @@ function entriesOf(component) {
   return webFacts().filter((entry) => entry.type === 'component_entry' && entry.component === component);
 }
 
+/**
+ * The page a `span` run wrote. The CLI prints a page inside its working directory relative to that
+ * directory, so the printed path names the page only when it is read against the run's `cwd`.
+ */
+function writtenPage(run, cwd) {
+  const at = run.stdout.lastIndexOf(' -> ');
+  const printed = at === -1 ? '' : run.stdout.slice(at + 4).trim();
+  assert.ok(printed && !isAbsolute(printed), `the run should print its page relative to ${cwd}: ${JSON.stringify(run.stdout)}`);
+  return resolve(cwd, printed);
+}
+
 function spanJson(name, extra = []) {
   const result = runCli(['span', '--from-component', name, '--json', '--config', config, ...extra]);
   return { ...result, model: result.status === 0 ? JSON.parse(result.stdout) : null };
@@ -49,7 +63,7 @@ function spanJson(name, extra = []) {
  * source shape the committed pack does not carry. The copy never reaches the pack's own ledger.
  */
 function variant(name, mutate) {
-  const dir = mkdtempSync(join(tmpdir(), `flowtrace-entries-${name}-`));
+  const dir = mkdtempSync(join(TEMP, `flowtrace-entries-${name}-`));
   cpSync(FIXTURE, dir, { recursive: true });
   mutate(dir);
   const variantConfig = join(dir, 'greenhouse.config.json');
@@ -229,7 +243,7 @@ test('two selected entries of one component write two pages, never one', () => {
       { cwd: pack },
     );
     assert.equal(run.status, 0, run.stderr);
-    const target = run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim();
+    const target = writtenPage(run, pack);
     assert.ok(existsSync(target), `the page ${selector} selected should have been written at ${target}`);
     return target;
   });
@@ -338,7 +352,7 @@ test('two same-named components in different files write two pages', () => {
         { cwd: dir },
       );
       assert.equal(run.status, 0, run.stderr);
-      return run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim();
+      return writtenPage(run, dir);
     });
     assert.notEqual(written[0], written[1], 'a page may not be overwritten by another file’s entry');
     assert.notEqual(readFileSync(written[0], 'utf8'), readFileSync(written[1], 'utf8'));
@@ -365,7 +379,7 @@ test('two entries of a component declared under a deep path write two pages', ()
     const written = effects.slice(0, 2).map((identity) => {
       const run = runCli(['span', ...scope, '--entry', identity.id, '--config', variantConfig], { cwd: dir });
       assert.equal(run.status, 0, run.stderr);
-      return { identity, target: run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim() };
+      return { identity, target: writtenPage(run, dir) };
     });
     assert.notEqual(
       written[0].target,
@@ -906,7 +920,7 @@ test('a selected page never overwrites a page another entry already holds under 
         { cwd: dir },
       );
       assert.equal(run.status, 0, run.stderr);
-      return run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim();
+      return writtenPage(run, dir);
     };
     const other = select('useEffect@29');
     const own = select('useEffect@25');
