@@ -1,0 +1,10 @@
+# lantern-depot: the routes the helper chains of the depot suite reach.
+GET depot/v1/shelves/count
+PUT depot/v1/shelves/*
+DELETE depot/v1/shelves/*
+POST depot/v1/bins/*/open
+POST depot/v1/bins/*/close
+PUT depot/v1/bins/*/label
+POST depot/v1/audit/*
+POST depot/v2/crates/*/close
+DELETE depot/v2/crates/*

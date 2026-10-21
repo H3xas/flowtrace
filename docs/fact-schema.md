@@ -156,6 +156,28 @@ statements sharing a body. Optional on `template_handler`: the `column` of the b
 | `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal argument of a configured case-id call, `table` for one row of a same-file data table the test iterates |
 | `pw_title` | `spec`, `titles` | *(optional)* the titles a collector resolved for one `pw_test` declaration, one per parameter instance; its `line` is that declaration's *source* line |
 
+A `pw_request` can have four optional fields. `via: "helper"` marks a request that the test
+makes through a call into a helper function, a helper class method or a client method. That
+fact keeps the `file` and `line` of the call in the test body, and it gets one fact for each
+request call that the call reaches, in source order. `chain` lists the calls as
+`{ file, line, call }` entries. The first entry is the call in the test body, and the last
+entry is the request call. `call` is the callee as written, with no white space. `receiver`
+is the class whose method holds the request call. A request call in a top-level function
+has no `receiver`.
+
+The extractor enters four function or method bodies at most. It does not enter a body that
+is already on the chain, or a body that calls `.route(`. If it cannot follow a call, the call
+gives one fact with `verb: "ANY"`, `resolved: false`, a placeholder `template`, no `receiver`
+and a `reason`. The reason is `ambiguous-receiver` when two or more bodies can answer the call,
+and `depth-bound` when the call needs a fifth body. The chain of that fact ends at the call.
+A request written in the test body itself, also inside an `expect(...)` argument, has none of
+the four fields.
+
+A name in a URL resolves in the file that holds the URL. If that file does not define the
+name, a named import resolves to the one value of the files that export the name. Otherwise
+the name resolves to its one value in the repository. If two or more values are left, the
+template keeps `${name}` and the fact has `resolved: false`.
+
 A `cypress_intercept` written in a support command carries no enclosing test and is exactly
 as much proof that a route is exercised as one written inline. There is no Cypress assertion
 fact, which is why Cypress evidence can never reach the `path` tier — the schema records no
