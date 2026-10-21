@@ -548,7 +548,13 @@ test('the contributor document names every stage the command runs', () => {
 });
 
 test('every stage that needs no suite run passes in this checkout', () => {
-  const result = verify(['--only', 'cli-smoke,machine-paths,public-text,commit-signoff,docs,config,package']);
+  // A pull request is checked out as a merge commit the host made and never signed off, so
+  // this checkout is read over the commits CI names as under review
+  const outer = process.env.VERIFY_COMMIT_RANGE;
+  const result = verify(
+    ['--only', 'cli-smoke,machine-paths,public-text,commit-signoff,docs,config,package'],
+    outer ? { VERIFY_COMMIT_RANGE: outer } : undefined,
+  );
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   assert.match(result.stdout, /^verify: package ok — \d+ files, \d+ kB unpacked, .+\.tgz$/m);
   assert.match(result.stdout, /^verify: ok — 7 stages — \d+ files in .+\.tgz$/m);

@@ -848,7 +848,8 @@ function invokedDirectly() {
 }
 
 if (invokedDirectly()) {
-  process.exit(main(process.argv.slice(2)));
+  // An exit while a large report is still draining into a pipe cuts the report off
+  process.exitCode = main(process.argv.slice(2));
 }
 
 export { main };
