@@ -268,6 +268,14 @@ test('Helper request evidence AC-7: a receiver two client classes could be stays
   assert.deepEqual(requestsOf(facts, spec, 'an untyped receiver in the test body'), [
     request(spec, 'an untyped receiver in the test body', unresolved(10, [link(spec, 10, 'holder.close')])),
   ]);
+  // One client defines `delete`, but an untyped receiver of a verb can be the request
+  // fixture itself, so the call has two readings and names neither.
+  assert.deepEqual(requestsOf(facts, spec, 'a verb name on an untyped receiver'), [
+    request(spec, 'a verb name on an untyped receiver', {
+      ...unresolved(14, [link(spec, 14, 'dropAny'), link('helpers/ambiguous.ts', 6, 'holder.delete')]),
+      template: '${holder.delete(...)}',
+    }),
+  ]);
   const named = facts.filter(
     (candidate) => candidate.type === 'pw_request' && candidate.spec === spec && /depot\/v1\/bins|depot\/v2\/crates/.test(candidate.template),
   );
