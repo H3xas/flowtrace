@@ -16,6 +16,13 @@ CLI's outer contract:
 - The documented exit codes, including the commands (`routes-of`, `affected`) whose failure
   is itself a JSON envelope rather than a bare stderr line.
 
+It also holds one journey pack (`corpus/greenhouse-alerts/`), which is not a contract check
+but a pinned denominator: a set of cross-repository questions whose expected source sites were
+written from the fixture before anything was observed, replayed through
+`scripts/journey-pack.mjs` and compared with a committed projection of what flowtrace answers
+today. A change that moves any of those answers must update the projection in its own diff; the
+pack's own README says how.
+
 It does not exercise every extractor idiom, every command, or every flag — that is what the
 private suite and the worked example (`examples/demo-shop`) are for. A change to `lib/extract/`
 or to a walk should still make itself visible in the worked example, per
@@ -49,6 +56,39 @@ npm test
   inside a body, a `test` reached through a member access, a title wrapped in a configured
   case-id call, and a title supplied as a table identifier — plus a listing whose positions
   sit below the source so nothing can resolve by line.
+- `corpus/greenhouse-alerts/` — the journey pack: an invented React + Redux client and
+  ASP.NET Core service, the expected ledger (`expected.json`), the committed observed projection
+  (`observed.json`) and a README with the formats, the replay commands and the rules for tickets
+  that extend it. The harness that captures and replays it lives in `scripts/journey-pack.mjs`
+  and `scripts/journey-pack/`, and is not shipped in the npm package.
+- `corpus/orchard-routes/` — an invented React client whose routes nest every way the
+  browser-path lookup reads (JSX children, a component's own `<Routes>`, index routes,
+  parameters, wildcards, lazy imports, redirects, guarded alternatives, unmounted roots, forms it
+  does not model), with `matrix.json` naming the page entry or failure reason each URL must give;
+  `page-routes.test.js` runs it through the CLI.
+- `corpus/kettle-market/`: an invented storefront suite with the shapes that decide whether a
+  browser test runs on a real backend, on patched responses or on a mocked backend. Its
+  `base-facts.json` holds the `pw_stub` and `pw_test` facts that the extractor wrote before it
+  read backends, and `golden.mjs` writes that file. `backend-class.test.js` runs the corpus
+  through the CLI. The corpus README lists its spec groups.
+- `corpus/nursery-mobile/` — an invented Ionic app (a page, a rendered child component, one
+  injected service, NgRx actions and an effect) and a small ASP.NET Core backend it calls.
+  `mobile-component-span.test.js` runs `span --from-component` over it. The fixture's README
+  states the header counts each run must give and how the two committed `trace` goldens were
+  captured.
+- `corpus/bakery-orders/` and `corpus/bakery-gates/`: an invented bakery backend. Its
+  pipelines take their steps from a DI factory, a `typeof(...)` list or an injected
+  `IEnumerable<T>`. Their steps write a stop flag, return `false` or `null`, or throw. The
+  gates corpus adds authorization and action filters, registered globally or set as
+  attributes. `pipeline-rejects.test.js` runs both through the CLI, one `Pipeline rejects
+  AC-n:` test for each acceptance rule.
+- `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
+  output of each corpus with backend routes, written by `node selftest/seed-goldens.js
+  --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure
+  that each corpus still prints every golden seed key. A corpus with no pipeline, sentinel or
+  filter must print the same bytes.
+- `journey-helpers.js` — a disposable copy of the journey pack and the harness run as a
+  subprocess.
 - `export-invariants.js` — the checks a `flowtrace-edges` document must satisfy on its own,
   with no checkout, no git and no second document to compare against; deliberately
   independent of `lib/`, so an implementation that drifts from its own documentation fails
@@ -59,4 +99,29 @@ npm test
   run is off the table for a public fixture, and the functions it covers are pure parsing
   and selection logic with no process or filesystem behavior of their own to observe; and
   `pw-titles-contract.test.js` imports `lib/extract/pw-titles.js` directly for the same
-  reason, since the CLI path would spawn the suite's own installed Playwright.
+  reason, since the CLI path would spawn the suite's own installed Playwright. The four
+  `journey-*.test.js` files run the journey harness as a subprocess where they can, and import
+  its modules (never `lib/`) where they cannot: capture's phase hooks, which is how a source edit,
+  an interruption or a lock taken over by another capture is placed between two steps of one
+  capture, and the pure ledger and projection functions.
+- `path-check.test.js` — runs a repository script, `scripts/path-check.sh`, not the CLI: each
+  case copies it into a disposable tree beside a hand-written linked-worktree `.git` pointer file.
+- `verify.test.js` — covers the canonical command, `scripts/verify.mjs`: the pure functions
+  that decide whether the suite is the whole suite and whether the package carries what it
+  should, the report a failing stage prints, and the command itself spawned over the stages
+  that need no suite run — including a copy of the command whose own input is missing, which
+  must report the stage rather than a stack trace. Its cases read the repository rather than a
+  fixture too: the workflow must run that command and nothing else and must cover every branch
+  a change is integrated through, and CONTRIBUTING.md must name every stage and every branch,
+  so the documented coverage and the enforced one move together.
+- `docs-check.test.js` — runs `scripts/docs-check.mjs` against a disposable copy of the
+  checkout's `bin/`, `lib/` and markdown, one case per way the documentation drifts or the
+  check loses sight of the tree: a link to a file that is not there, a fragment naming no
+  heading, `docs/cli.md` missing or behind `--help`, a file that cannot be read, a checkout
+  whose own file listing fails, a git that cannot say whether this is a checkout, a checkout
+  whose own pointer no longer resolves, git pointed at another checkout by the environment, a
+  directory the walk cannot list, and a tree outside git, which is walked.
+- `config-check.test.js` — runs `scripts/config-check.mjs` against the shipped example and
+  against examples written into a disposable directory: a shape the loader rejects, a
+  repository kind that does not exist, a key the documentation never names, a file that is
+  absent, malformed or unreadable, and a document that is missing or unreadable.

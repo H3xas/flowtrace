@@ -7,18 +7,19 @@
     "seeds": {
       "5a6423a0": "route",
       "ca37457e": "route",
+      "1d73af76": "route",
       "31ba2067": "route"
     },
     "upgrades": 0,
     "confirmed": 0,
     "rejections": {
-      "stale-verdict": 3
+      "stale-verdict": 4
     }
   },
   "verdict": {
     "route": "POST orders/v1/checkout",
     "reader": "reference",
-    "packetHash": "3fb01b567485",
+    "packetHash": "2d9147e238f5",
     "seeds": [
       {
         "id": "U1",
@@ -46,6 +47,18 @@
       },
       {
         "id": "U3",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "places an order when the cart holds an item",
+            "line": 8,
+            "reason": "the refused save is not arranged"
+          }
+        ]
+      },
+      {
+        "id": "U4",
         "level": "route",
         "evidence": [
           {

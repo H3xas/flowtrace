@@ -3,7 +3,7 @@
   "routeRef": "POST orders/v1/checkout",
   "file": "src/Controllers/OrdersController.cs",
   "line": 36,
-  "packetHash": "f30adbc292a8",
+  "packetHash": "870ae39b7839",
   "seeds": [
     {
       "id": "U1",
@@ -49,6 +49,30 @@
     },
     {
       "id": "U3",
+      "key": "1d73af76",
+      "dispositions": [
+        {
+          "kind": "error_return",
+          "line": 39,
+          "disposition": "not-taken",
+          "text": "if (request == null || string.IsNullOrEmpty(request.PaymentToken))"
+        },
+        {
+          "kind": "reject",
+          "line": 40,
+          "disposition": "taken",
+          "text": "if (!accepted)"
+        }
+      ],
+      "kind": "reject",
+      "response": "403 Forbidden",
+      "outcomes": [
+        "→ 403 Forbidden"
+      ],
+      "reads": 0
+    },
+    {
+      "id": "U4",
       "key": "31ba2067",
       "dispositions": [
         {
@@ -62,6 +86,12 @@
           "line": 45,
           "disposition": "not-taken",
           "text": "if (!placed)"
+        },
+        {
+          "kind": "reject",
+          "line": 40,
+          "disposition": "not-taken",
+          "text": "if (!accepted)"
         }
       ],
       "kind": "effect",

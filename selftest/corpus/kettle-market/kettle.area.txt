@@ -1,0 +1,6 @@
+# kettle-market: every route the invented storefront suite stubs.
+GET market/v1/prices
+GET market/v1/stock
+GET market/v1/basket
+GET market/v1/banner
+POST market/v1/orders

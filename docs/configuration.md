@@ -38,6 +38,7 @@ checkouts named as siblings of the file.
 | `aliases` | no | route-prefix rewrites the join step applies when a call finds no route |
 | `sinks` | no | what makes a class a data sink, below |
 | `caseId` | no | call shapes whose literal arguments are test-management case ids, below |
+| `backend` | no | the calls that mock or patch the backend of a browser test, below |
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
@@ -57,6 +58,8 @@ checkouts named as siblings of the file.
 | `factsProvider` | no | an external fact document for this repository — a file, or a command that prints one — and how it merges with the extraction; see [External fact provider](#external-fact-provider) |
 | `srcSubpath` | no | `web` only: source subdirectory to walk (default `src`) |
 | `cypressSubpath` | no | `web` only: sibling Cypress suite, relative to `root` |
+| `mounts` | no | `web` only: the browser path a routed component is mounted at when its host is outside this repository; see [Web page mounts and assumptions](#web-page-mounts-and-assumptions) |
+| `routeAssumptions` | no | `web` only: the value of a condition a `<Route>` sits under; see [Web page mounts and assumptions](#web-page-mounts-and-assumptions) |
 | `featureRoots` | no | `mobile` only: source roots to walk instead of the single default |
 | `cypress` | no | `mobile` only: allowlisted Cypress discovery roots, below |
 
@@ -73,6 +76,39 @@ checkouts named as siblings of the file.
   handlers, action creators that issue HTTP, and a sibling Cypress suite.
 - **`playwright`** — a spec suite. Tests, skips, case ids, requests, assertions, stubs, and
   with `"titles": true` the resolved titles of parameterised tests.
+
+### Web page mounts and assumptions
+
+`trace <browser path>` composes a page's path from the `<Route>` declarations the web
+extractor records. The outermost routed component is anchored by source when a root render
+(`createRoot(…).render(…)`, `ReactDOM.render`) or a router `basename` says where it lives.
+A library whose routes are mounted by a host application in another repository states
+neither; its routes are then read from `/` and, when the library's own `navigate()` literals
+agree on a first segment, behind that prefix too — both answers are tagged `inferred mount`.
+`mounts` replaces those guesses with the path the host really uses:
+
+```json
+{
+  "id": "partners-ui",
+  "kind": "web",
+  "root": "partners-ui",
+  "mounts": { "PartnerRoutes": "/portal" },
+  "routeAssumptions": { "features.pruningPlanner": true }
+}
+```
+
+Each key of `mounts` names the component that owns the `<Routes>`; the value is a browser
+path starting with `/`. A configured mount is reported as `configuration` in the answer's
+mount chain, and a start below that component that uses a different prefix no longer
+resolves. A URL that ends in a path declared below an unmounted component, behind a prefix
+nothing declares, fails with `missing-mount` and names the component to list here.
+
+A `<Route>` written inside a condition (`{cond ? <Route …/> : <Route …/>}`, `{cond && <Route …/>}`)
+carries that condition as a guard. Two routes on one path in the two arms of a condition are
+alternatives, and a start that reaches them is ambiguous. `routeAssumptions` maps a
+condition's source text — whitespace collapsed, as the candidates print it — to `true` or
+`false`; the arm that disagrees is dropped and every value used appears under
+`mount.assumptions` in the answer. A leading `!` is honoured; nothing else is evaluated.
 
 ### Mobile Cypress roots
 
@@ -297,6 +333,38 @@ A configured callee is also read in title position. A test declared as
 wrapper, so title collection compares against `refunds a sale` rather than against the whole
 call. Without the entry the wrapper is opaque and the declaration resolves on its position in
 the file alone.
+
+## `backend`
+
+The playwright extractor writes one `pw_backend` fact for each test. The fact says whether
+the test runs on a real backend, on patched responses or on a mocked backend
+([fact-schema.md](fact-schema.md#test-evidence)). It reads `.route(` handlers, `routeFromHAR(`
+calls and the helpers of the repository by itself. A suite can also mock its backend through
+a call that it cannot read, such as a fixture package outside the repository. `backend` names
+those calls. Both lists default to none, so no call name is built in.
+
+```json
+"backend": {
+  "mockCalls": ["mockAllEndpoints"],
+  "patchCalls": ["seedCart", "fixtures.priceList"]
+}
+```
+
+- `mockCalls`: calls that replace every endpoint the test reaches. A test that reaches one of
+  them is `mocked`.
+- `patchCalls`: calls that answer some requests and let the others through. A test that
+  reaches one of them is `patched`, unless a mock call also reaches it.
+
+An entry is a callee as written: an identifier, or a dotted chain of identifiers. A bare entry
+matches a bare call and a member call (`seedCart` matches `seedCart(page)` and
+`fixtures.seedCart(page)`). A dotted entry matches that callee (`fixtures.priceList` matches
+`fixtures.priceList(page)` and not `catalog.priceList(page)`). The extractor does not read
+the body of a function with a configured name, because the entry decides the call. A name in
+a comment or in a string never matches.
+
+The loader refuses, with one message that names `backend`, a value that is not an object, a
+key other than `mockCalls` and `patchCalls`, a list that is not an array of call names, and a
+name in both lists. A repeated name in one list counts once.
 
 ## `workerPatterns`
 

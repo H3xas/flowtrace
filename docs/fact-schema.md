@@ -67,15 +67,45 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
 | `exception_map` | `scope`, `class`, `exception`, `status` | an exception type is converted to a status — `scope` is `global` for a registered exception filter, `action` for a `catch` inside one controller action |
 
+| `step_composition` | `class`, `field`, `source`, `steps` | the source names the ordered steps of one pipeline's collection field: `source` is `factory` (registration calls on the instance a DI factory lambda builds and returns), `typeof-list` (a literal `typeof(...)` list resolved through the container) or `enumerable` (an injected `IEnumerable<T>` and its `Add*<T, X>()` registrations); `steps` is `[{ type, file, line }]` in run order, or `null` with a `reason` (`step-expression`, `registration-order`, `no-registration`, `factory-count`) when the list cannot be read |
+| `loop_stop` | `class`, `method`, `field`, `form`, `step` | a `foreach` over a collection field calls `step` on each element; `form` is `flag-return` (with `flag`, `negated`, `position` `before` or `after` the call, and `returns`), `flag-break` (with `flag`, `negated` and `after`, the line after the loop that tests the flag), `bool-return` (with `returns`), `none`, or `unresolved` with `reason: "stop-rule"`; `endLine`, `stepLine`, `arg` and `argType` describe the loop and its argument |
+| `flag_write` | `class`, `method`, `member`, `value` | a body writes `param.member = value;` for a member that a loop's stop rule reads; `value` is `true`, `false` or `expression`, and `param` names the receiver |
+| `sentinel_return` | `class`, `method`, `value` | a body returns `false` or `null`; `ifLine` names the `if` it answers, when it has one |
+| `return_flow` | `class`, `method`, `field`, `calledMethod` | a method returns a call's value unchanged, so a sentinel passes through it to its caller |
+| `sentinel_map` | `class`, `method`, `field`, `calledMethod`, `sentinel`, `status` | an action answers `status` when the call it names returns `sentinel` (`null` or `false`), read from a `?:` conditional or an `if` on the value; `local` names the variable that holds the value |
+| `auth_filter` | `class`, `name`, `stage`, `method`, `exemptions` | a class with a source body implements an authorization or action filter: `stage` is `authorization` or `action`, `method` its entry method, `name` the filter as an attribute names it, and `exemptions` the attribute names its early return tests through `typeof(XAttribute)`; `order` holds a literal `Order` value. An exception filter gives no fact |
+| `filter_result` | `class`, `method`, `status` | a filter's entry method assigns `context.Result` a result whose status the status rules read |
+| `filter_use` | `filter`, `scope` | a filter applies: `scope` is `global` (an `options.Filters.Add(typeof(X))` registration, with its `position`), or `controller` or `action` for an attribute on that class or method (with `class`, and `method` for an action) |
+| `class_base` | `class`, `base` | a class header names a base class that the repository declares; a framework base such as `ControllerBase` gives no fact |
+
 `param_source` is what makes seed reachability answerable: a branch reading only `jwt` or
 `injected` values cannot be forced by a black-box caller.
+
+The walk reads the last ten types only at a pipeline loop, a sentinel return or a filter. A
+fact set without them gives the same tree and seeds as before, and each pipeline loop then
+shows `composition-not-extracted`. From these facts the walk adds reject decisions: a branch
+of kind `reject` with the sides `taken` and `not-taken`, whose `rejectForm` is `flag-write`,
+`bool-false`, `sentinel`, `filter-result` or `no-grant`. A reject on its `not-taken` side adds
+no token to a seed key. In `trace --json` and `trace --seeds --json`, these fields appear
+only where they apply:
+
+- A collection node carries `composition`: `{ state: "resolved", source, steps }` or
+  `{ state: "unresolved", reason }`. The class node of each resolved step carries `step`, its
+  position.
+- A reject decision carries `rejectForm`. It also carries `statusVia`, the file and line that
+  gave the status, or `statusReason: "status-unmapped"` with a `null` response.
+- A seed that a filter decides carries `gate: { filter, scope, stage, shared }`. The value of
+  `shared` is `true` for a global filter. A seed with no readable status carries
+  `statusReason`.
+- `stats.pipelines` gives the resolved count and the unresolved pipelines with their reasons.
+  `stats.gates` gives the filters that the route ran.
 
 ### Caller side (mobile and web)
 
 | type | fields | stated when |
 |---|---|---|
-| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service` |
-| `renders` | `from`, `to` | one component's template renders another |
+| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; `exports`, on every web component, lists each name its module exports it under, `default` included, and is `[]` for a component the module declares without exporting; a render's `source` binds only a component whose `exports` holds the imported name, and a web component without `exports` binds no import |
+| `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself — `default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>` |
 | `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler |
 | `injects` | `from`, `to` | a class is given another as a dependency |
 | `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal |
@@ -83,6 +113,34 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `action_dispatch` | `class`, `method`, `action` | a body dispatches an action |
 | `effect_handler` | `class`, `field`, `actions`, `endLine` | a body handles dispatched actions and issues HTTP |
 | `props_bind` | `component`, `prop`, `target` | a `connect` map binds a creator to a prop |
+| `component_entry` | `component`, `kind`, `trigger`, `handler`, `guards` | execution reaches a component: a class lifecycle callback, a hook effect, the cleanup an effect returns, or a trigger the extractor cannot read |
+| `page_route` | `owner`, `path` | a web `<Route>` element, as written: `owner` is the component declaring it and `path` its own path (`''` for an index or pathless route). Optional: `index`, `layout` (it has child routes), `parentLine`/`parentColumn` (the enclosing `<Route>`), `pathLine`, `element` with `elementFile`/`elementName` when the element's import resolves, `lazyLine`/`lazySpecifier` when the element is a lazy binding, `wrappers`, `guards` (`{ kind: "condition", text, branch }` or `{ kind: "wrapper", text }`), `redirect`/`redirectLine` for a `<Navigate>`, and `unsupported` — `path-expression`, `optional-segment`, `element-expression`, `redirect-expression`, `route-expression` or `route-object` — for a form the lookup will not guess through. A `<Route>` held by an `if (…) { … }` block carries that test as a `guards` condition, unevaluated like any other; one built inside a loop, a `switch` or an object literal keeps `route-expression` |
+| `page_route` (from a route array) | as above | the same fact for an entry of an array a `.map` renders as `<Route>`: `file`/`line`/`column` stay the rendering `.map`'s `<Route>` site, and `entryFile`/`entryLine`/`entryColumn` name the array entry the values came from, with `arrayFile`/`arrayName` naming the iterated constant or the prop it arrived as. An entry's guard carries its own `file`, which is the entry's, not the render site's. `unsupported` adds `route-array-expression` (a computed or concatenated array, or an entry that is not an object literal), `route-array-unresolved` (no readable array behind the iterated name), `route-array-ambiguous` (more than one prop site supplies it), `filter-expression` (a `.filter` predicate that is not one property of the loop binding) and `filter-property` (an entry the filter names by a property it does not state) |
+| `page_mount` | `path`, `source` | where a routed tree is mounted: `source` `app-root` (a root render; `component` names what it renders) or `router` (a router element inside `component`), with `path` the router's literal `basename` or `/`; an unreadable basename has `path: ""` and `unsupported: "basename-expression"` and cannot anchor a page; or `inferred`, the prefix the library's own `navigate()` literals agree on, with `evidence` counting them |
+
+A `component_entry` names one way execution reaches a component, on the site it was
+written at. `kind` is `mount`, `update`, `unmount`, `effect`, `cleanup`, `event` or
+`unknown`; `trigger` is the name it was written under (`componentDidMount`, `useEffect`,
+a hook the extractor does not read); `handler` is the callback or handler it names, and is
+`null` when the trigger *is* its own callback. `guards` lists, in source order, the
+conditions that gate the calls inside the entry. Optional: `column` is the trigger's
+1-based column, which with `line` is the site — two declarations can share a line, and one
+line is then not a site; `deps` is an effect's dependency list as written — `[]` when none
+was written — `endLine` closes the entry's span, `unresolved` names why the trigger could
+not be followed (`custom-hook`, `dynamic-callback`), and `method` is the key the calls
+inside the entry attribute to.
+
+An entry states a declaration, never how many times React runs the body and never an
+order between two entries. A JSX `on*` binding is an entry too; its identity comes from
+the `template_handler` fact that states it, with the event as its trigger. A `use…` call
+the extractor does not read is one entry per call site, so two calls of one unread hook
+are two sites rather than one name.
+
+Optional on `action_dispatch`: `continuesFile` and `continuesLine` name the gateway call
+whose response handler this dispatch is written inside, and `outcome` is `success` or
+`failure` for which of that call's handlers it is. The field is stated only where the
+source states the relation — a `.then` or `.catch` callback — never inferred from two
+statements sharing a body. Optional on `template_handler`: the `column` of the binding.
 
 ### Test evidence
 
@@ -91,7 +149,8 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `pw_test` | `spec`, `test`, `skipped` | a Playwright test is declared — not a `test.skip(condition, reason)` guard written inside a test body, and not a `test` reached through a member access (a regular expression's `.test(...)`, a matcher object's) |
 | `pw_request` | `spec`, `test`, `verb`, `template`, `resolved` | a test issues a request |
 | `pw_assert` | `spec`, `test`, `kind` | a test asserts something |
-| `pw_stub` | `spec`, `test`, `kind` | a test stubs a response |
+| `pw_stub` | `spec`, `test`, `kind` | a test stubs a response; `handler` says what its route handler does |
+| `pw_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `pw_test`: whether the test runs on a real backend, on patched responses or on a mocked backend |
 | `cypress_test` | `spec`, `test`, `skipped` | a Cypress test is declared |
 | `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL |
 | `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal argument of a configured case-id call, `table` for one row of a same-file data table the test iterates |
@@ -101,6 +160,56 @@ A `cypress_intercept` written in a support command carries no enclosing test and
 as much proof that a route is exercised as one written inline. There is no Cypress assertion
 fact, which is why Cypress evidence can never reach the `path` tier — the schema records no
 basis for it.
+
+`pw_backend` is written for every `pw_test`, at the same `file` and `line` and with the same
+`spec`, `test` and `skipped`. `backend` is one of four classes:
+
+- `mocked`: a call named in `backend.mockCalls` reaches the test
+  ([configuration.md](configuration.md#backend)).
+- `patched`: a route handler answers a request (`route.fulfill`, with or without
+  `route.fetch` first), a `routeFromHAR(` call replays an archive, or a call named in
+  `backend.patchCalls` reaches the test.
+- `unknown`: the test reaches a region that the reader cannot read, and no mock or patch
+  decides the class. `reason` says which region: `body-by-reference` (a test body or a hook
+  passed by name), `named-handler` (a route handler named by a function that its file does
+  not declare), `unread-handler` (a handler that calls none of `fulfill`, `fetch`, `continue`,
+  `fallback` and `abort` on its route), `ambiguous-helper` (a bare call name whose
+  repo-wide functions reach different kinds), or `unread-file` (the reader could not parse the
+  spec file).
+- `real`: none of the above.
+
+The precedence is `mocked`, then `patched`, then `unknown`, then `real`, and only an `unknown`
+fact carries `reason`. A test is read through its own body, the `beforeEach` and `beforeAll`
+hooks at file level and of every `test.describe` block that encloses it, and every function
+that those regions call. A function of the same file wins over a repo-wide class method or
+top-level function of the same name. The walk follows calls to a fixed point, so a cycle
+ends it. Comments and string contents are never read as calls.
+
+`sites` lists the calls that decided the class, sorted by line. A site has `line`, `where`
+(`test`, `hook` or `helper`) and `kind`, and can have `call`, `via` and `at`:
+
+| `kind` | the deciding call |
+|---|---|
+| `mock` | a call named in `backend.mockCalls` |
+| `patch` | a call named in `backend.patchCalls` |
+| `fulfill` | a `.route(` handler that calls `fulfill` |
+| `fetch-fulfill` | a `.route(` handler that calls `fetch` and then `fulfill` |
+| `har` | a `routeFromHAR(` call |
+| `abort` | a `.route(` handler that calls `abort` and not `fulfill` |
+| `spy` | a `.route(` handler that calls only `continue` or `fallback` |
+| `unresolved` | a region the reader cannot read |
+
+An `abort` or a `spy` site never changes the class: a spy shows that the test makes the
+request, and an abort removes a request. `call` is the callee as written. `via` lists the
+functions between the test and the deciding call, in call order, with a method written as
+`Class.method`. `at` gives the `file` and `line` of the deciding call when another file holds
+it. A site `line` is always a line of the spec: the deciding call's own line when the spec
+holds it, else the line of the test's call into `via`.
+
+`pw_stub.handler` comes from the same reader: `fulfill`, `fetch-fulfill`, `abort`, `spy` or
+`unresolved`. A direct `page.route(` stub takes the kind of its own handler. A stub helper call
+takes the kind that every repo-wide helper of that name agrees on, else `unresolved`. The field
+adds nothing to the set of `pw_stub` facts, and `cover` reads neither field.
 
 `case_id` resolves only three shapes and refuses the rest: a
 `test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is

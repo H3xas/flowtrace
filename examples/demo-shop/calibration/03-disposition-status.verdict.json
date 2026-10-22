@@ -1,22 +1,23 @@
 {
   "id": "03-disposition-status",
   "packet": "03-disposition-status.packet.json",
-  "shape": "an asserted 400 maps to exactly one guard; that seed is promoted to disposition and the other two are confirmed at route",
+  "shape": "an asserted 400 maps to exactly one guard; that seed is promoted to disposition and the other three are confirmed at route",
   "rule": "an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion",
   "expect": {
     "seeds": {
       "5a6423a0": "disposition",
       "ca37457e": "route",
+      "1d73af76": "route",
       "31ba2067": "route"
     },
     "upgrades": 1,
-    "confirmed": 2,
+    "confirmed": 3,
     "rejections": {}
   },
   "verdict": {
     "route": "POST orders/v1/checkout",
     "reader": "reference",
-    "packetHash": "f30adbc292a8",
+    "packetHash": "870ae39b7839",
     "seeds": [
       {
         "id": "U1",
@@ -46,6 +47,19 @@
       },
       {
         "id": "U3",
+        "key": "1d73af76",
+        "level": "route",
+        "evidence": [
+          {
+            "spec": "tests/checkout.spec.ts",
+            "test": "places an order when the cart holds an item",
+            "line": 8,
+            "reason": "the 403 that the service's refused save gives needs a refusal, and no test arranges one"
+          }
+        ]
+      },
+      {
+        "id": "U4",
         "key": "31ba2067",
         "level": "route",
         "evidence": [

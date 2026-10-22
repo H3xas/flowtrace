@@ -12,7 +12,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { parseRefs, parseRefsInbound } from '../lib/scout.js';
+import { INFORMATIONAL_KINDS, STRUCTURAL_KINDS, parseRefs, parseRefsInbound } from '../lib/scout.js';
 import { indexReferences } from '../lib/dotnet.js';
 
 const ALL_KINDS = [
@@ -104,4 +104,11 @@ test('the dotnet index only selects a test class through a structural inbound ed
     !result.hits.has('ImportsSpec'),
     'a bare imports edge names a shared namespace, not a shared shape, so it must never select a test class on its own',
   );
+});
+
+test('the registry classifies every kind the graph declares, and none twice', () => {
+  const classified = [...STRUCTURAL_KINDS, ...INFORMATIONAL_KINDS];
+
+  assert.deepEqual([...classified].sort(), ALL_KINDS);
+  assert.equal(new Set(classified).size, classified.length);
 });
