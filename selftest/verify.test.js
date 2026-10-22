@@ -121,11 +121,47 @@ function checkoutWithNoBase(t) {
 }
 
 /** The command run inside a fixture checkout, with its own output. */
-function verifyIn(dir, args) {
+function verifyIn(dir, args, env) {
   const result = spawnSync(process.execPath, [join(dir, 'scripts', 'verify.mjs'), ...args], {
     cwd: dir,
     encoding: 'utf8',
-    env: commandEnv(),
+    env: commandEnv(env),
+  });
+  if (result.error) throw result.error;
+  return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
+}
+
+const HYGIENE = join(REPO_ROOT, '.claude', 'hooks', 'comment-hygiene.py');
+const SIGNOFF = 'Signed-off-by: Selftest <selftest@example.invalid>';
+
+/**
+ * A checkout carrying the scanner and the command as they stand in the working tree, whose
+ * history a test writes commit by commit. A merge is only a commit given more than one parent,
+ * so `commit-tree` builds every shape the sign-off check meets without a branch or a checkout.
+ */
+function signoffCheckout(t) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-merge-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  gitIn(dir, ['init', '-q']);
+  installScript(dir);
+  mkdirSync(join(dir, '.claude', 'hooks'), { recursive: true });
+  cpSync(HYGIENE, join(dir, '.claude', 'hooks', 'comment-hygiene.py'));
+  gitIn(dir, ['add', '-A']);
+  const tree = gitIn(dir, ['write-tree']);
+  const commit = (message, ...parents) =>
+    gitIn(dir, ['commit-tree', tree, ...parents.flatMap((parent) => ['-p', parent]), '-m', message], IDENTITY);
+  return { dir, commit };
+}
+
+function signed(subject) {
+  return `${subject}\n\n${SIGNOFF}`;
+}
+
+/** The scanner's own sign-off mode, run inside a fixture checkout. */
+function requireSignoffIn(dir, range) {
+  const result = spawnSync('python3', [join('.claude', 'hooks', 'comment-hygiene.py'), '--require-signoff', range], {
+    cwd: dir,
+    encoding: 'utf8',
   });
   if (result.error) throw result.error;
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
@@ -459,6 +495,102 @@ test('a range CI exports for the checkout under test never reaches a fixture che
   assert.match(baseless.stderr, /tried origin\/HEAD, origin\/main, main/);
 });
 
+test('Merge sign-off AC-1: an unsigned merge commit of two or three parents is not read for a trailer', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const base = commit(signed('chore: start the history'));
+  const main = commit(signed('feat: a change on the main line'), base);
+  const side = commit(signed('fix: a change on a side branch'), base);
+  const merge = commit('Merge pull request #1 from someone/side', main, side);
+  const docs = commit(signed('docs: a change on a second branch'), base);
+  const tests = commit(signed('test: a change on a third branch'), base);
+  const octopus = commit('Merge branches into the main line', merge, docs, tests);
+  const range = `${base}..${octopus}`;
+
+  const scanner = requireSignoffIn(dir, range);
+  assert.equal(scanner.status, 0, `${scanner.stdout}${scanner.stderr}`);
+  assert.equal(scanner.stdout, '');
+
+  const result = verifyIn(dir, ['--only', 'commit-signoff', '--commit-range', range]);
+  assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
+  assert.match(
+    result.stdout,
+    new RegExp(`^verify: commit-signoff ok — 4 non-merge commits in ${range} signed off, 2 merge commits skipped$`, 'm'),
+  );
+});
+
+test('Merge sign-off AC-2: an unsigned commit a merge brings in, or an unsigned root commit, still fails', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const base = commit(signed('chore: start the history'));
+  const main = commit(signed('feat: a change on the main line'), base);
+  const unsigned = commit('fix: an unsigned change on a side branch', base);
+  const merge = commit('Merge pull request #2 from someone/side', main, unsigned);
+  const range = `${base}..${merge}`;
+
+  for (const result of [
+    requireSignoffIn(dir, range),
+    verifyIn(dir, ['--only', 'commit-signoff', '--commit-range', range]),
+  ]) {
+    const output = `${result.stdout}${result.stderr}`;
+    assert.equal(result.status, 1, output);
+    assert.match(output, new RegExp(`${unsigned.slice(0, 12)}: missing Signed-off-by trailer`));
+    assert.doesNotMatch(output, new RegExp(`${merge.slice(0, 12)}: missing`));
+  }
+
+  const root = commit('chore: an unsigned root commit');
+  for (const result of [
+    requireSignoffIn(dir, root),
+    verifyIn(dir, ['--only', 'commit-signoff', '--commit-range', root]),
+  ]) {
+    const output = `${result.stdout}${result.stderr}`;
+    assert.equal(result.status, 1, output);
+    assert.match(output, new RegExp(`${root.slice(0, 12)}: missing Signed-off-by trailer`));
+  }
+});
+
+test('Merge sign-off AC-3: a range of merge commits alone passes, and the commits below a merge are still read', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const start = commit(signed('chore: start the history'));
+  const release = commit(signed('feat: a change on the release branch'), start);
+  const merged = commit('Merge pull request #3 from someone/release', start, release);
+  const mergesOnly = `${release}..${merged}`;
+
+  const scanner = requireSignoffIn(dir, mergesOnly);
+  assert.equal(scanner.status, 0, `${scanner.stdout}${scanner.stderr}`);
+  assert.equal(scanner.stdout, '');
+  const result = verifyIn(dir, ['--only', 'commit-signoff', '--commit-range', mergesOnly]);
+  assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
+  assert.match(
+    result.stdout,
+    new RegExp(`^verify: commit-signoff ok — 0 non-merge commits in ${mergesOnly} signed off, 1 merge commit skipped$`, 'm'),
+  );
+
+  const unsigned = commit('feat: an unsigned change on the release branch', start);
+  const mergedUnsigned = commit('Merge pull request #4 from someone/release', start, unsigned);
+  for (const failed of [
+    requireSignoffIn(dir, `${start}..${mergedUnsigned}`),
+    verifyIn(dir, ['--only', 'commit-signoff', '--commit-range', `${start}..${mergedUnsigned}`]),
+  ]) {
+    const output = `${failed.stdout}${failed.stderr}`;
+    assert.equal(failed.status, 1, output);
+    assert.match(output, new RegExp(`${unsigned.slice(0, 12)}: missing Signed-off-by trailer`));
+  }
+});
+
+test('Merge sign-off AC-4: the range CI exports for a push whose tip is an unsigned merge passes', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const before = commit(signed('chore: start the history'));
+  const change = commit(signed('fix: the change a pull request carries'), before);
+  const after = commit('Merge pull request #5 from someone/change', before, change);
+  const range = `${before}..${after}`;
+
+  const result = verifyIn(dir, ['--only', 'commit-signoff'], { VERIFY_COMMIT_RANGE: range });
+  assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
+  assert.match(
+    result.stdout,
+    new RegExp(`^verify: commit-signoff ok — 1 non-merge commit in ${range} signed off, 1 merge commit skipped$`, 'm'),
+  );
+});
+
 test('a range the caller exports is the one the command reads when no flag names one', () => {
   const result = verify(['--only', 'public-text'], { VERIFY_COMMIT_RANGE: 'no-such-base..HEAD' });
   assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
@@ -548,8 +680,8 @@ test('the contributor document names every stage the command runs', () => {
 });
 
 test('every stage that needs no suite run passes in this checkout', () => {
-  // A pull request is checked out as a merge commit the host made and never signed off, so
-  // this checkout is read over the commits CI names as under review
+  // The outer run names the commits under review, so this checkout is read over that same range
+  // rather than over one the command would pick for itself
   const outer = process.env.VERIFY_COMMIT_RANGE;
   const result = verify(
     ['--only', 'cli-smoke,machine-paths,public-text,commit-signoff,docs,config,package'],

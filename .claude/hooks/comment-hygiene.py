@@ -33,9 +33,10 @@ Five ways to run it:
   3. `--scan-commits <git-log-range>` applies the commit-message checks to
      every commit message in the range. Exit 1 if any hit was found.
 
-  4. `--require-signoff <git-log-range>` checks that every commit in the
-     range carries a `Signed-off-by:` trailer, printing one
+  4. `--require-signoff <git-log-range>` checks that every non-merge commit
+     in the range carries a `Signed-off-by:` trailer, printing one
      `<sha>: missing Signed-off-by trailer` line per commit that lacks it.
+     A merge commit, one git lists with two or more parents, is skipped.
      Exit 1 if any commit is missing one, 0 otherwise.
 
   5. `--selfcheck` recomputes this file's own sha256 (with the recorded
@@ -64,11 +65,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-HYGIENE_VERSION = "1.2.0"
+HYGIENE_VERSION = "1.2.1"
 # Frozen by hashing this file with this value normalized to 64 zeros first;
 # --selfcheck redoes that normalization, so editing the body without
 # refreshing this constant is exactly the drift --selfcheck exists to catch.
-HYGIENE_SHA256 = "4fad4465a36f608499c554cd0d8db1ab42285174d873832d7a3a0df04bee22f5"
+HYGIENE_SHA256 = "aacc21d5f54be2a7740267690880e65796c19c48c66ca91ce5394a1ac07184c9"
 
 # `--scan` with no explicit paths now walks every git-tracked file (see
 # should_ignore_for_scan for what still gets skipped). Kept as a name, not a
@@ -125,6 +126,10 @@ PLAN_LABEL_RE = re.compile(
 
 COMMIT_TRAILER_RE = re.compile(r"\b(Co-Authored-By|Claude-Session|Generated with)\b")
 SIGNOFF_TRAILER_RE = re.compile(r"^Signed-off-by:\s*\S", re.MULTILINE)
+# A commit is a merge only when its parent field reads as two or more object
+# ids. Anything else, a root commit's empty field included, is checked for its
+# trailer, so a field this pattern cannot read never exempts a commit.
+MERGE_PARENTS_RE = re.compile(r"[0-9a-f]{40}(?:[0-9a-f]{24})?(?: [0-9a-f]{40}(?:[0-9a-f]{24})?)+")
 
 
 def has_tool_name(line):
@@ -451,13 +456,17 @@ def scan_commits_mode(commit_range):
 
 
 def require_signoff_mode(commit_range):
-    """Check every commit in `commit_range` carries a Signed-off-by trailer.
-    Unlike scan_commits_mode this needs commit boundaries, not just lines, so
-    it walks one NUL/STX-delimited record per commit rather than the raw
-    line stream."""
+    """Check every non-merge commit in `commit_range` carries a Signed-off-by
+    trailer. Unlike scan_commits_mode this needs commit boundaries, not just
+    lines, so it walks one NUL/STX-delimited record per commit rather than
+    the raw line stream.
+
+    A merge commit is skipped: the host that merges a pull request writes
+    that commit itself, with no trailer, and every commit it brings in is a
+    record of its own here or was read in the range that first added it."""
     try:
         out = subprocess.run(
-            ["git", "log", "--format=%H%x00%B%x02", commit_range],
+            ["git", "log", "--format=%H%x00%P%x00%B%x02", commit_range],
             check=True,
             capture_output=True,
             text=True,
@@ -471,7 +480,12 @@ def require_signoff_mode(commit_range):
         record = record.strip("\n")
         if not record:
             continue
-        sha, _, body = record.partition("\x00")
+        sha, _, rest = record.partition("\x00")
+        parents, separated, body = rest.partition("\x00")
+        if not separated:
+            parents, body = "", rest
+        if MERGE_PARENTS_RE.fullmatch(parents):
+            continue
         if not SIGNOFF_TRAILER_RE.search(body):
             short_sha = sha[:12] if sha else "?"
             hits.append(f"{short_sha}: missing Signed-off-by trailer")
