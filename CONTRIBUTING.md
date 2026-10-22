@@ -26,8 +26,10 @@ unsigned commit; `git commit --amend -s` (or `git rebase --exec 'git commit --am
 -s' <base>` for several commits) fixes one after the fact.
 
 The trailer is what is checked, commit by commit: `npm run verify` reads the message of every
-commit in the range out of the commit object, so nothing about the command that wrote the
-commit stands in for a trailer the commit does not carry.
+non-merge commit in the range out of the commit object, so nothing about the command that wrote
+the commit stands in for a trailer the commit does not carry. A merge commit, which has more than
+one parent, is not read for a trailer. The host writes the merge commit of a pull request itself,
+and each commit that the merge brings in is checked on its own.
 
 ## Running from a checkout
 
@@ -99,7 +101,7 @@ the suite.
 | `worked-example` | `examples/demo-shop` extracts, joins, exports twice byte-identically, matches its pinned export, writes the checkout packets and compares each golden packet under `calibration/` byte for byte with the written packet of its route, and runs cover, span, surface, skeleton, check and calibrate |
 | `machine-paths` | no absolute home path, Windows user path or `file://` URL anywhere in the tree |
 | `public-text` | every tracked file can be read, and the shared comment and commit-message policy is clean |
-| `commit-signoff` | every commit in the range carries its `Signed-off-by:` trailer |
+| `commit-signoff` | every non-merge commit in the range carries its `Signed-off-by:` trailer, and a merge commit (one with more than one parent) is skipped |
 | `docs` | `docs/cli.md` is `flowtrace --help` verbatim and every relative link resolves |
 | `config` | `flowtrace.config.example.json` loads through the loader the CLI uses, and every key it sets is documented |
 | `package` | `npm pack --dry-run` describes a tarball carrying what a reader needs and nothing that belongs to the checkout |
