@@ -147,6 +147,18 @@ test('Standalone bundle AC-4: an executable that runs past the limit fails the s
   );
 });
 
+test('Standalone bundle AC-4: an executable that cannot be run fails the start check', (t) => {
+  const path = join(scratch(t, 'missing'), 'flowtrace-missing');
+  assert.throws(
+    () => startCheck(path, { timeoutMs: 10_000 }),
+    (error) => {
+      assert.ok(error.message.includes(path), error.message);
+      assert.match(error.message, /could not be run/);
+      return true;
+    },
+  );
+});
+
 /** Every entry under `dir` with its size and modification time, or null when it is absent. */
 function snapshot(dir) {
   if (!existsSync(dir)) return null;

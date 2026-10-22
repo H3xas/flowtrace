@@ -16,9 +16,33 @@ export { ${single.length > 0 ? `nested ${'export { K }'}` : ''} as L }
 `;
 export const pattern = /export \{ M \}|['"`]|\/\/ export const N = 1;/;
 export const ratio = 12 / 3 / 2;
+export const escaped = 'it\'s "export { O }" and a backslash \\';
+export const notTemplate = '${ export { P } }';
+export const slashInClass = /[/]export \{ Q \}/;
+export const commentInString = '// export { R } /* export { S } */';
+export const tickInTemplate = `a \` export { T } \` b`;
+export const braces = `${{ value: 'export { U }' }.value}`;
+export const continued = 'line one \
+export { V }';
+const τ = 6;
+export const halfTau = (τ) / 2 / 1;
 
 export function texts() {
-  return [single, double, template, pattern.source, String(ratio)];
+  return [
+    single,
+    double,
+    template,
+    pattern.source,
+    String(ratio),
+    escaped,
+    notTemplate,
+    slashInClass.source,
+    commentInString,
+    tickInTemplate,
+    braces,
+    continued,
+    String(halfTau),
+  ];
 }
 
 export default function describeShapes() {
