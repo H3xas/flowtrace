@@ -106,6 +106,14 @@ npm test
   capture, and the pure ledger and projection functions.
 - `path-check.test.js` — runs a repository script, `scripts/path-check.sh`, not the CLI: each
   case copies it into a disposable tree beside a hand-written linked-worktree `.git` pointer file.
+- `build-sea.test.js` and `corpus/bundle-shapes/` — import the bundler of
+  `scripts/build-sea.mjs`, not the CLI, and run the bundles it writes: the CLI itself and an
+  invented module whose comments, strings, template literals and regex literals spell imports
+  and exports it does not have. Each inlined module must carry exactly the export names a
+  dynamic `import()` of it gives, and each bundle must print what the source prints. The test
+  also imports the modules the bundle inlines, since their real export names are the
+  reference. It never makes a binary: the build's own start check is covered with stand-in
+  executables.
 - `verify.test.js` — covers the canonical command, `scripts/verify.mjs`: the pure functions
   that decide whether the suite is the whole suite and whether the package carries what it
   should, the report a failing stage prints, and the command itself spawned over the stages
