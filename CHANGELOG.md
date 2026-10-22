@@ -2,6 +2,17 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## 0.5.1
+
+Release pipeline only. The CLI and the npm package do not change.
+
+- The standalone binaries of the `v0.5.0` release stop at startup with
+  `ReferenceError: A is not defined`. The single-file build read export syntax inside a
+  comment as a real export. The build now reads only real imports and exports, and it starts
+  each binary that it makes with `--help` before the release continues.
+- The sign-off check skips merge commits, so CI on `main` passes after a merge on GitHub.
+  Each other commit still needs a `Signed-off-by:` trailer.
+
 ## 0.5.0
 
 Extraction:
