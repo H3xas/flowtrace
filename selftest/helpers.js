@@ -1,8 +1,10 @@
 /**
  * Shared plumbing for the public contract suite: spawn the CLI exactly as a user would
- * (a child process, never an in-process import of `lib/`), and give each test its own
- * disposable copy of the synthetic corpus so `out/` writes and git state never touch the
- * tracked fixture or leak between tests.
+ * (a child process), and give each test its own disposable copy of the synthetic corpus so
+ * `out/` writes and git state never touch the tracked fixture or leak between tests.
+ *
+ * A subprocess is the default shape. A test that stands in for a collaborator the CLI shells
+ * out to imports `lib/` directly instead, because a child process accepts no substitute.
  */
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';

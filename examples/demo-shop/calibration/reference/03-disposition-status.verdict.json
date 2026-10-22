@@ -1,7 +1,7 @@
 {
   "route": "POST orders/v1/checkout",
   "reader": "reference",
-  "packetHash": "f30adbc292a8",
+  "packetHash": "870ae39b7839",
   "seeds": [
     {
       "id": "U1",
@@ -31,6 +31,19 @@
     },
     {
       "id": "U3",
+      "key": "1d73af76",
+      "level": "route",
+      "evidence": [
+        {
+          "spec": "tests/checkout.spec.ts",
+          "test": "places an order when the cart holds an item",
+          "line": 8,
+          "reason": "the 403 that the service's refused save gives needs a refusal, and no test arranges one"
+        }
+      ]
+    },
+    {
+      "id": "U4",
       "key": "31ba2067",
       "level": "route",
       "evidence": [

@@ -1,0 +1,150 @@
+{
+  "root": {
+    "id": "n24",
+    "repo": "mobile",
+    "kind": "method",
+    "ref": "PlotDetailPage.onSync",
+    "file": "src/app/features/plots/plot-detail.page.ts",
+    "line": 69,
+    "via": "handler",
+    "hops": 1,
+    "class": "PlotDetailPage",
+    "method": "onSync",
+    "homeRepo": "mobile",
+    "event": "click",
+    "methodDepth": 0
+  },
+  "nodes": [
+    {
+      "id": "n24",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "PlotDetailPage.onSync",
+      "file": "src/app/features/plots/plot-detail.page.ts",
+      "line": 69,
+      "via": "handler",
+      "hops": 1,
+      "class": "PlotDetailPage",
+      "method": "onSync",
+      "homeRepo": "mobile",
+      "event": "click",
+      "methodDepth": 0
+    },
+    {
+      "id": "n25",
+      "repo": "mobile",
+      "kind": "store_action",
+      "ref": "syncPlot",
+      "file": "src/app/features/plots/plot.actions.ts",
+      "line": 3,
+      "via": "dispatch",
+      "hops": 2,
+      "homeRepo": "mobile",
+      "methodDepth": 0
+    },
+    {
+      "id": "n26",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "PlotEffects.sync$",
+      "file": "src/app/features/plots/plot.effects.ts",
+      "line": 11,
+      "via": "effect",
+      "hops": 3,
+      "class": "PlotEffects",
+      "method": "sync$",
+      "homeRepo": "mobile",
+      "methodDepth": 0
+    },
+    {
+      "id": "n27",
+      "repo": "backend",
+      "kind": "route",
+      "ref": "GET nursery/v1/plots/*/sensors",
+      "file": "src/Controllers/PlotsController.cs",
+      "line": 63,
+      "via": "literal",
+      "hops": 0,
+      "caller": "PlotEffects.sync$",
+      "crossRepo": {
+        "from": "mobile",
+        "to": "backend",
+        "role": [
+          "api"
+        ]
+      },
+      "homeRepo": "backend",
+      "methodDepth": 0
+    }
+  ],
+  "edges": [
+    {
+      "from": "n24",
+      "to": "n25",
+      "via": "dispatch",
+      "fromRepo": "mobile",
+      "toRepo": "mobile",
+      "evidence": [
+        {
+          "key": "[\"mobile\",\"action_dispatch\",\"src/app/features/plots/plot-detail.page.ts\",70]",
+          "repo": "mobile",
+          "type": "action_dispatch",
+          "file": "src/app/features/plots/plot-detail.page.ts",
+          "line": 70
+        }
+      ]
+    },
+    {
+      "from": "n25",
+      "to": "n26",
+      "via": "effect",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n26",
+      "to": "n27",
+      "via": "literal",
+      "fromRepo": "mobile",
+      "toRepo": "backend",
+      "evidence": [
+        {
+          "key": "[\"mobile\",\"gateway_call\",\"src/app/features/plots/plot.effects.ts\",12,\"PlotEffects\",\"sync$\",\"GET\",\"nursery/v1/plots/${action.plotId}/sensors\"]",
+          "repo": "mobile",
+          "type": "gateway_call",
+          "file": "src/app/features/plots/plot.effects.ts",
+          "line": 12
+        }
+      ],
+      "caller": "PlotEffects.sync$"
+    }
+  ],
+  "sinks": [],
+  "branches": [],
+  "seeds": [],
+  "seedsTruncated": 0,
+  "stats": {
+    "nodes": 4,
+    "edges": 3,
+    "sinks": 0,
+    "branches": 0,
+    "primaryBranches": 0,
+    "seedCount": 0,
+    "routes": 1,
+    "inventory": true,
+    "repos": [
+      "backend",
+      "mobile"
+    ],
+    "via": {
+      "dispatch": 1,
+      "effect": 1,
+      "literal": 1
+    },
+    "depth": 6,
+    "crossings": 2,
+    "budgetHit": false,
+    "graphUnavailable": 0,
+    "graphUnknownKinds": []
+  }
+}

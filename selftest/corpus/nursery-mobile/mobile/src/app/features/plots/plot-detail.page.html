@@ -1,0 +1,16 @@
+<ion-header>
+  <ion-toolbar><ion-title>Plot</ion-title></ion-toolbar>
+</ion-header>
+<ion-content>
+  <ion-button (click)="onRefresh()">Refresh</ion-button>
+  <ion-button (click)="onWater()">Water</ion-button>
+  <ion-button (click)="onRelabel()">Relabel</ion-button>
+  <ion-button (click)="onNote()">Add note</ion-button>
+  <ion-button (click)="onExport()">Export</ion-button>
+  <ion-button (click)="onShareWatchers()">Share watchers</ion-button>
+  <ion-button (click)="onTend()">Tend</ion-button>
+  <ion-button (click)="onSync()">Sync sensors</ion-button>
+  <ion-button (click)="onPin()">Pin</ion-button>
+  <ion-input (ionInput)="draft = $event"></ion-input>
+  <app-seedling-badge></app-seedling-badge>
+</ion-content>

@@ -1,0 +1,17 @@
+{
+  "out": "out",
+  "repos": [
+    {
+      "id": "web",
+      "kind": "web",
+      "root": "web",
+      "mounts": { "PartnerRoutes": "/portal" },
+      "routeAssumptions": {
+        "features.pruningPlanner": true,
+        "features.tankGauge": true,
+        "features.tankProbe": false,
+        "features.greenhouse": false
+      }
+    }
+  ]
+}

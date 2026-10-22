@@ -9,6 +9,7 @@ import { basename, dirname, join as joinPath, relative, resolve } from 'node:pat
 import { fileURLToPath } from 'node:url';
 
 import { loadConfig } from '../lib/config.js';
+import { routeSlugFor, writeKeyedPage } from '../lib/slug.js';
 import {
   externalLocations, fact, factsDigest, factsHeader, loadFactsProvider, mergeFacts, producerSummary, staleFactsWarnings, validateFacts,
 } from '../lib/facts.js';
@@ -161,8 +162,21 @@ const USAGE = [
   'trace --area <file>',
   '  <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),',
   '  a backend Class.Method, a backend class, a web component name, or a web page path',
-  '  ("/catalog/collections/:collectionId" — the mount prefix is inferred from the library\'s own',
-  '  navigate() literals, so such a start prints tagged "inferred mount"). Facts are read',
+  '  ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page',
+  '  path is composed from the <Route> declarations the facts record: JSX-nested routes, a',
+  '  component\'s own <Routes> under the route that renders it, a route array that component',
+  '  or one it renders maps into <Route> elements, index routes, parameters, wildcards, lazy',
+  '  imports and <Navigate> redirects, each segment a [mount] hop with its file:line. A route',
+  '  array\'s entries carry the site each came from as well, in the mount chain\'s',
+  '  entryFile/entryLine and on that hop, so the rendering .map and the entry it read are',
+  '  both openable. A routed tree is mounted by source (a root render, a router basename), by',
+  '  repos[].mounts, or else read from "/" and behind the prefix the library\'s own',
+  '  navigate() literals agree on — both tagged "inferred mount". A route under a condition',
+  '  carries it as a guard; routes in the two arms of one condition stay candidates unless',
+  '  repos[].routeAssumptions supplies its value. A start that does not resolve exits 2 with',
+  '  one reason — no-declaration, missing-mount, unsupported-expression or ambiguous — as a',
+  '  "reason:" line on stderr, in a JSON envelope under --json and on the --html page; no',
+  '  tree is drawn for it. Facts are read',
   '  from out/facts, never re-extracted. A page, component or service start prints a route',
   '  inventory; --expand walks every route in full. --expand-infra prints the shared-dependency and',
   '  code-index hops the tree collapses to one line; folding (below) still applies on top',
@@ -170,6 +184,19 @@ const USAGE = [
   '  and emits one JSON array, one entry per key. A hop located at a line where an',
   '  externally supplied fact is stated prints [provider]; --json and --graph nodes carry',
   '  provider: true for the same hops.',
+  '',
+  '  Pipelines and filters: a backend loop over a step collection whose steps a DI factory',
+  '  registers, a literal typeof(...) list or an injected IEnumerable<T> names is walked in',
+  '  that order with no fan-out cap. Each step that can refuse the request (a stop-flag',
+  '  write, a false or null return, a throw or a status return) adds one reject decision',
+  '  with its status and file:line. A sentinel takes the status that the action\'s',
+  '  conditional on the returned value gives; a form the walk cannot read keeps the outcome',
+  '  with statusReason "status-unmapped". An authorization or action filter that applies to',
+  '  the route, registered globally or set as an attribute on the action, its controller or',
+  '  a base controller, adds one outcome per context.Result it assigns, and a global',
+  '  filter\'s seeds carry gate.shared: true. A loop whose step list, order, stop rule or',
+  '  step overload the walk cannot read prints "pipeline unresolved: <reason>", adds no step',
+  '  outcome and keeps the name-sorted fan-out; the trailer counts both kinds.',
   '',
   '  --from-handler <selector> restricts a mobile walk to the subtree rooted at one',
   '  `template_handler` hop, matched by its display form ("(click) onLike()"), the',
@@ -235,13 +262,17 @@ const USAGE = [
   '  route changes, the safe-verb endpoints that read that state back; and an honesty',
   '  strip stating what a static read cannot know. The ledger reconciles with cover: every',
   '  seed cover lists appears exactly once and the three counts sum to that route\'s seed',
-  '  count. A tested row names the test',
+  '  count, shared-gate seeds included: a row from a global filter carries a shared-gate',
+  '  mark, and the honesty strip names each pipeline the walk could not resolve, with its',
+  '  reason. A tested row names the test',
   '  by its resolved title, and by the case ids case_id facts resolve for',
   '  it when a case-id annotation, a configured call or a same-file table row carries',
   '  one — never by an id the tool invented.',
   '  --out defaults to <out>/span/<route-slug>.html; --specs narrows the evidence exactly as',
   '  it does for trace --cover-overlay. Nothing is fetched and no timestamp is written, so',
-  '  two runs over the same facts produce byte-identical pages.',
+  '  two runs over the same facts produce byte-identical pages. Each page states the key it',
+  '  was written for, and a default name already holding another key\'s page is left alone:',
+  '  the new page takes the next free name (-2, -3, ...).',
   '',
   '  --verdict-facts <file> reads cached surface_verdict facts and annotates each',
   '  observation point the assertion-surface section names outright: confirmed shows the',
@@ -250,9 +281,9 @@ const USAGE = [
   '  confirmed/refused/pending counts. Without the flag the page has no verdict annotations',
   '  or verdict counts.',
   '',
-  'span --from-component <name> [--file <path-substring>] [--out <file>] [--specs <list|file>]',
-  '            [--repo <id>]',
-  '  Web kind only. Resolves a web component, page or service name through the',
+  'span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json]',
+  '            [--out <file>] [--specs <list|file>] [--repo <id>]',
+  '  Resolves a web or mobile component, page or service name through the',
   '  existing chain — component → handler or method body → action_dispatch → action_def →',
   '  effect_handler → gateway_call → route — and writes one page: a header naming the',
   '  component, the number of routes it resolves to and the number of arms that do not,',
@@ -264,16 +295,54 @@ const USAGE = [
   '  pinned the template, so a matchRoute guess is not trusted even when one lands);',
   '  it dispatches an action no effect_handler answers (no-effect); or the walk\'s own',
   '  depth or node budget ran out before the arm could be explored (walk-limit).',
-  '  A mobile-kind name is refused with its reason and writes no page — this verb',
-  '  resolves the web chain only. --out defaults to',
-  '  <out>/span/component-<slug>.html; --repo scopes which component the name resolves to,',
+  '  Every arm is attributed to the entry that reached it — one way execution reaches the',
+  '  component, named by its component, trigger kind, source site and guards. A mount-time',
+  '  request and a request a click makes are two entries with two arm sets. --entry <entry>',
+  '  narrows the page to one of them, written as its id, its trigger (`componentDidMount`,',
+  '  `useEffect`), a trigger qualified by its line (`useEffect@15`) or a handler name; a',
+  '  selector matching anything other than exactly one entry is refused and lists them all.',
+  '  A trigger the extractor read but could not follow prints as an `entry-unresolved` arm.',
+  '  A rendered child is the component the rendering file names: its own declaration or',
+  '  lazy() binding of the tag, or the relative module it imports the tag from and the name',
+  '  that module exports it under, so `import Notes from \'./WatcherNotesPanel\'` renders',
+  '  that module\'s default export whatever the tag is called. A module binds only a',
+  '  component its facts state it exports under the imported name. Any other import (a',
+  '  component the module declares without exporting, a name it does not export, a',
+  '  relative path no component file answers for a default import, a module whose facts',
+  '  were extracted before exports were stated) prints as a `component-unresolved` arm',
+  '  naming the render site and the module, never as a same-named component elsewhere. A',
+  '  child no statement names a file for is looked up by the name it is exported under; one',
+  '  more than one file declares, like an import path two files answer, prints as a',
+  '  `component-ambiguous` arm naming the render site and every such file, and one nothing',
+  '  declares prints as a `component-unresolved` arm. Neither is entered. A tag imported',
+  '  from a module outside the repository (react, react-router-dom, ...) is no arm.',
+  '  --json prints the same entries, arms and reasons without the per-route sections.',
+  '  On a mobile (Ionic) start, each template event binding of kind call is an `event`',
+  '  entry with the handler it calls, and each lifecycle hook the class itself declares is',
+  '  an entry with the hook as its trigger: ngOnInit, ngAfterContentInit, ngAfterViewInit,',
+  '  ionViewWillEnter and ionViewDidEnter (mount), ngOnChanges, ngDoCheck,',
+  '  ngAfterContentChecked and ngAfterViewChecked (update), ngOnDestroy, ionViewWillLeave',
+  '  and ionViewDidLeave (unmount). The chain follows this. calls, injected service calls',
+  '  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call on one',
+  '  line, also inside pipe or mergeMap. A request no entry reaches, such as one a method',
+  '  only a decorator, a subscription or an inherited hook runs, prints once as an arm',
+  '  without entry, and a request an entry reaches is never counted again there. A method,',
+  '  service or component node the depth or node budget cut is a walk-limit arm too. A',
+  '  gateway call written over more than one line states no fact, so its handler shows as',
+  '  an entry that reaches no route; assign and prop bindings are no entries. --out defaults to',
+  '  <out>/span/component-<slug>.html, the slug naming the component, the file that declares',
+  '  it and, under --entry, the selected entry\'s own site; a name longer than the',
+  '  120-character cap ends in a digest of the whole name rather than losing that site, and',
+  '  a name already holding another selection\'s page sends this one to the next free name, so',
+  '  two selections never share a page; --repo scopes which component the name resolves to,',
   '  never the routes behind it.',
   '',
   '  A name declared in more than one file is ambiguous: with no --file, the',
   '  command exits non-zero and lists every candidate\'s declaring file so the reader can',
   '  pick one; --file <path-substring> narrows to the declaration whose file path contains',
   '  the substring, and still errors, listing what --file matched, if that leaves anything',
-  '  other than exactly one.',
+  '  other than exactly one. The entries, bindings and requests are then that declaration\'s',
+  '  own: an entry written in another file of the same name is neither listed nor selectable.',
   '',
   'surface "<route key>" [--json] [--hops N] [--out <file>]',
   '  Derives the assertion surface of one entry route: the stores it writes — the',
@@ -340,6 +409,9 @@ const USAGE = [
   '  rendering. A "playwright"-kind repo whose .pw.ts specs use page.route stubs adds',
   '  totals.parity and a per-route cypress/',
   '  playwright column, carried by --json unchanged.',
+  '  Seeds from a globally registered filter count in their route\'s seeds and again, apart,',
+  '  as "shared-gate" in totals and the headline; a route whose pipeline the walk could not',
+  '  resolve names it with its reason, and totals count those pipelines.',
   '',
   '  --runtime <file> joins per-spec runtime line hits against the branch spans facts',
   '  already carry: a cobertura or lcov artifact, or a JSON manifest naming one report',
@@ -602,6 +674,7 @@ function parseArgs(argv) {
     baseline: undefined,
     writeBaseline: false,
     fromComponent: undefined,
+    entry: undefined,
     file: undefined,
     observe: undefined,
     helpers: undefined,
@@ -758,6 +831,10 @@ function parseArgs(argv) {
       const value = argument.startsWith('--from-component=') ? argument.slice('--from-component='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--from-component requires a component name');
       options.fromComponent = value;
+    } else if (argument === '--entry' || argument.startsWith('--entry=')) {
+      const value = argument.startsWith('--entry=') ? argument.slice('--entry='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--entry requires an entry id, trigger or handler');
+      options.entry = value;
     } else if (argument === '--file' || argument.startsWith('--file=')) {
       const value = argument.startsWith('--file=') ? argument.slice('--file='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--file requires a path substring');
@@ -1067,15 +1144,6 @@ async function runCalibrate(options) {
   return exitCode;
 }
 
-function sanitiseKey(key) {
-  return String(key)
-    .toLowerCase()
-    .replace(/\*/g, 'star')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 120) || 'route';
-}
-
 async function runExtract(config, repoFilter) {
   const repos = repoFilter ? config.repos.filter((repo) => repo.id === repoFilter) : config.repos;
   if (repos.length === 0) {
@@ -1092,6 +1160,7 @@ async function runExtract(config, repoFilter) {
       srcSubpath: repo.srcSubpath,
       cypressSubpath: repo.cypressSubpath,
       caseIdCalls: config.caseId ? config.caseId.calls : [],
+      backendCalls: config.backend,
       workerPatterns: config.workerPatterns,
     });
     let count;
@@ -1338,9 +1407,10 @@ async function runRender(config) {
   const flowsDir = joinPath(config.out, 'flows');
   mkdirSync(flowsDir, { recursive: true });
   const routeKeys = [...new Set(flow.edges.filter((edge) => edge.kind === 'calls').map((edge) => edge.key))];
+  const taken = new Set();
   for (const key of routeKeys) {
     const body = [`# ${key}`, '', '```mermaid', renderMermaid(flow, { endpoint: key }), '```', ''].join('\n');
-    writeFileSync(joinPath(flowsDir, `${sanitiseKey(key)}.md`), body);
+    writeFileSync(joinPath(flowsDir, `${routeSlugFor(key, taken)}.md`), body);
   }
   log(
     `render ${plural(routeKeys.length, 'flow')} -> ${display(flowsDir)}, report -> ${display(reportTarget)}`,
@@ -1389,10 +1459,25 @@ function traceNodeFields(node) {
     'selfCall',
     'attach',
     'event',
+    'entry',
     'endLine',
     'methods',
     'methodDepth',
     'provider',
+    'url',
+    'pagePath',
+    'inferred',
+    'mountPrefix',
+    'mount',
+    'segment',
+    'source',
+    'entryFile',
+    'entryLine',
+    'composition',
+    'step',
+    'rejectForm',
+    'statusReason',
+    'statusVia',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }
@@ -1401,6 +1486,25 @@ function traceNodeFields(node) {
 
 function traceNode(node) {
   return { id: node.id, ...traceNodeFields(node) };
+}
+
+/**
+ * `span --from-component --json` — the same entries, arms and unresolved reasons the page
+ * prints, without the per-route `span()` models: a route's own behaviour belongs to that
+ * route's page. This view exists so two runs can be compared on identity rather than on
+ * rendered HTML, and so an entry can be named by id instead of by its line number.
+ */
+function componentSpanJson(model) {
+  return {
+    component: model.component,
+    header: model.header,
+    entries: model.entries,
+    selectedEntry: model.selectedEntry,
+    orphans: model.orphans,
+    routes: model.routes.map((entry) => ({ key: entry.key, arms: entry.arms })),
+    unresolved: model.unresolved,
+    limits: model.limits,
+  };
 }
 
 const INVENTORY_KINDS = new Set(['page', 'component', 'service']);
@@ -1468,8 +1572,8 @@ async function runTrace(config, options) {
       .filter((line) => line && !line.startsWith('#'));
     const results = keys.map((key) => {
       const walked = trace(factSets, key, { ...shared, seeds: true });
-      if (walked.candidates) return { key, error: 'ambiguous start', candidates: walked.candidates };
-      if (walked.error) return { key, error: walked.error };
+      if (walked.candidates) return { key, error: 'ambiguous start', reason: 'ambiguous', candidates: walked.candidates };
+      if (walked.error) return { key, error: walked.error, reason: walked.reason, ...(walked.frontier ? { frontier: walked.frontier } : {}) };
       markProviderHops(walked, factSets);
       return { key, ...traceResult(walked, options, foldedGraph) };
     });
@@ -1477,16 +1581,8 @@ async function runTrace(config, options) {
     return 0;
   }
 
-  const resolved = resolveStart(factSets, options.start, { repo: options.repo, strictComponentNames: true });
-  if (resolved.candidates) {
-    process.stderr.write(`flowtrace: "${options.start}" matches ${resolved.candidates.length} starts:\n`);
-    for (const candidate of resolved.candidates) process.stderr.write(`  ${candidate}\n`);
-    return 2;
-  }
-  if (resolved.error) {
-    process.stderr.write(`flowtrace: ${resolved.error}\n`);
-    return 2;
-  }
+  const resolved = resolveStart(factSets, options.start, { repo: options.repo, repos: config.repos, strictComponentNames: true });
+  if (resolved.candidates || resolved.error) return reportLookupFailure(options, lookupFailure(options.start, resolved));
   const inventory = !options.expand && INVENTORY_KINDS.has(resolved.node.kind);
   const result = trace(factSets, options.start, {
     ...shared,
@@ -1571,6 +1667,68 @@ async function runTrace(config, options) {
   return 0;
 }
 
+/**
+ * One failed start in the shape every output shares, so text, `--json` and `--html` state the
+ * same reason: `no-declaration`, `missing-mount`, `unsupported-expression` or `ambiguous`.
+ */
+function lookupFailure(start, resolved) {
+  if (resolved.candidates) {
+    return {
+      schemaVersion: 1,
+      start,
+      status: 'ambiguous',
+      reason: 'ambiguous',
+      message: `"${start}" matches ${resolved.candidates.length} starts`,
+      candidates: resolved.candidates,
+    };
+  }
+  return {
+    schemaVersion: 1,
+    start,
+    status: 'unresolved',
+    reason: resolved.reason || 'no-declaration',
+    message: resolved.error,
+    ...(resolved.frontier ? { frontier: resolved.frontier } : {}),
+  };
+}
+
+function frontierLine(entry) {
+  const where = entry.file ? `${entry.repo ? `${entry.repo} ` : ''}${entry.file}${entry.line ? `:${entry.line}` : ''}` : entry.route || '';
+  if (entry.unsupported) {
+    const detail = entry.pathText || entry.elementText;
+    return `${where}  ${entry.unsupported}${detail ? ` (${detail})` : ''}${entry.context ? `  under ${entry.context}` : ''}`;
+  }
+  if (entry.root) return `${entry.repo} ${entry.route}  below ${entry.root}, which reads ${entry.reads}; unmatched prefix ${entry.unmatched}`;
+  if (entry.excludedBy) return `${where}  excluded by a configured assumption`;
+  return where;
+}
+
+/** A failed start never draws a tree: it prints its reason, and exits 2. */
+function reportLookupFailure(options, failure) {
+  if (options.json) log(JSON.stringify(failure, null, 2));
+  if (failure.candidates) {
+    process.stderr.write(`flowtrace: "${options.start}" matches ${failure.candidates.length} starts:\n`);
+    for (const candidate of failure.candidates) process.stderr.write(`  ${candidate}\n`);
+  } else {
+    process.stderr.write(`flowtrace: ${failure.message}\n`);
+    for (const entry of failure.frontier || []) process.stderr.write(`  ${frontierLine(entry)}\n`);
+  }
+  process.stderr.write(`reason: ${failure.reason}\n`);
+  if (options.html) {
+    const target = resolve(options.html);
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(
+      target,
+      renderTreeHtmlModule.renderLookupFailureHtml(failure, {
+        title: `flowtrace: ${options.start}`,
+        lines: (failure.candidates || []).concat((failure.frontier || []).map(frontierLine)),
+      }),
+    );
+    process.stderr.write(`html -> ${display(target)}\n`);
+  }
+  return 2;
+}
+
 async function runRoutesOf(config, options) {
   const factSets = loadFactSets(config);
   warnStaleFacts(factSets, config.repos);
@@ -1651,9 +1809,8 @@ async function runSpan(config, options) {
   for (const token of model.limits.unmatchedSpecs) {
     process.stderr.write(`flowtrace: --specs "${token}" matches no spec in the facts\n`);
   }
-  const target = resolve(options.out || joinPath(config.out, 'span', `${model.slug}.html`));
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, renderSpanHtml(model, { title: `flowtrace span: ${options.start}` }));
+  const page = renderSpanHtml(model, { title: `flowtrace span: ${options.start}` });
+  const target = writeSpanPage(config, options, model, page);
   const counts = model.ledger.counts;
   log(
     `span ${options.start}: ${plural(counts.total, 'outcome')} — ${counts.tested} tested, ` +
@@ -1664,14 +1821,29 @@ async function runSpan(config, options) {
 }
 
 /**
- * `span --from-component <name>` (web kind only) — one page per component, carrying one
- * `span()` section per route the component's own walk resolves to. `--repo` here scopes
- * which component the name resolves to, never the routes behind it — a web component and
- * the backend route it calls always live in different repositories, so that scoping is
+ * `span --from-component <name>` (a web or mobile component) — one page per component,
+ * carrying one `span()` section per route the component's own walk resolves to. `--repo`
+ * here scopes which component the name resolves to, never the routes behind it — a client
+ * component and the backend route it calls always live in different repositories, so that scoping is
  * never forwarded into the per-route walk. `--file` disambiguates a name declared
  * in more than one file; `model.error` and `model.candidates` already print identically to
  * every other ambiguous-start case below.
  */
+/**
+ * A span page goes where `--out` says, or under `out/span/` by its slug. Two keys can share a
+ * slug, and a page written by one run cannot know the keys of the runs before it, so a slug
+ * already holding another key's page leaves that page alone and this one takes the next name.
+ */
+function writeSpanPage(config, options, model, page) {
+  if (options.out) {
+    const target = resolve(options.out);
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, page);
+    return target;
+  }
+  return writeKeyedPage(resolve(joinPath(config.out, 'span')), model.slug, '.html', model.pageKey, page);
+}
+
 async function runComponentSpan(config, options, factSets) {
   const { componentSpan } = componentSpanModule;
   const { renderComponentSpanHtml } = renderComponentSpanHtmlModule;
@@ -1686,6 +1858,7 @@ async function runComponentSpan(config, options, factSets) {
   const model = componentSpan(factSets, options.fromComponent, {
     repo: options.repo,
     file: options.file,
+    entry: options.entry,
     aliases: config.aliases,
     specs: specsText,
     traceOptions: {
@@ -1698,10 +1871,6 @@ async function runComponentSpan(config, options, factSets) {
       outbound: scout.outbound,
     },
   });
-  if (model.refused) {
-    process.stderr.write(`flowtrace: ${model.refused}\n`);
-    return 2;
-  }
   if (model.error) {
     process.stderr.write(`flowtrace: "${options.fromComponent}" ${model.error}\n`);
     for (const candidate of model.candidates || []) process.stderr.write(`  ${candidate}\n`);
@@ -1714,9 +1883,16 @@ async function runComponentSpan(config, options, factSets) {
   for (const token of unmatched) {
     process.stderr.write(`flowtrace: --specs "${token}" matches no spec in the facts\n`);
   }
-  const target = resolve(options.out || joinPath(config.out, 'span', `${model.slug}.html`));
-  mkdirSync(dirname(target), { recursive: true });
-  writeFileSync(target, renderComponentSpanHtml(model, { title: `flowtrace span: ${options.fromComponent}` }));
+  if (options.json) {
+    log(JSON.stringify(componentSpanJson(model), null, 2));
+    return 0;
+  }
+  const startRepo = config.repos.find((repo) => repo.id === model.component.repo);
+  const page = renderComponentSpanHtml(model, {
+    title: `flowtrace span: ${options.fromComponent}`,
+    repoKind: startRepo ? startRepo.kind : 'web',
+  });
+  const target = writeSpanPage(config, options, model, page);
   log(
     `span --from-component ${options.fromComponent}: ${plural(model.header.routesResolved, 'route')} resolved, ` +
       `${plural(model.header.armsUnresolved, 'arm')} unresolved -> ${display(target)}`,
@@ -2399,6 +2575,9 @@ async function main() {
   }
   if (options.command === 'span' && options.file && !options.fromComponent) {
     return usage('span --file requires --from-component <name>');
+  }
+  if (options.command === 'span' && options.entry && !options.fromComponent) {
+    return usage('span --entry requires --from-component <name>');
   }
   if (options.command === 'surface' && !options.start) {
     return usage('surface requires a route key, e.g. surface "POST orders/v1/checkout"');

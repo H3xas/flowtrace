@@ -1,9 +1,9 @@
 # 05 · a hash from another run
 
-Packet: `POST orders/v1/checkout` — three seeds; two executing tests.
-Reference: every seed stays at `route`; all three entries refused as `stale-verdict`.
+Packet: `POST orders/v1/checkout` — four seeds; two executing tests.
+Reference: every seed stays at `route`; all four entries refused as `stale-verdict`.
 
-The verdict names its seeds `U1`, `U2`, `U3` with no `key`, and its `packetHash` is the hash
+The verdict names its seeds `U1` to `U4` with no `key`, and its `packetHash` is the hash
 the route would carry if U1 and U2 had been enumerated the other way round. Positional ids
 only mean something against the enumeration they were written for; when the hash does not
 match, the merge cannot tell whether `U1` still means the missing-token seed, so it applies

@@ -1,0 +1,20 @@
+{
+  "out": "out",
+  "backend": {
+    "mockCalls": ["stubEveryEndpoint"],
+    "patchCalls": ["seedBasket", "fixtures.priceList"]
+  },
+  "repos": [
+    {
+      "id": "api",
+      "kind": "backend",
+      "root": "backend",
+      "role": ["api"]
+    },
+    {
+      "id": "suite",
+      "kind": "playwright",
+      "root": "suite"
+    }
+  ]
+}

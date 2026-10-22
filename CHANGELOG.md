@@ -2,6 +2,98 @@
 
 Semantic versioning from `0.x`: the CLI surface may still change between minor versions.
 
+## 0.5.0
+
+Extraction:
+
+- A `playwright` repository writes one `pw_backend` fact for each `pw_test`. Its class is
+  `real`, `patched` or `mocked`. If the reader cannot tell, the class is `unknown` with a
+  `reason`.
+  The fact lists the call sites that decided the class. The reader follows the test body and
+  the hooks of the file and of each enclosing `test.describe` block. It also follows the
+  helpers that those regions call, in the same file and across the repository. Comments and
+  string contents never count.
+- The new top-level `backend` configuration key names the calls that mock (`mockCalls`) or
+  patch (`patchCalls`) a backend, for a suite whose mock lives outside the repository. No call
+  name is built in. A malformed value is refused with one message that names `backend`.
+- `pw_stub` gains `handler`: what its route handler does (`fulfill`, `fetch-fulfill`,
+  `abort`, `spy` or `unresolved`). The set of `pw_stub` facts and the `cover` output do not
+  change.
+
+Pipeline, sentinel and filter outcomes:
+
+- `trace --seeds`, `span` and `cover` list each refusal of a backend pipeline step as its own
+  fault outcome, with its status and file:line. A refusal is a stop-flag write, a `false` or
+  `null` return, a throw or a status return in the step's own method.
+- The walk reads the step order from the source. It reads registration calls in a DI factory,
+  a literal `typeof(...)` list and an injected `IEnumerable<T>` with its `Add*<T, X>()`
+  registrations. It walks a resolved list in that order, with no fan-out cap.
+- A resolved step runs one level below its pipeline method, as before. Only its refusals count
+  at the depth of the pipeline method. Its other branches, helpers and callees keep their
+  depth.
+- A `return false` or `return null` inside an `if`, which reaches the action unchanged, is an
+  outcome. Its status comes from the action's `?:` conditional or `if` on the value. If the
+  walk cannot read that form, the outcome stays in the list with
+  `statusReason: "status-unmapped"` and no status.
+- An authorization or action filter with a source body adds one outcome for each
+  `context.Result` it assigns. This applies to a filter registered globally and to a filter
+  set as an attribute on the action, its controller or a base controller. An action that
+  carries an attribute that the filter's early return names gets no outcome from that
+  filter. An exception filter is never read as a refusal.
+- Seeds of a globally registered filter carry `gate.shared: true`. They count in the route's
+  seeds, so the `span` ledger and the `cover` seed set stay equal. The `cover` totals and
+  headline also give their count as `shared-gate`. A toggle in a shared gate decides only
+  that gate's outcomes.
+- If the walk cannot read the step list, its order, the stop rule or a step overload, the
+  pipeline is `unresolved` with a reason. `trace`, `span` and `cover` show the reason, and the
+  `cover` totals count these pipelines. An unresolved pipeline adds no step outcome, and its
+  tree keeps the name-sorted fan-out.
+- Extraction writes ten new fact types: `step_composition`, `loop_stop`, `flag_write`,
+  `sentinel_return`, `return_flow`, `sentinel_map`, `auth_filter`, `filter_result`,
+  `filter_use` and `class_base`. `docs/fact-schema.md` describes them.
+- Compatibility: every existing seed key stays, so stored verdicts, packets and snapshots
+  still match. A new outcome is a new key. Every new JSON field is absent where it does not
+  apply. A fact set written before this release holds none of the new facts. With it, the
+  walk gives the earlier tree, and each pipeline loop shows `composition-not-extracted`. Run
+  `extract` again for the new outcomes, then write the `check` baseline again.
+
+Worked example:
+
+- `examples/demo-shop/e2e/ui/storefront.pw.ts` adds a UI spec with a hook that patches the
+  catalog response and a block on the live catalog.
+- Three routes gain one sentinel outcome each: `POST orders/v1/checkout` (403),
+  `POST orders/v1/replay` (404) and `POST stock/v1/reservations` (409). The pinned edge export
+  is written again for the new fact types.
+- The checkout entries 03, 05 and 06 of the calibration golden set hold the fresh checkout
+  packet, which has four seeds. Their verdicts, expected outcomes and notes name the new 403
+  seed. The stale hash of entry 05 is again the hash of the swapped enumeration.
+- The golden packet `calibration/01-status-only.packet.json` is again the packet that
+  `cover --area checkout --packets` writes for `GET catalog/v1/products`. It now holds the
+  route patch of the storefront spec as a third candidate, and its note says why that patch
+  promotes no seed. The packet hash, the seeds and the verdict do not change. The
+  `worked-example` stage of `npm run verify` now writes the checkout packets into
+  `examples/demo-shop/out/checkout-packets/` and compares each golden packet byte for byte with
+  the written packet of its route. A golden packet that differs, a route with no packet on one
+  side, or a packet that cannot be read or paired fails the stage.
+
+Component span:
+
+- `span --from-component` accepts a mobile (Ionic) component, page or service and writes the
+  same page and `--json` model as for a web one. A mobile name no longer exits `2` with a
+  refusal. A start in a repository that is neither web nor mobile still exits `2`, and its
+  message names both kinds.
+- On a mobile start, each template event binding of kind `call` is an `event` entry, and each
+  Angular or Ionic lifecycle hook the class itself declares is a `mount`, `update` or
+  `unmount` entry. Each entry keeps its own arms, so two handlers that call two methods of one
+  injected service no longer fold into one.
+- A request that no entry reaches prints once as an arm without entry. A request that an entry
+  reaches is not counted again there. A method, service or component node that the depth or
+  node budget cut prints as a `walk-limit` arm.
+- Known gap: a gateway call written over more than one line states no fact, so a handler that
+  reaches only such a call shows as an entry that reaches no route.
+- `trace` and `--from-handler` output on a mobile start, and web `span --from-component`
+  output, do not change.
+
 ## 0.4.1
 
 The first 0.4 release. The `v0.4.0` tag was created in error on the 0.3.0 tree and was never

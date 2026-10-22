@@ -1,0 +1,296 @@
+{
+  "root": {
+    "id": "n1",
+    "repo": "mobile",
+    "kind": "page",
+    "ref": "PlotDetailPage",
+    "file": "src/app/features/plots/plot-detail.page.ts",
+    "line": 6,
+    "via": "start",
+    "hops": 0,
+    "homeRepo": "mobile"
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "mobile",
+      "kind": "page",
+      "ref": "PlotDetailPage",
+      "file": "src/app/features/plots/plot-detail.page.ts",
+      "line": 6,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "mobile"
+    },
+    {
+      "id": "n2",
+      "repo": "mobile",
+      "kind": "component",
+      "ref": "SeedlingBadgeComponent",
+      "file": "src/app/features/plots/seedling-badge.component.ts",
+      "line": 4,
+      "via": "template",
+      "hops": 0,
+      "homeRepo": "mobile",
+      "methodDepth": 0
+    },
+    {
+      "id": "n3",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "SeedlingBadgeComponent.onMark",
+      "file": "src/app/features/plots/seedling-badge.component.ts",
+      "line": 11,
+      "via": "handler",
+      "hops": 1,
+      "class": "SeedlingBadgeComponent",
+      "method": "onMark",
+      "homeRepo": "mobile",
+      "event": "click",
+      "methodDepth": 0
+    },
+    {
+      "id": "n4",
+      "repo": "mobile",
+      "kind": "service",
+      "ref": "PlotService",
+      "file": "src/app/features/plots/plot.service.ts",
+      "line": 6,
+      "via": "di",
+      "hops": 1,
+      "class": "PlotService",
+      "homeRepo": "mobile",
+      "methodDepth": 0
+    },
+    {
+      "id": "n5",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "PlotService.markHealthy",
+      "file": "src/app/features/plots/plot.service.ts",
+      "line": 51,
+      "via": "body",
+      "hops": 2,
+      "class": "PlotService",
+      "method": "markHealthy",
+      "homeRepo": "mobile",
+      "methodDepth": 1
+    },
+    {
+      "id": "n6",
+      "repo": "backend",
+      "kind": "route",
+      "ref": "POST nursery/v1/plots/*/health",
+      "file": "src/Controllers/PlotsController.cs",
+      "line": 69,
+      "via": "literal",
+      "hops": 0,
+      "caller": "PlotService.markHealthy",
+      "crossRepo": {
+        "from": "mobile",
+        "to": "backend",
+        "role": [
+          "api"
+        ]
+      },
+      "homeRepo": "backend",
+      "methodDepth": 1
+    },
+    {
+      "id": "n24",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "PlotDetailPage.onSync",
+      "file": "src/app/features/plots/plot-detail.page.ts",
+      "line": 69,
+      "via": "handler",
+      "hops": 1,
+      "class": "PlotDetailPage",
+      "method": "onSync",
+      "homeRepo": "mobile",
+      "event": "click",
+      "methodDepth": 0
+    },
+    {
+      "id": "n25",
+      "repo": "mobile",
+      "kind": "store_action",
+      "ref": "syncPlot",
+      "file": "src/app/features/plots/plot.actions.ts",
+      "line": 3,
+      "via": "dispatch",
+      "hops": 2,
+      "homeRepo": "mobile",
+      "methodDepth": 0
+    },
+    {
+      "id": "n26",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "PlotEffects.sync$",
+      "file": "src/app/features/plots/plot.effects.ts",
+      "line": 11,
+      "via": "effect",
+      "hops": 3,
+      "class": "PlotEffects",
+      "method": "sync$",
+      "homeRepo": "mobile",
+      "methodDepth": 0
+    },
+    {
+      "id": "n27",
+      "repo": "backend",
+      "kind": "route",
+      "ref": "GET nursery/v1/plots/*/sensors",
+      "file": "src/Controllers/PlotsController.cs",
+      "line": 63,
+      "via": "literal",
+      "hops": 0,
+      "caller": "PlotEffects.sync$",
+      "crossRepo": {
+        "from": "mobile",
+        "to": "backend",
+        "role": [
+          "api"
+        ]
+      },
+      "homeRepo": "backend",
+      "methodDepth": 0
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "template",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "via": "handler",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n3",
+      "to": "n4",
+      "via": "di",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n4",
+      "to": "n5",
+      "via": "body",
+      "fromRepo": "mobile",
+      "toRepo": "mobile",
+      "evidence": [
+        {
+          "key": "[\"mobile\",\"method_call\",\"src/app/features/plots/seedling-badge.component.ts\",12,\"SeedlingBadgeComponent\",\"onMark\",\"PlotService\",\"markHealthy\"]",
+          "repo": "mobile",
+          "type": "method_call",
+          "file": "src/app/features/plots/seedling-badge.component.ts",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "from": "n5",
+      "to": "n6",
+      "via": "literal",
+      "fromRepo": "mobile",
+      "toRepo": "backend",
+      "evidence": [
+        {
+          "key": "[\"mobile\",\"gateway_call\",\"src/app/features/plots/plot.service.ts\",52,\"PlotService\",\"markHealthy\",\"POST\",\"nursery/v1/plots/${plotId}/health\"]",
+          "repo": "mobile",
+          "type": "gateway_call",
+          "file": "src/app/features/plots/plot.service.ts",
+          "line": 52
+        }
+      ],
+      "caller": "PlotService.markHealthy"
+    },
+    {
+      "from": "n1",
+      "to": "n24",
+      "via": "handler",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n24",
+      "to": "n25",
+      "via": "dispatch",
+      "fromRepo": "mobile",
+      "toRepo": "mobile",
+      "evidence": [
+        {
+          "key": "[\"mobile\",\"action_dispatch\",\"src/app/features/plots/plot-detail.page.ts\",70]",
+          "repo": "mobile",
+          "type": "action_dispatch",
+          "file": "src/app/features/plots/plot-detail.page.ts",
+          "line": 70
+        }
+      ]
+    },
+    {
+      "from": "n25",
+      "to": "n26",
+      "via": "effect",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n26",
+      "to": "n27",
+      "via": "literal",
+      "fromRepo": "mobile",
+      "toRepo": "backend",
+      "evidence": [
+        {
+          "key": "[\"mobile\",\"gateway_call\",\"src/app/features/plots/plot.effects.ts\",12,\"PlotEffects\",\"sync$\",\"GET\",\"nursery/v1/plots/${action.plotId}/sensors\"]",
+          "repo": "mobile",
+          "type": "gateway_call",
+          "file": "src/app/features/plots/plot.effects.ts",
+          "line": 12
+        }
+      ],
+      "caller": "PlotEffects.sync$"
+    }
+  ],
+  "sinks": [],
+  "branches": [],
+  "seeds": [],
+  "seedsTruncated": 0,
+  "stats": {
+    "nodes": 10,
+    "edges": 9,
+    "sinks": 0,
+    "branches": 0,
+    "primaryBranches": 0,
+    "seedCount": 0,
+    "routes": 2,
+    "inventory": true,
+    "repos": [
+      "backend",
+      "mobile"
+    ],
+    "via": {
+      "template": 1,
+      "handler": 2,
+      "di": 1,
+      "body": 1,
+      "literal": 2,
+      "dispatch": 1,
+      "effect": 1
+    },
+    "depth": 6,
+    "crossings": 2,
+    "budgetHit": false,
+    "graphUnavailable": 0,
+    "graphUnknownKinds": []
+  }
+}

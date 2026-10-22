@@ -1,0 +1,1251 @@
+{
+  "widget-cart": [
+    {
+      "type": "pw_test",
+      "file": "tests/cart.spec.ts",
+      "line": 6,
+      "spec": "tests/cart.spec.ts",
+      "test": "adds an item to the cart",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/cart.spec.ts",
+      "line": 7,
+      "spec": "tests/cart.spec.ts",
+      "test": "adds an item to the cart",
+      "verb": "POST",
+      "template": "cart/v1/items",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/cart.spec.ts",
+      "line": 8,
+      "spec": "tests/cart.spec.ts",
+      "test": "adds an item to the cart",
+      "kind": "status",
+      "value": 200
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/cart.spec.ts",
+      "line": 11,
+      "spec": "tests/cart.spec.ts",
+      "test": "removes an item from the cart",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/cart.spec.ts",
+      "line": 12,
+      "spec": "tests/cart.spec.ts",
+      "test": "removes an item from the cart",
+      "verb": "DELETE",
+      "template": "cart/v1/items/1",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/cart.spec.ts",
+      "line": 13,
+      "spec": "tests/cart.spec.ts",
+      "test": "removes an item from the cart",
+      "kind": "status",
+      "value": 204
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/cart.spec.ts",
+      "line": 16,
+      "spec": "tests/cart.spec.ts",
+      "test": "renders a ${size} cart badge",
+      "skipped": false
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/cart.spec.ts",
+      "line": 18,
+      "spec": "tests/cart.spec.ts",
+      "test": "renders a ${size} cart badge",
+      "kind": "body"
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/cart.spec.ts",
+      "line": 22,
+      "spec": "tests/cart.spec.ts",
+      "test": "rejects an unauthenticated add",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/cart.spec.ts",
+      "line": 23,
+      "spec": "tests/cart.spec.ts",
+      "test": "rejects an unauthenticated add",
+      "verb": "POST",
+      "template": "cart/v1/items",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/cart.spec.ts",
+      "line": 24,
+      "spec": "tests/cart.spec.ts",
+      "test": "rejects an unauthenticated add",
+      "kind": "status",
+      "value": 401
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/cart.spec.ts",
+      "line": 28,
+      "spec": "tests/cart.spec.ts",
+      "test": "empties the cart",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/cart.spec.ts",
+      "line": 29,
+      "spec": "tests/cart.spec.ts",
+      "test": "empties the cart",
+      "verb": "DELETE",
+      "template": "cart/v1/items",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/cart.spec.ts",
+      "line": 30,
+      "spec": "tests/cart.spec.ts",
+      "test": "empties the cart",
+      "kind": "status",
+      "value": 204
+    }
+  ],
+  "widget-kiosk": [
+    {
+      "type": "pw_test",
+      "file": "tests/kiosk.spec.ts",
+      "line": 10,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "opens the kiosk drawer",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/kiosk.spec.ts",
+      "line": 12,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "opens the kiosk drawer",
+      "verb": "POST",
+      "template": "kiosk/v1/drawer",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/kiosk.spec.ts",
+      "line": 13,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "opens the kiosk drawer",
+      "kind": "status",
+      "value": 200
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/kiosk.spec.ts",
+      "line": 16,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "reprints a receipt",
+      "skipped": true
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/kiosk.spec.ts",
+      "line": 17,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "reprints a receipt",
+      "verb": "POST",
+      "template": "kiosk/v1/receipts",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/kiosk.spec.ts",
+      "line": 18,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "reprints a receipt",
+      "kind": "status",
+      "value": 201
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/kiosk.spec.ts",
+      "line": 21,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "scans a label",
+      "skipped": false
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/kiosk.spec.ts",
+      "line": 23,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "scans a label",
+      "kind": "body",
+      "value": true
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/kiosk.spec.ts",
+      "line": 26,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "tms.id(7, 'refunds a sale')",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/kiosk.spec.ts",
+      "line": 29,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "tms.id(7, 'refunds a sale')",
+      "verb": "POST",
+      "template": "kiosk/v1/refunds",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/kiosk.spec.ts",
+      "line": 28,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "tms.id(7, 'refunds a sale')",
+      "kind": "body",
+      "value": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/kiosk.spec.ts",
+      "line": 30,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "tms.id(7, 'refunds a sale')",
+      "kind": "status",
+      "value": 200
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/kiosk.spec.ts",
+      "line": 34,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "row.summary",
+      "skipped": false
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/kiosk.spec.ts",
+      "line": 36,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "row.summary",
+      "kind": "body"
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/kiosk.spec.ts",
+      "line": 40,
+      "spec": "tests/kiosk.spec.ts",
+      "test": "tops up the float",
+      "skipped": false
+    }
+  ],
+  "kettle-market": [
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 11,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "lists the kettles",
+      "skipped": false
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 13,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "lists the kettles",
+      "kind": "body"
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 16,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "filters the kettles",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 21,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "opens one kettle",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 28,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "lists the live kettles",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 32,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "opens the live basket",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 42,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "compares two kettles",
+      "skipped": true
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/file-hook.spec.ts",
+      "line": 7,
+      "spec": "tests/file-hook.spec.ts",
+      "test": "shows the price list",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/file-hook.spec.ts",
+      "line": 12,
+      "spec": "tests/file-hook.spec.ts",
+      "test": "shows one price",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/basket.pw.ts",
+      "line": 19,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows the discounted prices",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/basket.pw.ts",
+      "line": 24,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows the stock badge",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/basket.pw.ts",
+      "line": 29,
+      "spec": "e2e/basket.pw.ts",
+      "test": "warms the cache first",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/basket.pw.ts",
+      "line": 38,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows an empty drawer",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/catalog.pw.ts",
+      "line": 7,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "browses a fully stubbed catalog",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/catalog.pw.ts",
+      "line": 12,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "starts from a seeded basket",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/catalog.pw.ts",
+      "line": 17,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "reads the fixture price list",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/catalog.pw.ts",
+      "line": 21,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "reads the catalog price list",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/comments.pw.ts",
+      "line": 4,
+      "spec": "e2e/comments.pw.ts",
+      "test": "ignores a stub in a line comment",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/comments.pw.ts",
+      "line": 9,
+      "spec": "e2e/comments.pw.ts",
+      "test": "ignores a stub in a block comment",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/comments.pw.ts",
+      "line": 16,
+      "spec": "e2e/comments.pw.ts",
+      "test": "ignores a stub name in a string",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/comments.pw.ts",
+      "line": 21,
+      "spec": "e2e/comments.pw.ts",
+      "test": "reads a stub inside an interpolation",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 5,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and patches",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 10,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and cannot read a handler",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 15,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "patches and cannot read a handler",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 20,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "spies and cannot read a handler",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 25,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "replays an archive",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 30,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "waits for a parked feature",
+      "skipped": true
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 35,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "blocks then spies",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 4,
+      "spec": "e2e/spies.pw.ts",
+      "test": "lets the prices through",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 9,
+      "spec": "e2e/spies.pw.ts",
+      "test": "falls back for the stock",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 15,
+      "spec": "e2e/spies.pw.ts",
+      "test": "records the order requests",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 21,
+      "spec": "e2e/spies.pw.ts",
+      "test": "blocks the images",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 26,
+      "spec": "e2e/spies.pw.ts",
+      "test": "answers only the posts",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/storefront.pw.ts",
+      "line": 5,
+      "spec": "e2e/storefront.pw.ts",
+      "test": "opens the storefront with a banner",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/storefront.pw.ts",
+      "line": 10,
+      "spec": "e2e/storefront.pw.ts",
+      "test": "opens a mocked storefront",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/storefront.pw.ts",
+      "line": 15,
+      "spec": "e2e/storefront.pw.ts",
+      "test": "opens the storefront through two layers",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/storefront.pw.ts",
+      "line": 20,
+      "spec": "e2e/storefront.pw.ts",
+      "test": "counts down without a stub",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 15,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "runs a shared scenario",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 17,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "answers through an imported handler",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 21,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares through an ambiguous helper",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 26,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a mocked counter",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 32,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a seeded counter",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 41,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "shows the counter",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 51,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "runs a mocked shared scenario",
+      "skipped": false
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 4,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true,
+      "handler": "fetch-fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 12,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true,
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 35,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/basket",
+      "resolved": true,
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 3,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "patchPrices",
+      "handler": "fetch-fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 15,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "primeCache",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 20,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows the discounted prices",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "patchPrices",
+      "handler": "fetch-fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 25,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows the stock badge",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "fulfillStock",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 30,
+      "spec": "e2e/basket.pw.ts",
+      "test": "warms the cache first",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "primeCache",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/catalog.pw.ts",
+      "line": 8,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "browses a fully stubbed catalog",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/comments.pw.ts",
+      "line": 17,
+      "spec": "e2e/comments.pw.ts",
+      "test": "ignores a stub name in a string",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/comments.pw.ts",
+      "line": 22,
+      "spec": "e2e/comments.pw.ts",
+      "test": "reads a stub inside an interpolation",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 6,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and patches",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true,
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 11,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true,
+      "handler": "unresolved"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 16,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "patches and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true,
+      "handler": "unresolved"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 17,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "patches and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true,
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 21,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "spies and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/orders",
+      "resolved": true,
+      "handler": "spy"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 22,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "spies and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true,
+      "handler": "unresolved"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 31,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "waits for a parked feature",
+      "kind": "route",
+      "skipped": true,
+      "verb": "ANY",
+      "pattern": "**/market/v1/banner",
+      "resolved": true,
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 36,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "blocks then spies",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/*.css",
+      "resolved": true,
+      "handler": "abort"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 40,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/orders",
+      "resolved": true,
+      "handler": "spy"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 7,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and patches",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 12,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and cannot read a handler",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 5,
+      "spec": "e2e/spies.pw.ts",
+      "test": "lets the prices through",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true,
+      "handler": "spy"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 10,
+      "spec": "e2e/spies.pw.ts",
+      "test": "falls back for the stock",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true,
+      "handler": "spy"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 22,
+      "spec": "e2e/spies.pw.ts",
+      "test": "blocks the images",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/*.png",
+      "resolved": true,
+      "handler": "abort"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 27,
+      "spec": "e2e/spies.pw.ts",
+      "test": "answers only the posts",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/orders",
+      "resolved": true,
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 17,
+      "spec": "e2e/spies.pw.ts",
+      "test": "records the order requests",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "watchOrders",
+      "handler": "spy"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 18,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "answers through an imported handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true,
+      "handler": "unresolved"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 23,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares through an ambiguous helper",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "prepare",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 27,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a mocked counter",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 29,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a mocked counter",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "prepare",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 35,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a seeded counter",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "prepare",
+      "handler": "fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 48,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint",
+      "handler": "fulfill"
+    }
+  ],
+  "demo-shop": [
+    {
+      "type": "pw_test",
+      "file": "tests/catalog.spec.ts",
+      "line": 4,
+      "spec": "tests/catalog.spec.ts",
+      "test": "lists the products of a category",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/catalog.spec.ts",
+      "line": 5,
+      "spec": "tests/catalog.spec.ts",
+      "test": "lists the products of a category",
+      "verb": "GET",
+      "template": "catalog/v1/products?category=shoes",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/catalog.spec.ts",
+      "line": 6,
+      "spec": "tests/catalog.spec.ts",
+      "test": "lists the products of a category",
+      "kind": "status",
+      "value": 200
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/catalog.spec.ts",
+      "line": 9,
+      "spec": "tests/catalog.spec.ts",
+      "test": "rejects a listing with no category",
+      "skipped": true
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/catalog.spec.ts",
+      "line": 10,
+      "spec": "tests/catalog.spec.ts",
+      "test": "rejects a listing with no category",
+      "verb": "GET",
+      "template": "catalog/v1/products",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/catalog.spec.ts",
+      "line": 11,
+      "spec": "tests/catalog.spec.ts",
+      "test": "rejects a listing with no category",
+      "kind": "status",
+      "value": 400
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/checkout.spec.ts",
+      "line": 4,
+      "spec": "tests/checkout.spec.ts",
+      "test": "places an order when the cart holds an item",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/checkout.spec.ts",
+      "line": 5,
+      "spec": "tests/checkout.spec.ts",
+      "test": "places an order when the cart holds an item",
+      "verb": "POST",
+      "template": "orders/v1/checkout",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/checkout.spec.ts",
+      "line": 8,
+      "spec": "tests/checkout.spec.ts",
+      "test": "places an order when the cart holds an item",
+      "kind": "status",
+      "value": 200
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/checkout.spec.ts",
+      "line": 11,
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a checkout with no payment token",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/checkout.spec.ts",
+      "line": 12,
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a checkout with no payment token",
+      "verb": "POST",
+      "template": "orders/v1/checkout",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/checkout.spec.ts",
+      "line": 13,
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a checkout with no payment token",
+      "kind": "status",
+      "value": 400
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/checkout.spec.ts",
+      "line": 16,
+      "spec": "tests/checkout.spec.ts",
+      "test": "lists the cart",
+      "skipped": false
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/checkout.spec.ts",
+      "line": 17,
+      "spec": "tests/checkout.spec.ts",
+      "test": "lists the cart",
+      "verb": "GET",
+      "template": "orders/v1/cart",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/checkout.spec.ts",
+      "line": 18,
+      "spec": "tests/checkout.spec.ts",
+      "test": "lists the cart",
+      "kind": "status",
+      "value": 200
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/checkout.spec.ts",
+      "line": 19,
+      "spec": "tests/checkout.spec.ts",
+      "test": "lists the cart",
+      "kind": "body"
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/checkout.spec.ts",
+      "line": 22,
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a cart item with no quantity",
+      "skipped": true
+    },
+    {
+      "type": "pw_request",
+      "file": "tests/checkout.spec.ts",
+      "line": 23,
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a cart item with no quantity",
+      "verb": "POST",
+      "template": "orders/v1/cart/items",
+      "resolved": true
+    },
+    {
+      "type": "pw_assert",
+      "file": "tests/checkout.spec.ts",
+      "line": 24,
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a cart item with no quantity",
+      "kind": "status",
+      "value": 400
+    },
+    {
+      "type": "pw_test",
+      "file": "ui/storefront.pw.ts",
+      "line": 16,
+      "spec": "ui/storefront.pw.ts",
+      "test": "shows the half-price banner",
+      "skipped": false
+    },
+    {
+      "type": "pw_assert",
+      "file": "ui/storefront.pw.ts",
+      "line": 18,
+      "spec": "ui/storefront.pw.ts",
+      "test": "shows the half-price banner",
+      "kind": "body"
+    },
+    {
+      "type": "pw_test",
+      "file": "ui/storefront.pw.ts",
+      "line": 23,
+      "spec": "ui/storefront.pw.ts",
+      "test": "lists the products",
+      "skipped": false
+    },
+    {
+      "type": "pw_assert",
+      "file": "ui/storefront.pw.ts",
+      "line": 25,
+      "spec": "ui/storefront.pw.ts",
+      "test": "lists the products",
+      "kind": "body"
+    },
+    {
+      "type": "pw_stub",
+      "file": "ui/storefront.pw.ts",
+      "line": 4,
+      "spec": "ui/storefront.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/catalog/v1/products*",
+      "resolved": true,
+      "handler": "fetch-fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "ui/storefront.pw.ts",
+      "line": 3,
+      "spec": "ui/storefront.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "discountPrices",
+      "handler": "fetch-fulfill"
+    },
+    {
+      "type": "pw_stub",
+      "file": "ui/storefront.pw.ts",
+      "line": 13,
+      "spec": "ui/storefront.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "discountPrices",
+      "handler": "fetch-fulfill"
+    }
+  ]
+}

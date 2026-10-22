@@ -14,6 +14,10 @@
   "caseId": {
     "calls": ["tms.id"]
   },
+  "backend": {
+    "mockCalls": ["mockAllEndpoints"],
+    "patchCalls": ["seedCart"]
+  },
   "scaffold": {
     "specRoot": "tests",
     "specSuffix": ".spec.ts",

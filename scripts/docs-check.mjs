@@ -12,11 +12,13 @@
  * the help text without a regeneration fails CI here rather than drifting silently.
  *
  * No dependencies. Markdown files come from `git ls-files` (tracked, plus untracked files
- * .gitignore does not exclude) so a gitignored local note is never checked; outside a git
- * checkout the tree is walked instead, skipping the directories .gitignore already excludes.
+ * .gitignore does not exclude) so a gitignored local note is never checked; a tree that
+ * carries no checkout metadata of its own is walked instead, skipping the directories
+ * .gitignore already excludes. A git that cannot answer whether this is a checkout fails the
+ * run rather than choose one, and so does a tree whose checkout metadata it cannot read.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -40,6 +42,66 @@ what the words mean see [concepts.md](concepts.md).
 
 const CLI_DOC_FOOTER = '```\n';
 
+/**
+ * A refusal to enumerate the markdown files, carrying the repair that fits the subsystem that
+ * failed. A git that cannot answer needs git fixed; a directory that cannot be listed needs
+ * its permissions fixed. Keeping the repair with the failure is what stops one subsystem's
+ * error being reported with the other's repair, which sends a contributor to the wrong place.
+ */
+class ListingFailure extends Error {
+  constructor(message, repair) {
+    super(message);
+    this.repair = repair;
+  }
+}
+
+/** The first line of a failed child process's stderr, its message if it said nothing. */
+function complaint(error) {
+  return String(error.stderr ?? '').trim().split('\n')[0] || error.message;
+}
+
+/**
+ * Whether this tree holds checkout metadata of its own. `lstat` rather than `exists`: a `.git`
+ * pointer file that no longer resolves is still evidence of a checkout, and the walk is only
+ * for a tree that never had one.
+ */
+function checkoutMetadata() {
+  try {
+    lstatSync(join(ROOT, '.git'));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The variables that can point git at a checkout other than this tree, and the question whose
+ * answers tell the two apart. A caller may set one and mean this same checkout — a wrapper
+ * naming this repository's own git directory changes nothing — so the redirect is judged by
+ * what it does rather than by its presence. `GIT_COMMON_DIR` is absent on purpose: it moves
+ * the shared object store, not the index this check enumerates.
+ */
+const GIT_REDIRECTS = ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE'];
+const GIT_IDENTITY = ['--absolute-git-dir', '--git-path', 'index', '--show-toplevel'];
+
+function gitIdentity(env) {
+  try {
+    return execFileSync('git', ['rev-parse', ...GIT_IDENTITY], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env }).trim();
+  } catch {
+    return null;
+  }
+}
+
+/** The redirects in the environment that change which checkout git answers for, or null. */
+function redirectedCheckout() {
+  const present = GIT_REDIRECTS.filter((name) => (process.env[name] ?? '') !== '');
+  if (present.length === 0) return null;
+  const cleared = { ...process.env };
+  for (const name of GIT_REDIRECTS) delete cleared[name];
+  if (gitIdentity(process.env) === gitIdentity(cleared)) return null;
+  return present.join(', ');
+}
+
 function helpText() {
   return execFileSync(process.execPath, [ENTRY, '--help'], { encoding: 'utf8' });
 }
@@ -48,22 +110,63 @@ function renderCliDoc() {
   return CLI_DOC_HEADER + helpText() + CLI_DOC_FOOTER;
 }
 
-/** Markdown files to check: tracked ones when git answers, a filtered walk otherwise. */
-function markdownFiles() {
+/**
+ * Where this tree stands with git: `inside`, `outside`, or a thrown error. The distinction
+ * decides whether a failed `git ls-files` is an unpacked source tree, where the walk below is
+ * the documented fallback, or a checkout whose enumeration broke, where falling back would
+ * quietly check a different and possibly smaller set of files.
+ *
+ * Git reporting no repository here is not enough on its own to call a tree unpacked: a
+ * checkout whose own metadata is unreadable — a dangling `.git` pointer, a corrupt index —
+ * gets the same message, and walking there would pass a check that read a smaller tree. The
+ * fallback therefore needs the tree's own evidence too: no checkout metadata beside the code.
+ */
+function gitCheckoutState() {
+  const redirected = redirectedCheckout();
+  if (redirected !== null) {
+    throw new ListingFailure(`git answers for another checkout while ${redirected} is set`, `unset ${redirected} and rerun`);
+  }
   try {
-    const out = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '*.md'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    const files = out.split('\0').filter(Boolean).map((file) => join(ROOT, file));
-    if (files.length > 0) return files;
-  } catch {
-    // Not a git checkout (an unpacked tarball, say); fall through to the walk.
+    const answer = execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    return answer.trim() === 'true' ? 'inside' : 'outside';
+  } catch (error) {
+    const stderr = String(error.stderr ?? '').trim();
+    const unpacked = typeof error.status === 'number' && /not a git repository/i.test(stderr) && !checkoutMetadata();
+    if (unpacked) return 'outside';
+    throw new ListingFailure(`git could not say whether this tree is a checkout: ${complaint(error)}`, 'fix the git failure and rerun');
+  }
+}
+
+/** Markdown files to check: tracked ones when git answers, a filtered walk in an unpacked tree. */
+function markdownFiles() {
+  if (gitCheckoutState() === 'inside') {
+    let out;
+    try {
+      out = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', '*.md'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (error) {
+      throw new ListingFailure(`git could not list the tracked markdown files: ${complaint(error)}`, 'fix the git failure and rerun');
+    }
+    return out.split('\0').filter(Boolean).map((file) => join(ROOT, file));
   }
   const skip = new Set(['.git', 'node_modules', 'dist', 'out', 'corpora', 'test', 'fixtures']);
   const found = [];
   const walk = (dir) => {
-    for (const name of readdirSync(dir)) {
+    let names;
+    try {
+      names = readdirSync(dir);
+    } catch (error) {
+      throw new ListingFailure(`${relative(ROOT, dir) || '.'} cannot be listed (${error.message})`, 'restore it or fix its permissions and rerun');
+    }
+    for (const name of names) {
       if (skip.has(name)) continue;
       const path = join(dir, name);
-      if (statSync(path).isDirectory()) walk(path);
+      let isDirectory;
+      try {
+        isDirectory = statSync(path).isDirectory();
+      } catch (error) {
+        throw new ListingFailure(`${relative(ROOT, path)} cannot be inspected (${error.message})`, 'restore it or fix its permissions and rerun');
+      }
+      if (isDirectory) walk(path);
       else if (name.endsWith('.md')) found.push(path);
     }
   };
@@ -111,15 +214,25 @@ function relativeLinks(markdown) {
   return links;
 }
 
-function checkLinks() {
+/** Read a markdown file, recording the file itself when it cannot be read. */
+function readText(file, failures) {
+  try {
+    return readFileSync(file, 'utf8');
+  } catch (error) {
+    failures.push(`${relative(ROOT, file)}: cannot be read (${error.message}); restore it or fix its permissions`);
+    return '';
+  }
+}
+
+function checkLinks(files) {
   const failures = [];
   const slugCache = new Map();
   const slugsOf = (file) => {
-    if (!slugCache.has(file)) slugCache.set(file, headingSlugs(readFileSync(file, 'utf8')));
+    if (!slugCache.has(file)) slugCache.set(file, headingSlugs(readText(file, failures)));
     return slugCache.get(file);
   };
-  for (const file of markdownFiles()) {
-    const markdown = readFileSync(file, 'utf8');
+  for (const file of files) {
+    const markdown = readText(file, failures);
     for (const { target, line } of relativeLinks(markdown)) {
       const [pathPart, fragment] = target.split('#');
       const targetFile = pathPart === '' ? file : resolve(dirname(file), decodeURIComponent(pathPart));
@@ -146,10 +259,21 @@ function main() {
     console.log(`docs-check: wrote ${relative(ROOT, CLI_DOC)}`);
   } else if (!existsSync(CLI_DOC)) {
     failures.push(`${relative(ROOT, CLI_DOC)} is missing; run: node scripts/docs-check.mjs --write`);
-  } else if (readFileSync(CLI_DOC, 'utf8') !== expected) {
+  } else if (readText(CLI_DOC, failures) !== expected) {
     failures.push(`${relative(ROOT, CLI_DOC)} is behind \`flowtrace --help\`; run: node scripts/docs-check.mjs --write`);
   }
-  failures.push(...checkLinks());
+  let files;
+  try {
+    files = markdownFiles();
+  } catch (error) {
+    // A checkout whose own file listing — or whose git — broke would otherwise be answered
+    // by the walk, a pass for a check that read a different and possibly smaller tree. The
+    // failure carries the repair for whichever subsystem failed, so the report never sends a
+    // contributor to fix git over a permission problem or the reverse.
+    console.error(`docs-check: could not list the markdown files (${error.message}); ${error.repair ?? 'fix the failure and rerun'}`);
+    process.exit(1);
+  }
+  failures.push(...checkLinks(files));
   if (failures.length > 0) {
     console.error('docs-check: failed');
     for (const failure of failures) console.error(`  ${failure}`);

@@ -1,0 +1,810 @@
+{
+  "suite": [
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 11,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "lists the kettles",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 16,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "filters the kettles",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 21,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "opens one kettle",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 28,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "lists the live kettles",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 32,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "opens the live basket",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/describe-hooks.spec.ts",
+      "line": 42,
+      "spec": "tests/describe-hooks.spec.ts",
+      "test": "compares two kettles",
+      "skipped": true
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/file-hook.spec.ts",
+      "line": 7,
+      "spec": "tests/file-hook.spec.ts",
+      "test": "shows the price list",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/file-hook.spec.ts",
+      "line": 12,
+      "spec": "tests/file-hook.spec.ts",
+      "test": "shows one price",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/basket.pw.ts",
+      "line": 19,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows the discounted prices",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/basket.pw.ts",
+      "line": 24,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows the stock badge",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/basket.pw.ts",
+      "line": 29,
+      "spec": "e2e/basket.pw.ts",
+      "test": "warms the cache first",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/basket.pw.ts",
+      "line": 38,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows an empty drawer",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/catalog.pw.ts",
+      "line": 7,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "browses a fully stubbed catalog",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/catalog.pw.ts",
+      "line": 12,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "starts from a seeded basket",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/catalog.pw.ts",
+      "line": 17,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "reads the fixture price list",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/catalog.pw.ts",
+      "line": 21,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "reads the catalog price list",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/comments.pw.ts",
+      "line": 4,
+      "spec": "e2e/comments.pw.ts",
+      "test": "ignores a stub in a line comment",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/comments.pw.ts",
+      "line": 9,
+      "spec": "e2e/comments.pw.ts",
+      "test": "ignores a stub in a block comment",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/comments.pw.ts",
+      "line": 16,
+      "spec": "e2e/comments.pw.ts",
+      "test": "ignores a stub name in a string",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/comments.pw.ts",
+      "line": 21,
+      "spec": "e2e/comments.pw.ts",
+      "test": "reads a stub inside an interpolation",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 5,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and patches",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 10,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and cannot read a handler",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 15,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "patches and cannot read a handler",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 20,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "spies and cannot read a handler",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 25,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "replays an archive",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 30,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "waits for a parked feature",
+      "skipped": true
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/precedence.pw.ts",
+      "line": 35,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "blocks then spies",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 4,
+      "spec": "e2e/spies.pw.ts",
+      "test": "lets the prices through",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 9,
+      "spec": "e2e/spies.pw.ts",
+      "test": "falls back for the stock",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 15,
+      "spec": "e2e/spies.pw.ts",
+      "test": "records the order requests",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 21,
+      "spec": "e2e/spies.pw.ts",
+      "test": "blocks the images",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/spies.pw.ts",
+      "line": 26,
+      "spec": "e2e/spies.pw.ts",
+      "test": "answers only the posts",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/storefront.pw.ts",
+      "line": 5,
+      "spec": "e2e/storefront.pw.ts",
+      "test": "opens the storefront with a banner",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/storefront.pw.ts",
+      "line": 10,
+      "spec": "e2e/storefront.pw.ts",
+      "test": "opens a mocked storefront",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/storefront.pw.ts",
+      "line": 15,
+      "spec": "e2e/storefront.pw.ts",
+      "test": "opens the storefront through two layers",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/storefront.pw.ts",
+      "line": 20,
+      "spec": "e2e/storefront.pw.ts",
+      "test": "counts down without a stub",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 15,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "runs a shared scenario",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 17,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "answers through an imported handler",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 21,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares through an ambiguous helper",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 26,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a mocked counter",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 32,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a seeded counter",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 41,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "shows the counter",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 51,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "runs a mocked shared scenario",
+      "skipped": false
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 4,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 12,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 35,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/basket",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 3,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "patchPrices"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 15,
+      "spec": "e2e/basket.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "primeCache"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 20,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows the discounted prices",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "patchPrices"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 25,
+      "spec": "e2e/basket.pw.ts",
+      "test": "shows the stock badge",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "fulfillStock"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/basket.pw.ts",
+      "line": 30,
+      "spec": "e2e/basket.pw.ts",
+      "test": "warms the cache first",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "primeCache"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/catalog.pw.ts",
+      "line": 8,
+      "spec": "e2e/catalog.pw.ts",
+      "test": "browses a fully stubbed catalog",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/comments.pw.ts",
+      "line": 17,
+      "spec": "e2e/comments.pw.ts",
+      "test": "ignores a stub name in a string",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/comments.pw.ts",
+      "line": 22,
+      "spec": "e2e/comments.pw.ts",
+      "test": "reads a stub inside an interpolation",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 6,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and patches",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 11,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 16,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "patches and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 17,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "patches and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 21,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "spies and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/orders",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 22,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "spies and cannot read a handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 31,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "waits for a parked feature",
+      "kind": "route",
+      "skipped": true,
+      "verb": "ANY",
+      "pattern": "**/market/v1/banner",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 36,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "blocks then spies",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/*.css",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 40,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/orders",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 7,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and patches",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/precedence.pw.ts",
+      "line": 12,
+      "spec": "e2e/precedence.pw.ts",
+      "test": "mocks and cannot read a handler",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 5,
+      "spec": "e2e/spies.pw.ts",
+      "test": "lets the prices through",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 10,
+      "spec": "e2e/spies.pw.ts",
+      "test": "falls back for the stock",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/stock",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 22,
+      "spec": "e2e/spies.pw.ts",
+      "test": "blocks the images",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/*.png",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 27,
+      "spec": "e2e/spies.pw.ts",
+      "test": "answers only the posts",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/orders",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/spies.pw.ts",
+      "line": 17,
+      "spec": "e2e/spies.pw.ts",
+      "test": "records the order requests",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "watchOrders"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 18,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "answers through an imported handler",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/market/v1/prices",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 23,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares through an ambiguous helper",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "prepare"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 27,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a mocked counter",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 29,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a mocked counter",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "prepare"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 35,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "prepares a seeded counter",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "prepare"
+    },
+    {
+      "type": "pw_stub",
+      "file": "e2e/unreadable.pw.ts",
+      "line": 48,
+      "spec": "e2e/unreadable.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "stubEveryEndpoint"
+    }
+  ],
+  "e2e": [
+    {
+      "type": "pw_test",
+      "file": "tests/catalog.spec.ts",
+      "line": 4,
+      "spec": "tests/catalog.spec.ts",
+      "test": "lists the products of a category",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/catalog.spec.ts",
+      "line": 9,
+      "spec": "tests/catalog.spec.ts",
+      "test": "rejects a listing with no category",
+      "skipped": true
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/checkout.spec.ts",
+      "line": 4,
+      "spec": "tests/checkout.spec.ts",
+      "test": "places an order when the cart holds an item",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/checkout.spec.ts",
+      "line": 11,
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a checkout with no payment token",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/checkout.spec.ts",
+      "line": 16,
+      "spec": "tests/checkout.spec.ts",
+      "test": "lists the cart",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "tests/checkout.spec.ts",
+      "line": 22,
+      "spec": "tests/checkout.spec.ts",
+      "test": "rejects a cart item with no quantity",
+      "skipped": true
+    },
+    {
+      "type": "pw_test",
+      "file": "ui/storefront.pw.ts",
+      "line": 16,
+      "spec": "ui/storefront.pw.ts",
+      "test": "shows the half-price banner",
+      "skipped": false
+    },
+    {
+      "type": "pw_test",
+      "file": "ui/storefront.pw.ts",
+      "line": 23,
+      "spec": "ui/storefront.pw.ts",
+      "test": "lists the products",
+      "skipped": false
+    },
+    {
+      "type": "pw_stub",
+      "file": "ui/storefront.pw.ts",
+      "line": 4,
+      "spec": "ui/storefront.pw.ts",
+      "test": "",
+      "kind": "route",
+      "skipped": false,
+      "verb": "ANY",
+      "pattern": "**/catalog/v1/products*",
+      "resolved": true
+    },
+    {
+      "type": "pw_stub",
+      "file": "ui/storefront.pw.ts",
+      "line": 3,
+      "spec": "ui/storefront.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "discountPrices"
+    },
+    {
+      "type": "pw_stub",
+      "file": "ui/storefront.pw.ts",
+      "line": 13,
+      "spec": "ui/storefront.pw.ts",
+      "test": "",
+      "kind": "opaque",
+      "skipped": false,
+      "helper": "discountPrices"
+    }
+  ]
+}

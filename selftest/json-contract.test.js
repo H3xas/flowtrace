@@ -60,7 +60,13 @@ test('trace on a route the facts do not have refuses rather than fabricating a t
     ['trace', 'POST gizmos/v1/does-not-exist', '--config', 'gizmo.config.json', '--json'],
     { cwd: dir },
   );
-  assert.notEqual(status, 0);
-  assert.equal(stdout, '', 'a refused trace must print no partial JSON');
+  assert.equal(status, 2);
+  const failure = JSON.parse(stdout);
+  assert.equal(failure.schemaVersion, 1);
+  assert.equal(failure.status, 'unresolved');
+  assert.equal(failure.reason, 'no-declaration');
+  assert.equal(failure.root, undefined, 'a refused trace prints its reason, never a partial tree');
+  assert.equal(failure.nodes, undefined, 'a refused trace prints its reason, never a partial tree');
   assert.match(stderr, /^flowtrace: /);
+  assert.match(stderr, /^reason: no-declaration$/m);
 });
