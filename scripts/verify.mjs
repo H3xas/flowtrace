@@ -621,10 +621,26 @@ function commitSignoffStage(context) {
       command: result.command,
       status: result.status,
       output: [result.stdout, result.stderr, result.spawnError].filter(Boolean).join('\n'),
-      repair: 'each commit needs its Developer Certificate of Origin trailer: git commit --amend -s, or the rebase CONTRIBUTING.md gives for several commits',
+      repair: 'each non-merge commit needs its Developer Certificate of Origin trailer: git commit --amend -s, or the rebase CONTRIBUTING.md gives for several commits',
     });
   }
-  return { line: `commit-signoff ok — ${commits} commit${commits === 1 ? '' : 's'} in ${range} carry Signed-off-by` };
+  // The scanner skips a commit git lists with two or more parents, which is what --merges selects
+  const counted = git(['rev-list', '--count', '--merges', range]);
+  if (counted === null) {
+    throw new StageFailure({
+      command: shell('git', ['rev-list', '--count', '--merges', range]),
+      status: null,
+      output: `the merge commits in ${range} could not be counted`,
+      repair: 'pass a range that resolves, for example --commit-range origin/main..HEAD',
+    });
+  }
+  const merges = Number(counted);
+  const read = commits - merges;
+  return {
+    line:
+      `commit-signoff ok — ${read} non-merge commit${read === 1 ? '' : 's'} in ${range} signed off, ` +
+      `${merges} merge commit${merges === 1 ? '' : 's'} skipped`,
+  };
 }
 
 function docsStage() {
@@ -718,7 +734,7 @@ export const STAGES = Object.freeze([
   { id: 'worked-example', title: 'the worked example, end to end', run: workedExampleStage },
   { id: 'machine-paths', title: 'no machine paths in the tree', run: machinePathsStage },
   { id: 'public-text', title: 'public text and commit messages', run: publicTextStage },
-  { id: 'commit-signoff', title: 'every commit is signed off', run: commitSignoffStage },
+  { id: 'commit-signoff', title: 'every non-merge commit is signed off', run: commitSignoffStage },
   { id: 'docs', title: 'documentation matches the CLI and links resolve', run: docsStage },
   { id: 'config', title: 'the shipped configuration example is current', run: configStage },
   { id: 'package', title: 'the published package carries what it should', run: packageStage },

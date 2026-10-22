@@ -22,4 +22,6 @@ policy. See CONTRIBUTING.md for the stages it runs.
 Every commit needs a `Signed-off-by:` trailer (see CONTRIBUTING.md). A local
 hook refuses a `git commit` that carries neither `-s`/`--signoff` nor a
 literal `Signed-off-by:` trailer before it ever reaches the DCO check in CI,
-which reads the trailer out of the commit object.
+which reads the trailer out of the commit object. That check skips a merge
+commit, which is a commit with more than one parent. The host writes the
+merge commit of a pull request without a trailer.
