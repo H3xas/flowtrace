@@ -545,6 +545,18 @@ test('Merge sign-off AC-2: an unsigned commit a merge brings in, or an unsigned 
     assert.equal(result.status, 1, output);
     assert.match(output, new RegExp(`${root.slice(0, 12)}: missing Signed-off-by trailer`));
   }
+
+  // Git keeps one copy of a parent named twice, so this commit has one parent and is no merge
+  const twice = commit('fix: an unsigned commit that names its parent twice', base, base);
+  assert.equal(gitIn(dir, ['rev-list', '--parents', '-n', '1', twice]), `${twice} ${base}`);
+  // A message can carry the record separator but never the NUL field separator, so text after it
+  // that is shaped like a parent list can never read as one
+  const shaped = commit(`fix: an unsigned commit\x02${'a'.repeat(40)} ${'b'.repeat(40)}`, base);
+  for (const unsignedTip of [twice, shaped]) {
+    const result = requireSignoffIn(dir, `${base}..${unsignedTip}`);
+    assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
+    assert.match(result.stdout, new RegExp(`^${unsignedTip.slice(0, 12)}: missing Signed-off-by trailer$`, 'm'));
+  }
 });
 
 test('Merge sign-off AC-3: a range of merge commits alone passes, and the commits below a merge are still read', (t) => {
