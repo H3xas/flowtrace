@@ -98,6 +98,13 @@ npm test
   the declaration order, the service names and the registration order, so the two trees must
   agree on call-site order. `source-flow.test.js` runs one `Source flow AC-n:` test for each
   acceptance rule.
+- `corpus/quarry-dispatch/`: an invented dispatch backend and a small React client. Each
+  file exists for one partial-result case: a wide survey chain before a write, eight
+  validations past the seed cap, a two-binding DI choice, a collection of seventeen
+  interface implementations, an action that calls nothing, and a gateway call whose template
+  the web extractor cannot resolve. `partial-result.test.js` runs it through the CLI with one
+  `Partial result AC-n:` test for each acceptance rule, and calls `trace()` in process for the
+  code-index case the public corpus cannot supply.
 - `dependency-goldens.js` and `corpus/dependency-goldens.json`: the dependency answer of each
   corpus, as the release before the source-flow work wrote it. The record holds the exit
   status and the sha256 of stdout and stderr for six outputs of every start. `--write` captures
