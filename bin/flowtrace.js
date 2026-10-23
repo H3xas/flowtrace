@@ -542,11 +542,14 @@ const USAGE = [
   '  the route\'s own cover-depth walk whose ref matches "scope.gatePatterns"',
   '  (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,',
   '  Entitlement and Claims and both misses an unnamed check and over-reports a name that',
-  '  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:',
-  '  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no',
-  '  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts',
-  '  behind the repository HEAD — facts that only predate an uncommitted edit at the same',
-  '  commit are noted on stderr and never gate this verb, since it reads no diff of its own.',
+  '  merely contains one of these words. The rows describe the fact snapshot, not the',
+  '  source as it stands now, so stale facts warn on stderr in both modes and never change',
+  '  the exit code. --json emits { schemaVersion: 1, area, freshness: { value, sets },',
+  '  routes: [{key, repo, file, line, automation, serverGate}] }, deterministic and with',
+  '  no timestamp. Freshness reuses the extraction witnesses: value is matching, mismatched',
+  '  or unknown, and each set names its repo with matching, head-stale, worktree-stale,',
+  '  no-witness or not-observed. Exit 0 the area resolved, 2 a missing or unresolvable',
+  '  --area.',
   '',
   'affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]',
   '            [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]',
@@ -2447,6 +2450,10 @@ async function runCover(config, options) {
  * the generic run-time refusal (exit 1) every other area-reading verb falls back to,
  * because the ticket's own contract states it that way — the area is the argument here
  * even more literally than it is for `cover` or `affected`.
+ *
+ * It reads a snapshot, so a stale one is reported, never refused: the shared warnings
+ * reach stderr and the report carries the freshness state, which leaves exit 0 free to
+ * mean that the area resolved. A caller that needs to gate on freshness reads that field.
  */
 async function runScope(config, options) {
   let area;
@@ -2457,6 +2464,8 @@ async function runScope(config, options) {
     return 2;
   }
   const factSets = loadFactSets(config);
+  const facts = factState(factSets, config.repos);
+  for (const warning of facts.warnings) warn(warning.message);
   const { scope, renderScope } = scopeModule;
   const { readAreaKeys } = coverModule;
   const { createScout } = scoutModule;
@@ -2487,18 +2496,14 @@ async function runScope(config, options) {
     traceOptions,
     repos: config.repos,
     gatePatterns: config.scope.gatePatterns,
+    freshness: { value: facts.value, sets: facts.sets },
   });
-  const exitCode = report.verdict === 'stale' ? 4 : 0;
   if (options.json) {
     log(JSON.stringify(report, null, 2));
-    return finish(exitCode);
+    return finish(0);
   }
-  if (exitCode === 0) {
-    log(renderScope(report));
-  } else {
-    process.stderr.write(`flowtrace: ${renderScope(report)}\n`);
-  }
-  return finish(exitCode);
+  log(renderScope(report));
+  return finish(0);
 }
 
 /**
