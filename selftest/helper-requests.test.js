@@ -164,7 +164,9 @@ test('Helper request evidence AC-5: a followed fact carries receiver and chain f
     assert.equal(candidate.chain[0].line, candidate.line);
     for (const field of ['spec', 'test', 'verb', 'template']) assert.equal(typeof candidate[field], 'string');
     assert.equal(typeof candidate.resolved, 'boolean');
-    if (candidate.reason) assert.equal(candidate.receiver, undefined);
+    // A receiver the walk could not settle names no class. An unknown base is read through a
+    // settled receiver, so that fact keeps it.
+    if (candidate.reason && candidate.reason !== 'unresolved-base') assert.equal(candidate.receiver, undefined);
   }
   const spec = 'tests/audit.spec.ts';
   assert.deepEqual(requestsOf(facts, spec, 'a request in a top-level helper function'), [

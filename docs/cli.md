@@ -462,6 +462,9 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   Seeds from a globally registered filter count in their route's seeds and again, apart,
   as "shared-gate" in totals and the headline; a route whose pipeline the walk could not
   resolve names it with its reason, and totals count those pipelines.
+  A pw_request whose first path segment is an interpolation the extractor could not fold
+  gives no evidence: notes.intercepts.unresolvedBase counts it, and the intercepts line
+  names that count next to the requests with no path and those matching no route.
 
   --runtime <file> joins per-spec runtime line hits against the branch spans facts
   already carry: a cobertura or lcov artifact, or a JSON manifest naming one report
