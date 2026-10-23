@@ -57,6 +57,7 @@ checkouts named as siblings of the file.
 | `role` | no | `["api"]` · `["worker"]` · `["contracts"]` — what this repository *is*, when one kind serves two purposes |
 | `scout` | no | `true` to allow code-index hops into this repository |
 | `titles` | no | `true` on a `playwright` repository to collect the titles its tests produce, through Playwright's own list mode; see [Playwright titles](#playwright-titles) |
+| `exceptionStatuses` | no | `backend` only: the status a thrown exception type answers when nothing in the code maps it; see [Exception statuses](#exception-statuses) |
 | `factsProvider` | no | an external fact document for this repository — a file, or a command that prints one — and how it merges with the extraction; see [External fact provider](#external-fact-provider) |
 | `srcSubpath` | no | `web` only: source subdirectory to walk (default `src`) |
 | `cypressSubpath` | no | `web` only: sibling Cypress suite, relative to `root` |
@@ -78,6 +79,35 @@ checkouts named as siblings of the file.
   handlers, action creators that issue HTTP, and a sibling Cypress suite.
 - **`playwright`** — a spec suite. Tests, skips, case ids, requests, assertions, stubs, and
   with `"titles": true` the resolved titles of parameterised tests.
+
+### Exception statuses
+
+An application can convert an exception to a status in middleware or in a base class that
+the backend extractor does not read. Then a thrown type reads as an unhandled `500` fault.
+`exceptionStatuses` on a `backend` repository gives the status for each such type:
+
+```json
+{ "id": "api", "kind": "backend", "root": "../api",
+  "exceptionStatuses": { "TicketBadRequestException": 400, "SeatUnauthorizedException": 401 } }
+```
+
+Each key is a simple type name, with no namespace and no type arguments. Each value is an
+integer from 400 to 599. Any other shape refuses the configuration with one message that
+names the repository: `config <file>: repos[<i>] (<id>): exceptionStatuses must map a simple
+exception type name to an integer status from 400 to 599 on a backend repository`. The key
+on a repository that is not `backend` gives the same refusal.
+
+A thrown type reads its status in this order:
+
+1. a `catch` of the type in the action that the walk reached the throw from;
+2. a registered global exception filter that maps the type;
+3. the `exceptionStatuses` table of the repository that throws it.
+
+A table never overrides the first two, and the table of one repository never applies to a
+throw in another repository. A throw below the primary depth that maps to a `4xx` status is
+its own outcome, as a primary reject is. A throw that maps to a `5xx` status, or to nothing,
+stays a demoted fault. The tree and `trace` keep the label `throw X (500)`, and `span` and
+the HTML tree show the mapped status beside it.
 
 ### Web page mounts and assumptions
 
