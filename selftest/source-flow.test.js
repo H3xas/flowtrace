@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { REPO_ROOT, copyFixture, runCli } from './helpers.js';
+import { REPO_ROOT, copyFixture, extractRepoFacts, runCli, writeRepo } from './helpers.js';
 import { checkGoldens } from './dependency-goldens.js';
 import { SOURCE_FLOW_LABEL, renderSourceFlowTrailer, sourceFlowLines } from '../lib/render-source-flow.js';
 import { DEPENDENCY_LABEL, statusHeaderLines } from '../lib/render-tree.js';
@@ -239,14 +239,12 @@ test('Source flow AC-2: the dependency view keeps its bytes and says it is not c
   assert.equal(written.status, 0, written.stderr);
   const page = readFileSync(html, 'utf8');
   const pageLines = pageLinesOf(page);
-  assert.equal(pageLines[0], DEPENDENCY_LABEL);
-  // The status lines stand between the label and the tree, on the terminal and in the page's
-  // own status block. The tree itself must be the same text on both.
-  const pageTree = pageLines.slice(1);
-  const terminalLines = withoutLabel.split('\n');
-  const treeStart = terminalLines.indexOf(pageTree[0]);
-  assert.ok(treeStart >= 0, 'the page tree starts at the terminal tree');
-  assert.deepEqual(terminalLines.slice(treeStart, treeStart + pageTree.length), pageTree);
+  // The status lines and the frontier lines come first on the terminal and in the page's tree
+  // block, and the label opens the tree under them. The block is the terminal text, line for
+  // line, from its first line to its last tree line.
+  assert.equal(pageLines.indexOf(DEPENDENCY_LABEL), labelAt, 'the label has the same index on the page');
+  assert.equal(pageLines[labelAt - 1], '', 'the label follows the empty line that ends the header');
+  assert.deepEqual(dependencyLines.slice(0, pageLines.length), pageLines);
 
   const goldens = await checkGoldens();
   assert.equal(goldens.ok, true, goldens.problems.join('\n'));
@@ -995,4 +993,157 @@ test('Source flow AC-12: the site comes first and the limits stay visible', (t) 
     outside.steps.map((step) => step.id).sort(),
     'the frontier lists each unscoped stop',
   );
+});
+
+const DOCK = `using System;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Demo.Dock
+{
+  public class Dock
+  {
+    private readonly IServiceProvider _services;
+
+    public Dock(IServiceProvider services)
+    {
+      _services = services;
+    }
+
+    public int Single(int x)
+    {
+      return _services.GetService<IRunner>().Run(x);
+    }
+
+    public int Required(int x)
+    {
+      return _services.GetRequiredService<ILift>().Lift(x);
+    }
+
+    public async Task<int> Awaited(int x)
+    {
+      return await _services.GetRequiredService<IRunner>().RunAsync(x);
+    }
+
+    public int Multiline(int x)
+    {
+      return _services.GetRequiredService<IFetcher>()
+        .Fetch(x);
+    }
+
+    public int Generic(int x)
+    {
+      return _services.GetService<IPicker>().Pick<Pick>(x);
+    }
+  }
+}
+`;
+
+const DOCK_CONTROLLER = `using Microsoft.AspNetCore.Mvc;
+
+namespace Demo.Dock
+{
+  [ApiController]
+  [Route("dock")]
+  public class DockController : ControllerBase
+  {
+    private readonly Dock _dock;
+
+    public DockController(Dock dock)
+    {
+      _dock = dock;
+    }
+
+    [HttpGet("single")]
+    public int Single()
+    {
+      return _dock.Single(1);
+    }
+
+    [HttpGet("multiline")]
+    public int Multiline()
+    {
+      return _dock.Multiline(1);
+    }
+  }
+}
+`;
+
+/** The 1-based line and column of the one `needle` in `text`, counted as the extractor counts. */
+function siteIn(text, needle) {
+  const at = text.indexOf(needle);
+  assert.ok(at >= 0, `${needle} is in the source`);
+  assert.equal(text.indexOf(needle, at + 1), -1, `${needle} is in the source once`);
+  const before = text.slice(0, at);
+  return { line: before.split('\n').length, column: at - before.lastIndexOf('\n') };
+}
+
+const dockRepo = (t) =>
+  writeRepo(
+    t,
+    { 'Services/Dock.cs': DOCK, 'Controllers/DockController.cs': DOCK_CONTROLLER },
+    { repos: [{ id: 'svc', kind: 'backend', root: '.', role: ['api'] }] },
+  );
+
+test('Chained call sites AC-4: a call chained on a service-locator call has the site of its member, in both locator forms', (t) => {
+  const facts = extractRepoFacts(dockRepo(t), 'svc');
+  const calls = (method) => facts.filter((fact) => fact.type === 'method_call' && fact.class === 'Dock' && fact.method === method);
+  const cases = [
+    ['Single', '_services.GetService<IRunner>().Run(x)', '_services', '.Run('],
+    ['Required', '_services.GetRequiredService<ILift>().Lift(x)', '_services', '.Lift('],
+    ['Awaited', '_services.GetRequiredService<IRunner>().RunAsync(x)', '_services', '.RunAsync('],
+    ['Generic', '_services.GetService<IPicker>().Pick<Pick>(x)', '_services', '.Pick<'],
+  ];
+  for (const [method, statement, head, member] of cases) {
+    const headSite = siteIn(DOCK, statement);
+    const memberDot = siteIn(DOCK, member);
+    const [locator, chained, ...rest] = calls(method);
+    assert.equal(rest.length, 0, method);
+    assert.equal(locator.field, head, method);
+    assert.deepEqual([locator.line, locator.column], [headSite.line, headSite.column], `${method}: the locator call keeps its own site`);
+    assert.equal(chained.receiverType !== undefined, true, method);
+    assert.deepEqual([chained.line, chained.column], [memberDot.line, memberDot.column + 1], `${method}: the chained call has its member's site`);
+    assert.notEqual(chained.column, locator.column, `${method}: two calls on one line have two columns`);
+  }
+  // A member name that a type name or a type argument repeats is still read where it is called.
+  const generic = calls('Generic')[1];
+  assert.equal(generic.calledMethod, 'Pick');
+  assert.equal(generic.column, siteIn(DOCK, '.Pick<').column + 1);
+});
+
+test('Chained call sites AC-4: the control evidence of a chained call stays the one of the call that heads it', (t) => {
+  const facts = extractRepoFacts(dockRepo(t), 'svc');
+  const chained = (method) => facts.find((fact) => fact.type === 'method_call' && fact.class === 'Dock' && fact.method === method && fact.receiverType !== undefined);
+  assert.deepEqual(chained('Awaited').control, { path: [], await: true });
+  assert.deepEqual(chained('Single').control, { path: [] });
+  assert.equal(chained('Awaited').calledMethod, 'RunAsync');
+});
+
+test('Chained call sites AC-4: a chain over two lines moves its line with its column', (t) => {
+  const facts = extractRepoFacts(dockRepo(t), 'svc');
+  const [locator, chained] = facts.filter((fact) => fact.type === 'method_call' && fact.class === 'Dock' && fact.method === 'Multiline');
+  const head = siteIn(DOCK, '_services.GetRequiredService<IFetcher>()');
+  const member = siteIn(DOCK, '.Fetch(');
+  assert.equal(member.line, head.line + 1);
+  assert.deepEqual([locator.line, locator.column], [head.line, head.column]);
+  assert.deepEqual([chained.line, chained.column], [member.line, member.column + 1]);
+});
+
+test('Chained call sites AC-4: the source-flow projection tells the two calls of one line apart', (t) => {
+  const dir = dockRepo(t);
+  const extracted = runCli(['extract', '--config', 'evidence.config.json'], { cwd: dir });
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const sitesOf = (route) => {
+    const run = runCli(['trace', route, '--json', '--view', 'source-flow', '--config', 'evidence.config.json'], { cwd: dir });
+    assert.equal(run.status, 0, run.stderr);
+    return allSteps(JSON.parse(run.stdout).sourceFlow)
+      .filter((step) => step.kind === 'invocation' && step.site && step.site.file === 'Services/Dock.cs')
+      .map((step) => `${step.site.line}:${step.site.column}`);
+  };
+  const single = siteIn(DOCK, '_services.GetService<IRunner>().Run(x)');
+  const run = siteIn(DOCK, '.Run(');
+  assert.deepEqual(sitesOf('GET dock/single'), [`${single.line}:${single.column}`, `${run.line}:${run.column + 1}`]);
+  const head = siteIn(DOCK, '_services.GetRequiredService<IFetcher>()');
+  const fetch = siteIn(DOCK, '.Fetch(');
+  assert.deepEqual(sitesOf('GET dock/multiline'), [`${head.line}:${head.column}`, `${fetch.line}:${fetch.column + 1}`]);
 });

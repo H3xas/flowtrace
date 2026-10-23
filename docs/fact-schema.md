@@ -266,7 +266,8 @@ The forms of a `display_condition` are these:
 A `client_transfer` has `form`. The template forms are `property` for `[x]`, `two-way` for
 `[(x)]`, and `attr`, `class` or `style` for `[attr.x]`, `[class.x]` and `[style.x]`. The JSX
 forms are `jsx` for `x={…}` and `spread` for `{...x}`. If one component declares the child tag or the imported name, the fact has
-`targetComponent` and `targetFile`. A JSX attribute whose value is an element gives a
+`targetComponent` and `targetFile`. A tag with no `-`, such as `glow`, is a declared tag
+like any other, and the match is by the declared selector only. A JSX attribute whose value is an element gives a
 transfer with no read.
 
 A `client_read` has `negated` and `traces`. If an odd number of `!` holds the read, `negated`
@@ -345,7 +346,11 @@ call sits in its body. The `source-flow` view reads these fields and falls back 
 unknown-order group when it cannot read them.
 
 `column` is the 1-based column of the same offset the fact's `line` comes from. Two calls on
-one line then have two columns.
+one line then have two columns. A service-locator call with a member chained on it, such as
+`provider.GetService<T>().Run(x)`, gives two calls: the locator call has the site of
+`provider`, and the chained call has the site of `Run`, on its own line when the chain
+continues on a later line. The `control` of the chained call is the `control` of the locator
+call, so an `await` that heads the chain stays on it.
 
 `control` is an object, or `null` when the extractor could not read the body.
 

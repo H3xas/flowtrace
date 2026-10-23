@@ -374,7 +374,9 @@ trace --area <file> [--require-complete]
   file of them one per line; a bare file name or a trailing path segment matches), so a
   node recolours to what that selection alone proves. Without --cover-overlay the
   --mermaid drawing remains neutral, and the
-  --html tree text stays byte-identical to the terminal tree either way.
+  --html tree text stays byte-identical to the terminal tree either way. That text opens
+  with the status lines and the frontier, then the dependency label, as the terminal prints
+  them.
 
 span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
             [--require-complete]
@@ -406,6 +408,7 @@ span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
   two runs over the same facts produce byte-identical pages. Each page states the key it
   was written for, and a default name already holding another key's page is left alone:
   the new page takes the next free name (-2, -3, ...).
+  The result status stays visible, and its start file:line sits behind an expander.
 
   --verdict-facts <file> reads cached surface_verdict facts and annotates each
   observation point the assertion-surface section names outright: confirmed shows the

@@ -67,10 +67,16 @@ interactively.
 
 ## Failure is not an error
 
-The wrapper never throws. A missing binary, a repository with no index, a non-zero exit, an
-unknown symbol — all produce an empty edge list marked `unavailable`, and the walk prints
-the node as unresolved with `graph: unavailable` beside it. A trace without an index is a
-smaller trace, not a failed one.
+The wrapper never throws. A missing binary, a repository with no index, a failed run and a
+reply that is no whole answer all produce an empty edge list marked `unavailable`, and the
+walk prints the node as unresolved with `graph: unavailable` beside it. A trace without an
+index is a smaller trace, not a failed one.
+
+An unknown symbol is an answer for an outbound lookup. The index says that it holds no such
+symbol, and the edge list is empty and not marked `unavailable`. The node still has no graph
+edges, but its stop reads `index-no-match` (or `not-declared` for a class that no
+repository declares), not `provider-unavailable`. The inbound and impact lookups keep the
+older rule: for them, a reply that names no match is marked `unavailable`.
 
 A `refs --out` reply is an answer only in two forms. The first is the index's own
 `no symbol matches` line. The second is an `outbound:` section in which each kind lists as

@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { CLI, copyFixture, runCli } from './helpers.js';
 import { trace } from '../lib/trace.js';
-import { createScout } from '../lib/scout.js';
+import { createScout, isUnavailable } from '../lib/scout.js';
 import { packetHashOf } from '../lib/packets.js';
 import { readiness, readInventory } from '../lib/readiness.js';
 import { walkBoundary } from '../lib/result-status.js';
@@ -1080,4 +1080,54 @@ test('Stopped walk AC-15: each index reply reads the same through the lookup pas
       assert.equal(one.reason, expected.reason, label);
     }
   }
+});
+
+test('Index answer contract AC-4: an unknown symbol is an outbound answer, and a lookup that failed is unavailable', (t) => {
+  const scoutWith = (result) =>
+    createScout({ bin: '/bin/scout', fileExists: () => true, repos: [{ root: '/repo', scout: true }], run: () => result });
+
+  for (const status of [0, 3]) {
+    const unknown = scoutWith({ status, stdout: 'no symbol matches "Nope"\n' }).outbound('/repo', 'Nope');
+    assert.deepEqual([...unknown], [], `exit ${status}`);
+    assert.equal(unknown.noMatch, true, `exit ${status}`);
+    assert.equal(isUnavailable(unknown), false, `exit ${status}`);
+  }
+  for (const [label, result] of [
+    ['a failed exit', { status: 1, stdout: '' }],
+    ['a killed run', { status: null, signal: 'SIGTERM', stdout: '' }],
+    ['an exit 0 with a message', { status: 0, stdout: 'index unavailable\n' }],
+    ['a blank reply', { status: 0, stdout: '' }],
+  ]) {
+    const failed = scoutWith(result).outbound('/repo', 'Nope');
+    assert.deepEqual([...failed], [], label);
+    assert.equal(isUnavailable(failed), true, label);
+    assert.equal(failed.noMatch, undefined, label);
+  }
+
+  // The inbound and impact lookups keep the older rule: a reply that names no match is unavailable.
+  for (const stdout of ['no symbol matches "Nope"\n', '{"status":"unresolved"}']) {
+    const unmatched = { status: 3, stdout };
+    assert.equal(isUnavailable(scoutWith(unmatched).inbound('/repo', 'Nope')), true, `inbound ${stdout}`);
+    assert.equal(isUnavailable(scoutWith(unmatched).impact('/repo', 'src/Nope.cs')), true, `impact ${stdout}`);
+  }
+
+  // The walk leaves each of the two nodes without graph edges and prints the label for both, but
+  // only the lookup that failed stops as provider-unavailable.
+  const dir = gitFixture(t, 'willow-lending', WILLOW);
+  const traced = (env, ...flags) => runWithEnv(dir, ['trace', SETTLE, '--seeds', '--config', WILLOW, ...flags], env);
+  const unknown = traced(contractScout(t, {}).env);
+  assert.match(unknown.stdout, /SettlementBook\.Close .*graph: unavailable/);
+  const unknownStops = JSON.parse(traced(contractScout(t, {}).env, '--json').stdout).status.stops;
+  assert.equal(unknownStops['provider-unavailable'], undefined, JSON.stringify(unknownStops));
+  assert.equal(unknownStops['unresolved-target'], 1, JSON.stringify(unknownStops));
+  const failedEnv = contractScout(t, { SettlementBook: { raw: 'index unavailable\n', status: 0 } }).env;
+  assert.match(traced(failedEnv).stdout, /SettlementBook\.Close .*graph: unavailable/);
+  const failedStops = JSON.parse(traced(failedEnv, '--json').stdout).status.stops;
+  assert.equal(failedStops['provider-unavailable'], 1, JSON.stringify(failedStops));
+
+  // The reference states the same rule in the words that the code keeps.
+  const doc = readFileSync(join(HERE, '..', 'docs', 'scout.md'), 'utf8').replace(/\s+/g, ' ');
+  assert.match(doc, /An unknown symbol is an answer for an outbound lookup\./);
+  assert.match(doc, /The inbound and impact lookups keep the older rule/);
+  assert.doesNotMatch(doc, /a non-zero exit, an unknown symbol/);
 });

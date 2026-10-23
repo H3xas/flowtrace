@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { validateFacts } from '../lib/facts.js';
-import { REPO_ROOT, copyFixture, extract } from './helpers.js';
+import { REPO_ROOT, copyFixture, extract, extractRepoFacts, writeRepo } from './helpers.js';
 import {
   HOP_LIMIT,
   REGION_FAILURES,
@@ -456,4 +456,83 @@ test('Client conditions AC-8: the schema doc and the changelog fragment state th
 test('Client conditions AC-8: two extractions give the same facts in the same order', (t) => {
   assert.deepEqual(mobileFacts(t), mobileFacts(t));
   assert.deepEqual(webFacts(t), webFacts(t));
+});
+
+const GLOW = `import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'glow',
+  template: '<span *ngIf="lit">on</span>',
+})
+export class GlowComponent {
+  @Input() lit: boolean;
+}
+`;
+
+const DIAL = `import { Component } from '@angular/core';
+
+@Component({
+  selector: 'app-dial',
+  template: '<glow [lit]="armed"></glow><app-lamp [lit]="armed"></app-lamp>',
+})
+export class DialComponent {
+  armed = true;
+}
+`;
+
+const LAMP = `import { Component, Input } from '@angular/core';
+
+@Component({
+  selector: 'app-lamp',
+  template: '<span *ngIf="lit">on</span>',
+})
+export class LampComponent {
+  @Input() lit: boolean;
+}
+`;
+
+test('Client target contract AC-4: a plain tag names the component that declares it, and the child input trace reaches the parent binding', (t) => {
+  const dir = writeRepo(
+    t,
+    {
+      'src/app/features/panel/glow.component.ts': GLOW,
+      'src/app/features/panel/dial.component.ts': DIAL,
+      'src/app/features/panel/lamp.component.ts': LAMP,
+    },
+    { repos: [{ id: 'app', kind: 'mobile', root: '.' }] },
+  );
+  const facts = extractRepoFacts(dir, 'app');
+
+  const plain = one(facts, 'client_transfer', { component: 'DialComponent', target: 'glow' });
+  assert.equal(plain.targetComponent, 'GlowComponent');
+  assert.equal(plain.targetFile, 'src/app/features/panel/glow.component.ts');
+  const dashed = one(facts, 'client_transfer', { component: 'DialComponent', target: 'app-lamp' });
+  assert.equal(dashed.targetComponent, 'LampComponent');
+  assert.equal(dashed.targetFile, 'src/app/features/panel/lamp.component.ts');
+
+  // A target field alone does not show that the trace crosses: the child's input must reach
+  // the binding that the parent wrote on the tag, for the plain tag as for the dashed one.
+  for (const [component, path] of [['GlowComponent', 'lit'], ['LampComponent', 'lit']]) {
+    const read = one(facts, 'client_read', { component, path });
+    assert.equal(read.traces.length, 1, component);
+    assert.deepEqual(steps(read.traces[0]), ['input', 'transfer', 'member'], component);
+    assert.equal(read.traces[0].hops[1].path, 'armed', component);
+    assert.equal(read.traces[0].end.unresolved, undefined, component);
+  }
+
+  // A native tag that no component declares keeps no target: the match is by declared tag.
+  const stray = extractRepoFacts(
+    writeRepo(
+      t,
+      {
+        'src/app/features/panel/glow.component.ts': GLOW,
+        'src/app/features/panel/dial.component.ts': DIAL.replace('<glow [lit]="armed"></glow>', '<section [lit]="armed"></section>'),
+      },
+      { repos: [{ id: 'app', kind: 'mobile', root: '.' }] },
+    ),
+    'app',
+  );
+  const native = one(stray, 'client_transfer', { component: 'DialComponent', target: 'section' });
+  assert.equal(native.targetComponent, undefined);
+  assert.equal(native.targetFile, undefined);
 });

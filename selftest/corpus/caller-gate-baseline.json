@@ -180,7 +180,7 @@
   "ferry-tickets/ferry.config.json": {
     "api.json": {
       "kind": "backend",
-      "sha1": "24d37ba634637e99058f1762668190cb61e4057a"
+      "sha1": "6b88a6067529ac4a561614bab671936020bfc967"
     },
     "ops.json": {
       "kind": "backend",
