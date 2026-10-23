@@ -54,6 +54,7 @@ const TEXTS = [
   'a\r\r\nb',
   'a\r\r\nb\r\r\n',
   'a\r\n\n\rb\r',
+  'aé\r\nb𝄞\rc\r',
   ...TERMINATOR_ORDERS.map(([first, second, third]) => `a${first}b${second}c${third}d`),
   ...TERMINATOR_ORDERS.map(([first, second, third]) => `a${first}b${second}c${third}`),
 ];
