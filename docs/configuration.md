@@ -40,7 +40,7 @@ checkouts named as siblings of the file.
 | `caseId` | no | call shapes whose literal arguments are test-management case ids, below |
 | `backend` | no | the calls that mock or patch the backend of a browser test, below |
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
-| `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
+| `scout` | no | `{ "bin": "<path or command>", "concurrency": <integer> }` — the code index used for graph hops, and how many lookups run at once |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
 | `scope` | no | the node-ref patterns `scope` reads as a server-side authorization point, below |
 
@@ -468,10 +468,16 @@ route's own walk whose ref matches one of these regexes.
 ## `scout`
 
 ```json
-"scout": { "bin": "devscout" }
+"scout": { "bin": "devscout", "concurrency": 4 }
 ```
 
-Optional. See [scout.md](scout.md).
+Optional. `bin` names the code index. `scout.concurrency` is the number of index lookups one
+verb runs at the same time. When the file does not set `scout.concurrency`, the variable
+`FLOWTRACE_SCOUT_CONCURRENCY` sets it, and when neither sets it, the limit is
+`min(8, os.availableParallelism())`. The file value wins over the variable, and a blank
+variable counts as absent. The limit must be an integer of at least 1, and a value that is
+not one fails the configuration load. A limit of 1 runs one lookup at a time. See
+[scout.md](scout.md).
 
 ## `scaffold`
 
