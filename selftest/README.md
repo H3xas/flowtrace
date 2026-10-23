@@ -91,6 +91,18 @@ npm test
   AC-n:` test for each acceptance rule. One case imports `requestIndex` of `lib/skeleton.js`,
   because that reader has no command of its own to run. The corpus README lists its spec
   groups.
+- `corpus/tidewater-ferry/`: an invented ferry service, with an ASP.NET Core backend, a
+  mirrored backend and a React/Redux client. It holds the call-site shapes the source-flow
+  view reads: guards, switch arms, try/catch/finally, conditional expressions, loops, awaits,
+  task launches and joins, callbacks, promise launches and continuations. The mirror reverses
+  the declaration order, the service names and the registration order, so the two trees must
+  agree on call-site order. `source-flow.test.js` runs one `Source flow AC-n:` test for each
+  acceptance rule.
+- `dependency-goldens.js` and `corpus/dependency-goldens.json`: the dependency answer of each
+  corpus, as the release before the source-flow work wrote it. The record holds the exit
+  status and the sha256 of stdout and stderr for six outputs of every start. `--write` captures
+  it and `--check` compares it. The label line and the `view` key are the only stated
+  additions, so both are taken off before the comparison.
 - `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
   output of each corpus with backend routes, written by `node selftest/seed-goldens.js
   --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure

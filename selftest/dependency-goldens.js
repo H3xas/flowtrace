@@ -21,6 +21,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { DEPENDENCY_LABEL } from '../lib/render-tree.js';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -145,10 +146,31 @@ function matrixStarts(source) {
   return (document.rows || []).map((row) => ({ start: row.start, kind: 'matrix', config: row.config }));
 }
 
-function outputRecord(runResult) {
+/**
+ * What a golden compares: the dependency answer without the one line that names the view
+ * and the one key that declares it. Those are the only additions this work makes to the
+ * dependency output, so everything else has to keep the bytes the release wrote.
+ */
+function normalized(key, stdout) {
+  if (key === 'json') {
+    try {
+      const parsed = JSON.parse(stdout);
+      if (parsed && Object.hasOwn(parsed, 'view')) {
+        delete parsed.view;
+        return JSON.stringify(parsed);
+      }
+    } catch {
+      return stdout;
+    }
+    return stdout;
+  }
+  return stdout.startsWith(`${DEPENDENCY_LABEL}\n`) ? stdout.slice(DEPENDENCY_LABEL.length + 1) : stdout;
+}
+
+function outputRecord(key, runResult) {
   return {
     status: runResult.status,
-    stdout: sha256(runResult.stdout || ''),
+    stdout: sha256(normalized(key, runResult.stdout || '')),
     stderr: sha256(runResult.stderr || ''),
   };
 }
@@ -181,7 +203,7 @@ export async function captureCorpus(corpus, cli) {
     const answers = await pool(jobs, CAPTURE_CONCURRENCY, (job) => runAsync(cli, job.args, dir));
     const byStart = new Map(starts.map((entry) => [entry, { start: entry.start, kind: entry.kind, ...(entry.config ? { config: entry.config } : {}), outputs: {} }]));
     jobs.forEach((job, index) => {
-      byStart.get(job.entry).outputs[job.output.key] = outputRecord(answers[index]);
+      byStart.get(job.entry).outputs[job.output.key] = outputRecord(job.output.key, answers[index]);
     });
     return { config, facts: factDigests, starts: starts.map((entry) => byStart.get(entry)) };
   } finally {

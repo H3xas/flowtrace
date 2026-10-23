@@ -111,7 +111,16 @@ routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
 trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]
             [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]
             [--from-handler <selector>] [--cover-overlay] [--specs <list|file>]
+            [--view dependency|source-flow]
 trace --area <file>
+  --view picks the projection. The default, dependency, groups the calls of each body by
+  callee and is not in call order; its first line says so. source-flow prints each call at
+  its own call site, in the order the source supports, marks guards, loops, awaits,
+  launches and joins, and puts a call the facts cannot place in an unknown-order group
+  that names the reason. It reads the call-site fields a backend or web extraction writes;
+  facts from an older extraction read as unknown order until the next extract. --json adds
+  the view and, under source-flow, a sourceFlow member carrying the same invocations.
+  --graph and --mermaid have no source-flow view and exit 2 with it.
   <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),
   a backend Class.Method, a backend class, a web component name, or a web page path
   ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page

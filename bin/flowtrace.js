@@ -42,6 +42,8 @@ import * as scoutModule from '../lib/scout.js';
 import * as skeletonModule from '../lib/skeleton.js';
 import * as spanModule from '../lib/span.js';
 import * as splitModule from '../lib/split.js';
+import { sourceFlowOf } from '../lib/source-flow.js';
+import { renderSourceFlowTrailer, sourceFlowLines, SOURCE_FLOW_LABEL } from '../lib/render-source-flow.js';
 import * as traceModule from '../lib/trace.js';
 
 import * as backendExtractor from '../lib/extract/backend.js';
@@ -162,7 +164,16 @@ const USAGE = [
   'trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]',
   '            [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]',
   '            [--from-handler <selector>] [--cover-overlay] [--specs <list|file>]',
+  '            [--view dependency|source-flow]',
   'trace --area <file>',
+  '  --view picks the projection. The default, dependency, groups the calls of each body by',
+  '  callee and is not in call order; its first line says so. source-flow prints each call at',
+  '  its own call site, in the order the source supports, marks guards, loops, awaits,',
+  '  launches and joins, and puts a call the facts cannot place in an unknown-order group',
+  '  that names the reason. It reads the call-site fields a backend or web extraction writes;',
+  '  facts from an older extraction read as unknown order until the next extract. --json adds',
+  '  the view and, under source-flow, a sourceFlow member carrying the same invocations.',
+  '  --graph and --mermaid have no source-flow view and exit 2 with it.',
   '  <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),',
   '  a backend Class.Method, a backend class, a web component name, or a web page path',
   '  ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page',
@@ -880,6 +891,10 @@ function parseArgs(argv) {
       const value = argument.startsWith('--max-level=') ? argument.slice('--max-level='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--max-level requires a level');
       options.maxLevel = value;
+    } else if (argument === '--view' || argument.startsWith('--view=')) {
+      const value = argument.startsWith('--view=') ? argument.slice('--view='.length) : argv[++index];
+      if (value === undefined || value.startsWith('-')) throw new UsageError('--view takes dependency or source-flow');
+      options.view = value;
     } else if (argument === '--out' || argument.startsWith('--out=')) {
       const value = argument.startsWith('--out=') ? argument.slice('--out='.length) : argv[++index];
       if (value === undefined || value.startsWith('-')) throw new UsageError('--out requires a path');
@@ -1520,9 +1535,10 @@ const INVENTORY_KINDS = new Set(['page', 'component', 'service']);
  * false` (`--no-fold`) returns the graph exactly as the walk produced it, one full
  * record per node, matching the unfolded shape byte for byte.
  */
-function traceResult(result, options, foldedGraph) {
+function traceResult(result, options, foldedGraph, sourceFlow = null, view = 'dependency') {
   const graph = foldedGraph(result, { fold: options.fold !== false, nodeFields: traceNodeFields });
   return {
+    view,
     root: traceNode(result.root),
     nodes: graph.nodes,
     edges: graph.edges,
@@ -1531,10 +1547,20 @@ function traceResult(result, options, foldedGraph) {
     seeds: result.seeds,
     seedsTruncated: result.seedsTruncated,
     stats: result.stats,
+    ...(sourceFlow ? { sourceFlow } : {}),
   };
 }
 
 async function runTrace(config, options) {
+  const view = options.view === undefined ? 'dependency' : options.view;
+  if (view !== 'dependency' && view !== 'source-flow') {
+    process.stderr.write('flowtrace: --view takes dependency or source-flow\n');
+    return 2;
+  }
+  if (view === 'source-flow' && (options.graph || options.mermaid)) {
+    process.stderr.write('flowtrace: --view source-flow cannot combine with --graph or --mermaid\n');
+    return 2;
+  }
   if ((options.html || options.mermaid) && options.json) {
     process.stderr.write('flowtrace: --html and --mermaid cannot combine with --json\n');
     return 2;
@@ -1568,6 +1594,7 @@ async function runTrace(config, options) {
     consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
+    recordCalls: view === 'source-flow',
   };
 
   if (options.area) {
@@ -1580,7 +1607,8 @@ async function runTrace(config, options) {
       if (walked.candidates) return { key, error: 'ambiguous start', reason: 'ambiguous', candidates: walked.candidates };
       if (walked.error) return { key, error: walked.error, reason: walked.reason, ...(walked.frontier ? { frontier: walked.frontier } : {}) };
       markProviderHops(walked, factSets);
-      return { key, ...traceResult(walked, options, foldedGraph) };
+      const sourceFlow = view === 'source-flow' ? sourceFlowOf(walked, { factSets }) : null;
+      return { key, ...traceResult(walked, options, foldedGraph, sourceFlow, view) };
     });
     log(JSON.stringify(results, null, 2));
     return 0;
@@ -1614,7 +1642,8 @@ async function runTrace(config, options) {
     return 2;
   }
   if (options.json) {
-    log(JSON.stringify(traceResult(result, options, foldedGraph), null, 2));
+    const sourceFlow = view === 'source-flow' ? sourceFlowOf(result, { factSets }) : null;
+    log(JSON.stringify(traceResult(result, options, foldedGraph, sourceFlow, view), null, 2));
     return 0;
   }
   if (options.html || options.mermaid) {
@@ -1641,6 +1670,7 @@ async function runTrace(config, options) {
       const { renderTreeHtml } = renderTreeHtmlModule;
       const target = resolve(options.html);
       mkdirSync(dirname(target), { recursive: true });
+      const sourceFlow = view === 'source-flow' ? sourceFlowOf(result, { factSets }) : null;
       writeFileSync(
         target,
         renderTreeHtml(result, {
@@ -1649,6 +1679,7 @@ async function runTrace(config, options) {
           coverOverlay,
           expandInfra: options.expandInfra,
           fold: options.fold !== false,
+          sourceFlow,
         }),
       );
       log(`html -> ${display(target)}`);
@@ -1659,6 +1690,17 @@ async function runTrace(config, options) {
     const graph = foldedGraph(result, { fold: options.fold !== false, nodeFields: traceNodeFields });
     const edges = graph.edges.map((edge) => ({ from: edge.from, to: edge.to, via: edge.via }));
     log(JSON.stringify({ nodes: graph.nodes, edges }, null, 2));
+    return 0;
+  }
+  if (view === 'source-flow') {
+    const sourceFlow = sourceFlowOf(result, { factSets });
+    const lines = [SOURCE_FLOW_LABEL, ...sourceFlowLines(sourceFlow).map((line) => line.text), ''];
+    if (options.seeds) {
+      lines.push(renderTreeModule.renderSeeds(result, { color: colorEnabled() }));
+      lines.push('');
+    }
+    lines.push(renderSourceFlowTrailer(sourceFlow));
+    log(lines.join('\n'));
     return 0;
   }
   log(
