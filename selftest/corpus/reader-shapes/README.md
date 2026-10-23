@@ -10,4 +10,7 @@ assertions, route stubs, stub helpers and backend classes.
 `selftest/playwright-reader.test.js` extracts `suite/` again and compares the two, so a
 change to the reader that moves one of these shapes shows up as a diff.
 
+Two later additions are also in the file. Each `pw_test` has `eligibility` and `guards`. The
+`tms.id(row.id)` call in the `ROWS` loop gives one `evaluated` `case_id` for each row.
+
 `mockCalls` is `["stubEverything"]` and `patchCalls` is `["seedKilns"]` for the comparison.

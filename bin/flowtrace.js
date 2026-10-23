@@ -345,8 +345,10 @@ const USAGE = [
   '  mark, and the honesty strip names each pipeline the walk could not resolve, with its',
   '  reason. A tested row names the test',
   '  by its resolved title, and by the case ids case_id facts resolve for',
-  '  it when a case-id annotation, a configured call or a same-file table row carries',
-  '  one — never by an id the tool invented.',
+  '  it when a case-id annotation, a configured call, a same-file table row or a same-file',
+  '  value the bounded reader evaluates carries one — never by an id the tool invented. A',
+  '  configured call whose id no reader resolves shows as "case id not read: <expression>",',
+  '  so the row never says it has no case id.',
   '  --out defaults to <out>/span/<route-slug>.html; --specs narrows the evidence exactly as',
   '  it does for trace --cover-overlay. Nothing is fetched and no timestamp is written, so',
   '  two runs over the same facts produce byte-identical pages. Each page states the key it',
@@ -564,6 +566,10 @@ const USAGE = [
   '  Seeds from a globally registered filter count in their route\'s seeds and again, apart,',
   '  as "shared-gate" in totals and the headline; a route whose pipeline the walk could not',
   '  resolve names it with its reason, and totals count those pipelines.',
+  '  Only an eligible Playwright test runs: one whose pw_test eligibility is static-skip,',
+  '  environment-skip or unknown counts as skipped, and its requests and stubs with it. A',
+  '  fact set with no eligibility field keeps the skipped rule. Skip guards are read against',
+  '  testEnvironment in the configuration, never against the shell.',
   '  A pw_request whose first path segment is an interpolation the extractor could not fold',
   '  gives no evidence: notes.intercepts.unresolvedBase counts it, and the intercepts line',
   '  names that count next to the requests with no path and those matching no route.',
@@ -1369,6 +1375,7 @@ async function runExtract(config, repoFilter) {
       srcSubpath: repo.srcSubpath,
       cypressSubpath: repo.cypressSubpath,
       caseIdCalls: config.caseId ? config.caseId.calls : [],
+      testEnvironment: config.testEnvironment || null,
       backendCalls: config.backend,
       workerPatterns: config.workerPatterns,
       entryPoints: config.entryPoints,
@@ -1391,7 +1398,7 @@ async function runExtract(config, repoFilter) {
         // the count of refused files is carried too: without it a suite whose listing no
         // longer lines up with its source reads exactly like a suite with no titles.
         const refusals = [];
-        const extra = pwTitlesModule.titleFacts(facts, collected.titlesByLine, refusals, config.caseId ? config.caseId.calls : []);
+        const extra = pwTitlesModule.titleFacts(facts, collected.titlesByLine, refusals, config.caseId ? config.caseId.calls : [], { root: repo.root });
         facts.push(...extra);
         titles = { status: 'ok', facts: extra.length, refused: refusals.length };
         titleNote = `, ${plural(extra.length, 'title')}`;

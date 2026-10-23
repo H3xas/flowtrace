@@ -5,7 +5,9 @@
     "line": 10,
     "spec": "tests/kilns.spec.ts",
     "test": "lists the kilns",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "case_id",
@@ -66,7 +68,9 @@
     "line": 17,
     "spec": "tests/kilns.spec.ts",
     "test": "fires one kiln",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_request",
@@ -159,7 +163,9 @@
     "line": 26,
     "spec": "tests/kilns.spec.ts",
     "test": "cools down through a helper",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_request",
@@ -230,7 +236,35 @@
     "line": 33,
     "spec": "tests/kilns.spec.ts",
     "test": "reads the ${row.name} kiln",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "case_id",
+    "file": "tests/kilns.spec.ts",
+    "line": 33,
+    "spec": "tests/kilns.spec.ts",
+    "ids": [
+      "K-101"
+    ],
+    "source": "evaluated",
+    "instance": {
+      "row.id": "K-101"
+    }
+  },
+  {
+    "type": "case_id",
+    "file": "tests/kilns.spec.ts",
+    "line": 33,
+    "spec": "tests/kilns.spec.ts",
+    "ids": [
+      "K-102"
+    ],
+    "source": "evaluated",
+    "instance": {
+      "row.id": "K-102"
+    }
   },
   {
     "type": "pw_request",
@@ -266,7 +300,9 @@
     "line": 41,
     "spec": "tests/kilns.spec.ts",
     "test": "waits for the new kiln",
-    "skipped": true
+    "skipped": true,
+    "eligibility": "static-skip",
+    "guards": []
   },
   {
     "type": "pw_request",
@@ -294,7 +330,9 @@
     "line": 46,
     "spec": "tests/kilns.spec.ts",
     "test": "skipped on its own",
-    "skipped": true
+    "skipped": true,
+    "eligibility": "static-skip",
+    "guards": []
   },
   {
     "type": "pw_backend",
@@ -312,7 +350,9 @@
     "line": 8,
     "spec": "e2e/studio.pw.ts",
     "test": "shows the stubbed kilns",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_backend",
@@ -350,7 +390,9 @@
     "line": 13,
     "spec": "e2e/studio.pw.ts",
     "test": "mocks everything",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_backend",
@@ -381,7 +423,9 @@
     "line": 18,
     "spec": "e2e/studio.pw.ts",
     "test": "seeds the kilns",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_backend",
@@ -412,7 +456,9 @@
     "line": 22,
     "spec": "e2e/studio.pw.ts",
     "test": "watches the glazes",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_backend",
@@ -450,7 +496,9 @@
     "line": 27,
     "spec": "e2e/studio.pw.ts",
     "test": "patches the prices",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_backend",
@@ -481,7 +529,9 @@
     "line": 34,
     "spec": "e2e/studio.pw.ts",
     "test": "reads a real backend",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_backend",
@@ -506,7 +556,9 @@
     "line": 40,
     "spec": "e2e/studio.pw.ts",
     "test": "passes a body by name",
-    "skipped": false
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
   },
   {
     "type": "pw_backend",
