@@ -31,15 +31,23 @@ the fact types and their fields.
 `flowtrace join` reads every fact set and matches caller-side calls to server-side routes
 by normalised template. The result, `out/flow.json`, is the *boundary* view: which routes
 have a caller, which callers name a route nothing declares, which routes nobody calls.
+A spec that names a route gives a `tests` edge: a Cypress intercept, a Playwright API
+request or a Playwright route stub, read the same way `cover` reads them. Each internal edge
+carries its `source` (`cypress`, `playwright-api` or `playwright-stub`). A stub whose URL no
+call site states (`reason: "opaque"`), a pattern with no path (`reason: "no-path"`) and a
+pattern that matches no route go to `unjoined.intercepts_without_route`.
 
 Templates on either side are normalised before comparison — a `{productId}` on the server
 and a `${id}` on the caller are the same segment. `aliases` in the configuration file
 rewrite a route prefix when a gateway serves one path under another name.
+A literal caller segment such as `users/42` also matches a `{param}` route segment, as the
+weaker match kind `parameter` ([fact-schema.md](fact-schema.md#route-match-kinds)).
 
 Only a `calls` edge, built from a `gateway_call` fact, is an app caller. A `tests` edge
 comes from a `cypress_intercept` written in a Cypress spec, a support file or a page model.
-It is test evidence that `cover` counts, and no caller list reads it. A route that only a
-test requests stays in `routes_without_caller`.
+It is test evidence that `cover` counts, and no caller list reads it. A Playwright API
+request and a Playwright route stub also give a `tests` edge, as test evidence and not as a
+caller. A route that only a test requests stays in `routes_without_caller`.
 
 ## The walk
 

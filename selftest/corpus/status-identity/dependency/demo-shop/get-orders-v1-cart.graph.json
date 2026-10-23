@@ -1,0 +1,231 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "api",
+      "kind": "route",
+      "ref": "GET orders/v1/cart",
+      "file": "src/Controllers/OrdersController.cs",
+      "line": 17,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "api"
+    },
+    {
+      "id": "n2",
+      "repo": "api",
+      "kind": "action",
+      "ref": "OrdersController.GetCart",
+      "file": "src/Controllers/OrdersController.cs",
+      "line": 17,
+      "via": "literal",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "OrdersController",
+      "method": "GetCart",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n3",
+      "repo": "api",
+      "kind": "class",
+      "ref": "IOrderService",
+      "file": "src/Controllers/OrdersController.cs",
+      "line": 14,
+      "via": "ctor",
+      "hops": 1,
+      "class": "IOrderService",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n4",
+      "repo": "api",
+      "kind": "class",
+      "ref": "OrderService",
+      "file": "src/Services/OrderService.cs",
+      "line": 21,
+      "via": "di",
+      "hops": 1,
+      "class": "OrderService",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n5",
+      "repo": "api",
+      "kind": "method",
+      "ref": "OrderService.GetCart",
+      "file": "src/Services/OrderService.cs",
+      "line": 25,
+      "via": "body",
+      "hops": 2,
+      "graph": "unavailable",
+      "class": "OrderService",
+      "method": "GetCart",
+      "homeRepo": "api",
+      "methodDepth": 1
+    },
+    {
+      "id": "n6",
+      "repo": "api",
+      "kind": "class",
+      "ref": "IOrderRepository",
+      "file": "src/Services/OrderService.cs",
+      "line": 21,
+      "via": "ctor",
+      "hops": 2,
+      "class": "IOrderRepository",
+      "homeRepo": "api",
+      "methodDepth": 1
+    },
+    {
+      "id": "n7",
+      "repo": "api",
+      "kind": "db",
+      "ref": "OrderRepository",
+      "file": "src/DataAccess/OrderRepository.cs",
+      "line": 18,
+      "via": "di",
+      "hops": 2,
+      "sink": true,
+      "access": "read",
+      "class": "OrderRepository",
+      "homeRepo": "api",
+      "methods": [
+        "GetCart"
+      ],
+      "methodDepth": 1
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "literal"
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "via": "ctor"
+    },
+    {
+      "from": "n3",
+      "to": "n4",
+      "via": "di"
+    },
+    {
+      "from": "n4",
+      "to": "n5",
+      "via": "body"
+    },
+    {
+      "from": "n5",
+      "to": "n6",
+      "via": "ctor"
+    },
+    {
+      "from": "n6",
+      "to": "n7",
+      "via": "di"
+    }
+  ],
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "unknown",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "e2e",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "mobile",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "shopfront",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "stock",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 6,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "api",
+        "kind": "route",
+        "ref": "GET orders/v1/cart",
+        "file": "src/Controllers/OrdersController.cs",
+        "line": 17
+      },
+      "mode": "full",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": true,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {
+      "provider-unavailable": 2
+    },
+    "frontier": [
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "OrdersController.GetCart",
+        "caller": {
+          "ref": "GET orders/v1/cart",
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 17
+        },
+        "callSite": {
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 17
+        },
+        "via": "literal",
+        "remaining": 1,
+        "raisedBy": null
+      },
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "OrderService.GetCart",
+        "caller": {
+          "ref": "OrdersController.GetCart",
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 17
+        },
+        "callSite": {
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 20
+        },
+        "via": "body",
+        "remaining": 1,
+        "raisedBy": null
+      }
+    ],
+    "identity": "sha256:924596fbb8ef2aa7f7ec89a74cdb9e9978f8f4e62ff42cc36feb22d6d1ff9ac7"
+  }
+}

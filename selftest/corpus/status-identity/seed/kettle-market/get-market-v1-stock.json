@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "view": "dependency",
+  "root": {
+    "id": "n1",
+    "repo": "api",
+    "kind": "route",
+    "ref": "GET market/v1/stock",
+    "file": "src/Controllers/KettleController.cs",
+    "line": 15,
+    "via": "start",
+    "hops": 0,
+    "homeRepo": "api"
+  },
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "api",
+      "kind": "route",
+      "ref": "GET market/v1/stock",
+      "file": "src/Controllers/KettleController.cs",
+      "line": 15,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "api"
+    },
+    {
+      "id": "n2",
+      "repo": "api",
+      "kind": "action",
+      "ref": "KettleController.GetStock",
+      "file": "src/Controllers/KettleController.cs",
+      "line": 15,
+      "via": "literal",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "KettleController",
+      "method": "GetStock",
+      "homeRepo": "api",
+      "methodDepth": 0
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "literal",
+      "fromRepo": "api",
+      "toRepo": "api",
+      "evidence": [
+        {
+          "key": "[\"api\",\"route\",\"src/Controllers/KettleController.cs\",15]",
+          "repo": "api",
+          "type": "route",
+          "file": "src/Controllers/KettleController.cs",
+          "line": 15
+        }
+      ]
+    }
+  ],
+  "sinks": [],
+  "branches": [],
+  "seeds": [
+    {
+      "id": "U1",
+      "key": "91c97d66",
+      "kind": "effect",
+      "reachability": "reachable",
+      "dispositions": [],
+      "response": null,
+      "outcomes": [],
+      "always": [],
+      "alsoOnPath": [],
+      "infrastructure": []
+    }
+  ],
+  "seedsTruncated": 0,
+  "stats": {
+    "nodes": 2,
+    "edges": 1,
+    "sinks": 0,
+    "branches": 0,
+    "primaryBranches": 0,
+    "seedCount": 1,
+    "routes": 1,
+    "inventory": false,
+    "repos": [
+      "api"
+    ],
+    "via": {
+      "literal": 1
+    },
+    "depth": 6,
+    "crossings": 0,
+    "budgetHit": false,
+    "graphUnavailable": 1,
+    "graphUnknownKinds": []
+  },
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "unknown",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "suite",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 1,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "api",
+        "kind": "route",
+        "ref": "GET market/v1/stock",
+        "file": "src/Controllers/KettleController.cs",
+        "line": 15
+      },
+      "mode": "full",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": false,
+      "seeds": true,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {
+      "provider-unavailable": 1
+    },
+    "frontier": [
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "KettleController.GetStock",
+        "caller": {
+          "ref": "GET market/v1/stock",
+          "file": "src/Controllers/KettleController.cs",
+          "line": 15
+        },
+        "callSite": {
+          "file": "src/Controllers/KettleController.cs",
+          "line": 15
+        },
+        "via": "literal",
+        "remaining": 0,
+        "raisedBy": null
+      }
+    ],
+    "identity": "sha256:08c36858bf632425a2c9866980f21bfbeb7e770913fc2e7a1537cc0a6af08b4f"
+  }
+}

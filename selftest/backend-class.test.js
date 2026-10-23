@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CLI, REPO_ROOT, copyFixture, runCli, writeJsonFile } from './helpers.js';
+import { CLI, REPO_ROOT, copyFixture, runCli, asEarlierFacts, writeJsonFile } from './helpers.js';
 import { goldenFacts } from './corpus/kettle-market/golden.mjs';
 
 const CORPUS = 'kettle-market';
@@ -300,23 +300,26 @@ function stripBackendFacts(dir) {
   }
 }
 
+/** Keys that carry the backend class of a test: they move with the class facts and with `handler`. */
+const BACKEND_KEYS = new Set(['realism', 'pageReach', 'backend', 'handler', 'reach']);
+const withoutBackendKeys = (value) => JSON.parse(JSON.stringify(value, (key, inner) => (BACKEND_KEYS.has(key) ? undefined : inner)));
+
 function joinAndCover(dir, config, area) {
   const run = (args) => {
     const result = runCli([...args, '--config', config], { cwd: dir });
     assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}`);
     return result.stdout;
   };
-  return {
-    join: run(['join']),
-    flow: readFileSync(join(dir, 'out', 'flow.json'), 'utf8'),
-    cover: run(['cover', '--area', area]),
-    coverJson: run(['cover', '--area', area, '--json']),
-  };
+  const joined = run(['join']);
+  const flow = JSON.parse(readFileSync(join(dir, 'out', 'flow.json'), 'utf8'));
+  const report = JSON.parse(run(['cover', '--area', area, '--json']));
+  return { join: joined, flow: withoutBackendKeys(flow), cover: withoutBackendKeys(report) };
 }
 
-test('Backend class AC-9: pw_stub keeps its base facts, and join and cover read the same input the same way', (t) => {
+test('Backend class AC-9: pw_stub keeps its base facts, and its handler moves no edge, route state, evidence count or parity', (t) => {
   const golden = JSON.parse(readFileSync(join(REPO_ROOT, 'selftest', 'corpus', CORPUS, 'base-facts.json'), 'utf8'));
-  assert.deepEqual(goldenFacts(CLI), golden);
+  const now = goldenFacts(CLI);
+  assert.deepEqual(Object.fromEntries(Object.entries(now).map(([key, facts]) => [key, asEarlierFacts(facts)])), golden);
 
   const example = mkdtempSync(join(tmpdir(), 'flowtrace-selftest-'));
   t.after(() => rmSync(example, { recursive: true, force: true }));

@@ -392,7 +392,13 @@ inside the loop.
 | `pw_stub` | `spec`, `test`, `kind` | a test stubs a response; `handler` says what its route handler does |
 | `pw_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `pw_test`: whether the test runs on a real backend, on patched responses or on a mocked backend |
 | `cypress_test` | `spec`, `test`, `skipped` | a Cypress test is declared |
-| `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL |
+| `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL; `handler` says what its handler does |
+| `cypress_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `cypress_test`, in the shape of `pw_backend` |
+| `pw_visit` | `spec`, `test`, `testLine`, `skipped` | a Playwright test visits a page with `page.goto(` |
+| `cypress_visit` | `spec`, `test`, `testLine`, `skipped` | a Cypress test visits a page with `cy.visit(` |
+| `email_read` | `spec`, `test`, `testLine`, `call`, `subject`, `skipped` | a test reaches a read call that `email.reads` names |
+| `email_template` | `id`, `subject` | one template file of an `email-templates` repository |
+| `email_sender` | `class`, `member`, `id` | a backend class member that `email.senders` names |
 | `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal first argument of a configured case-id call, `table` for one row of a same-file data table the test iterates, `evaluated` for one loop instance of a same-file value the bounded reader resolves, `unresolved` for a configured call whose first argument none of those readers resolve; an `evaluated` fact adds `instance`, and an `unresolved` fact has empty `ids` and adds `expression`, the argument text, and `instance` when one loop instance resolves no id |
 | `pw_title` | `spec`, `titles` | *(optional)* the titles a collector resolved for one `pw_test` declaration, one per parameter instance; its `line` is that declaration's *source* line |
 
@@ -528,7 +534,96 @@ holds it, else the line of the test's call into `via`.
 `pw_stub.handler` comes from the same reader: `fulfill`, `fetch-fulfill`, `abort`, `spy` or
 `unresolved`. A direct `page.route(` stub takes the kind of its own handler. A stub helper call
 takes the kind that every repo-wide helper of that name agrees on, else `unresolved`. The field
-adds nothing to the set of `pw_stub` facts, and `cover` reads neither field.
+adds nothing to the set of `pw_stub` facts.
+
+`cypress_intercept.handler` uses the same words. The reader supports a closed list of handler
+forms:
+
+- No handler gives `spy`.
+- A string literal, a template literal or an array literal gives `fulfill`.
+- A static response object gives `fulfill`, or `abort` with one `forceNetworkError: true`. Each
+  top-level part of the object must be `key: value` with a plain or quoted key, or a shorthand
+  name. One `forceNetworkError` with another value, or as a shorthand name, gives `unresolved`.
+- An arrow or `function` expression, or a name that the file declares once as a function, is
+  read through the calls on its first parameter. `.reply(` gives `fulfill`, or the value of its
+  static response object. `.destroy(` gives `abort`. A `res.send(` in a `.continue(` callback,
+  or in a `response` or `before:response` listener, gives `fetch-fulfill`. A `.continue()` that
+  changes nothing, or a function that only reads the request, gives `spy`. A function that
+  gives its first parameter to other code gives `unresolved`.
+
+Every other handler gives `unresolved`. Examples are an object with a spread, a computed key,
+a method, an accessor or two `forceNetworkError` keys, and a literal or a function with more
+text after it, such as `.bind(…)`.
+
+`cypress_backend` has the classes, precedence, `sites` and `reason` of `pw_backend`. The reader
+follows the test body, the `before` and `beforeEach` hooks of the file and of each enclosing
+`describe` or `context`, the functions of the same file and the custom commands that
+`Cypress.Commands.add(` defines in the suite. A `backend.mockCalls` or `backend.patchCalls` name
+matches `cy.<name>(`. A `cy.intercept(` counts by its handler, as a `.route(` handler does.
+
+`pw_request`, `pw_stub` and `cypress_intercept` can carry `testLine`: the declaration line of
+the test that holds the call, or `null` outside a test. Two tests with the same title in one
+spec have different owner lines, so `cover` joins a fact to the class fact of its own test by
+repository, spec and `testLine`.
+
+A `pw_stub` pattern keeps a part of its URL that the reader cannot read as one `${…}` span with
+the source text of the part, as a `cypress_intercept` pattern does. The reader never writes a
+`*` for such a part, because a `*` is a glob that the test author wrote. A stub whose span holds
+a call, an index, an operator or a member chain longer than `name.prop` has `resolved: false`.
+A bare name or a `name.prop` span keeps `resolved: true`, because it reads as a path parameter.
+A stub that the endpoint registry names and a `pw_request` template keep their own rule.
+
+`pw_visit` and `cypress_visit` are read from the regions that decide the backend class of the
+test: its body, its hooks, the Playwright fixtures it uses, and the functions and Cypress
+commands those call. `path` is the text of a string literal, or of a template literal with no
+`${` in its source text, with its escapes decoded. Every other first argument gives `path: null`
+with `reason: "not-literal"`.
+`where` is `test`, `hook`, `helper` or `fixture`, and `file` and `line` name the visit call,
+also when a fixture in another file holds it.
+
+`email_read` is written for each test that reaches a configured read call, at the call, with
+`where` as above. A Cypress read is the command `cy.<call>(`. The reader supports a closed list
+of subject forms:
+
+- A string literal gives its text, with its escapes decoded.
+- A template literal gives its text, with its escapes decoded and each `${…}` as `*`.
+- A name gives the value of its `const`, read by the two items above. The `const` has one
+  declarator, and its literal is the whole initializer: after the literal, past comments, comes
+  `;`, `}` or a line end, and the next line does not continue the expression. The `const` is in
+  the region of the call, before the call, in a block that holds the call. No nearer `var`, block
+  `let` or `const`, or function parameter of the name stands between it and the call.
+- At an index and a key, the argument is an object literal. Each top-level part is `key: value`
+  with a plain or quoted key, or a shorthand name, and the key occurs once. The value of the key
+  is read by the items above.
+
+Every other subject gives `subject: null` and `reason: "unreadable-subject"`. A test whose title
+is not a literal gives `test: null`, and `testLine` still names the test. A read records no
+assertion.
+
+`email_template` has the `id` and `subject` that the `templates` selectors pick
+([configuration.md](configuration.md#email-templates)), and `line` is the line of the subject
+value. Each `{{…}}` and `{{{…}}}` placeholder of the subject becomes `*`. A selector that matches
+no element, two elements or a value that is not a string gives a null value and a reason, for
+example `id-no-element`, `subject-two-elements` or `subject-not-a-string`. Two reasons are joined
+with a space. A file that does not parse gives both values null and `reason: "unread-file"`.
+
+`email_sender` is written for a member written as `string <Member> => <value>;` or
+`string <Member> { get; } = <value>;`, nested classes included. The value runs to the `;` that
+ends the member. The reader supports a closed list of values:
+
+- A regular literal gives its text, with its escapes decoded.
+- A verbatim `@"…"` literal gives its text, with each `""` as one quote.
+- A raw literal on one line gives the text between its quotes.
+- A `<Class>.<NAME>` reference names a `public const string <NAME> = <literal>;` in a class of
+  that name, in any file of the repository, and `constant` keeps that reference. One such
+  constant gives the value of its literal by the three items above. No constant gives `id: null`
+  and `reason: "no-constant"`, two give `reason: "two-constants"`, and a constant whose literal
+  is not in the list gives `reason: "unread-literal"`. A constant whose value is not one literal
+  counts as no constant.
+
+Every other value gives `id: null` and `reason: "unread-literal"`. Examples are a raw literal on
+two or more lines, an interpolated string, a concatenation, a call and a bare name. A member or a
+constant inside a C# comment or string literal gives nothing.
 
 `case_id` resolves four shapes. The first is a
 `test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is a
@@ -644,6 +739,30 @@ read from another checkout must keep the same identity, and an identity is publi
 `digest` stands in for it, and is what still tells two provider documents apart under
 `regex-only-with-diff`, where none of the provider's facts enter the array. Extracted facts keep their
 order and come first; the provider's follow in the order it gave them.
+
+## Route match kinds
+
+`join`, `cover`, `trace` and `span` match a caller template to a `route` fact with one
+matcher. Each match carries its kind, so a weaker match never reads as a direct one. The
+matcher tries the kinds in this order and stops at the first that finds a route:
+
+| kind | the caller |
+|---|---|
+| `exact` | normalizes to the route template |
+| `prefix` | ends in `*`, and the route template starts with the part before it |
+| `alias` | matches after a caller-side `aliases` rewrite |
+| `suffix` | names the tail of a longer route, on a segment boundary |
+| `parameter` | has a literal segment where the route has a `{param}` segment, and every other segment is equal |
+
+A parameter match is tried only after the other four find nothing. It also applies after an
+alias rewrite (kind `alias`) and in a tail match (kind `suffix`). Two candidates of a
+parameter match are compared at the first segment where they differ. The candidate whose
+segment equals the caller segment comes first, and a `{param}` segment equals a caller
+segment that is a whole `*`. So `users/me/orders` matches `users/me/{x}` before
+`users/{id}/orders`. If two candidates have equal rank, the caller matches no route.
+
+A caller segment that stands for an unread value (`${…}` in a template) never matches a
+literal route segment.
 
 ## Validation
 

@@ -342,10 +342,10 @@ test('the pinned worked-example export satisfies every checkout-free provenance 
   for (const edge of pinned.edges.filter((entry) => entry.kind === 'calls' || entry.kind === 'tests')) {
     assert.notEqual(edge.from.repo, edge.to.repo, `${edge.kind} ${edge.key} crosses repositories`);
   }
-  assert.deepEqual(
-    pinned.provenance.factSetsWithoutEdges.map((repo) => kindOf.get(repo)),
-    ['playwright'],
-    'the playwright fact set contributes no edge and says so',
+  assert.deepEqual(pinned.provenance.factSetsWithoutEdges, [], 'every fact set contributes an edge');
+  assert.ok(
+    pinned.edges.some((edge) => edge.kind === 'tests' && kindOf.get(edge.from.repo) === 'playwright'),
+    'the playwright fact set contributes a tests edge',
   );
 });
 
@@ -360,7 +360,7 @@ test('every provenance invariant names what moved when its field is broken', () 
     ['a removed revision witness', (d) => { delete backend(d).headSha; }, /factSets\[\w+\]\.headSha is absent/],
     ['an inverted dirty flag without its digest', (d) => { backend(d).dirty = !backend(d).dirty; }, /factSets\[\w+\]\.dirtyDigest /],
     ['a provider location in an identity', (d) => { backend(d).provider = { producer: 'route-lister', source: { file: 'provider.json' } }; }, /factSets\[\w+\]\.provider\.source is stated/],
-    ['an unaccounted fact set', (d) => { d.provenance.factSetsWithoutEdges = []; }, /factSets\[\w+\] contributes no edge and is not listed/],
+    ['an unaccounted fact set', (d) => { d.edges = d.edges.filter((edge) => edge.from.repo !== 'e2e' && edge.to.repo !== 'e2e'); }, /factSets\[e2e\] contributes no edge and is not listed/],
   ];
   for (const [name, mutate, expected] of mutations) {
     const document = structuredClone(pinned);
@@ -372,8 +372,8 @@ test('every provenance invariant names what moved when its field is broken', () 
 
 test('the exports README states what a tests edge claims and what it never claims', () => {
   const readme = readFileSync(joinPath(REPO_ROOT, 'examples', 'demo-shop', 'exports', 'README.md'), 'utf8').replace(/\s+/g, ' ');
-  assert.match(readme, /A `tests` record's `from` end is a spec, not code: `ref` is the test's title and `file` the spec that declares the intercept/);
-  assert.match(readme, /It states that the spec's intercept pattern matches that route action\. It never states that the route's interior ran/);
+  assert.match(readme, /A `tests` record's `from` end is a spec, not code: `ref` is the test's title and `file` the spec that holds the evidence/);
+  assert.match(readme, /No `tests` edge states that the route's interior ran/);
   assert.match(readme, /literal byte equality within one checkout/);
   assert.match(readme, /canonical structural and provenance equality against the pinned copy/);
 });

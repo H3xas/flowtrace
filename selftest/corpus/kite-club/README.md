@@ -4,6 +4,8 @@ An invented kite club: a small ASP.NET Core backend, a React web client with its
 suite, an Ionic app and a Playwright suite. Every name is invented.
 `selftest/route-chains.test.js` copies this directory, runs `extract` over the copy and then
 runs `chains`, and `span --from-component` beside it, against it.
+`selftest/test-evidence-visits.test.js` copies it too. It adds page visits to both suites
+and three `invite/…` pages, then reads the `cover` page reach of the route.
 
 The route under test is `POST clubs/v1/join/{id}` (`ClubsController.Join`). Three callers
 reach it: the thunk `joinClub` in `web/src/actions/clubs.ts`, the function `legacyJoin` in

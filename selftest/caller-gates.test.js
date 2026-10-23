@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { copyFixture, runCli } from './helpers.js';
+import { asReleaseFacts, copyFixture, runCli } from './helpers.js';
 import { BASELINE_FILE, captureBaseline, compareBaselines } from './caller-gate-baseline.js';
 import { withoutGateFields, withoutGateLines } from './gate-output.js';
 import { buildCallerCases } from '../lib/trace.js';
@@ -737,7 +737,8 @@ function buoyAreaTrace(t, { gates }) {
   for (const name of readdirSync(factsDir).filter((file) => file.endsWith('.json'))) {
     const set = JSON.parse(readFileSync(join(factsDir, name), 'utf8'));
     records += set.facts.filter((item) => item.type === 'caller_gate').length;
-    if (!gates) writeFileSync(join(factsDir, name), JSON.stringify({ ...set, facts: set.facts.filter((item) => item.type !== 'caller_gate') }, null, 2));
+    // The plain run is the release's walk. The test evidence adds facts that move the identity too, so it drops them with the gate records.
+    if (!gates) writeFileSync(join(factsDir, name), JSON.stringify({ ...set, facts: asReleaseFacts(set.facts).filter((item) => item.type !== 'caller_gate') }, null, 2));
   }
   run('join');
   const stdout = run('trace', '--area', 'harbor.area.txt');

@@ -12,6 +12,7 @@ a page is a screen, not a route: it never enters the route index below, and carr
 ◈■  GET glasshouse/v1/zones/*/watchers  2 seeds · 1 intercept (1 executing, 0 skipped) · match exact · cypress none (0) · playwright none (0) · 1 from shared gates
   ◈ U1  reject=taken                                    → 403 Forbidden                               disposition b3/s0  watchers.spec.ts :: a grower the relay ledger refuses gets no watchers (8) — expect status 403  [shared gate RelayCheckFilter]
   ■ U2  happy path                                      reads 1                                       route b0/s0       watchers.spec.ts :: a grower the relay ledger refuses gets no watchers
+  realism  executing 0 stubbed, 1 backend, 0 blocked, 0 unknown; skipped 0 stubbed, 0 backend, 0 blocked, 0 unknown
 
 □□  GET glasshouse/v1/zones/*/readings  2 seeds · no intercept evidence · cypress none (0) · playwright none (0) · 1 from shared gates
   □ U1  reject=taken                                    → 403 Forbidden                               none b3/s0        —  [shared gate RelayCheckFilter]
@@ -30,7 +31,7 @@ branch weight  error_return · validation 3 · toggle 2 · guard 1 · plain 0   
   □ (none, b0, s0)      GET glasshouse/v1/zones/*/readings#U2                       happy path                                  reads 1
 
 levels path and disposition: needs-reader on every route · 1 candidate test attached
-intercepts skipped as evidence: 0 with no path · 0 matching no route · 0 with an unknown base
+intercepts skipped as evidence: 0 with no path · 0 matching no route · 0 with an unknown base · 0 ambiguous
 
 parity  cypress-only 0 · playwright-only 0 · both 0 · neither 3 · 0 opaque stubs (never joined)
 

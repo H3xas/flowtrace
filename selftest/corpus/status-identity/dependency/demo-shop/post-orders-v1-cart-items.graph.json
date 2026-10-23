@@ -1,0 +1,255 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "api",
+      "kind": "route",
+      "ref": "POST orders/v1/cart/items",
+      "file": "src/Controllers/OrdersController.cs",
+      "line": 24,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "api"
+    },
+    {
+      "id": "n2",
+      "repo": "api",
+      "kind": "action",
+      "ref": "OrdersController.AddCartItem",
+      "file": "src/Controllers/OrdersController.cs",
+      "line": 24,
+      "via": "literal",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "OrdersController",
+      "method": "AddCartItem",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n3",
+      "repo": "api",
+      "kind": "branch",
+      "ref": "OrdersController.AddCartItem@27",
+      "file": "src/Controllers/OrdersController.cs",
+      "line": 27,
+      "via": "body",
+      "hops": 2,
+      "branchKind": "error_return",
+      "primary": true,
+      "responseKind": "reject",
+      "text": "if (request == null || request.Quantity <= 0)",
+      "class": "OrdersController",
+      "method": "AddCartItem",
+      "homeRepo": "api",
+      "endLine": 30,
+      "methodDepth": 0
+    },
+    {
+      "id": "n4",
+      "repo": "api",
+      "kind": "class",
+      "ref": "IOrderService",
+      "file": "src/Controllers/OrdersController.cs",
+      "line": 14,
+      "via": "ctor",
+      "hops": 1,
+      "class": "IOrderService",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n5",
+      "repo": "api",
+      "kind": "class",
+      "ref": "OrderService",
+      "file": "src/Services/OrderService.cs",
+      "line": 21,
+      "via": "di",
+      "hops": 1,
+      "class": "OrderService",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n6",
+      "repo": "api",
+      "kind": "method",
+      "ref": "OrderService.AddItem",
+      "file": "src/Services/OrderService.cs",
+      "line": 30,
+      "via": "body",
+      "hops": 2,
+      "graph": "unavailable",
+      "class": "OrderService",
+      "method": "AddItem",
+      "homeRepo": "api",
+      "methodDepth": 1
+    },
+    {
+      "id": "n7",
+      "repo": "api",
+      "kind": "class",
+      "ref": "IOrderRepository",
+      "file": "src/Services/OrderService.cs",
+      "line": 21,
+      "via": "ctor",
+      "hops": 2,
+      "class": "IOrderRepository",
+      "homeRepo": "api",
+      "methodDepth": 1
+    },
+    {
+      "id": "n8",
+      "repo": "api",
+      "kind": "db",
+      "ref": "OrderRepository",
+      "file": "src/DataAccess/OrderRepository.cs",
+      "line": 18,
+      "via": "di",
+      "hops": 2,
+      "sink": true,
+      "access": "write",
+      "class": "OrderRepository",
+      "homeRepo": "api",
+      "methods": [
+        "UpsertCartItem"
+      ],
+      "methodDepth": 1
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "literal"
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "via": "body"
+    },
+    {
+      "from": "n2",
+      "to": "n4",
+      "via": "ctor"
+    },
+    {
+      "from": "n4",
+      "to": "n5",
+      "via": "di"
+    },
+    {
+      "from": "n5",
+      "to": "n6",
+      "via": "body"
+    },
+    {
+      "from": "n6",
+      "to": "n7",
+      "via": "ctor"
+    },
+    {
+      "from": "n7",
+      "to": "n8",
+      "via": "di"
+    }
+  ],
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "unknown",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "e2e",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "mobile",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "shopfront",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "stock",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 7,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "api",
+        "kind": "route",
+        "ref": "POST orders/v1/cart/items",
+        "file": "src/Controllers/OrdersController.cs",
+        "line": 24
+      },
+      "mode": "full",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": true,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {
+      "provider-unavailable": 2
+    },
+    "frontier": [
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "OrdersController.AddCartItem",
+        "caller": {
+          "ref": "POST orders/v1/cart/items",
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 24
+        },
+        "callSite": {
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 24
+        },
+        "via": "literal",
+        "remaining": 1,
+        "raisedBy": null
+      },
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "OrderService.AddItem",
+        "caller": {
+          "ref": "OrdersController.AddCartItem",
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 24
+        },
+        "callSite": {
+          "file": "src/Controllers/OrdersController.cs",
+          "line": 32
+        },
+        "via": "body",
+        "remaining": 1,
+        "raisedBy": null
+      }
+    ],
+    "identity": "sha256:d39610111986cbd87d855fba06fdd73688a3f03afa7b1778848e6529aad8e05c"
+  }
+}

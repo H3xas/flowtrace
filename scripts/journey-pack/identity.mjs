@@ -121,6 +121,9 @@ export function contentIdentity(repo, root) {
   } else if (kind === 'mobile') {
     files = listFiles(root, { accept: byExtension('.ts', '.html') });
     scope = 'mobile: *.ts, *.html under root';
+  } else if (kind === 'email-templates') {
+    files = listFiles(root, { accept: byExtension('.json') });
+    scope = 'email-templates: *.json under root';
   } else {
     return { rule: 'scope/1', scope: `${kind}: no rule`, files: 0, digest: UNKNOWN };
   }

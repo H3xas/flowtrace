@@ -17,6 +17,7 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, wri
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { asReleaseFacts } from './helpers.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, '..');
@@ -59,7 +60,7 @@ export const decisionRow = (item) => [item.file, item.line, item.endLine, `${ite
 /** The record of one extracted fact set. */
 export function setRecord(set) {
   const facts = Array.isArray(set.facts) ? set.facts : [];
-  const record = { kind: set.kind, sha1: sha1(facts.filter((item) => !SET_ASIDE.has(item.type))) };
+  const record = { kind: set.kind, sha1: sha1(asReleaseFacts(facts).filter((item) => !SET_ASIDE.has(item.type))) };
   if (set.kind === 'web' || set.kind === 'mobile') {
     record.branchPoints = facts.filter((item) => item.type === 'branch_point').map(decisionRow);
   }

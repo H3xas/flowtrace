@@ -1,0 +1,5 @@
+# reef-ledger: the site routes the invented suites reach.
+GET reef/v1/sites
+POST reef/v1/sites/visits
+GET reef/v1/sites/closures
+GET reef/v1/sites/*/tides

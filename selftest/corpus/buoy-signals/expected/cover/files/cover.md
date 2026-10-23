@@ -25,6 +25,8 @@ GET glasshouse/v1/zones/*/watchers — `src/Controllers/ZoneWatchersController.c
 
 2 seeds · 1 intercept (1 executing, 0 skipped) · match exact · cypress none (0) · playwright none (0) · 1 from shared gates
 
+Realism of the named evidence: executing 0 stubbed, 1 backend, 0 blocked, 0 unknown; skipped 0 stubbed, 0 backend, 0 blocked, 0 unknown.
+
 | seed | dispositions | sinks | level | branch | sink | evidence |
 |---|---|---|---|---|---|---|
 | U1 | reject=taken  [shared gate RelayCheckFilter] | → 403 Forbidden | ◈ disposition | 3 | 0 | tests/watchers.spec.ts :: a grower the relay ledger refuses gets no watchers (8) — expect status 403 |
@@ -88,7 +90,7 @@ Tests per spec, for every spec that names an area route.
 - `path` — an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect
 - `disposition` — an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion
 
-Intercepts skipped as evidence: 0 with no path, 0 matching no route, 0 with an unknown base.
+Intercepts skipped as evidence: 0 with no path, 0 matching no route, 0 with an unknown base, 0 ambiguous.
 
 ## Cypress vs Playwright parity
 

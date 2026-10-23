@@ -1,0 +1,501 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "stock",
+      "kind": "route",
+      "ref": "POST stock/v1/reservations",
+      "file": "src/Controllers/ReservationsController.cs",
+      "line": 18,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "stock"
+    },
+    {
+      "id": "n2",
+      "repo": "stock",
+      "kind": "action",
+      "ref": "ReservationsController.Reserve",
+      "file": "src/Controllers/ReservationsController.cs",
+      "line": 18,
+      "via": "literal",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "ReservationsController",
+      "method": "Reserve",
+      "homeRepo": "stock",
+      "methodDepth": 0
+    },
+    {
+      "id": "n3",
+      "repo": "stock",
+      "kind": "branch",
+      "ref": "ReservationsController.Reserve@21",
+      "file": "src/Controllers/ReservationsController.cs",
+      "line": 21,
+      "via": "body",
+      "hops": 2,
+      "branchKind": "error_return",
+      "primary": true,
+      "responseKind": "reject",
+      "text": "if (request == null || string.IsNullOrEmpty(request.ProductId))",
+      "class": "ReservationsController",
+      "method": "Reserve",
+      "homeRepo": "stock",
+      "endLine": 24,
+      "methodDepth": 0
+    },
+    {
+      "id": "n4",
+      "repo": "stock",
+      "kind": "branch",
+      "ref": "ReservationsController.Reserve@27",
+      "file": "src/Controllers/ReservationsController.cs",
+      "line": 27,
+      "via": "body",
+      "hops": 2,
+      "branchKind": "if",
+      "primary": true,
+      "text": "if (!reserved)",
+      "class": "ReservationsController",
+      "method": "Reserve",
+      "homeRepo": "stock",
+      "endLine": 30,
+      "methodDepth": 0
+    },
+    {
+      "id": "n5",
+      "repo": "stock",
+      "kind": "class",
+      "ref": "IReservationService",
+      "file": "src/Controllers/ReservationsController.cs",
+      "line": 15,
+      "via": "ctor",
+      "hops": 1,
+      "class": "IReservationService",
+      "homeRepo": "stock",
+      "methodDepth": 0
+    },
+    {
+      "id": "n6",
+      "repo": "stock",
+      "kind": "class",
+      "ref": "ReservationService",
+      "file": "src/Services/ReservationService.cs",
+      "line": 19,
+      "via": "di",
+      "hops": 1,
+      "class": "ReservationService",
+      "homeRepo": "stock",
+      "methodDepth": 0
+    },
+    {
+      "id": "n7",
+      "repo": "stock",
+      "kind": "method",
+      "ref": "ReservationService.Reserve",
+      "file": "src/Services/ReservationService.cs",
+      "line": 23,
+      "via": "body",
+      "hops": 2,
+      "graph": "unavailable",
+      "class": "ReservationService",
+      "method": "Reserve",
+      "homeRepo": "stock",
+      "methodDepth": 1
+    },
+    {
+      "id": "n8",
+      "repo": "stock",
+      "kind": "branch",
+      "ref": "ReservationService.Reserve@26",
+      "file": "src/Services/ReservationService.cs",
+      "line": 26,
+      "via": "body",
+      "hops": 3,
+      "branchKind": "if",
+      "primary": true,
+      "text": "if (!held)",
+      "class": "ReservationService",
+      "method": "Reserve",
+      "homeRepo": "stock",
+      "endLine": 29,
+      "methodDepth": 1
+    },
+    {
+      "id": "n9",
+      "repo": "stock",
+      "kind": "branch",
+      "ref": "ReservationService.Reserve@28",
+      "file": "src/Services/ReservationService.cs",
+      "line": 28,
+      "via": "body",
+      "hops": 3,
+      "branchKind": "reject",
+      "primary": true,
+      "responseKind": "reject",
+      "text": "if (!held)",
+      "class": "ReservationService",
+      "method": "Reserve",
+      "homeRepo": "stock",
+      "methodDepth": 1,
+      "rejectForm": "sentinel",
+      "statusVia": {
+        "file": "src/Controllers/ReservationsController.cs",
+        "line": 27
+      }
+    },
+    {
+      "id": "n10",
+      "repo": "stock",
+      "kind": "class",
+      "ref": "IShelfRepository",
+      "file": "src/Services/ReservationService.cs",
+      "line": 19,
+      "via": "ctor",
+      "hops": 2,
+      "class": "IShelfRepository",
+      "homeRepo": "stock",
+      "methodDepth": 1
+    },
+    {
+      "id": "n11",
+      "repo": "stock",
+      "kind": "db",
+      "ref": "ShelfRepository",
+      "file": "src/DataAccess/ShelfRepository.cs",
+      "line": 12,
+      "via": "di",
+      "hops": 2,
+      "sink": true,
+      "access": "write",
+      "class": "ShelfRepository",
+      "homeRepo": "stock",
+      "methods": [
+        "DecrementOnHand"
+      ],
+      "methodDepth": 1
+    },
+    {
+      "id": "n12",
+      "repo": "stock",
+      "kind": "class",
+      "ref": "IPublishEndpoint",
+      "file": "src/Services/ReservationService.cs",
+      "line": 20,
+      "via": "ctor",
+      "hops": 2,
+      "unresolved": true,
+      "class": "IPublishEndpoint",
+      "homeRepo": "stock",
+      "methodDepth": 1
+    },
+    {
+      "id": "n13",
+      "repo": "bus",
+      "kind": "message",
+      "ref": "StockReservedEvent",
+      "file": "src/Services/ReservationService.cs",
+      "line": 31,
+      "via": "publish",
+      "hops": 3,
+      "fqn": "DemoShop.Stock.Messaging.Events.StockReservedEvent",
+      "homeRepo": "stock",
+      "methodDepth": 1
+    },
+    {
+      "id": "n14",
+      "repo": "api",
+      "kind": "consumer",
+      "ref": "StockReservedConsumer",
+      "file": "src/Messaging/StockReservedConsumer.cs",
+      "line": 8,
+      "via": "message",
+      "hops": 0,
+      "graph": "unavailable",
+      "class": "StockReservedConsumer",
+      "match": "name",
+      "crossRepo": {
+        "from": "stock",
+        "to": "api",
+        "role": [
+          "api"
+        ]
+      },
+      "homeRepo": "api",
+      "methodDepth": 1
+    },
+    {
+      "id": "n15",
+      "repo": "api",
+      "kind": "method",
+      "ref": "StockReservedConsumer.Consume",
+      "file": "src/Messaging/StockReservedConsumer.cs",
+      "line": 11,
+      "via": "body",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "StockReservedConsumer",
+      "method": "Consume",
+      "homeRepo": "api",
+      "methodDepth": 2
+    },
+    {
+      "id": "n16",
+      "repo": "api",
+      "kind": "class",
+      "ref": "ILogger<StockReservedConsumer>",
+      "file": "src/Messaging/StockReservedConsumer.cs",
+      "line": 8,
+      "via": "ctor",
+      "hops": 1,
+      "unresolved": true,
+      "class": "ILogger<StockReservedConsumer>",
+      "homeRepo": "api",
+      "methodDepth": 2
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "literal"
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "via": "body"
+    },
+    {
+      "from": "n2",
+      "to": "n4",
+      "via": "body"
+    },
+    {
+      "from": "n2",
+      "to": "n5",
+      "via": "ctor"
+    },
+    {
+      "from": "n5",
+      "to": "n6",
+      "via": "di"
+    },
+    {
+      "from": "n6",
+      "to": "n7",
+      "via": "body"
+    },
+    {
+      "from": "n7",
+      "to": "n8",
+      "via": "body"
+    },
+    {
+      "from": "n7",
+      "to": "n9",
+      "via": "body"
+    },
+    {
+      "from": "n7",
+      "to": "n10",
+      "via": "ctor"
+    },
+    {
+      "from": "n10",
+      "to": "n11",
+      "via": "di"
+    },
+    {
+      "from": "n7",
+      "to": "n12",
+      "via": "ctor"
+    },
+    {
+      "from": "n7",
+      "to": "n13",
+      "via": "publish"
+    },
+    {
+      "from": "n13",
+      "to": "n14",
+      "via": "message"
+    },
+    {
+      "from": "n14",
+      "to": "n15",
+      "via": "body"
+    },
+    {
+      "from": "n15",
+      "to": "n16",
+      "via": "ctor"
+    }
+  ],
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "unknown",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "e2e",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "mobile",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "shopfront",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "stock",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 15,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "stock",
+        "kind": "route",
+        "ref": "POST stock/v1/reservations",
+        "file": "src/Controllers/ReservationsController.cs",
+        "line": 18
+      },
+      "mode": "full",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": true,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {
+      "unresolved-target": 2,
+      "provider-unavailable": 4
+    },
+    "frontier": [
+      {
+        "reason": "provider-unavailable",
+        "repo": "stock",
+        "target": "ReservationsController.Reserve",
+        "caller": {
+          "ref": "POST stock/v1/reservations",
+          "file": "src/Controllers/ReservationsController.cs",
+          "line": 18
+        },
+        "callSite": {
+          "file": "src/Controllers/ReservationsController.cs",
+          "line": 18
+        },
+        "via": "literal",
+        "remaining": 1,
+        "raisedBy": null
+      },
+      {
+        "reason": "provider-unavailable",
+        "repo": "stock",
+        "target": "ReservationService.Reserve",
+        "caller": {
+          "ref": "ReservationsController.Reserve",
+          "file": "src/Controllers/ReservationsController.cs",
+          "line": 18
+        },
+        "callSite": {
+          "file": "src/Controllers/ReservationsController.cs",
+          "line": 26
+        },
+        "via": "body",
+        "remaining": 2,
+        "raisedBy": null
+      },
+      {
+        "reason": "unresolved-target",
+        "repo": "stock",
+        "target": "IPublishEndpoint",
+        "caller": {
+          "ref": "ReservationService.Reserve",
+          "file": "src/Services/ReservationService.cs",
+          "line": 23
+        },
+        "callSite": {
+          "file": "src/Services/ReservationService.cs",
+          "line": 20
+        },
+        "via": "ctor",
+        "remaining": null,
+        "raisedBy": null
+      },
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "StockReservedConsumer",
+        "caller": {
+          "ref": "ReservationService.Reserve",
+          "file": "src/Services/ReservationService.cs",
+          "line": 23
+        },
+        "callSite": {
+          "file": "src/Messaging/StockReservedConsumer.cs",
+          "line": 7
+        },
+        "via": "message",
+        "remaining": 1,
+        "raisedBy": null
+      },
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "StockReservedConsumer.Consume",
+        "caller": {
+          "ref": "ReservationService.Reserve",
+          "file": "src/Services/ReservationService.cs",
+          "line": 23
+        },
+        "callSite": {
+          "file": "src/Messaging/StockReservedConsumer.cs",
+          "line": 11
+        },
+        "via": "body",
+        "remaining": 1,
+        "raisedBy": null
+      },
+      {
+        "reason": "unresolved-target",
+        "repo": "api",
+        "target": "ILogger<StockReservedConsumer>",
+        "caller": {
+          "ref": "StockReservedConsumer.Consume",
+          "file": "src/Messaging/StockReservedConsumer.cs",
+          "line": 11
+        },
+        "callSite": {
+          "file": "src/Messaging/StockReservedConsumer.cs",
+          "line": 8
+        },
+        "via": "ctor",
+        "remaining": null,
+        "raisedBy": null
+      }
+    ],
+    "identity": "sha256:6d2bbaef6ceb3160172e8104cb272e3ccd3c5a0ed1e66f7ea0a28ae5f5ec958d"
+  }
+}

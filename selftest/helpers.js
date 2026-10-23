@@ -7,7 +7,7 @@
  * out to imports `lib/` directly instead, because a child process accepts no substitute.
  */
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +38,47 @@ export function copyFixture(t, name) {
   cpSync(join(HERE, 'corpus', name), dir, { recursive: true });
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
+}
+
+/** Writes `files` (path to text) and `evidence.config.json` with `config` into a fresh temp
+ * directory, registered for cleanup on `t`. Returns the directory. */
+export function writeRepo(t, files, config) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-evidence-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), text);
+  }
+  writeFileSync(join(dir, 'evidence.config.json'), JSON.stringify({ out: 'out', ...config }, null, 2));
+  return dir;
+}
+
+/** Runs `extract` over a directory that `writeRepo` wrote and returns the facts of `repo`. */
+export function extractRepoFacts(dir, repo) {
+  const result = runCli(['extract', '--config', 'evidence.config.json'], { cwd: dir });
+  if (result.status !== 0) throw new Error(`extract exited ${result.status}: ${result.stderr}`);
+  return JSON.parse(readFileSync(join(dir, 'out', 'facts', `${repo}.json`), 'utf8')).facts;
+}
+
+/** The facts as an extractor wrote them before the stub pass read `tests/` specs and before a
+ * fact named the line of its test: no `pw_stub` of a `tests/` spec and no `testLine`. A pin
+ * of that extractor compares with these. */
+export function asEarlierFacts(facts) {
+  return facts
+    .filter((candidate) => !(candidate.type === 'pw_stub' && String(candidate.spec).startsWith('tests/')))
+    .map(({ testLine, ...rest }) => rest);
+}
+
+const ADDED_FACT_TYPES = new Set(['cypress_backend', 'pw_visit', 'cypress_visit', 'email_read', 'email_sender', 'email_template']);
+
+/** The facts as the release extractors wrote them: `asEarlierFacts`, no fact kind that the test evidence added, and no
+ * `handler` on a Cypress intercept. A baseline or a plain run that the release made compares with these. */
+export function asReleaseFacts(facts) {
+  return asEarlierFacts(facts.filter((candidate) => !ADDED_FACT_TYPES.has(candidate.type))).map((candidate) => {
+    if (candidate.type !== 'cypress_intercept' || candidate.handler === undefined) return candidate;
+    const { handler, ...rest } = candidate;
+    return rest;
+  });
 }
 
 /** Copies the synthetic corpus into a fresh temp directory, registered for cleanup on

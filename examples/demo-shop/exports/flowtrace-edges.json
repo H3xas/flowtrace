@@ -6,7 +6,7 @@
     "version": "0.5.1"
   },
   "provenance": {
-    "id": "bffda6503fe62818",
+    "id": "eea0e59cd4578921",
     "producer": "flowtrace-cli 0.5.1",
     "formatVersion": 1,
     "config": {
@@ -58,7 +58,7 @@
         "repo": "api",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
+        "headSha": "0ffe9c62453a6d9fd1317624ca53ac075acb12b8",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 17,
@@ -68,7 +68,7 @@
         "repo": "e2e",
         "kind": "playwright",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
+        "headSha": "0ffe9c62453a6d9fd1317624ca53ac075acb12b8",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
@@ -76,13 +76,13 @@
           "status": "failed",
           "reason": "@playwright/test not resolvable from the repository root"
         },
-        "digest": "66b720675f6bf72c4e8bad0343fc1166d6b7f897"
+        "digest": "ab04bfcc284272abf01432a3aeac6a39e601ccbc"
       },
       {
         "repo": "mobile",
         "kind": "mobile",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
+        "headSha": "0ffe9c62453a6d9fd1317624ca53ac075acb12b8",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 4,
@@ -92,26 +92,24 @@
         "repo": "shopfront",
         "kind": "web",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
+        "headSha": "0ffe9c62453a6d9fd1317624ca53ac075acb12b8",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
-        "digest": "fbaa138be70d08470a352902f269fd71e6b3d8da"
+        "digest": "b67e30e715f969b42634b677680847f19f2a639f"
       },
       {
         "repo": "stock",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
+        "headSha": "0ffe9c62453a6d9fd1317624ca53ac075acb12b8",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 5,
         "digest": "b7fd58bcc964ce02d21e011c0eec62bdd3baa1c5"
       }
     ],
-    "factSetsWithoutEdges": [
-      "e2e"
-    ]
+    "factSetsWithoutEdges": []
   },
   "edges": [
     {
@@ -129,7 +127,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "calls",
@@ -146,7 +144,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "consumes",
@@ -163,7 +161,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "consumes",
@@ -180,7 +178,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "consumes",
@@ -197,7 +195,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "consumes",
@@ -214,7 +212,7 @@
         "line": 7
       },
       "key": "StockReservedEvent",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "publishes",
@@ -231,7 +229,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "publishes",
@@ -248,7 +246,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "publishes",
@@ -265,7 +263,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "publishes",
@@ -282,7 +280,126 @@
         "line": null
       },
       "key": "StockReservedEvent",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
+    },
+    {
+      "kind": "tests",
+      "from": {
+        "repo": "e2e",
+        "ref": "",
+        "file": "ui/storefront.pw.ts",
+        "line": 4
+      },
+      "to": {
+        "repo": "api",
+        "ref": "CatalogController.GetProducts",
+        "file": "src/Controllers/CatalogController.cs",
+        "line": 17
+      },
+      "key": "GET catalog/v1/products",
+      "provenance": "eea0e59cd4578921"
+    },
+    {
+      "kind": "tests",
+      "from": {
+        "repo": "e2e",
+        "ref": "lists the products of a category",
+        "file": "tests/catalog.spec.ts",
+        "line": 5
+      },
+      "to": {
+        "repo": "api",
+        "ref": "CatalogController.GetProducts",
+        "file": "src/Controllers/CatalogController.cs",
+        "line": 17
+      },
+      "key": "GET catalog/v1/products",
+      "provenance": "eea0e59cd4578921"
+    },
+    {
+      "kind": "tests",
+      "from": {
+        "repo": "e2e",
+        "ref": "rejects a listing with no category",
+        "file": "tests/catalog.spec.ts",
+        "line": 10
+      },
+      "to": {
+        "repo": "api",
+        "ref": "CatalogController.GetProducts",
+        "file": "src/Controllers/CatalogController.cs",
+        "line": 17
+      },
+      "key": "GET catalog/v1/products",
+      "provenance": "eea0e59cd4578921"
+    },
+    {
+      "kind": "tests",
+      "from": {
+        "repo": "e2e",
+        "ref": "lists the cart",
+        "file": "tests/checkout.spec.ts",
+        "line": 17
+      },
+      "to": {
+        "repo": "api",
+        "ref": "OrdersController.GetCart",
+        "file": "src/Controllers/OrdersController.cs",
+        "line": 17
+      },
+      "key": "GET orders/v1/cart",
+      "provenance": "eea0e59cd4578921"
+    },
+    {
+      "kind": "tests",
+      "from": {
+        "repo": "e2e",
+        "ref": "rejects a cart item with no quantity",
+        "file": "tests/checkout.spec.ts",
+        "line": 23
+      },
+      "to": {
+        "repo": "api",
+        "ref": "OrdersController.AddCartItem",
+        "file": "src/Controllers/OrdersController.cs",
+        "line": 24
+      },
+      "key": "POST orders/v1/cart/items",
+      "provenance": "eea0e59cd4578921"
+    },
+    {
+      "kind": "tests",
+      "from": {
+        "repo": "e2e",
+        "ref": "places an order when the cart holds an item",
+        "file": "tests/checkout.spec.ts",
+        "line": 5
+      },
+      "to": {
+        "repo": "api",
+        "ref": "OrdersController.Checkout",
+        "file": "src/Controllers/OrdersController.cs",
+        "line": 36
+      },
+      "key": "POST orders/v1/checkout",
+      "provenance": "eea0e59cd4578921"
+    },
+    {
+      "kind": "tests",
+      "from": {
+        "repo": "e2e",
+        "ref": "rejects a checkout with no payment token",
+        "file": "tests/checkout.spec.ts",
+        "line": 12
+      },
+      "to": {
+        "repo": "api",
+        "ref": "OrdersController.Checkout",
+        "file": "src/Controllers/OrdersController.cs",
+        "line": 36
+      },
+      "key": "POST orders/v1/checkout",
+      "provenance": "eea0e59cd4578921"
     },
     {
       "kind": "tests",
@@ -299,7 +416,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "bffda6503fe62818"
+      "provenance": "eea0e59cd4578921"
     }
   ]
 }

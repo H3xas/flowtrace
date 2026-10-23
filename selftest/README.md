@@ -154,6 +154,11 @@ npm test
   AC-n:` test for each acceptance rule. One case imports `callersOf` of `lib/span.js`,
   because no command prints the callers of a route as data. The corpus README lists each
   shape and the chain it gives.
+- `corpus/reef-ledger/`: an invented dive log service, with an ASP.NET Core backend and a
+  React client. Its routes hold a literal segment beside a `{param}` segment, and a client
+  call names a literal value where a route has a parameter. The `test-evidence-*.test.js`
+  files run it through the CLI, with one `Test evidence AC-n:` test for each acceptance rule.
+  The matcher cases build their route index in memory. The corpus README lists each file.
 - `corpus/regatta-desk/`: an invented race office, with an ASP.NET Core backend, a React and
   Redux client and an Ionic app with NgRx. It holds the component shapes of the web
   journeys: body and `render` dispatches, inline and named arrows, nested thunks, pages of a
@@ -166,6 +171,12 @@ npm test
   five Cypress requests name the same route, so `cypress-evidence.test.js` can count the
   `calls` edges and the `tests` edges apart. A second route is intercepted only by a page
   model. The corpus README lists its files.
+- `corpus/status-identity/`: the walk answers that the release branch wrote for the starts whose
+  status identity the test evidence facts move: the `buoy-signals` area trace, the seed traces of
+  `demo-shop` and `kettle-market`, and the `json` and `graph` answers of 22 dependency starts.
+  `test-evidence-identity.test.js` runs the same starts with and without the facts that the
+  release does not write, and compares each answer with these files apart from
+  `status.identity`. The corpus README lists each group.
 - `dependency-goldens.js` and `corpus/dependency-goldens.json`: the dependency answer of each
   corpus, as the release branch renders it. A change that moves the dependency view on purpose
   writes the golden again with `--write`. The record holds the exit

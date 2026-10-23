@@ -31,7 +31,9 @@ responses or on a mocked backend. `selftest/backend-class.test.js` reads it.
     hook written after its test.
 - `suite/helpers/` and `suite/pages/` hold the repo-wide helpers and page objects.
 - `base-facts.json` pins the `pw_stub` and `pw_test` facts of `suite` and of the worked
-  example's `e2e` repository, as the extractor of the implementation base wrote them.
+  example's `e2e` repository, as the extractor of the implementation base wrote them. That
+  extractor read route stubs only in `.pw.ts` specs and wrote no `testLine`, so the
+  comparison leaves out the `pw_stub` facts of `tests/` specs and the `testLine` field.
 - `golden.mjs` writes that file.
 
 ## Regenerating `base-facts.json`

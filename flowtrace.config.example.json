@@ -18,6 +18,10 @@
     "mockCalls": ["mockAllEndpoints"],
     "patchCalls": ["seedCart"]
   },
+  "email": {
+    "reads": [{ "call": "readMail", "subject": "0.subject" }],
+    "senders": [{ "member": "EmailCode" }]
+  },
   "scaffold": {
     "specRoot": "tests",
     "specSuffix": ".spec.ts",
@@ -84,6 +88,16 @@
       "kind": "playwright",
       "root": "shop-e2e",
       "titles": true
+    },
+    {
+      "id": "mail",
+      "kind": "email-templates",
+      "root": "shop-mail",
+      "templates": {
+        "files": ["templates/**/*.json"],
+        "id": "meta.template.code",
+        "subject": "channels[kind=email].sections[role=subject].text"
+      }
     }
   ]
 }

@@ -25,6 +25,7 @@
     "line": 13,
     "spec": "tests/kilns.spec.ts",
     "test": "lists the kilns",
+    "testLine": 10,
     "verb": "GET",
     "template": "studio/v1/kilns/all",
     "resolved": true,
@@ -78,6 +79,7 @@
     "line": 19,
     "spec": "tests/kilns.spec.ts",
     "test": "fires one kiln",
+    "testLine": 17,
     "verb": "PUT",
     "template": "studio/v1/doors/open",
     "resolved": true,
@@ -101,6 +103,7 @@
     "line": 20,
     "spec": "tests/kilns.spec.ts",
     "test": "fires one kiln",
+    "testLine": 17,
     "verb": "POST",
     "template": "studio/v1/kilns/${id}/fire",
     "resolved": true,
@@ -125,6 +128,7 @@
     "line": 22,
     "spec": "tests/kilns.spec.ts",
     "test": "fires one kiln",
+    "testLine": 17,
     "verb": "GET",
     "template": "studio/v1/kilns/k1",
     "resolved": true
@@ -173,6 +177,7 @@
     "line": 28,
     "spec": "tests/kilns.spec.ts",
     "test": "cools down through a helper",
+    "testLine": 26,
     "verb": "GET",
     "template": "studio/v1/kilns/all",
     "resolved": true,
@@ -202,6 +207,7 @@
     "line": 29,
     "spec": "tests/kilns.spec.ts",
     "test": "cools down through a helper",
+    "testLine": 26,
     "verb": "GET",
     "template": "studio/v1/glazes/list",
     "resolved": true,
@@ -272,6 +278,7 @@
     "line": 35,
     "spec": "tests/kilns.spec.ts",
     "test": "reads the ${row.name} kiln",
+    "testLine": 33,
     "verb": "GET",
     "template": "studio/v1/kilns/${row.id}",
     "resolved": true
@@ -310,6 +317,7 @@
     "line": 42,
     "spec": "tests/kilns.spec.ts",
     "test": "waits for the new kiln",
+    "testLine": 41,
     "verb": "DELETE",
     "template": "studio/v1/kilns/old",
     "resolved": true
@@ -385,6 +393,17 @@
     ]
   },
   {
+    "type": "pw_visit",
+    "file": "e2e/studio.pw.ts",
+    "line": 10,
+    "spec": "e2e/studio.pw.ts",
+    "test": "shows the stubbed kilns",
+    "testLine": 8,
+    "skipped": false,
+    "path": "/kilns",
+    "where": "test"
+  },
+  {
     "type": "pw_test",
     "file": "e2e/studio.pw.ts",
     "line": 13,
@@ -416,6 +435,17 @@
         "call": "stubEverything"
       }
     ]
+  },
+  {
+    "type": "pw_visit",
+    "file": "e2e/studio.pw.ts",
+    "line": 15,
+    "spec": "e2e/studio.pw.ts",
+    "test": "mocks everything",
+    "testLine": 13,
+    "skipped": false,
+    "path": "/kilns",
+    "where": "test"
   },
   {
     "type": "pw_test",
@@ -491,6 +521,17 @@
     ]
   },
   {
+    "type": "pw_visit",
+    "file": "e2e/studio.pw.ts",
+    "line": 24,
+    "spec": "e2e/studio.pw.ts",
+    "test": "watches the glazes",
+    "testLine": 22,
+    "skipped": false,
+    "path": "/glazes",
+    "where": "test"
+  },
+  {
     "type": "pw_test",
     "file": "e2e/studio.pw.ts",
     "line": 27,
@@ -551,6 +592,17 @@
     ]
   },
   {
+    "type": "pw_visit",
+    "file": "e2e/studio.pw.ts",
+    "line": 35,
+    "spec": "e2e/studio.pw.ts",
+    "test": "reads a real backend",
+    "testLine": 34,
+    "skipped": false,
+    "path": "/",
+    "where": "test"
+  },
+  {
     "type": "pw_test",
     "file": "e2e/studio.pw.ts",
     "line": 40,
@@ -584,6 +636,7 @@
     "line": 5,
     "spec": "e2e/studio.pw.ts",
     "test": "",
+    "testLine": null,
     "kind": "route",
     "skipped": false,
     "verb": "ANY",
@@ -597,6 +650,7 @@
     "line": 28,
     "spec": "e2e/studio.pw.ts",
     "test": "patches the prices",
+    "testLine": 27,
     "kind": "route",
     "skipped": false,
     "verb": "ANY",
@@ -610,6 +664,7 @@
     "line": 9,
     "spec": "e2e/studio.pw.ts",
     "test": "shows the stubbed kilns",
+    "testLine": 8,
     "kind": "opaque",
     "skipped": false,
     "helper": "stubKilns",
@@ -621,6 +676,7 @@
     "line": 23,
     "spec": "e2e/studio.pw.ts",
     "test": "watches the glazes",
+    "testLine": 22,
     "kind": "opaque",
     "skipped": false,
     "helper": "watchGlazes",
