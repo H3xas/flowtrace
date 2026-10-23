@@ -249,8 +249,48 @@ test('Source flow AC-7: the C# control forms keep their shape and never read as 
 
   const conditional = forms('TerminalForms.ConditionalForm');
   const conditionalForms = conditional.filter((step) => step.kind === 'branch').map((step) => step.form);
-  for (const form of ['&&', '??', 'switch-expression']) assert.ok(conditionalForms.includes(form), form);
+  for (const form of ['?:', '&&', '??', 'switch-expression']) assert.ok(conditionalForms.includes(form), form);
   assert.ok(conditional.some((step) => step.await === true));
+
+  const ternary = conditional.find((step) => step.kind === 'branch' && step.form === '?:' && step.arms.length === 2);
+  assert.ok(ternary, 'a ternary whose operands are calls is one construct with two arms');
+  assert.deepEqual(ternary.arms.map((arm) => arm.arm), ['true', 'false']);
+  assert.deepEqual(
+    ternary.arms.map((arm) => arm.steps.map((step) => step.kind)),
+    [['invocation'], ['invocation']],
+    'each operand call sits in its own arm',
+  );
+  assert.deepEqual(
+    ternary.arms.map((arm) => arm.steps[0].declaration.ref.split('.').pop()),
+    ['ResolveIdentityAsync', 'ReadIdentityAsync'],
+  );
+
+  const switchExpression = conditional.find((step) => step.kind === 'branch' && step.form === 'switch-expression');
+  assert.deepEqual(switchExpression.arms.map((arm) => arm.arm), ['arm 1', 'arm 2']);
+  for (const arm of switchExpression.arms) assert.equal(arm.steps[0].kind, 'invocation');
+  assert.ok(!conditional.some((step) => step.kind === 'callback'), 'an arm arrow is not a lambda callback');
+
+  const nested = forms('TerminalForms.NestedForms');
+  const outer = nested.find((step) => step.kind === 'branch');
+  assert.deepEqual(outer.arms.map((arm) => arm.arm), ['then']);
+  assert.deepEqual(outer.arms[0].steps.map((step) => step.kind), ['loop', 'try'], 'the loop and the try stay in the arm');
+  const inner = outer.arms[0].steps[0].steps.find((step) => step.kind === 'branch');
+  assert.deepEqual(inner.arms.map((arm) => arm.arm), ['then', 'else'], 'a nested alternative keeps both arms');
+  for (const arm of inner.arms) assert.equal(arm.steps[0].kind, 'invocation');
+  const nestedTry = outer.arms[0].steps[1];
+  assert.deepEqual(nestedTry.body.map((step) => step.kind), ['branch'], 'the try body keeps its branch');
+  assert.deepEqual(nestedTry.body[0].arms.map((arm) => arm.arm), ['then']);
+  assert.deepEqual(nestedTry.catches.map((entry) => entry.part), ['catch 1']);
+  assert.equal(nestedTry.catches[0].steps[0].kind, 'invocation');
+
+  const joined = json(env, 'TerminalForms.JoinLater', ['--view', 'source-flow']).sourceFlow;
+  const joinOrder = joined.root.body.steps;
+  assert.deepEqual(joinOrder.map((step) => step.kind), ['invocation', 'invocation', 'join', 'invocation']);
+  const [launch, between, join, after] = joinOrder;
+  assert.equal(launch.task.local, 'pending');
+  assert.deepEqual(join.tasks, [launch.id]);
+  assert.ok(between.site.line < join.site.line, 'the join keeps its own position after the call between');
+  assert.ok(join.site.line < after.site.line);
 
   const loops = forms('TerminalForms.LoopForms').filter((step) => step.kind === 'loop');
   assert.deepEqual(loops.map((step) => step.form), ['for', 'foreach', 'while', 'do']);
@@ -284,6 +324,15 @@ test('Source flow AC-8: the web control forms keep their shape and name the asyn
   const branch = boarding.find((step) => step.kind === 'branch');
   assert.deepEqual(branch.arms.map((arm) => arm.arm), ['then', 'else']);
   assert.equal(boarding.filter((step) => step.kind === 'loop').length, 1);
+
+  const nestedBoarding = forms('Boarding.loadNestedBoarding');
+  const nestedBranch = nestedBoarding.find((step) => step.kind === 'branch');
+  assert.deepEqual(nestedBranch.arms.map((arm) => arm.arm), ['then']);
+  const nestedLoop = nestedBranch.arms[0].steps.find((step) => step.kind === 'loop');
+  assert.ok(nestedLoop, 'the loop stays inside the branch arm');
+  assert.equal(nestedLoop.repeatable, true);
+  assert.equal(nestedLoop.steps[0].kind, 'invocation');
+  assert.equal(nestedLoop.steps[0].await, true);
 
   const loaded = forms('Boarding.loadAll');
   assert.ok(loaded.some((step) => step.kind === 'loop' && step.form === 'map'), 'the map callback is the launch body');

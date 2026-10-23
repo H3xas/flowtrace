@@ -114,6 +114,38 @@ namespace Tidewater.Ferry.Services
             Action<PassengerRequest> handler = (value) => _access.ResolveIdentityAsync(value);
         }
 
+        public async Task NestedForms(PassengerRequest request, bool permit)
+        {
+            if (permit)
+            {
+                foreach (var item in new[] { request })
+                {
+                    if (item.LoadPermits)
+                        await _access.LoadPermitsAsync(item);
+                    else
+                        await _access.ReadIdentityAsync(item);
+                }
+
+                try
+                {
+                    if (permit)
+                        await _access.ResolveIdentityAsync(request);
+                }
+                catch (Exception)
+                {
+                    await _access.ReadIdentityAsync(request);
+                }
+            }
+        }
+
+        public async Task JoinLater(PassengerRequest request)
+        {
+            var pending = _access.ResolveIdentityAsync(request);
+            await _access.LoadPermitsAsync(request);
+            await pending;
+            await _access.ReadIdentityAsync(request);
+        }
+
         private void RunLater(Action work)
         {
             work();

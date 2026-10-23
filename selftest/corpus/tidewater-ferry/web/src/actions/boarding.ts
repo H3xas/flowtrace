@@ -47,6 +47,15 @@ export function loadWithFallback(ferryId: string) {
     .catch(() => noticeShown('identity-failed'));
 }
 
+export async function loadNestedBoarding(permit: boolean, routes: string[]) {
+  noticeShown('loading');
+  if (permit) {
+    for (const routeId of routes) {
+      await httpClient.getGatewayClient().get(`/tidewater/v1/routes/${routeId}`);
+    }
+  }
+}
+
 export function watchBoarding(ferryId: string) {
   useEffect(async () => {
     await httpClient.getGatewayClient().get(`/tidewater/v1/ferries/${ferryId}/route`);
