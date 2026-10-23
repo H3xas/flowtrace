@@ -159,6 +159,35 @@ trace --area <file> [--require-complete]
   externally supplied fact is stated prints [provider]; --json and --graph nodes carry
   provider: true for the same hops.
 
+  Pages of a component: a web component start also prints one [mount] hop for each page
+  that shows it, as "page <browser path>" at the file:line of its route, with the source
+  of the mount. The page is the route whose element is the component, a route whose
+  element holds a render of it, or a page of a component that renders it. A component
+  that no route reaches prints a "no-page" hop. A render that two innermost routes hold
+  prints a "page-ambiguous" hop with both route sites as candidates. --json gives the
+  same pages as root.pages. These hops add no route, and the status and the exit code
+  do not change.
+
+  Route trees: when two route trees declare the same page path, the start resolves in
+  the tree that a mount declares (a root render, a router basename or repos[].mounts).
+  If no tree or more than one declared tree matches, the start exits 2 with reason
+  ambiguous and lists each candidate with its composed path and file:line. A page path
+  start also walks each component that the element of its route holds as a child.
+
+  Web component walk: a request that no handler and no entry reaches is listed too. The
+  facts of the component body and of render are one "body" hop. An arrow bound to a
+  local name is one "arrow <name>" hop at its file:line:column. A member that nothing
+  enters is one hop. An inline handler arrow prints at its arrow site, file:line:column,
+  and walks only the dispatches and calls inside it. A "dispatch(c(x))" handler names
+  the creator c. A creator with no effect_handler walks its own dispatches, calls and
+  requests on its dispatch hop. Each nested dispatch spends one level of --depth.
+
+  Entries: an entry line starts with its kind word, mount, update, unmount, effect or
+  event, for example "mount RegattaHeader.componentDidMount@12:3". A mobile page or
+  component start lists each lifecycle hook that sends a request as a mount, update or
+  unmount entry, and each template handler walks in a scope of its own. --from-handler
+  lists no hook.
+
   Pipelines and filters: a backend loop over a step collection whose steps a DI factory
   registers, a literal typeof(...) list or an injected IEnumerable<T> names is walked in
   that order with no fan-out cap. Each step that can refuse the request (a stop-flag
@@ -383,6 +412,12 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   two selections never share a page; --repo scopes which component the name resolves to,
   never the routes behind it.
 
+  An arm without entry names the code that holds it: the body of the component or
+  render, an arrow bound to a local name, or a member that nothing enters, with its
+  file:line, and the column of an arrow. The page prints it under the arm, and --json
+  gives it as "holder" on the arm. An inline handler arrow is the entry of the requests
+  inside it.
+
   A mobile dependency or template owner resolves by declaration identity. When the facts
   state `source` and `imported`, the walk enters the declaration in exactly that relative
   `.ts` file whose `exports` lists the imported name. It enters the declaration's actual
@@ -432,6 +467,13 @@ chains "<route key>" [--json] [--depth N] [--max-nodes N] [--require-complete]
     page-ambiguous         two routes with one line range hold a render
     no-page                no route and no render reaches a component
     walk-limit             the depth or the node budget stopped the climb
+  An inline handler arrow is the entry of each dispatch and call inside it, so its
+  requests climb to that handler, not to a no-entry gap. A no-entry gap of a dispatch
+  or a call inside an arrow bound to a local name names that arrow and its file:line. A
+  creator with no effect_handler climbs to each dispatch of its action, with no effect
+  hop. One "dispatch(c(x))" statement states a call of c and a dispatch of c. Its two
+  chains print as one chain in the dispatch form, also when the statement spans lines.
+
   An entry, a call, a dispatch, a bound prop and an effect each spend one level of
   --depth; renders, pages and self calls spend none. So a chain fits --depth N when the
   forward walk from its component reaches the request at --depth N. Every hop spends one

@@ -981,7 +981,7 @@ test('Mobile sites and starts AC-11: the orchard archive chain names the same-na
   assert.equal(text.status, 0, text.stderr);
   assert.match(text.stdout, new RegExp(`chain 1 of 1: mobile page ForecastPage ${owner}:4\\n`));
   assert.match(text.stdout, new RegExp(`\\n  page +component +mobile +${owner}:4 +ForecastPage\\n`));
-  assert.match(text.stdout, new RegExp(`\\n  entry +template_handler +mobile +${entryTemplate}:2 +ForecastPage\\.click@2\\n`));
+  assert.match(text.stdout, new RegExp(`\\n  entry +template_handler +mobile +${entryTemplate}:2 +ForecastPage\\.click@2 {2}kind event\\n`));
   assert.equal(text.stdout.includes(other), false);
 });
 

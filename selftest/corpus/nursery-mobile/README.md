@@ -74,3 +74,12 @@ The nursery record in `selftest/corpus/dependency-goldens.json` was captured aga
 cause, rendered by the binary from before the source-flow view. Its facts digest and its `graph`
 and `json` hashes changed, because both outputs carry `identity`. Every exit status and every
 tree, mermaid and `span` hash is unchanged.
+
+Plain `trace` now lists the lifecycle hooks of a mobile start as `mount`, `update` or
+`unmount` entries, and it walks each template handler in a scope of its own. So
+`trace-plot-detail.golden.json` changed by added nodes only: the hook entries, the handlers
+that the shared walk folded before, and the routes they reach. A diff of the two files over
+kind, ref, via, file:line and parent path removes no node. The node ids, `stats`, the
+status evidence and the fold stubs changed with the added nodes. The traversal state is now
+`unknown`, because the `onExport` arm walks to its unresolved request. The from-handler
+golden did not change.

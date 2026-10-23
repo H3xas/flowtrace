@@ -1,0 +1,2629 @@
+{
+  "trace": {
+    "RegattaPage": [
+      {
+        "path": "page RegattaPage",
+        "kind": "page",
+        "ref": "RegattaPage",
+        "via": "start",
+        "file": "src/regatta/RegattaPage.tsx",
+        "line": 11,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader",
+        "kind": "component",
+        "ref": "RegattaHeader",
+        "via": "template",
+        "file": "src/regatta/RegattaHeader.tsx",
+        "line": 11,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader > entry RegattaHeader.componentDidMount@12:3",
+        "kind": "entry",
+        "ref": "RegattaHeader.componentDidMount@12:3",
+        "via": "entry",
+        "file": "src/regatta/RegattaHeader.tsx",
+        "line": 12,
+        "entry": {
+          "id": "RegattaHeader:mount:componentDidMount:@src/regatta/RegattaHeader.tsx:12:3",
+          "component": "RegattaHeader",
+          "kind": "mount",
+          "trigger": "componentDidMount",
+          "handler": null,
+          "guards": [],
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 12,
+          "column": 3
+        },
+        "keys": [
+          "class",
+          "endLine",
+          "entry",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader > entry RegattaHeader.componentDidMount@12:3 > store_action loadRegatta",
+        "kind": "store_action",
+        "ref": "loadRegatta",
+        "via": "dispatch",
+        "file": "src/actions/regattas.ts",
+        "line": 6,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader > entry RegattaHeader.componentDidMount@12:3 > store_action loadRegatta > method Regattas.loadRegatta",
+        "kind": "method",
+        "ref": "Regattas.loadRegatta",
+        "via": "effect",
+        "file": "src/actions/regattas.ts",
+        "line": 6,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader > entry RegattaHeader.componentDidMount@12:3 > store_action loadRegatta > method Regattas.loadRegatta > route GET regattas/v1/*",
+        "kind": "route",
+        "ref": "GET regattas/v1/*",
+        "via": "literal",
+        "file": "src/Controllers/RegattasController.cs",
+        "line": 9,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader > entry RegattaHeader.componentDidUpdate@16:3",
+        "kind": "entry",
+        "ref": "RegattaHeader.componentDidUpdate@16:3",
+        "via": "entry",
+        "file": "src/regatta/RegattaHeader.tsx",
+        "line": 16,
+        "entry": {
+          "id": "RegattaHeader:update:componentDidUpdate:@src/regatta/RegattaHeader.tsx:16:3",
+          "component": "RegattaHeader",
+          "kind": "update",
+          "trigger": "componentDidUpdate",
+          "handler": null,
+          "guards": [],
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 16,
+          "column": 3
+        },
+        "keys": [
+          "class",
+          "endLine",
+          "entry",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader > entry RegattaHeader.componentDidUpdate@16:3 > store_action loadEntries",
+        "kind": "store_action",
+        "ref": "loadEntries",
+        "via": "dispatch",
+        "file": "src/actions/regattas.ts",
+        "line": 12,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader > entry RegattaHeader.componentDidUpdate@16:3 > store_action loadEntries > method Regattas.loadEntries",
+        "kind": "method",
+        "ref": "Regattas.loadEntries",
+        "via": "effect",
+        "file": "src/actions/regattas.ts",
+        "line": 12,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RegattaPage > component RegattaHeader > entry RegattaHeader.componentDidUpdate@16:3 > store_action loadEntries > method Regattas.loadEntries > route GET regattas/v1/*/entries",
+        "kind": "route",
+        "ref": "GET regattas/v1/*/entries",
+        "via": "literal",
+        "file": "src/Controllers/RegattasController.cs",
+        "line": 15,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "RegattaHeader": [
+      {
+        "path": "component RegattaHeader",
+        "kind": "component",
+        "ref": "RegattaHeader",
+        "via": "start",
+        "file": "src/regatta/RegattaHeader.tsx",
+        "line": 11,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component RegattaHeader > entry RegattaHeader.componentDidMount@12:3",
+        "kind": "entry",
+        "ref": "RegattaHeader.componentDidMount@12:3",
+        "via": "entry",
+        "file": "src/regatta/RegattaHeader.tsx",
+        "line": 12,
+        "entry": {
+          "id": "RegattaHeader:mount:componentDidMount:@src/regatta/RegattaHeader.tsx:12:3",
+          "component": "RegattaHeader",
+          "kind": "mount",
+          "trigger": "componentDidMount",
+          "handler": null,
+          "guards": [],
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 12,
+          "column": 3
+        },
+        "keys": [
+          "class",
+          "endLine",
+          "entry",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component RegattaHeader > entry RegattaHeader.componentDidMount@12:3 > store_action loadRegatta",
+        "kind": "store_action",
+        "ref": "loadRegatta",
+        "via": "dispatch",
+        "file": "src/actions/regattas.ts",
+        "line": 6,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component RegattaHeader > entry RegattaHeader.componentDidMount@12:3 > store_action loadRegatta > method Regattas.loadRegatta",
+        "kind": "method",
+        "ref": "Regattas.loadRegatta",
+        "via": "effect",
+        "file": "src/actions/regattas.ts",
+        "line": 6,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component RegattaHeader > entry RegattaHeader.componentDidMount@12:3 > store_action loadRegatta > method Regattas.loadRegatta > route GET regattas/v1/*",
+        "kind": "route",
+        "ref": "GET regattas/v1/*",
+        "via": "literal",
+        "file": "src/Controllers/RegattasController.cs",
+        "line": 9,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component RegattaHeader > entry RegattaHeader.componentDidUpdate@16:3",
+        "kind": "entry",
+        "ref": "RegattaHeader.componentDidUpdate@16:3",
+        "via": "entry",
+        "file": "src/regatta/RegattaHeader.tsx",
+        "line": 16,
+        "entry": {
+          "id": "RegattaHeader:update:componentDidUpdate:@src/regatta/RegattaHeader.tsx:16:3",
+          "component": "RegattaHeader",
+          "kind": "update",
+          "trigger": "componentDidUpdate",
+          "handler": null,
+          "guards": [],
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 16,
+          "column": 3
+        },
+        "keys": [
+          "class",
+          "endLine",
+          "entry",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component RegattaHeader > entry RegattaHeader.componentDidUpdate@16:3 > store_action loadEntries",
+        "kind": "store_action",
+        "ref": "loadEntries",
+        "via": "dispatch",
+        "file": "src/actions/regattas.ts",
+        "line": 12,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component RegattaHeader > entry RegattaHeader.componentDidUpdate@16:3 > store_action loadEntries > method Regattas.loadEntries",
+        "kind": "method",
+        "ref": "Regattas.loadEntries",
+        "via": "effect",
+        "file": "src/actions/regattas.ts",
+        "line": 12,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component RegattaHeader > entry RegattaHeader.componentDidUpdate@16:3 > store_action loadEntries > method Regattas.loadEntries > route GET regattas/v1/*/entries",
+        "kind": "route",
+        "ref": "GET regattas/v1/*/entries",
+        "via": "literal",
+        "file": "src/Controllers/RegattasController.cs",
+        "line": 15,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "ResultsBoard": [
+      {
+        "path": "page ResultsBoard",
+        "kind": "page",
+        "ref": "ResultsBoard",
+        "via": "start",
+        "file": "src/results/ResultsBoard.tsx",
+        "line": 5,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page ResultsBoard > entry ResultsBoard.useEffect@8:3",
+        "kind": "entry",
+        "ref": "ResultsBoard.useEffect@8:3",
+        "via": "entry",
+        "file": "src/results/ResultsBoard.tsx",
+        "line": 8,
+        "entry": {
+          "id": "ResultsBoard:effect:useEffect:@src/results/ResultsBoard.tsx:8:3",
+          "component": "ResultsBoard",
+          "kind": "effect",
+          "trigger": "useEffect",
+          "handler": null,
+          "guards": [],
+          "file": "src/results/ResultsBoard.tsx",
+          "line": 8,
+          "column": 3,
+          "deps": [
+            "dispatch"
+          ]
+        },
+        "keys": [
+          "class",
+          "endLine",
+          "entry",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page ResultsBoard > entry ResultsBoard.useEffect@8:3 > method Regattas.loadResults",
+        "kind": "method",
+        "ref": "Regattas.loadResults",
+        "via": "body",
+        "file": "src/actions/regattas.ts",
+        "line": 22,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page ResultsBoard > entry ResultsBoard.useEffect@8:3 > method Regattas.loadResults > route GET regattas/v1/results",
+        "kind": "route",
+        "ref": "GET regattas/v1/results",
+        "via": "literal",
+        "file": "src/Controllers/RegattasController.cs",
+        "line": 27,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "CrewRoster": [
+      {
+        "path": "component CrewRoster",
+        "kind": "component",
+        "ref": "CrewRoster",
+        "via": "start",
+        "file": "src/crews/CrewRoster.tsx",
+        "line": 12,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "SignupPanel": [
+      {
+        "path": "component SignupPanel",
+        "kind": "component",
+        "ref": "SignupPanel",
+        "via": "start",
+        "file": "src/crews/SignupPanel.tsx",
+        "line": 12,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "BoatList": [
+      {
+        "path": "page BoatList",
+        "kind": "page",
+        "ref": "BoatList",
+        "via": "start",
+        "file": "src/boats/BoatList.tsx",
+        "line": 11,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > component BoatRow",
+        "kind": "component",
+        "ref": "BoatRow",
+        "via": "template",
+        "file": "src/boats/BoatRow.tsx",
+        "line": 11,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > component BoatRow > store_action inspectBoat",
+        "kind": "store_action",
+        "ref": "inspectBoat",
+        "via": "props",
+        "file": "src/actions/boats.ts",
+        "line": 16,
+        "entry": {
+          "id": "BoatRow:event:onClick:inspectBoat:@src/boats/BoatRow.tsx:14:29",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "inspectBoat",
+          "guards": [],
+          "file": "src/boats/BoatRow.tsx",
+          "line": 14,
+          "column": 29
+        },
+        "keys": [
+          "entry",
+          "event",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > component BoatRow > store_action inspectBoat > method Boats.inspectBoat",
+        "kind": "method",
+        "ref": "Boats.inspectBoat",
+        "via": "effect",
+        "file": "src/actions/boats.ts",
+        "line": 16,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > component BoatRow > store_action inspectBoat > method Boats.inspectBoat > route POST boats/v1/*/inspect",
+        "kind": "route",
+        "ref": "POST boats/v1/*/inspect",
+        "via": "literal",
+        "file": "src/Controllers/BoatsController.cs",
+        "line": 27,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > component BoatRow > store_action loadBoats",
+        "kind": "store_action",
+        "ref": "loadBoats",
+        "via": "props",
+        "file": "src/actions/boats.ts",
+        "line": 4,
+        "entry": {
+          "id": "BoatRow:event:onClick:loadBoats:@src/boats/BoatRow.tsx:19:9",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "loadBoats",
+          "guards": [],
+          "file": "src/boats/BoatRow.tsx",
+          "line": 19,
+          "column": 9
+        },
+        "keys": [
+          "entry",
+          "event",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > component BoatRow > store_action loadBoats > method Boats.loadBoats",
+        "kind": "method",
+        "ref": "Boats.loadBoats",
+        "via": "effect",
+        "file": "src/actions/boats.ts",
+        "line": 4,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > component BoatRow > store_action loadBoats > method Boats.loadBoats > route GET boats/v1/all",
+        "kind": "route",
+        "ref": "GET boats/v1/all",
+        "via": "literal",
+        "file": "src/Controllers/BoatsController.cs",
+        "line": 9,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > store_action pickBoat",
+        "kind": "store_action",
+        "ref": "pickBoat",
+        "via": "props",
+        "file": "src/actions/boats.ts",
+        "line": 8,
+        "entry": {
+          "id": "BoatList:event:onClick:pickBoat:@src/boats/BoatList.tsx:15:31",
+          "component": "BoatList",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "pickBoat",
+          "guards": [],
+          "file": "src/boats/BoatList.tsx",
+          "line": 15,
+          "column": 31
+        },
+        "keys": [
+          "entry",
+          "event",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > store_action pickBoat > method Boats.pickBoat",
+        "kind": "method",
+        "ref": "Boats.pickBoat",
+        "via": "effect",
+        "file": "src/actions/boats.ts",
+        "line": 8,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > store_action pickBoat > method Boats.pickBoat > route POST boats/v1/*/pick",
+        "kind": "route",
+        "ref": "POST boats/v1/*/pick",
+        "via": "literal",
+        "file": "src/Controllers/BoatsController.cs",
+        "line": 15,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > store_action removeBoat",
+        "kind": "store_action",
+        "ref": "removeBoat",
+        "via": "props",
+        "file": "src/actions/boats.ts",
+        "line": 12,
+        "entry": {
+          "id": "BoatList:event:onClick:removeBoat:@src/boats/BoatList.tsx:20:11",
+          "component": "BoatList",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "removeBoat",
+          "guards": [],
+          "file": "src/boats/BoatList.tsx",
+          "line": 20,
+          "column": 11
+        },
+        "keys": [
+          "entry",
+          "event",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > store_action removeBoat > method Boats.removeBoat",
+        "kind": "method",
+        "ref": "Boats.removeBoat",
+        "via": "effect",
+        "file": "src/actions/boats.ts",
+        "line": 12,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page BoatList > store_action removeBoat > method Boats.removeBoat > route DELETE boats/v1/*",
+        "kind": "route",
+        "ref": "DELETE boats/v1/*",
+        "via": "literal",
+        "file": "src/Controllers/BoatsController.cs",
+        "line": 21,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "BoatRow": [
+      {
+        "path": "component BoatRow",
+        "kind": "component",
+        "ref": "BoatRow",
+        "via": "start",
+        "file": "src/boats/BoatRow.tsx",
+        "line": 11,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component BoatRow > store_action inspectBoat",
+        "kind": "store_action",
+        "ref": "inspectBoat",
+        "via": "props",
+        "file": "src/actions/boats.ts",
+        "line": 16,
+        "entry": {
+          "id": "BoatRow:event:onClick:inspectBoat:@src/boats/BoatRow.tsx:14:29",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "inspectBoat",
+          "guards": [],
+          "file": "src/boats/BoatRow.tsx",
+          "line": 14,
+          "column": 29
+        },
+        "keys": [
+          "entry",
+          "event",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component BoatRow > store_action inspectBoat > method Boats.inspectBoat",
+        "kind": "method",
+        "ref": "Boats.inspectBoat",
+        "via": "effect",
+        "file": "src/actions/boats.ts",
+        "line": 16,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component BoatRow > store_action inspectBoat > method Boats.inspectBoat > route POST boats/v1/*/inspect",
+        "kind": "route",
+        "ref": "POST boats/v1/*/inspect",
+        "via": "literal",
+        "file": "src/Controllers/BoatsController.cs",
+        "line": 27,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component BoatRow > store_action loadBoats",
+        "kind": "store_action",
+        "ref": "loadBoats",
+        "via": "props",
+        "file": "src/actions/boats.ts",
+        "line": 4,
+        "entry": {
+          "id": "BoatRow:event:onClick:loadBoats:@src/boats/BoatRow.tsx:19:9",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "loadBoats",
+          "guards": [],
+          "file": "src/boats/BoatRow.tsx",
+          "line": 19,
+          "column": 9
+        },
+        "keys": [
+          "entry",
+          "event",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component BoatRow > store_action loadBoats > method Boats.loadBoats",
+        "kind": "method",
+        "ref": "Boats.loadBoats",
+        "via": "effect",
+        "file": "src/actions/boats.ts",
+        "line": 4,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component BoatRow > store_action loadBoats > method Boats.loadBoats > route GET boats/v1/all",
+        "kind": "route",
+        "ref": "GET boats/v1/all",
+        "via": "literal",
+        "file": "src/Controllers/BoatsController.cs",
+        "line": 9,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "MarkBoard": [
+      {
+        "path": "component MarkBoard",
+        "kind": "component",
+        "ref": "MarkBoard",
+        "via": "start",
+        "file": "src/marks/MarkBoard.tsx",
+        "line": 5,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "DriftNotice": [
+      {
+        "path": "component DriftNotice",
+        "kind": "component",
+        "ref": "DriftNotice",
+        "via": "start",
+        "file": "src/marks/DriftNotice.tsx",
+        "line": 9,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "WindBox": [
+      {
+        "path": "page WindBox",
+        "kind": "page",
+        "ref": "WindBox",
+        "via": "start",
+        "file": "src/weather/WindBox.tsx",
+        "line": 5,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "GroupShell": [
+      {
+        "path": "page GroupShell",
+        "kind": "page",
+        "ref": "GroupShell",
+        "via": "start",
+        "file": "src/groups/GroupShell.tsx",
+        "line": 5,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page GroupShell > entry GroupShell.useEffect@8:3",
+        "kind": "entry",
+        "ref": "GroupShell.useEffect@8:3",
+        "via": "entry",
+        "file": "src/groups/GroupShell.tsx",
+        "line": 8,
+        "entry": {
+          "id": "GroupShell:effect:useEffect:@src/groups/GroupShell.tsx:8:3",
+          "component": "GroupShell",
+          "kind": "effect",
+          "trigger": "useEffect",
+          "handler": null,
+          "guards": [],
+          "file": "src/groups/GroupShell.tsx",
+          "line": 8,
+          "column": 3,
+          "deps": [
+            "dispatch"
+          ]
+        },
+        "keys": [
+          "class",
+          "endLine",
+          "entry",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page GroupShell > entry GroupShell.useEffect@8:3 > method Groups.loadGroup",
+        "kind": "method",
+        "ref": "Groups.loadGroup",
+        "via": "body",
+        "file": "src/actions/groups.ts",
+        "line": 3,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page GroupShell > entry GroupShell.useEffect@8:3 > method Groups.loadGroup > route GET groups/v1/*",
+        "kind": "route",
+        "ref": "GET groups/v1/*",
+        "via": "literal",
+        "file": "src/Controllers/GroupsController.cs",
+        "line": 9,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "RaceDayPage": [
+      {
+        "path": "page RaceDayPage",
+        "kind": "page",
+        "ref": "RaceDayPage",
+        "via": "start",
+        "file": "src/app/features/race/race-day.page.ts",
+        "line": 6,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RaceDayPage > component ProtestChipComponent",
+        "kind": "component",
+        "ref": "ProtestChipComponent",
+        "via": "template",
+        "file": "src/app/features/race/protest-chip.component.ts",
+        "line": 4,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RaceDayPage > component ProtestChipComponent > method ProtestChipComponent.onProtest",
+        "kind": "method",
+        "ref": "ProtestChipComponent.onProtest",
+        "via": "handler",
+        "file": "src/app/features/race/protest-chip.component.ts",
+        "line": 15,
+        "entry": null,
+        "keys": [
+          "class",
+          "event",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RaceDayPage > component ProtestChipComponent > method ProtestChipComponent.onProtest > service RaceService",
+        "kind": "service",
+        "ref": "RaceService",
+        "via": "di",
+        "file": "src/app/features/race/race.service.ts",
+        "line": 4,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RaceDayPage > component ProtestChipComponent > method ProtestChipComponent.onProtest > service RaceService > method RaceService.protest",
+        "kind": "method",
+        "ref": "RaceService.protest",
+        "via": "body",
+        "file": "src/app/features/race/race.service.ts",
+        "line": 28,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "page RaceDayPage > component ProtestChipComponent > method ProtestChipComponent.onProtest > service RaceService > method RaceService.protest > route POST race/v1/protest",
+        "kind": "route",
+        "ref": "POST race/v1/protest",
+        "via": "literal",
+        "file": "src/Controllers/RaceController.cs",
+        "line": 39,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ],
+    "ProtestChipComponent": [
+      {
+        "path": "component ProtestChipComponent",
+        "kind": "component",
+        "ref": "ProtestChipComponent",
+        "via": "start",
+        "file": "src/app/features/race/protest-chip.component.ts",
+        "line": 4,
+        "entry": null,
+        "keys": [
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component ProtestChipComponent > method ProtestChipComponent.onProtest",
+        "kind": "method",
+        "ref": "ProtestChipComponent.onProtest",
+        "via": "handler",
+        "file": "src/app/features/race/protest-chip.component.ts",
+        "line": 15,
+        "entry": null,
+        "keys": [
+          "class",
+          "event",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component ProtestChipComponent > method ProtestChipComponent.onProtest > service RaceService",
+        "kind": "service",
+        "ref": "RaceService",
+        "via": "di",
+        "file": "src/app/features/race/race.service.ts",
+        "line": 4,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component ProtestChipComponent > method ProtestChipComponent.onProtest > service RaceService > method RaceService.protest",
+        "kind": "method",
+        "ref": "RaceService.protest",
+        "via": "body",
+        "file": "src/app/features/race/race.service.ts",
+        "line": 28,
+        "entry": null,
+        "keys": [
+          "class",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "method",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      },
+      {
+        "path": "component ProtestChipComponent > method ProtestChipComponent.onProtest > service RaceService > method RaceService.protest > route POST race/v1/protest",
+        "kind": "route",
+        "ref": "POST race/v1/protest",
+        "via": "literal",
+        "file": "src/Controllers/RaceController.cs",
+        "line": 39,
+        "entry": null,
+        "keys": [
+          "caller",
+          "crossRepo",
+          "file",
+          "homeRepo",
+          "hops",
+          "kind",
+          "line",
+          "methodDepth",
+          "ref",
+          "repo",
+          "via"
+        ]
+      }
+    ]
+  },
+  "span": {
+    "RegattaPage": {
+      "header": {
+        "routesResolved": 2,
+        "armsResolved": 2,
+        "armsUnresolved": 3,
+        "entries": 3,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "RegattaHeader:mount:componentDidMount:@src/regatta/RegattaHeader.tsx:12:3",
+          "component": "RegattaHeader",
+          "kind": "mount",
+          "trigger": "componentDidMount",
+          "handler": null,
+          "guards": [],
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 12,
+          "column": 3
+        },
+        {
+          "id": "RegattaHeader:update:componentDidUpdate:@src/regatta/RegattaHeader.tsx:16:3",
+          "component": "RegattaHeader",
+          "kind": "update",
+          "trigger": "componentDidUpdate",
+          "handler": null,
+          "guards": [],
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 16,
+          "column": 3
+        },
+        {
+          "id": "RegattaPage:event:onClick:handleRefresh:@src/regatta/RegattaPage.tsx:20:31",
+          "component": "RegattaPage",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "handleRefresh",
+          "guards": [],
+          "file": "src/regatta/RegattaPage.tsx",
+          "line": 20,
+          "column": 31
+        }
+      ]
+    },
+    "RegattaHeader": {
+      "header": {
+        "routesResolved": 2,
+        "armsResolved": 2,
+        "armsUnresolved": 2,
+        "entries": 2,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "RegattaHeader:mount:componentDidMount:@src/regatta/RegattaHeader.tsx:12:3",
+          "component": "RegattaHeader",
+          "kind": "mount",
+          "trigger": "componentDidMount",
+          "handler": null,
+          "guards": [],
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 12,
+          "column": 3
+        },
+        {
+          "id": "RegattaHeader:update:componentDidUpdate:@src/regatta/RegattaHeader.tsx:16:3",
+          "component": "RegattaHeader",
+          "kind": "update",
+          "trigger": "componentDidUpdate",
+          "handler": null,
+          "guards": [],
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 16,
+          "column": 3
+        }
+      ]
+    },
+    "ResultsBoard": {
+      "header": {
+        "routesResolved": 1,
+        "armsResolved": 1,
+        "armsUnresolved": 0,
+        "entries": 2,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "ResultsBoard:effect:useEffect:@src/results/ResultsBoard.tsx:8:3",
+          "component": "ResultsBoard",
+          "kind": "effect",
+          "trigger": "useEffect",
+          "handler": null,
+          "guards": [],
+          "file": "src/results/ResultsBoard.tsx",
+          "line": 8,
+          "column": 3,
+          "deps": [
+            "dispatch"
+          ]
+        },
+        {
+          "id": "ResultsBoard:event:onClick:dispatch:@src/results/ResultsBoard.tsx:14:29",
+          "component": "ResultsBoard",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "dispatch",
+          "guards": [],
+          "file": "src/results/ResultsBoard.tsx",
+          "line": 14,
+          "column": 29
+        }
+      ]
+    },
+    "CrewRoster": {
+      "header": {
+        "routesResolved": 0,
+        "armsResolved": 0,
+        "armsUnresolved": 0,
+        "entries": 1,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "ActionButton:event:onClick:action:@src/layout/ActionButton.tsx:10:27",
+          "component": "ActionButton",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "action",
+          "guards": [],
+          "file": "src/layout/ActionButton.tsx",
+          "line": 10,
+          "column": 27
+        }
+      ]
+    },
+    "SignupPanel": {
+      "header": {
+        "routesResolved": 0,
+        "armsResolved": 0,
+        "armsUnresolved": 0,
+        "entries": 1,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "ActionButton:event:onClick:action:@src/layout/ActionButton.tsx:10:27",
+          "component": "ActionButton",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "action",
+          "guards": [],
+          "file": "src/layout/ActionButton.tsx",
+          "line": 10,
+          "column": 27
+        }
+      ]
+    },
+    "BoatList": {
+      "header": {
+        "routesResolved": 4,
+        "armsResolved": 4,
+        "armsUnresolved": 0,
+        "entries": 4,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "BoatList:event:onClick:pickBoat:@src/boats/BoatList.tsx:15:31",
+          "component": "BoatList",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "pickBoat",
+          "guards": [],
+          "file": "src/boats/BoatList.tsx",
+          "line": 15,
+          "column": 31
+        },
+        {
+          "id": "BoatList:event:onClick:removeBoat:@src/boats/BoatList.tsx:20:11",
+          "component": "BoatList",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "removeBoat",
+          "guards": [],
+          "file": "src/boats/BoatList.tsx",
+          "line": 20,
+          "column": 11
+        },
+        {
+          "id": "BoatRow:event:onClick:inspectBoat:@src/boats/BoatRow.tsx:14:29",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "inspectBoat",
+          "guards": [],
+          "file": "src/boats/BoatRow.tsx",
+          "line": 14,
+          "column": 29
+        },
+        {
+          "id": "BoatRow:event:onClick:loadBoats:@src/boats/BoatRow.tsx:19:9",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "loadBoats",
+          "guards": [],
+          "file": "src/boats/BoatRow.tsx",
+          "line": 19,
+          "column": 9
+        }
+      ]
+    },
+    "BoatRow": {
+      "header": {
+        "routesResolved": 2,
+        "armsResolved": 2,
+        "armsUnresolved": 0,
+        "entries": 2,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "BoatRow:event:onClick:inspectBoat:@src/boats/BoatRow.tsx:14:29",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "inspectBoat",
+          "guards": [],
+          "file": "src/boats/BoatRow.tsx",
+          "line": 14,
+          "column": 29
+        },
+        {
+          "id": "BoatRow:event:onClick:loadBoats:@src/boats/BoatRow.tsx:19:9",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "loadBoats",
+          "guards": [],
+          "file": "src/boats/BoatRow.tsx",
+          "line": 19,
+          "column": 9
+        }
+      ]
+    },
+    "MarkBoard": {
+      "header": {
+        "routesResolved": 0,
+        "armsResolved": 0,
+        "armsUnresolved": 0,
+        "entries": 2,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "MarkBoard:event:onClick:dispatch:@src/marks/MarkBoard.tsx:14:9",
+          "component": "MarkBoard",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "dispatch",
+          "guards": [],
+          "file": "src/marks/MarkBoard.tsx",
+          "line": 14,
+          "column": 9
+        },
+        {
+          "id": "MarkBoard:event:onClick:dispatch:@src/marks/MarkBoard.tsx:9:29",
+          "component": "MarkBoard",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "dispatch",
+          "guards": [],
+          "file": "src/marks/MarkBoard.tsx",
+          "line": 9,
+          "column": 29
+        }
+      ]
+    },
+    "DriftNotice": {
+      "header": {
+        "routesResolved": 0,
+        "armsResolved": 0,
+        "armsUnresolved": 0,
+        "entries": 0,
+        "armsWithoutEntry": 0
+      },
+      "entries": []
+    },
+    "WindBox": {
+      "header": {
+        "routesResolved": 0,
+        "armsResolved": 0,
+        "armsUnresolved": 0,
+        "entries": 1,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "WindBox:event:onClick:dispatch:@src/weather/WindBox.tsx:10:29",
+          "component": "WindBox",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "dispatch",
+          "guards": [],
+          "file": "src/weather/WindBox.tsx",
+          "line": 10,
+          "column": 29
+        }
+      ]
+    },
+    "GroupShell": {
+      "header": {
+        "routesResolved": 1,
+        "armsResolved": 1,
+        "armsUnresolved": 0,
+        "entries": 1,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "GroupShell:effect:useEffect:@src/groups/GroupShell.tsx:8:3",
+          "component": "GroupShell",
+          "kind": "effect",
+          "trigger": "useEffect",
+          "handler": null,
+          "guards": [],
+          "file": "src/groups/GroupShell.tsx",
+          "line": 8,
+          "column": 3,
+          "deps": [
+            "dispatch"
+          ]
+        }
+      ]
+    },
+    "RaceDayPage": {
+      "header": {
+        "routesResolved": 6,
+        "armsResolved": 6,
+        "armsUnresolved": 0,
+        "entries": 6,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "ProtestChipComponent:event:click:onProtest:@src/app/features/race/protest-chip.component.html:1",
+          "component": "ProtestChipComponent",
+          "kind": "event",
+          "trigger": "click",
+          "handler": "onProtest",
+          "guards": [],
+          "file": "src/app/features/race/protest-chip.component.html",
+          "line": 1
+        },
+        {
+          "id": "ProtestChipComponent:mount:ngOnInit:@src/app/features/race/protest-chip.component.ts:11",
+          "component": "ProtestChipComponent",
+          "kind": "mount",
+          "trigger": "ngOnInit",
+          "handler": null,
+          "guards": [],
+          "file": "src/app/features/race/protest-chip.component.ts",
+          "line": 11
+        },
+        {
+          "id": "RaceDayPage:event:click:onCheckIn:@src/app/features/race/race-day.page.html:2",
+          "component": "RaceDayPage",
+          "kind": "event",
+          "trigger": "click",
+          "handler": "onCheckIn",
+          "guards": [],
+          "file": "src/app/features/race/race-day.page.html",
+          "line": 2
+        },
+        {
+          "id": "RaceDayPage:mount:ionViewDidEnter:@src/app/features/race/race-day.page.ts:21",
+          "component": "RaceDayPage",
+          "kind": "mount",
+          "trigger": "ionViewDidEnter",
+          "handler": null,
+          "guards": [],
+          "file": "src/app/features/race/race-day.page.ts",
+          "line": 21
+        },
+        {
+          "id": "RaceDayPage:mount:ionViewWillEnter:@src/app/features/race/race-day.page.ts:17",
+          "component": "RaceDayPage",
+          "kind": "mount",
+          "trigger": "ionViewWillEnter",
+          "handler": null,
+          "guards": [],
+          "file": "src/app/features/race/race-day.page.ts",
+          "line": 17
+        },
+        {
+          "id": "RaceDayPage:mount:ngOnInit:@src/app/features/race/race-day.page.ts:13",
+          "component": "RaceDayPage",
+          "kind": "mount",
+          "trigger": "ngOnInit",
+          "handler": null,
+          "guards": [],
+          "file": "src/app/features/race/race-day.page.ts",
+          "line": 13
+        }
+      ]
+    },
+    "ProtestChipComponent": {
+      "header": {
+        "routesResolved": 2,
+        "armsResolved": 2,
+        "armsUnresolved": 0,
+        "entries": 2,
+        "armsWithoutEntry": 0
+      },
+      "entries": [
+        {
+          "id": "ProtestChipComponent:event:click:onProtest:@src/app/features/race/protest-chip.component.html:1",
+          "component": "ProtestChipComponent",
+          "kind": "event",
+          "trigger": "click",
+          "handler": "onProtest",
+          "guards": [],
+          "file": "src/app/features/race/protest-chip.component.html",
+          "line": 1
+        },
+        {
+          "id": "ProtestChipComponent:mount:ngOnInit:@src/app/features/race/protest-chip.component.ts:11",
+          "component": "ProtestChipComponent",
+          "kind": "mount",
+          "trigger": "ngOnInit",
+          "handler": null,
+          "guards": [],
+          "file": "src/app/features/race/protest-chip.component.ts",
+          "line": 11
+        }
+      ]
+    }
+  },
+  "chains": {
+    "GET regattas/v1/{id}": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 8
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/regattas.ts:42 Regattas.refreshAll",
+          "call method_call src/actions/regattas.ts:44 Regattas.refreshAll -> refreshDesk",
+          "call method_call src/actions/regattas.ts:32 Regattas.refreshDesk -> loadRegatta",
+          "request gateway_call src/actions/regattas.ts:8 GET /regattas/v1/${regattaId}"
+        ]
+      },
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 8
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/regattas.ts:42 Regattas.refreshAll",
+          "call method_call src/actions/regattas.ts:44 Regattas.refreshAll -> refreshDesk",
+          "dispatch action_dispatch src/actions/regattas.ts:32 Regattas.refreshDesk -> loadRegatta",
+          "effect effect_handler src/actions/regattas.ts:6 Regattas.loadRegatta",
+          "request gateway_call src/actions/regattas.ts:8 GET /regattas/v1/${regattaId}"
+        ]
+      },
+      {
+        "entry": {
+          "id": "RegattaHeader:mount:componentDidMount:@src/regatta/RegattaHeader.tsx:12:3",
+          "component": "RegattaHeader",
+          "kind": "mount",
+          "trigger": "componentDidMount",
+          "handler": null,
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 12
+        },
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 8
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:17 regattas/:regattaId",
+          "render renders src/regatta/RegattaPage.tsx:19 RegattaPage -> RegattaHeader",
+          "entry component_entry src/regatta/RegattaHeader.tsx:12 RegattaHeader.componentDidMount@12:3",
+          "dispatch action_dispatch src/regatta/RegattaHeader.tsx:13 RegattaHeader.componentDidMount -> loadRegatta",
+          "bind props_bind src/regatta/RegattaHeader.tsx:25 RegattaHeader.props.loadRegatta -> loadRegatta",
+          "effect effect_handler src/actions/regattas.ts:6 Regattas.loadRegatta",
+          "request gateway_call src/actions/regattas.ts:8 GET /regattas/v1/${regattaId}"
+        ]
+      }
+    ],
+    "GET regattas/v1/{id}/entries": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 14
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/regattas.ts:42 Regattas.refreshAll",
+          "call method_call src/actions/regattas.ts:44 Regattas.refreshAll -> refreshDesk",
+          "call method_call src/actions/regattas.ts:33 Regattas.refreshDesk -> loadEntries",
+          "request gateway_call src/actions/regattas.ts:14 GET /regattas/v1/${regattaId}/entries"
+        ]
+      },
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 14
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/regattas.ts:42 Regattas.refreshAll",
+          "call method_call src/actions/regattas.ts:44 Regattas.refreshAll -> refreshDesk",
+          "dispatch action_dispatch src/actions/regattas.ts:33 Regattas.refreshDesk -> loadEntries",
+          "effect effect_handler src/actions/regattas.ts:12 Regattas.loadEntries",
+          "request gateway_call src/actions/regattas.ts:14 GET /regattas/v1/${regattaId}/entries"
+        ]
+      },
+      {
+        "entry": {
+          "id": "RegattaHeader:update:componentDidUpdate:@src/regatta/RegattaHeader.tsx:16:3",
+          "component": "RegattaHeader",
+          "kind": "update",
+          "trigger": "componentDidUpdate",
+          "handler": null,
+          "file": "src/regatta/RegattaHeader.tsx",
+          "line": 16
+        },
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 14
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:17 regattas/:regattaId",
+          "render renders src/regatta/RegattaPage.tsx:19 RegattaPage -> RegattaHeader",
+          "entry component_entry src/regatta/RegattaHeader.tsx:16 RegattaHeader.componentDidUpdate@16:3",
+          "dispatch action_dispatch src/regatta/RegattaHeader.tsx:17 RegattaHeader.componentDidUpdate -> loadEntries",
+          "bind props_bind src/regatta/RegattaHeader.tsx:25 RegattaHeader.props.loadEntries -> loadEntries",
+          "effect effect_handler src/actions/regattas.ts:12 Regattas.loadEntries",
+          "request gateway_call src/actions/regattas.ts:14 GET /regattas/v1/${regattaId}/entries"
+        ]
+      }
+    ],
+    "GET regattas/v1/results": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 23
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/regattas.ts:38 Regattas.Regattas",
+          "call method_call src/actions/regattas.ts:38 Regattas.Regattas -> loadResults",
+          "request gateway_call src/actions/regattas.ts:23 GET /regattas/v1/results"
+        ]
+      },
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 23
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/regattas.ts:38 Regattas.Regattas",
+          "dispatch action_dispatch src/actions/regattas.ts:38 Regattas.Regattas -> loadResults",
+          "effect effect_handler src/actions/regattas.ts:22 Regattas.loadResults",
+          "request gateway_call src/actions/regattas.ts:23 GET /regattas/v1/results"
+        ]
+      },
+      {
+        "entry": {
+          "id": "ResultsBoard:effect:useEffect:@src/results/ResultsBoard.tsx:8:3",
+          "component": "ResultsBoard",
+          "kind": "effect",
+          "trigger": "useEffect",
+          "handler": null,
+          "file": "src/results/ResultsBoard.tsx",
+          "line": 8
+        },
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 23
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:18 results",
+          "entry component_entry src/results/ResultsBoard.tsx:8 ResultsBoard.useEffect@8:3",
+          "call method_call src/results/ResultsBoard.tsx:9 ResultsBoard.ResultsBoard.useEffect@8:3 -> loadResults",
+          "request gateway_call src/actions/regattas.ts:23 GET /regattas/v1/results"
+        ]
+      },
+      {
+        "entry": {
+          "id": "ResultsBoard:effect:useEffect:@src/results/ResultsBoard.tsx:8:3",
+          "component": "ResultsBoard",
+          "kind": "effect",
+          "trigger": "useEffect",
+          "handler": null,
+          "file": "src/results/ResultsBoard.tsx",
+          "line": 8
+        },
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 23
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:18 results",
+          "entry component_entry src/results/ResultsBoard.tsx:8 ResultsBoard.useEffect@8:3",
+          "dispatch action_dispatch src/results/ResultsBoard.tsx:9 ResultsBoard.ResultsBoard.useEffect@8:3 -> loadResults",
+          "effect effect_handler src/actions/regattas.ts:22 Regattas.loadResults",
+          "request gateway_call src/actions/regattas.ts:23 GET /regattas/v1/results"
+        ]
+      }
+    ],
+    "GET regattas/v1/{id}/standings": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 27
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/regattas.ts:39 Regattas.Regattas",
+          "call method_call src/actions/regattas.ts:39 Regattas.Regattas -> loadStandings",
+          "request gateway_call src/actions/regattas.ts:27 GET /regattas/v1/${regattaId}/standings"
+        ]
+      },
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/regattas.ts",
+          "line": 27
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/regattas.ts:39 Regattas.Regattas",
+          "dispatch action_dispatch src/actions/regattas.ts:39 Regattas.Regattas -> loadStandings",
+          "effect effect_handler src/actions/regattas.ts:26 Regattas.loadStandings",
+          "request gateway_call src/actions/regattas.ts:27 GET /regattas/v1/${regattaId}/standings"
+        ]
+      }
+    ],
+    "GET crews/v1/{id}": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/crews.ts",
+          "line": 5
+        },
+        "gaps": [
+          "no-entry"
+        ],
+        "hops": [
+          "page page_route src/app.tsx:19 crews/:crewId",
+          "render renders src/app.tsx:19 App -> CrewRoster",
+          "gap no-entry src/crews/CrewRoster.tsx:12 CrewRoster.CrewRoster",
+          "dispatch action_dispatch src/crews/CrewRoster.tsx:13 CrewRoster.CrewRoster -> loadCrew",
+          "bind props_bind src/crews/CrewRoster.tsx:22 CrewRoster.props.loadCrew -> loadCrew",
+          "effect effect_handler src/actions/crews.ts:4 Crews.loadCrew",
+          "request gateway_call src/actions/crews.ts:5 GET /crews/v1/${crewId}"
+        ]
+      }
+    ],
+    "POST crews/v1/{id}/signup": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/crews.ts",
+          "line": 9
+        },
+        "gaps": [
+          "no-entry"
+        ],
+        "hops": [
+          "page page_route src/app.tsx:19 crews/:crewId",
+          "render renders src/app.tsx:19 App -> CrewRoster",
+          "gap no-entry src/crews/CrewRoster.tsx:14 CrewRoster.onSignUp",
+          "dispatch action_dispatch src/crews/CrewRoster.tsx:14 CrewRoster.onSignUp -> signUpCrew",
+          "bind props_bind src/crews/CrewRoster.tsx:22 CrewRoster.props.signUpCrew -> signUpCrew",
+          "effect effect_handler src/actions/crews.ts:8 Crews.signUpCrew",
+          "request gateway_call src/actions/crews.ts:9 POST /crews/v1/${crewId}/signup"
+        ]
+      }
+    ],
+    "GET crews/v1/signups": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/crews.ts",
+          "line": 13
+        },
+        "gaps": [
+          "no-entry"
+        ],
+        "hops": [
+          "page page_route src/app.tsx:19 crews/:crewId",
+          "render renders src/app.tsx:19 App -> SignupPanel",
+          "gap no-entry src/crews/SignupPanel.tsx:13 SignupPanel.render",
+          "dispatch action_dispatch src/crews/SignupPanel.tsx:14 SignupPanel.render -> loadSignups",
+          "bind props_bind src/crews/SignupPanel.tsx:25 SignupPanel.props.loadSignups -> loadSignups",
+          "effect effect_handler src/actions/crews.ts:12 Crews.loadSignups",
+          "request gateway_call src/actions/crews.ts:13 GET /crews/v1/signups"
+        ]
+      }
+    ],
+    "POST crews/v1/{id}/release": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/crews.ts",
+          "line": 18
+        },
+        "gaps": [
+          "no-entry"
+        ],
+        "hops": [
+          "page page_route src/app.tsx:19 crews/:crewId",
+          "render renders src/app.tsx:19 App -> SignupPanel",
+          "gap no-entry src/crews/SignupPanel.tsx:13 SignupPanel.render",
+          "dispatch action_dispatch src/crews/SignupPanel.tsx:18 SignupPanel.render -> releaseCrew",
+          "bind props_bind src/crews/SignupPanel.tsx:25 SignupPanel.props.releaseCrew -> releaseCrew",
+          "effect effect_handler src/actions/crews.ts:16 Crews.releaseCrew",
+          "request gateway_call src/actions/crews.ts:18 POST /crews/v1/${crewId}/release"
+        ]
+      }
+    ],
+    "GET boats/v1/all": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/boats.ts",
+          "line": 5
+        },
+        "gaps": [
+          "no-entry"
+        ],
+        "hops": [
+          "page page_route src/app.tsx:20 boats",
+          "render renders src/boats/BoatList.tsx:26 BoatList -> BoatRow",
+          "gap no-entry src/boats/BoatRow.tsx:11 BoatRow.BoatRow",
+          "dispatch action_dispatch src/boats/BoatRow.tsx:20 BoatRow.BoatRow -> loadBoats",
+          "bind props_bind src/boats/BoatRow.tsx:29 BoatRow.props.loadBoats -> loadBoats",
+          "effect effect_handler src/actions/boats.ts:4 Boats.loadBoats",
+          "request gateway_call src/actions/boats.ts:5 GET /boats/v1/all"
+        ]
+      },
+      {
+        "entry": {
+          "id": "BoatRow:event:onClick:loadBoats:@src/boats/BoatRow.tsx:19:9",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "loadBoats",
+          "file": "src/boats/BoatRow.tsx",
+          "line": 19
+        },
+        "request": {
+          "file": "src/actions/boats.ts",
+          "line": 5
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:20 boats",
+          "render renders src/boats/BoatList.tsx:26 BoatList -> BoatRow",
+          "entry template_handler src/boats/BoatRow.tsx:19 BoatRow.onClick@19:9",
+          "bind props_bind src/boats/BoatRow.tsx:29 BoatRow.props.loadBoats -> loadBoats",
+          "effect effect_handler src/actions/boats.ts:4 Boats.loadBoats",
+          "request gateway_call src/actions/boats.ts:5 GET /boats/v1/all"
+        ]
+      }
+    ],
+    "POST boats/v1/{id}/pick": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/boats.ts",
+          "line": 9
+        },
+        "gaps": [
+          "no-entry"
+        ],
+        "hops": [
+          "page page_route src/app.tsx:20 boats",
+          "gap no-entry src/boats/BoatList.tsx:12 BoatList.render",
+          "dispatch action_dispatch src/boats/BoatList.tsx:15 BoatList.render -> pickBoat",
+          "bind props_bind src/boats/BoatList.tsx:32 BoatList.props.pickBoat -> pickBoat",
+          "effect effect_handler src/actions/boats.ts:8 Boats.pickBoat",
+          "request gateway_call src/actions/boats.ts:9 POST /boats/v1/${boatId}/pick"
+        ]
+      },
+      {
+        "entry": {
+          "id": "BoatList:event:onClick:pickBoat:@src/boats/BoatList.tsx:15:31",
+          "component": "BoatList",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "pickBoat",
+          "file": "src/boats/BoatList.tsx",
+          "line": 15
+        },
+        "request": {
+          "file": "src/actions/boats.ts",
+          "line": 9
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:20 boats",
+          "entry template_handler src/boats/BoatList.tsx:15 BoatList.onClick@15:31",
+          "bind props_bind src/boats/BoatList.tsx:32 BoatList.props.pickBoat -> pickBoat",
+          "effect effect_handler src/actions/boats.ts:8 Boats.pickBoat",
+          "request gateway_call src/actions/boats.ts:9 POST /boats/v1/${boatId}/pick"
+        ]
+      }
+    ],
+    "DELETE boats/v1/{id}": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/boats.ts",
+          "line": 13
+        },
+        "gaps": [
+          "no-entry"
+        ],
+        "hops": [
+          "page page_route src/app.tsx:20 boats",
+          "gap no-entry src/boats/BoatList.tsx:12 BoatList.render",
+          "dispatch action_dispatch src/boats/BoatList.tsx:21 BoatList.render -> removeBoat",
+          "bind props_bind src/boats/BoatList.tsx:32 BoatList.props.removeBoat -> removeBoat",
+          "effect effect_handler src/actions/boats.ts:12 Boats.removeBoat",
+          "request gateway_call src/actions/boats.ts:13 DELETE /boats/v1/${boatId}"
+        ]
+      },
+      {
+        "entry": {
+          "id": "BoatList:event:onClick:removeBoat:@src/boats/BoatList.tsx:20:11",
+          "component": "BoatList",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "removeBoat",
+          "file": "src/boats/BoatList.tsx",
+          "line": 20
+        },
+        "request": {
+          "file": "src/actions/boats.ts",
+          "line": 13
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:20 boats",
+          "entry template_handler src/boats/BoatList.tsx:20 BoatList.onClick@20:11",
+          "bind props_bind src/boats/BoatList.tsx:32 BoatList.props.removeBoat -> removeBoat",
+          "effect effect_handler src/actions/boats.ts:12 Boats.removeBoat",
+          "request gateway_call src/actions/boats.ts:13 DELETE /boats/v1/${boatId}"
+        ]
+      }
+    ],
+    "POST boats/v1/{id}/inspect": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/boats.ts",
+          "line": 17
+        },
+        "gaps": [
+          "no-entry"
+        ],
+        "hops": [
+          "page page_route src/app.tsx:20 boats",
+          "render renders src/boats/BoatList.tsx:26 BoatList -> BoatRow",
+          "gap no-entry src/boats/BoatRow.tsx:11 BoatRow.BoatRow",
+          "dispatch action_dispatch src/boats/BoatRow.tsx:14 BoatRow.BoatRow -> inspectBoat",
+          "bind props_bind src/boats/BoatRow.tsx:29 BoatRow.props.inspectBoat -> inspectBoat",
+          "effect effect_handler src/actions/boats.ts:16 Boats.inspectBoat",
+          "request gateway_call src/actions/boats.ts:17 POST /boats/v1/${boatId}/inspect"
+        ]
+      },
+      {
+        "entry": {
+          "id": "BoatRow:event:onClick:inspectBoat:@src/boats/BoatRow.tsx:14:29",
+          "component": "BoatRow",
+          "kind": "event",
+          "trigger": "onClick",
+          "handler": "inspectBoat",
+          "file": "src/boats/BoatRow.tsx",
+          "line": 14
+        },
+        "request": {
+          "file": "src/actions/boats.ts",
+          "line": 17
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:20 boats",
+          "render renders src/boats/BoatList.tsx:26 BoatList -> BoatRow",
+          "entry template_handler src/boats/BoatRow.tsx:14 BoatRow.onClick@14:29",
+          "bind props_bind src/boats/BoatRow.tsx:29 BoatRow.props.inspectBoat -> inspectBoat",
+          "effect effect_handler src/actions/boats.ts:16 Boats.inspectBoat",
+          "request gateway_call src/actions/boats.ts:17 POST /boats/v1/${boatId}/inspect"
+        ]
+      }
+    ],
+    "POST marks/v1/{id}/round": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/marks.ts",
+          "line": 5
+        },
+        "gaps": [
+          "page-ambiguous",
+          "no-entry"
+        ],
+        "hops": [
+          "gap page-ambiguous src/app.tsx:21 App -> MarkBoard",
+          "gap no-entry src/marks/MarkBoard.tsx:5 MarkBoard.MarkBoard",
+          "call method_call src/marks/MarkBoard.tsx:9 MarkBoard.MarkBoard -> roundMark",
+          "request gateway_call src/actions/marks.ts:5 POST /marks/v1/${markId}/round"
+        ]
+      },
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/marks.ts",
+          "line": 5
+        },
+        "gaps": [
+          "page-ambiguous",
+          "no-entry"
+        ],
+        "hops": [
+          "gap page-ambiguous src/app.tsx:21 App -> MarkBoard",
+          "gap no-entry src/marks/MarkBoard.tsx:5 MarkBoard.MarkBoard",
+          "dispatch action_dispatch src/marks/MarkBoard.tsx:9 MarkBoard.MarkBoard -> roundMark",
+          "effect effect_handler src/actions/marks.ts:4 Marks.roundMark",
+          "request gateway_call src/actions/marks.ts:5 POST /marks/v1/${markId}/round"
+        ]
+      }
+    ],
+    "POST marks/v1/{id}/skip": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/marks.ts",
+          "line": 9
+        },
+        "gaps": [
+          "page-ambiguous",
+          "no-entry"
+        ],
+        "hops": [
+          "gap page-ambiguous src/app.tsx:21 App -> MarkBoard",
+          "gap no-entry src/marks/MarkBoard.tsx:5 MarkBoard.MarkBoard",
+          "call method_call src/marks/MarkBoard.tsx:16 MarkBoard.MarkBoard -> skipMark",
+          "request gateway_call src/actions/marks.ts:9 POST /marks/v1/${markId}/skip"
+        ]
+      },
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/marks.ts",
+          "line": 9
+        },
+        "gaps": [
+          "page-ambiguous",
+          "no-entry"
+        ],
+        "hops": [
+          "gap page-ambiguous src/app.tsx:21 App -> MarkBoard",
+          "gap no-entry src/marks/MarkBoard.tsx:5 MarkBoard.MarkBoard",
+          "dispatch action_dispatch src/marks/MarkBoard.tsx:15 MarkBoard.MarkBoard -> skipMark",
+          "effect effect_handler src/actions/marks.ts:8 Marks.skipMark",
+          "request gateway_call src/actions/marks.ts:9 POST /marks/v1/${markId}/skip"
+        ]
+      }
+    ],
+    "GET marks/v1/{id}": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/marks.ts",
+          "line": 13
+        },
+        "gaps": [
+          "no-page",
+          "no-entry"
+        ],
+        "hops": [
+          "gap no-page src/marks/DriftNotice.tsx:9 DriftNotice",
+          "gap no-entry src/marks/DriftNotice.tsx:9 DriftNotice.DriftNotice",
+          "dispatch action_dispatch src/marks/DriftNotice.tsx:10 DriftNotice.DriftNotice -> loadMark",
+          "bind props_bind src/marks/DriftNotice.tsx:14 DriftNotice.props.loadMark -> loadMark",
+          "effect effect_handler src/actions/marks.ts:12 Marks.loadMark",
+          "request gateway_call src/actions/marks.ts:13 GET /marks/v1/${markId}"
+        ]
+      }
+    ],
+    "GET weather/v1/wind": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/weather.ts",
+          "line": 7
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/weather.ts:7 GET /weather/v1/wind",
+          "request gateway_call src/actions/weather.ts:7 GET /weather/v1/wind"
+        ]
+      }
+    ],
+    "GET weather/v1/tide": [
+      {
+        "entry": null,
+        "request": {
+          "file": "src/actions/weather.ts",
+          "line": 10
+        },
+        "gaps": [
+          "no-caller"
+        ],
+        "hops": [
+          "gap no-caller src/actions/weather.ts:10 GET /weather/v1/tide",
+          "request gateway_call src/actions/weather.ts:10 GET /weather/v1/tide"
+        ]
+      }
+    ],
+    "GET groups/v1/{id}": [
+      {
+        "entry": {
+          "id": "GroupShell:effect:useEffect:@src/groups/GroupShell.tsx:8:3",
+          "component": "GroupShell",
+          "kind": "effect",
+          "trigger": "useEffect",
+          "handler": null,
+          "file": "src/groups/GroupShell.tsx",
+          "line": 8
+        },
+        "request": {
+          "file": "src/actions/groups.ts",
+          "line": 4
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:23 groups/:groupId/*",
+          "entry component_entry src/groups/GroupShell.tsx:8 GroupShell.useEffect@8:3",
+          "call method_call src/groups/GroupShell.tsx:9 GroupShell.GroupShell.useEffect@8:3 -> loadGroup",
+          "request gateway_call src/actions/groups.ts:4 GET /groups/v1/${groupId}"
+        ]
+      },
+      {
+        "entry": {
+          "id": "GroupShell:effect:useEffect:@src/groups/GroupShell.tsx:8:3",
+          "component": "GroupShell",
+          "kind": "effect",
+          "trigger": "useEffect",
+          "handler": null,
+          "file": "src/groups/GroupShell.tsx",
+          "line": 8
+        },
+        "request": {
+          "file": "src/actions/groups.ts",
+          "line": 4
+        },
+        "gaps": [],
+        "hops": [
+          "page page_route src/app.tsx:23 groups/:groupId/*",
+          "entry component_entry src/groups/GroupShell.tsx:8 GroupShell.useEffect@8:3",
+          "dispatch action_dispatch src/groups/GroupShell.tsx:9 GroupShell.GroupShell.useEffect@8:3 -> loadGroup",
+          "effect effect_handler src/actions/groups.ts:3 Groups.loadGroup",
+          "request gateway_call src/actions/groups.ts:4 GET /groups/v1/${groupId}"
+        ]
+      }
+    ]
+  }
+}
