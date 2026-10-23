@@ -26,6 +26,11 @@
       "id": "stock",
       "kind": "backend",
       "root": "stock"
+    },
+    {
+      "id": "mobile",
+      "kind": "mobile",
+      "root": "mobile"
     }
   ]
 }
