@@ -82,6 +82,15 @@ npm test
   gates corpus adds authorization and action filters, registered globally or set as
   attributes. `pipeline-rejects.test.js` runs both through the CLI, one `Pipeline rejects
   AC-n:` test for each acceptance rule.
+- `corpus/lantern-depot/`: an invented storage depot, with an ASP.NET Core backend and a
+  Playwright API suite whose tests reach their requests through helper functions, helper
+  classes and clients. Its `base-facts.json` holds the `pw_test`, `pw_request`, `pw_assert`
+  and `pw_stub` facts of the other Playwright corpora and of the worked example, as the
+  extractor wrote them before it followed helper calls. `capture.mjs` writes that file.
+  `helper-requests.test.js` runs the corpus through the CLI, one `Helper request evidence
+  AC-n:` test for each acceptance rule. One case imports `requestIndex` of `lib/skeleton.js`,
+  because that reader has no command of its own to run. The corpus README lists its spec
+  groups.
 - `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
   output of each corpus with backend routes, written by `node selftest/seed-goldens.js
   --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure
