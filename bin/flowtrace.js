@@ -1048,40 +1048,30 @@ function readBaseline(target) {
  * the repository HEAD, so a baseline is never authored from a snapshot that could not be
  * trusted for a compare.
  */
+/** The scout wrapper for this invocation, with the configured concurrency limit. */
+function createScoutFor(config, extras = {}) {
+  const { createScout } = scoutModule;
+  return createScout({
+    bin: config.scout ? config.scout.bin : undefined,
+    concurrency: config.scout ? config.scout.concurrency : undefined,
+    outDir: config.out,
+    repos: config.repos,
+    ...extras,
+  });
+}
+
 async function runCheck(config, options) {
   const area = resolveAreaFile(options.area);
   const factSets = loadFactSets(config);
   const { check, renderCheck } = checkModule;
   const { readAreaKeys } = coverModule;
   const { trace } = traceModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
+  const scout = createScoutFor(config);
   const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
-  const traceOptions = {
-    aliases: config.aliases,
-    sinks: config.sinks,
-    repos: config.repos,
-    outbound: scout.outbound,
-  };
   const baselinePath = resolveBaselinePath(area, options.baseline);
 
   let report;
-  if (options.writeBaseline) {
-    report = check(factSets, {
-      area: area.name,
-      keys,
-      aliases: config.aliases,
-      traceOptions,
-      trace,
-      repos: config.repos,
-      writeBaseline: true,
-    });
-    if (report.exit === 0) writeJson(baselinePath, report.baseline);
-  } else {
+  if (!options.writeBaseline) {
     const { baseline, error } = readBaseline(baselinePath);
     if (error) {
       report = {
@@ -1093,16 +1083,38 @@ async function runCheck(config, options) {
         dropped: [],
       };
     } else {
-      report = check(factSets, {
+      report = await scout.passes((lookups) => check(factSets, {
         area: area.name,
         keys,
         aliases: config.aliases,
-        traceOptions,
+        traceOptions: {
+          aliases: config.aliases,
+          sinks: config.sinks,
+          repos: config.repos,
+          outbound: lookups.outbound,
+        },
         trace,
         repos: config.repos,
         baseline,
-      });
+      }));
     }
+  }
+  if (options.writeBaseline) {
+    report = await scout.passes((lookups) => check(factSets, {
+      area: area.name,
+      keys,
+      aliases: config.aliases,
+      traceOptions: {
+        aliases: config.aliases,
+        sinks: config.sinks,
+        repos: config.repos,
+        outbound: lookups.outbound,
+      },
+      trace,
+      repos: config.repos,
+      writeBaseline: true,
+    }));
+    if (report.exit === 0) writeJson(baselinePath, report.baseline);
   }
 
   if (options.json) {
@@ -1546,53 +1558,61 @@ async function runTrace(config, options) {
   warnStaleFacts(factSets, config.repos);
   const { trace, resolveStart } = traceModule;
   const { renderTree, colorEnabled, foldedGraph } = renderTreeModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
-  const shared = {
-    depth: options.depth,
-    maxNodes: options.maxNodes,
-    graph: options.graph,
-    repo: options.repo,
-    unscoped: options.unscoped,
-    aliases: config.aliases,
-    sinks: config.sinks,
-    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
-    repos: config.repos,
-    outbound: scout.outbound,
-  };
-
-  if (options.area) {
-    const keys = readFileSync(options.area, 'utf8')
+  const scout = createScoutFor(config);
+  const areaKeys = options.area
+    ? readFileSync(options.area, 'utf8')
       .split('\n')
       .map((line) => line.trim())
-      .filter((line) => line && !line.startsWith('#'));
-    const results = keys.map((key) => {
-      const walked = trace(factSets, key, { ...shared, seeds: true });
-      if (walked.candidates) return { key, error: 'ambiguous start', reason: 'ambiguous', candidates: walked.candidates };
-      if (walked.error) return { key, error: walked.error, reason: walked.reason, ...(walked.frontier ? { frontier: walked.frontier } : {}) };
-      markProviderHops(walked, factSets);
-      return { key, ...traceResult(walked, options, foldedGraph) };
+      .filter((line) => line && !line.startsWith('#'))
+    : null;
+  const resolved = areaKeys
+    ? null
+    : resolveStart(factSets, options.start, { repo: options.repo, repos: config.repos, strictComponentNames: true });
+  if (resolved && (resolved.candidates || resolved.error)) {
+    return reportLookupFailure(options, lookupFailure(options.start, resolved));
+  }
+  const inventory = !areaKeys && !options.expand && INVENTORY_KINDS.has(resolved.node.kind);
+
+  const outcome = await scout.passes((lookups) => {
+    const shared = {
+      depth: options.depth,
+      maxNodes: options.maxNodes,
+      graph: options.graph,
+      repo: options.repo,
+      unscoped: options.unscoped,
+      aliases: config.aliases,
+      sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+      repos: config.repos,
+      outbound: lookups.outbound,
+    };
+    if (areaKeys) {
+      return {
+        area: areaKeys.map((key) => {
+          const walked = trace(factSets, key, { ...shared, seeds: true });
+          if (walked.candidates) return { key, error: 'ambiguous start', reason: 'ambiguous', candidates: walked.candidates };
+          if (walked.error) return { key, error: walked.error, reason: walked.reason, ...(walked.frontier ? { frontier: walked.frontier } : {}) };
+          markProviderHops(walked, factSets);
+          return { key, ...traceResult(walked, options, foldedGraph) };
+        }),
+      };
+    }
+    const walked = trace(factSets, options.start, {
+      ...shared,
+      index: resolved.index,
+      startNode: resolved.node,
+      seeds: options.seeds,
+      inventory,
+      fromHandler: options.fromHandler,
     });
-    log(JSON.stringify(results, null, 2));
+    markProviderHops(walked, factSets);
+    return { result: walked };
+  });
+  if (outcome.area) {
+    log(JSON.stringify(outcome.area, null, 2));
     return 0;
   }
-
-  const resolved = resolveStart(factSets, options.start, { repo: options.repo, repos: config.repos, strictComponentNames: true });
-  if (resolved.candidates || resolved.error) return reportLookupFailure(options, lookupFailure(options.start, resolved));
-  const inventory = !options.expand && INVENTORY_KINDS.has(resolved.node.kind);
-  const result = trace(factSets, options.start, {
-    ...shared,
-    index: resolved.index,
-    startNode: resolved.node,
-    seeds: options.seeds,
-    inventory,
-    fromHandler: options.fromHandler,
-  });
-  markProviderHops(result, factSets);
+  const result = outcome.result;
   if (result.fromHandlerCandidates) {
     process.stderr.write(`flowtrace: "${options.fromHandler}" matches ${result.fromHandlerCandidates.length} handlers:\n`);
     for (const candidate of result.fromHandlerCandidates) process.stderr.write(`  ${candidate}\n`);
@@ -1771,12 +1791,7 @@ async function runSpan(config, options) {
   }
   const { span } = spanModule;
   const { renderSpanHtml } = renderSpanHtmlModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
+  const scout = createScoutFor(config);
   let verdicts;
   if (options.verdictFacts) {
     const { readVerdictFacts, verdictIndex } = skeletonModule;
@@ -1786,7 +1801,7 @@ async function runSpan(config, options) {
   }
   const specsText =
     options.specs === undefined ? '' : existsSync(options.specs) ? readFileSync(options.specs, 'utf8') : options.specs;
-  const model = span(factSets, options.start, {
+  const model = await scout.passes((lookups) => span(factSets, options.start, {
     aliases: config.aliases,
     specs: specsText,
     verdicts,
@@ -1798,9 +1813,9 @@ async function runSpan(config, options) {
       sinks: config.sinks,
       consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
-      outbound: scout.outbound,
+      outbound: lookups.outbound,
     },
-  });
+  }));
   if (model.error) {
     process.stderr.write(`flowtrace: "${options.start}" ${model.error}\n`);
     for (const candidate of model.candidates || []) process.stderr.write(`  ${candidate}\n`);
@@ -1847,15 +1862,10 @@ function writeSpanPage(config, options, model, page) {
 async function runComponentSpan(config, options, factSets) {
   const { componentSpan } = componentSpanModule;
   const { renderComponentSpanHtml } = renderComponentSpanHtmlModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
+  const scout = createScoutFor(config);
   const specsText =
     options.specs === undefined ? '' : existsSync(options.specs) ? readFileSync(options.specs, 'utf8') : options.specs;
-  const model = componentSpan(factSets, options.fromComponent, {
+  const model = await scout.passes((lookups) => componentSpan(factSets, options.fromComponent, {
     repo: options.repo,
     file: options.file,
     entry: options.entry,
@@ -1868,9 +1878,9 @@ async function runComponentSpan(config, options, factSets) {
       sinks: config.sinks,
       consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
-      outbound: scout.outbound,
+      outbound: lookups.outbound,
     },
-  });
+  }));
   if (model.error) {
     process.stderr.write(`flowtrace: "${options.fromComponent}" ${model.error}\n`);
     for (const candidate of model.candidates || []) process.stderr.write(`  ${candidate}\n`);
@@ -1910,13 +1920,8 @@ async function runSurface(config, options) {
   warnStaleFacts(factSets, config.repos);
   const { trace } = traceModule;
   const { assertionSurface, renderSurface, surfaceFacts } = assertionSurfaceModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
-  const result = trace(factSets, options.start, {
+  const scout = createScoutFor(config);
+  const result = await scout.passes((lookups) => trace(factSets, options.start, {
     depth: options.depth,
     maxNodes: options.maxNodes,
     repo: options.repo,
@@ -1924,8 +1929,8 @@ async function runSurface(config, options) {
     sinks: config.sinks,
     consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
-    outbound: scout.outbound,
-  });
+    outbound: lookups.outbound,
+  }));
   if (result.error) {
     process.stderr.write(`flowtrace: "${options.start}" ${result.error}\n`);
     for (const candidate of result.candidates || []) process.stderr.write(`  ${candidate}\n`);
@@ -1966,13 +1971,8 @@ async function runSkeleton(config, options) {
   const { assertionSurface } = assertionSurfaceModule;
   const { readScaffoldConventions } = scaffoldModule;
   const { readDrafts, readHelpers, readVerdictFacts, requestIndex, skeleton, verdictIndex } = skeletonModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
-  const result = trace(factSets, options.start, {
+  const scout = createScoutFor(config);
+  const result = await scout.passes((lookups) => trace(factSets, options.start, {
     depth: options.depth,
     maxNodes: options.maxNodes,
     repo: options.repo,
@@ -1980,8 +1980,8 @@ async function runSkeleton(config, options) {
     sinks: config.sinks,
     consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
-    outbound: scout.outbound,
-  });
+    outbound: lookups.outbound,
+  }));
   if (result.error) {
     process.stderr.write(`flowtrace: "${options.start}" ${result.error}\n`);
     for (const candidate of result.candidates || []) process.stderr.write(`  ${candidate}\n`);
@@ -2051,24 +2051,9 @@ async function runCover(config, options) {
   warnStaleFacts(factSets, config.repos);
   const { cover, readAreaKeys } = coverModule;
   const { renderCover, renderCoverMarkdown, colorEnabled } = renderCoverModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
+  const { buildPackets, mergeVerdicts, readVerdicts, writePacketFiles } = packetsModule;
+  const scout = createScoutFor(config);
   const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
-  const traceOptions = {
-    depth: options.depth,
-    maxNodes: options.maxNodes,
-    graph: options.graph,
-    repo: options.repo,
-    aliases: config.aliases,
-    sinks: config.sinks,
-    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
-    repos: config.repos,
-    outbound: scout.outbound,
-  };
   // The runtime tier is read before the walk so the join runs inside `cover`
   // itself and feeds the one evidence index every consumer already reads, rather than
   // producing a second report beside it.
@@ -2079,32 +2064,49 @@ async function runCover(config, options) {
     for (const warning of runtime.warnings) warn(`runtime: ${warning}`);
     if (runtime.snapshots.length === 0) throw new Error(`${display(resolve(options.runtime))}: no readable coverage snapshot`);
   }
-  const report = cover(factSets, { area: area.name, keys, aliases: config.aliases, traceOptions, runtime });
+  const verdictEntries = options.verdicts ? readVerdicts(resolve(options.verdicts)) : null;
+  const packetsDir = options.packets ? resolve(options.packets) : null;
+  const mobileRepo = config.repos.find((repo) => repo.kind === 'mobile');
 
-  if (options.verdicts) {
-    const { readVerdicts, mergeVerdicts } = packetsModule;
-    const entries = readVerdicts(resolve(options.verdicts));
-    const merge = mergeVerdicts(report, entries);
+  const outcome = await scout.passes((lookups) => {
+    const traceOptions = {
+      depth: options.depth,
+      maxNodes: options.maxNodes,
+      graph: options.graph,
+      repo: options.repo,
+      aliases: config.aliases,
+      sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+      repos: config.repos,
+      outbound: lookups.outbound,
+    };
+    const walked = cover(factSets, { area: area.name, keys, aliases: config.aliases, traceOptions, runtime });
+    const merge = verdictEntries ? mergeVerdicts(walked, verdictEntries) : null;
+    const packets = packetsDir
+      ? buildPackets(factSets, {
+        area: area.name,
+        keys,
+        aliases: config.aliases,
+        traceOptions,
+        mobileRoot: mobileRepo ? mobileRepo.root : undefined,
+        repos: config.repos,
+      })
+      : null;
+    return { report: walked, merge, packets };
+  });
+  const report = outcome.report;
+
+  if (outcome.merge) {
+    const merge = outcome.merge;
     for (const warning of merge.warnings) warn(`verdicts: ${warning}`);
     warn(
       `verdicts ${plural(merge.files, 'file')} read: ${plural(merge.upgrades, 'upgrade')} applied, ` +
         `${plural(merge.confirmed, 'confirmation')}, rejections ${JSON.stringify(merge.rejections)}`,
     );
   }
-  if (options.packets) {
-    const { writePackets } = packetsModule;
-    const mobileRepo = config.repos.find((repo) => repo.kind === 'mobile');
-    const outDir = resolve(options.packets);
-    const result = writePackets(factSets, {
-      area: area.name,
-      keys,
-      aliases: config.aliases,
-      traceOptions,
-      mobileRoot: mobileRepo ? mobileRepo.root : undefined,
-      repos: config.repos,
-      outDir,
-    });
-    log(`packets ${area.name}: ${plural(result.written, 'packet')} written, ${plural(result.skipped, 'route')} skipped (no candidates) -> ${display(outDir)}`);
+  if (outcome.packets) {
+    writePacketFiles(outcome.packets, packetsDir);
+    log(`packets ${area.name}: ${plural(outcome.packets.written, 'packet')} written, ${plural(outcome.packets.skipped, 'route')} skipped (no candidates) -> ${display(packetsDir)}`);
   }
 
   if (report.runtime) {
@@ -2151,28 +2153,22 @@ async function runScope(config, options) {
   const factSets = loadFactSets(config);
   const { scope, renderScope } = scopeModule;
   const { readAreaKeys } = coverModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
+  const scout = createScoutFor(config);
   const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
-  const traceOptions = {
-    aliases: config.aliases,
-    sinks: config.sinks,
-    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
-    repos: config.repos,
-    outbound: scout.outbound,
-  };
-  const report = scope(factSets, {
+  const report = await scout.passes((lookups) => scope(factSets, {
     area: area.name,
     keys,
     aliases: config.aliases,
-    traceOptions,
+    traceOptions: {
+      aliases: config.aliases,
+      sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+      repos: config.repos,
+      outbound: lookups.outbound,
+    },
     repos: config.repos,
     gatePatterns: config.scope.gatePatterns,
-  });
+  }));
   const exitCode = report.verdict === 'stale' ? 4 : 0;
   if (options.json) {
     log(JSON.stringify(report, null, 2));
@@ -2212,7 +2208,6 @@ async function runAffected(config, options) {
     renderAffected,
   } = affectedModule;
   const { readAreaKeys } = coverModule;
-  const { createScout } = scoutModule;
 
   const source = diffSourceRepo(config, options.repo);
   if (!source) throw new Error('no repository configured to read a diff from');
@@ -2227,23 +2222,7 @@ async function runAffected(config, options) {
     ? readAreaKeys(readFileSync(area.file, 'utf8'))
     : allRouteKeys(factSets);
 
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
-  // The filter is read against the backend checkout the diff came from: its
-  // projects are the scope, its `.scout` manifest says whether the index covers the test
-  // projects or the file scan has to carry them alone.
-  const dotnet = options.dotnetFilter
-    ? {
-        repo: source.id,
-        root: source.root,
-        refs: scout.inbound,
-        scopedDirs: scout.scopedDirs(source.root),
-        maxShare: options.maxShare,
-      }
-    : null;
+  const scout = createScoutFor(config);
   // The Nx workspace is the *web* repository's, never the backend's: the backend
   // has no project graph, and asking one that does not exist would answer a question about
   // the wrong repository. `--nx` with no web repository configured is a stated no-op.
@@ -2255,30 +2234,44 @@ async function runAffected(config, options) {
         ref: nxBaseRef({ diff: options.diff, staged: options.staged }),
       }
     : null;
-  const report = affected(factSets, {
-    area: area ? area.name : null,
-    universeSource: area ? 'area' : 'all-routes',
-    keys,
-    changed,
-    aliases: config.aliases,
-    repos: config.repos,
-    maxShare: options.maxShare,
-    hops: options.hops,
-    memberScoped: options.memberScoped,
-    impact: scout.impact,
-    dotnet,
-    nx,
-    // `--repo` names the suite to print, never the repository a route is resolved in:
-    // scoping the walk to a test repository would resolve no route at all.
-    traceOptions: {
-      depth: options.depth,
-      maxNodes: options.maxNodes,
+  const report = await scout.passes((lookups) => {
+    // The filter is read against the backend checkout the diff came from: its
+    // projects are the scope, its `.scout` manifest says whether the index covers the test
+    // projects or the file scan has to carry them alone.
+    const dotnet = options.dotnetFilter
+      ? {
+          repo: source.id,
+          root: source.root,
+          refs: lookups.inbound,
+          scopedDirs: lookups.scopedDirs(source.root),
+          maxShare: options.maxShare,
+        }
+      : null;
+    return affected(factSets, {
+      area: area ? area.name : null,
+      universeSource: area ? 'area' : 'all-routes',
+      keys,
+      changed,
       aliases: config.aliases,
-      sinks: config.sinks,
-      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
-      outbound: scout.outbound,
-    },
+      maxShare: options.maxShare,
+      hops: options.hops,
+      memberScoped: options.memberScoped,
+      impact: lookups.impact,
+      dotnet,
+      nx,
+      // `--repo` names the suite to print, never the repository a route is resolved in:
+      // scoping the walk to a test repository would resolve no route at all.
+      traceOptions: {
+        depth: options.depth,
+        maxNodes: options.maxNodes,
+        aliases: config.aliases,
+        sinks: config.sinks,
+        consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+        repos: config.repos,
+        outbound: lookups.outbound,
+      },
+    });
   });
 
   // A `head`-stale fact set already prints through the widened "fallbacks" rung below; a
@@ -2337,59 +2330,58 @@ async function runScaffold(config, options) {
   warnStaleFacts(factSets, config.repos);
   const { cover, readAreaKeys } = coverModule;
   const { buildPackets } = packetsModule;
-  const { scaffold, readScaffoldConventions } = scaffoldModule;
+  const { buildScaffold, readScaffoldConventions, writeScaffoldFiles } = scaffoldModule;
   const { trace } = traceModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
+  const scout = createScoutFor(config);
   const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
-  const traceOptions = {
-    depth: options.depth,
-    maxNodes: options.maxNodes,
-    graph: options.graph,
-    repo: options.repo,
-    aliases: config.aliases,
-    sinks: config.sinks,
-    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
-    repos: config.repos,
-    outbound: scout.outbound,
-  };
-  const walker = memoizedWalker(trace);
-  const report = cover(factSets, {
-    area: area.name,
-    keys,
-    aliases: config.aliases,
-    traceOptions,
-    trace: walker,
-  });
   const mobileRepo = config.repos.find((repo) => repo.kind === 'mobile');
-  const { packets } = buildPackets(factSets, {
-    area: area.name,
-    keys,
-    aliases: config.aliases,
-    traceOptions,
-    trace: walker,
-    mobileRoot: mobileRepo ? mobileRepo.root : undefined,
-    repos: config.repos,
-  });
   const outDir = resolve(options.out || joinPath(config.out, 'scaffold'));
-  const result = scaffold({
-    facts: factSets,
-    keys,
-    cover: report,
-    packets,
-    filter: { area: area.name, seedKeys: options.seedKeys, maxLevel: options.maxLevel },
-    conventions: readScaffoldConventions(config),
-    outDir,
-    dryRun: options.dryRun === true,
-    includeUnreachable: options.includeUnreachable === true,
-    repoRoots: config.repos.map((repo) => repo.root),
-    trace: walker,
-    traceOptions,
+  const conventions = readScaffoldConventions(config);
+  const result = await scout.passes((lookups) => {
+    const traceOptions = {
+      depth: options.depth,
+      maxNodes: options.maxNodes,
+      graph: options.graph,
+      repo: options.repo,
+      aliases: config.aliases,
+      sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+      repos: config.repos,
+      outbound: lookups.outbound,
+    };
+    const walker = memoizedWalker(trace);
+    const report = cover(factSets, {
+      area: area.name,
+      keys,
+      aliases: config.aliases,
+      traceOptions,
+      trace: walker,
+    });
+    const { packets } = buildPackets(factSets, {
+      area: area.name,
+      keys,
+      aliases: config.aliases,
+      traceOptions,
+      trace: walker,
+      mobileRoot: mobileRepo ? mobileRepo.root : undefined,
+      repos: config.repos,
+    });
+    return buildScaffold({
+      facts: factSets,
+      keys,
+      cover: report,
+      packets,
+      filter: { area: area.name, seedKeys: options.seedKeys, maxLevel: options.maxLevel },
+      conventions,
+      outDir,
+      dryRun: options.dryRun === true,
+      includeUnreachable: options.includeUnreachable === true,
+      repoRoots: config.repos.map((repo) => repo.root),
+      trace: walker,
+      traceOptions,
+    });
   });
+  writeScaffoldFiles(result);
 
   if (options.dryRun) {
     log(result.index);
@@ -2411,48 +2403,46 @@ async function runCases(config, options) {
   const factSets = loadFactSets(config);
   warnStaleFacts(factSets, config.repos);
   const { cover, readAreaKeys } = coverModule;
-  const { cases } = casesModule;
+  const { buildCases, writeCaseFiles } = casesModule;
   const { trace } = traceModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
+  const scout = createScoutFor(config);
   const keys = readAreaKeys(readFileSync(area.file, 'utf8'));
-  const traceOptions = {
-    depth: options.depth,
-    maxNodes: options.maxNodes,
-    graph: options.graph,
-    repo: options.repo,
-    aliases: config.aliases,
-    sinks: config.sinks,
-    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
-    repos: config.repos,
-    outbound: scout.outbound,
-  };
-  const walker = memoizedWalker(trace);
-  const report = cover(factSets, {
-    area: area.name,
-    keys,
-    aliases: config.aliases,
-    traceOptions,
-    trace: walker,
-  });
   const outDir = resolve(options.out || joinPath(config.out, 'cases'));
-  const result = cases({
-    facts: factSets,
-    keys,
-    cover: report,
-    filter: { area: area.name, seedKeys: options.seedKeys, maxLevel: options.maxLevel },
-    outDir,
-    dryRun: options.dryRun === true,
-    includeUnreachable: options.includeUnreachable === true,
-    gherkinDraft: options.gherkinDraft === true,
-    repoRoots: config.repos.map((repo) => repo.root),
-    trace: walker,
-    traceOptions,
+  const result = await scout.passes((lookups) => {
+    const traceOptions = {
+      depth: options.depth,
+      maxNodes: options.maxNodes,
+      graph: options.graph,
+      repo: options.repo,
+      aliases: config.aliases,
+      sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+      repos: config.repos,
+      outbound: lookups.outbound,
+    };
+    const walker = memoizedWalker(trace);
+    const report = cover(factSets, {
+      area: area.name,
+      keys,
+      aliases: config.aliases,
+      traceOptions,
+      trace: walker,
+    });
+    return buildCases({
+      facts: factSets,
+      keys,
+      cover: report,
+      filter: { area: area.name, seedKeys: options.seedKeys, maxLevel: options.maxLevel },
+      outDir,
+      dryRun: options.dryRun === true,
+      includeUnreachable: options.includeUnreachable === true,
+      gherkinDraft: options.gherkinDraft === true,
+      repoRoots: config.repos.map((repo) => repo.root),
+      trace: walker,
+      traceOptions,
+    });
   });
+  writeCaseFiles(result, outDir);
 
   if (options.dryRun) {
     log(result.index);
@@ -2480,12 +2470,7 @@ async function runReadiness(config, options) {
   const factSets = loadFactSets(config);
   warnStaleFacts(factSets, config.repos);
   const { readiness, readInventory, renderReadinessMarkdown } = readinessModule;
-  const { createScout } = scoutModule;
-  const scout = createScout({
-    bin: config.scout ? config.scout.bin : undefined,
-    outDir: config.out,
-    repos: config.repos,
-  });
+  const scout = createScoutFor(config);
   const inventoryPath = resolve(options.areas);
   if (!existsSync(inventoryPath)) {
     throw new Error(`no inventory file at ${display(inventoryPath)}`);
@@ -2496,17 +2481,20 @@ async function runReadiness(config, options) {
       `${display(inventoryPath)} named no "area,glob" row — one per line, e.g. "widgets,features/widgets/**"`,
     );
   }
-  const traceOptions = {
-    depth: options.depth,
-    maxNodes: options.maxNodes,
-    repo: options.repo,
+  const report = await scout.passes((lookups) => readiness(factSets, {
+    rows,
     aliases: config.aliases,
-    sinks: config.sinks,
-    consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
-    repos: config.repos,
-    outbound: scout.outbound,
-  };
-  const report = readiness(factSets, { rows, aliases: config.aliases, traceOptions });
+    traceOptions: {
+      depth: options.depth,
+      maxNodes: options.maxNodes,
+      repo: options.repo,
+      aliases: config.aliases,
+      sinks: config.sinks,
+      consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
+      repos: config.repos,
+      outbound: lookups.outbound,
+    },
+  }));
 
   if (options.md) {
     mkdirSync(dirname(resolve(options.md)), { recursive: true });
