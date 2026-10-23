@@ -30,6 +30,7 @@ export function entryOf(exit, stderr) {
  * where this occurrence was called from.
  */
 export function readWalk(document) {
+  if (document && document.view === 'source-flow' && document.sourceFlow) return readSourceFlowWalk(document);
   const nodes = Array.isArray(document?.nodes) ? document.nodes : [];
   const edges = Array.isArray(document?.edges) ? document.edges : [];
   const full = new Map();
@@ -67,6 +68,68 @@ export function readWalk(document) {
   }
   const byId = new Map(occurrences.map((occurrence) => [occurrence.id, occurrence]));
   return { occurrences, byId, children, full, stats: document?.stats ?? null };
+}
+
+/**
+ * A source-flow answer as occurrences: one per invocation, in the order the tree prints
+ * them. Its own site is where the call is written, so that is what a site match reads;
+ * `match/1` keeps its name because the question it answers — did the answer find this site —
+ * has not changed.
+ */
+function readSourceFlowWalk(document) {
+  const sourceFlow = document.sourceFlow;
+  const occurrences = [];
+  const children = new Map();
+  const full = new Map();
+  let order = 0;
+
+  const add = (step) => {
+    const declaration = step.declaration || {};
+    const ref = typeof declaration.ref === 'string' ? declaration.ref : null;
+    const parts = ref ? ref.split('.') : [];
+    const fields = {
+      id: step.id,
+      kind: declaration.kind || 'method',
+      ref,
+      repo: step.site ? step.site.repo : declaration.repo,
+      file: step.site ? step.site.file : declaration.file,
+      line: step.site ? step.site.line : declaration.line,
+      ...(parts.length > 1 ? { class: parts.slice(0, -1).join('.'), method: parts[parts.length - 1] } : {}),
+      ...(step.target && step.target.sink ? { sink: true } : {}),
+      ...(step.target && step.target.stop === 'unresolved-target' ? { unresolved: true } : {}),
+    };
+    const occurrence = { id: step.id, canonical: step.id, order, fields, edge: null };
+    order += 1;
+    occurrences.push(occurrence);
+    full.set(step.id, fields);
+    return step.id;
+  };
+
+  const visit = (steps, parentId) => {
+    for (const step of steps || []) {
+      if (step.kind === 'invocation') {
+        const id = add(step);
+        if (parentId !== null) {
+          if (!children.has(parentId)) children.set(parentId, []);
+          children.get(parentId).push(id);
+        }
+        if (step.target && step.target.body) visit(step.target.body.steps, id);
+        for (const continuation of step.continuations || []) visit(continuation.steps, id);
+        continue;
+      }
+      if (step.kind === 'branch') step.arms.forEach((arm) => visit(arm.steps, parentId));
+      else if (step.kind === 'try') {
+        visit(step.body, parentId);
+        step.catches.forEach((entry) => visit(entry.steps, parentId));
+        visit(step.finally, parentId);
+      } else if (Array.isArray(step.steps)) visit(step.steps, parentId);
+      else if (step.body) visit(step.body.steps, parentId);
+    }
+  };
+
+  if (sourceFlow.root && sourceFlow.root.body) visit(sourceFlow.root.body.steps, null);
+  const byId = new Map(occurrences.map((occurrence) => [occurrence.id, occurrence]));
+  return { occurrences, byId, children, full, stats: document?.stats ?? null, budgetHit: sourceFlow.walk ? sourceFlow.walk.budgetHit : null };
 }
 
 function namesOf(fields) {
@@ -246,7 +309,12 @@ export function projectRun(run, output, sitesById) {
     }
   }
   const walk = readWalk(document);
-  const budgetHit = document && document.stats && typeof document.stats.budgetHit === 'boolean' ? document.stats.budgetHit : null;
+  const budgetHit =
+    typeof walk.budgetHit === 'boolean'
+      ? walk.budgetHit
+      : document && document.stats && typeof document.stats.budgetHit === 'boolean'
+        ? document.stats.budgetHit
+        : null;
   const unresolvedMarkers = [...walk.full.values()].filter((node) => node.unresolved === true).length;
   const outside = document ? outsideOf(walk, run, sitesById) : [];
   return {

@@ -63,7 +63,8 @@ this source alone, before anything was observed. It holds:
   mount whose element is a wrapper — has `symbol: null` and can only be found by its file and line.
 - `unknowns`: statements whose target cannot be established from source, with the reason.
 - `runs`: one `flowtrace trace` start per question, the walk flags it uses (`--depth`,
-  `--max-nodes`, `--seeds`, `--expand`, and `--from-handler <event>:<method>` to narrow a walk to
+  `--max-nodes`, `--seeds`, `--expand`, `--view dependency|source-flow`, and
+  `--from-handler <event>:<method>` to narrow a walk to
   one handler), whether its assertions are the routes or the sinks it reports, and `reach` — every
   site of that kind the source says the start reaches. A start need not be a component or a
   route: `save-thunk-by-name` starts at the action creator `Watchers.saveWatchers`, which is what
