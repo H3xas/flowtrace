@@ -185,9 +185,13 @@ trace --area <file> [--require-complete]
 
   --from-handler <selector> restricts a mobile walk to the subtree rooted at one
   `template_handler` hop, matched by its display form ("(click) onLike()"), the
-  compact "click:onLike", or the bare method name "onLike". Several handlers matching
-  the selector, or none, is exit 2 — the first case lists what matched, the second
-  lists every handler the walk found. Seeds, folding, --graph, --mermaid and --html all
+  compact "click:onLike", or the bare method name "onLike". Each form takes an optional
+  "@<line>" or "@<line>:<column>" suffix ("onLike@14") that keeps only the binding written
+  at that template site; a mobile binding has no column. Any other suffix is a usage
+  error. Several handlers matching the selector, or none, is exit 2 — the first case
+  lists what matched, one line for each binding site, the second lists every handler the
+  walk found. One handler bound at two or more sites is one node for each site, and each
+  such node names its site. Seeds, folding, --graph, --mermaid and --html all
   run on the narrowed walk unchanged; the default walk is untouched without the flag.
 
   Folding: the first time a node (same repo, file, line, kind and ref) appears, it
@@ -333,19 +337,37 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   declares prints as a `component-unresolved` arm. Neither is entered. A tag imported
   from a module outside the repository (react, react-router-dom, ...) is no arm.
   --json prints the same entries, arms and reasons without the per-route sections.
+  That model, schemaVersion 1, is one contract for web and mobile: the same fields with
+  the same meanings on both. Its top-level fields are component, status, header, entries,
+  selectedEntry, orphans, routes (each with key, arms and status), unresolved and limits.
+  A reached arm, under routes, has key, via, breadcrumb, entry, file, line and route. An
+  unresolved arm has reason, attempted, caller, breadcrumb, entry, file and line, and it
+  can also have candidates, source, cause, continuedBy and outcome. Each breadcrumb hop
+  has kind, ref and via. entry is the id of the entry that reached the arm, or null for
+  an arm without entry. A breadcrumb runs in walk order from the start
+  component through its entry to the request or to the node that failed. Two requests
+  that one entry reaches are two arms with two breadcrumbs under one entry id. Web hop
+  kinds are page, component, entry, method, store_action and route. Mobile hop kinds are
+  page, component, service, class, entry, method, store_action and route.
   On a mobile (Ionic) start, each template event binding of kind call is an `event`
-  entry with the handler it calls, and each lifecycle hook the class itself declares is
-  an entry with the hook as its trigger: ngOnInit, ngAfterContentInit, ngAfterViewInit,
+  entry with the handler it calls, and each lifecycle hook the class declares is an
+  entry with the hook as its trigger: ngOnInit, ngAfterContentInit, ngAfterViewInit,
   ionViewWillEnter and ionViewDidEnter (mount), ngOnChanges, ngDoCheck,
   ngAfterContentChecked and ngAfterViewChecked (update), ngOnDestroy, ionViewWillLeave
-  and ionViewDidLeave (unmount). The chain follows this. calls, injected service calls
-  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call on one
-  line, also inside pipe or mergeMap. A request no entry reaches, such as one a method
-  only a decorator, a subscription or an inherited hook runs, prints once as an arm
+  and ionViewDidLeave (unmount). A listed hook the class inherits is an entry too, at the
+  hook in the first base class up the extends chain that declares it. A base imported from
+  a package gives no entry, and a relative base that resolves to no one declaration prints
+  as one mobile-declaration-unresolved arm at the extends site. The chain follows this.
+  calls, injected service calls, static calls on a class the file declares or imports
+  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call, also
+  one written over more than one line or with comments between its tokens, and also
+  inside pipe or mergeMap. A request no entry reaches, such as one a method
+  only a decorator or a subscription runs, prints once as an arm
   without entry, and a request an entry reaches is never counted again there. A method,
-  service or component node the depth or node budget cut is a walk-limit arm too. A
-  gateway call written over more than one line states no fact, so its handler shows as
-  an entry that reaches no route; assign and prop bindings are no entries. --out defaults to
+  service or component node the depth or node budget cut is a walk-limit arm too. The
+  text of a walk-limit arm names the kind of node that was cut: action, method, service,
+  component, page or entry. Its JSON reason stays walk-limit.
+  Assign and prop bindings are no entries. --out defaults to
   <out>/span/component-<slug>.html, the slug naming the component, the file that declares
   it and, under --entry, the selected entry's own site; a name longer than the
   120-character cap ends in a digest of the whole name rather than losing that site, and

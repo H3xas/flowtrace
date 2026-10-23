@@ -65,7 +65,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `message_class` | `name`, `fqn` | a message type is declared |
 | `di_binding` | `iface`, `impl` | an interface is registered to an implementation |
 | `ctor_field` | `class`, `field`, `paramType` | a class holds a constructor-injected field; with `method`, a parameter the framework injects into that one handler |
-| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form. A fact set carrying `controlEvidence` also gives every `method_call` a `column` and a `control` (see [Control evidence](#control-evidence)) |
+| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form; optional `static: true` marks a mobile call on a class name (`Helper.member(...)`), where `field` is that name as written and the call carries the same provenance fields. A fact set carrying `controlEvidence` also gives every `method_call` a `column` and a `control` (see [Control evidence](#control-evidence)) |
 | `method_span` | `class`, `method`, `endLine` | a method body's extent; optional `paramTypes` lists the signature's parameter types as written |
 | `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch` |
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
@@ -120,7 +120,7 @@ only where they apply:
 
 | type | fields | stated when |
 |---|---|---|
-| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; `exports` lists each name its module exports it under: on a web component `default` is included, and on a mobile component only named value exports are listed, with `[]` for a declaration the module does not export; a render's `source` binds only a component whose `exports` holds the imported name, and a component without `exports` binds no import |
+| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook`, `service` or `class` (a mobile class with no `@Component` or `@Injectable` decorator); optional `extends` is the base class name a mobile declaration writes, as written, and optional `extendsSource` and `extendsImported` are that name's import provenance, read as for `injects`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; `exports` lists each name its module exports it under: on a web component `default` is included, and on a mobile component only named value exports are listed, with `[]` for a declaration the module does not export; a render's `source` binds only a component whose `exports` holds the imported name, and a component without `exports` binds no import |
 | `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself (`default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>`); on a mobile fact, optional `componentFile` is the declaration file that owns the template, while `file` and `line` stay the template source site |
 | `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler; on a mobile fact, optional `componentFile` is the declaration file that owns the template |
 | `injects` | `from`, `to` | a class is given another as a dependency; on a mobile fact, optional `source` is the written module specifier, `imported` the named value export, and `unresolved: "mobile-declaration-unresolved"` an import form the reader cannot bind |
@@ -183,6 +183,15 @@ single declaration in the repository. A site the evidence cannot prove states th
 `mobile-declaration-unresolved` result, with the sorted candidate files when more than one
 declaration is possible. An older fact set that lacks these optional fields remains
 readable. It keeps the name-only limits, and a fresh extraction adds the provenance.
+
+A mobile class with no Angular decorator is a `component` fact with the role `class`. It
+gets the same member, call, injection, gateway and dispatch facts as a decorated class. It
+renders no template and owns no entries of its own. The `extends` of a declaration and a
+`static` call on a class name resolve by the same rules as an `injects` fact: `extends`
+with `extendsSource` and `extendsImported`, a `static` call with `field`, `source` and
+`imported`. A static call is stated only on a class the file declares or on a value or
+default import from a relative module. A namespace, type-only or package import and an
+unbound global state nothing.
 
 ### Control evidence
 
