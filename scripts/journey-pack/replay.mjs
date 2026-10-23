@@ -37,7 +37,7 @@ export const DRIFT = 1;
 export const USAGE = 2;
 
 // The header fields a materialised fact file carries, in the order the tool writes them.
-const HEADER_FIELDS = ['repo', 'kind', 'generatedFrom', 'headSha', 'dirty', 'fileCount', 'dirtyDigest', 'titles', 'provider'];
+const HEADER_FIELDS = ['repo', 'kind', 'generatedFrom', 'headSha', 'dirty', 'fileCount', 'dirtyDigest', 'titles', 'controlEvidence', 'provider'];
 
 function materialise(set) {
   const header = {};

@@ -49,6 +49,7 @@ import * as mobileExtractor from '../lib/extract/mobile.js';
 import * as playwrightExtractor from '../lib/extract/playwright.js';
 import * as pwTitlesModule from '../lib/extract/pw-titles.js';
 import * as webExtractor from '../lib/extract/web.js';
+import { CONTROL_EVIDENCE_VERSION } from '../lib/control-evidence.js';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
@@ -56,6 +57,8 @@ const COMMANDS = new Set([
   'affected', 'scaffold', 'cases', 'readiness', 'split', 'check', 'calibrate', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
+/** The repository kinds whose extractor writes control evidence on their call facts. */
+const CONTROL_EVIDENCE_KINDS = new Set(['backend', 'web']);
 const USAGE = [
   'usage: flowtrace <command> [options]',
   '',
@@ -1233,6 +1236,7 @@ async function runExtract(config, repoFilter) {
       target,
       factsHeader({
         repo: repo.id, kind: repo.kind, root: repo.root, generatedFrom: `flowtrace ${version()}`, facts, titles, provider,
+        controlEvidence: CONTROL_EVIDENCE_KINDS.has(repo.kind) ? CONTROL_EVIDENCE_VERSION : undefined,
       }),
     );
     log(`extract ${repo.id} (${repo.kind}): ${countNote}${titleNote} -> ${display(target)}`);
@@ -1267,6 +1271,7 @@ function loadFactSets(config) {
       generatedFrom: parsed.generatedFrom,
       provider: parsed.provider,
       titles: parsed.titles,
+      controlEvidence: parsed.controlEvidence,
     };
   });
 }
