@@ -1,0 +1,30 @@
+# Port readiness
+
+Join: 0/0 components matched to an area (100.0%)
+
+## Area: zones
+
+0 components · 0 distinct backend routes
+
+Zero backend reach (pure-UI, cheapest to cover): none
+Unreachable-only (JWT/body-gated, needs fixture data): none
+
+_No backend route reached by this area's components._
+
+## Area: readings
+
+0 components · 0 distinct backend routes
+
+Zero backend reach (pure-UI, cheapest to cover): none
+Unreachable-only (JWT/body-gated, needs fixture data): none
+
+_No backend route reached by this area's components._
+
+## Estate summary
+
+| Area | Components | Routes | Zero-reach | Unreachable-only | Reachable | Edge | Unreachable | Unknown | Coverage |
+|---|---|---|---|---|---|---|---|---|---|
+| zones | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | n/a |
+| readings | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | n/a |
+| **Estate** | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | n/a |
+

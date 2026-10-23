@@ -1,0 +1,9 @@
+{
+  "out": "out",
+  "aliases": [{ "from": "greenhouse/", "to": "glasshouse/" }],
+  "scout": { "bin": "scout/scout-stub.mjs" },
+  "repos": [
+    { "id": "backend", "kind": "backend", "root": "backend", "role": ["api"], "scout": true },
+    { "id": "web", "kind": "web", "root": "web" }
+  ]
+}

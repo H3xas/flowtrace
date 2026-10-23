@@ -1,0 +1,33 @@
+packets harbor.area: 0 packets written, 3 routes skipped (no candidates) -> packets
+area harbor.area   0/3 area routes with executing evidence · 0 skipped-only · 3 none · 3 seeds · 0 path · 0 disposition
+evidence is per route: an intercept proves the request reached the route, not which way through it, so every seed of a route carries that route's evidence. path and disposition need a reader.
+glyphs  ■ route observed · ◆ path (reader) · ◈ disposition (reader) · ◪ skipped-only · □ none
+
+page  /greenhouse/*  GreenhouseShell  (web)  0 handlers · 2 routes · pw 0/2
+page  /greenhouse/alerts/watchers  WatcherPreferencesPage  (web)  4 handlers · 2 routes · pw 0/2 · inferred mount
+page  /greenhouse/overview  ZoneOverviewPanel  (web)  2 handlers · 1 route · pw 0/1 · inferred mount
+page  /greenhouse/zones/:zoneId/*  ZoneRoutes  (web)  0 handlers · 2 routes · pw 0/2 · inferred mount
+a page is a screen, not a route: it never enters the route index below, and carries only the coverage of the routes it reaches.
+
+□  GET glasshouse/v1/zones/*/watchers  1 seed · no intercept evidence · cypress none (0) · playwright none (0)
+  □ U1  happy path                                      reads 1                                       none b0/s0        —
+
+□  GET glasshouse/v1/zones/*/readings  1 seed · no intercept evidence · cypress none (0) · playwright none (0)
+  □ U1  happy path                                      reads 1                                       none b0/s0        —
+
+□  POST glasshouse/v1/zones/*/harvest-plan  1 seed · no intercept evidence · cypress none (0) · playwright none (0)
+  □ U1  happy path                                      db HarvestPlanRepository.InsertPlan · reads 12  none b0/s3        —
+
+gaps  3 uncovered seeds in 3 groups, top 3
+key (level, branch, sink): level ascending, then branch weight descending, then sink weight descending, then route key — tiers, never a sum
+branch weight  error_return · validation 3 · toggle 2 · guard 1 · plain 0   ·   sink weight  db write 3 · publish 2 · push · http 1 · db read · nothing 0
+  □ (none, b0, s3)      POST glasshouse/v1/zones/*/harvest-plan#U1                  happy path                                  db HarvestPlanRepository.InsertPlan · reads 12
+  □ (none, b0, s0)      GET glasshouse/v1/zones/*/readings#U1                       happy path                                  reads 1
+  □ (none, b0, s0)      GET glasshouse/v1/zones/*/watchers#U1                       happy path                                  reads 1
+
+levels path and disposition: needs-reader on every route · 0 candidate tests attached
+intercepts skipped as evidence: 0 with no path · 0 matching no route
+
+parity  cypress-only 0 · playwright-only 0 · both 0 · neither 3 · 0 opaque stubs (never joined)
+
+markdown -> cover.md

@@ -1,0 +1,12 @@
+GET glasshouse/v1/zones/*/watchers  backend  src/Controllers/ZoneWatchersController.cs:22  [start]
+└─ ZoneWatchersController.GetWatchers  backend  src/Controllers/ZoneWatchersController.cs:22  [literal]
+   ├─ HarborBridge  backend  src/Controllers/ZoneWatchersController.cs:19  [ctor]
+   │  └─ HarborBridge.Forward  backend  src/Controllers/ZoneWatchersController.cs:19  [body]
+   │     └─ infrastructure (2 nodes, 2 graph hops) — use --expand-infra
+   └─ IWatcherService  backend  src/Controllers/ZoneWatchersController.cs:18  [ctor]
+      └─ WatcherService  backend  src/Services/WatcherService.cs:40  [di]
+         └─ WatcherService.ListWatchers  backend  src/Services/WatcherService.cs:50  [body]
+            └─ IWatcherRepository  backend  src/Services/WatcherService.cs:45  [ctor]
+               └─ ■ WatcherRepository  backend  src/DataAccess/WatcherRepository.cs:13  [db·read]
+
+1 sink · 0 branch points (0 primary) · 1 repo (backend) · via: body 2, ctor 3, di 2, graph 2, literal 1 · 1 graph hop unavailable

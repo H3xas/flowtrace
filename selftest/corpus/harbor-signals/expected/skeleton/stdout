@@ -1,0 +1,12 @@
+import { test } from './fixtures';
+
+// TODO(flowtrace): no helper named for GET glasshouse/v1/zones/*/watchers — no spec in the facts sends this request yet
+
+test.describe('GET glasshouse/v1/zones/*/watchers', () => {
+  test('no state reached · gap no-write', async () => {
+    test.info().annotations.push({ type: 'case-id', description: 'TODO' });
+    test.fixme(true, 'assertion surface gap no-write: the route walk reaches no store write, so there is no changed state to read back');
+    // write: src/Controllers/ZoneWatchersController.cs:22
+    // evidence: index-unavailable RelaySink (backend/src/Services/RelaySink.cs:1)
+  });
+});

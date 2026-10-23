@@ -1,0 +1,56 @@
+{
+  "outbound": {
+    "HarborBridge": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/SignalRelay.cs",
+        "line": 9,
+        "target": "backend/src/Services/SignalRelay.cs"
+      }
+    ],
+    "SignalRelay": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/RelaySink.cs",
+        "line": 4,
+        "target": "backend/src/Services/RelaySink.cs"
+      }
+    ]
+  },
+  "inbound": {
+    "HarborBridge": {
+      "ctor-di": {
+        "total": 1,
+        "dropped": 0,
+        "rows": [
+          {
+            "file": "backend/src/Services/SignalRelay.cs",
+            "line": 9
+          }
+        ]
+      }
+    },
+    "SignalRelay": {
+      "uses-type": {
+        "total": 1,
+        "dropped": 0,
+        "rows": [
+          {
+            "file": "backend/src/Services/RelaySink.cs",
+            "line": 4
+          }
+        ]
+      }
+    }
+  },
+  "impact": {
+    "backend/src/Services/ZoneReadingService.cs": {
+      "rows": [
+        {
+          "file": "depot/tests/readings.spec.ts",
+          "hop": 1
+        }
+      ]
+    }
+  }
+}

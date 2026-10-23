@@ -1,0 +1,2 @@
+zones,src/zones/**
+readings,src/**

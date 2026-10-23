@@ -1,0 +1,1 @@
+span GET glasshouse/v1/zones/{zoneId}/watchers: 1 outcome — 0 tested, 0 inherited-only, 1 untested (reconciles with cover: 1/1 seeds) -> span/page.html
