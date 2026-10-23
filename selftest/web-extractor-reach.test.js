@@ -245,12 +245,16 @@ test('Web extractor reach AC-18: the existing shapes keep their facts and join e
   const dir = buildRepo(t, EXISTING_SHAPES);
   extractAndJoin(dir);
   const flow = flowOf(dir);
+  const facts = factsOf(dir);
   const observed = {
-    facts: sortedLines(factsOf(dir)),
+    facts: sortedLines(facts.filter((item) => item.type !== 'caller_gate')),
     edges: sortedLines(flow.edges),
     unjoined: Object.fromEntries(Object.entries(flow.unjoined).map(([bucket, items]) => [bucket, sortedLines(items)])),
   };
   assert.deepEqual(observed, EXISTING_SHAPES_GOLDEN);
+  assert.deepEqual(sortedLines(ofType(facts, 'caller_gate')), [
+    '{"type":"caller_gate","call":"method_call","file":"src/pages/ItemsPage.tsx","line":14,"column":21,"class":"ItemsPage","method":"handleClick","ordinal":0,"gates":[{"line":14,"endLine":14,"kind":"if","repeat":1,"text":"if (this.props)","arm":"then","outcomes":{"true":"sends","false":"skips"}}]}',
+  ]);
   const spans = ofType(factsOf(dir), 'method_span').filter((span) => span.class === 'ItemsPage');
   assert.deepEqual(spans.map((span) => span.method).sort(), ['componentDidMount', 'handleClick', 'render']);
 });

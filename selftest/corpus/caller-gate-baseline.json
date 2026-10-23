@@ -1,0 +1,1162 @@
+{
+  "buoy-signals/harbor.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "7a995c77ef06884d550fe774f0e238910c413889"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "4346aee530f6572bdb6f3855ba0ab3c678c74493",
+      "branchPoints": []
+    },
+    "suite.json": {
+      "kind": "playwright",
+      "sha1": "6e3dc65277284406948a687c36cce06d6f62ebcd"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "3a5a852ab0f11255e4d80bdc25732e72a37b445b",
+      "branchPoints": [
+        [
+          "src/actions/primaryZone.ts",
+          12,
+          14,
+          "PrimaryZone.loadPrimaryZone",
+          "if",
+          "if (growers.length > 0)"
+        ],
+        [
+          "src/actions/watchers.ts",
+          18,
+          21,
+          "Watchers.saveWatchers",
+          "if",
+          "if (!response.stored)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ],
+        [
+          "src/zones/ZoneOverviewPanel.tsx",
+          16,
+          18,
+          "ZoneOverviewPanel.componentDidMount",
+          "if",
+          "if (this.props.zoneId)"
+        ],
+        [
+          "src/zones/ZonesLandingPanel.tsx",
+          14,
+          16,
+          "ZonesLandingPanel.componentDidMount",
+          "if",
+          "if (this.props.growerId)"
+        ]
+      ]
+    }
+  },
+  "buoy-signals/harbor.scout.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "7a995c77ef06884d550fe774f0e238910c413889"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "4346aee530f6572bdb6f3855ba0ab3c678c74493",
+      "branchPoints": []
+    },
+    "suite.json": {
+      "kind": "playwright",
+      "sha1": "6e3dc65277284406948a687c36cce06d6f62ebcd"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "3a5a852ab0f11255e4d80bdc25732e72a37b445b",
+      "branchPoints": [
+        [
+          "src/actions/primaryZone.ts",
+          12,
+          14,
+          "PrimaryZone.loadPrimaryZone",
+          "if",
+          "if (growers.length > 0)"
+        ],
+        [
+          "src/actions/watchers.ts",
+          18,
+          21,
+          "Watchers.saveWatchers",
+          "if",
+          "if (!response.stored)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ],
+        [
+          "src/zones/ZoneOverviewPanel.tsx",
+          16,
+          18,
+          "ZoneOverviewPanel.componentDidMount",
+          "if",
+          "if (this.props.zoneId)"
+        ],
+        [
+          "src/zones/ZonesLandingPanel.tsx",
+          14,
+          16,
+          "ZonesLandingPanel.componentDidMount",
+          "if",
+          "if (this.props.growerId)"
+        ]
+      ]
+    }
+  },
+  "demo-shop/flowtrace.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "d4320ac165528d0b1cae28e62e5c588c04163948"
+    },
+    "e2e.json": {
+      "kind": "playwright",
+      "sha1": "66b720675f6bf72c4e8bad0343fc1166d6b7f897"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "ef36c73d98a88c0bd87f28459d289280d97f29e7",
+      "branchPoints": []
+    },
+    "shopfront.json": {
+      "kind": "web",
+      "sha1": "fbaa138be70d08470a352902f269fd71e6b3d8da",
+      "branchPoints": []
+    },
+    "stock.json": {
+      "kind": "backend",
+      "sha1": "17934dbda111d7c018d438b7f4ba0b3c747cb3f7"
+    }
+  },
+  "ferry-tickets/ferry.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "24d37ba634637e99058f1762668190cb61e4057a"
+    },
+    "ops.json": {
+      "kind": "backend",
+      "sha1": "f8b6a7a84b4ccc7a4655db79d5456148150e44ec"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "2c7e29749686c91b1c46312c384e2e031e1e4763",
+      "branchPoints": []
+    }
+  },
+  "greenhouse-alerts/greenhouse.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "e59fe9742b4de055a1e2dd4962b9871fe1ec2ca5"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "3a5a852ab0f11255e4d80bdc25732e72a37b445b",
+      "branchPoints": [
+        [
+          "src/actions/primaryZone.ts",
+          12,
+          14,
+          "PrimaryZone.loadPrimaryZone",
+          "if",
+          "if (growers.length > 0)"
+        ],
+        [
+          "src/actions/watchers.ts",
+          18,
+          21,
+          "Watchers.saveWatchers",
+          "if",
+          "if (!response.stored)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ],
+        [
+          "src/zones/ZoneOverviewPanel.tsx",
+          16,
+          18,
+          "ZoneOverviewPanel.componentDidMount",
+          "if",
+          "if (this.props.zoneId)"
+        ],
+        [
+          "src/zones/ZonesLandingPanel.tsx",
+          14,
+          16,
+          "ZonesLandingPanel.componentDidMount",
+          "if",
+          "if (this.props.growerId)"
+        ]
+      ]
+    }
+  },
+  "kiln-yard/kiln.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "d57bb7d441679ddaefa5795c67148f5179b41a58"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "972d099c462f44d51777e07d3beceb2405c6435d",
+      "branchPoints": [
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          9,
+          11,
+          "DecisionForms.branches",
+          "if",
+          "if (entry.open)"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          11,
+          13,
+          "DecisionForms.branches",
+          "else",
+          "else if (mode === 'all')"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          11,
+          13,
+          "DecisionForms.branches",
+          "if",
+          "if (mode === 'all')"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          13,
+          15,
+          "DecisionForms.branches",
+          "else",
+          "else"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          19,
+          19,
+          "DecisionForms.single",
+          "if",
+          "if (entry.pinned)"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          20,
+          20,
+          "DecisionForms.single",
+          "else",
+          "else"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          24,
+          32,
+          "DecisionForms.clauses",
+          "switch",
+          "switch (kind)"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          25,
+          26,
+          "DecisionForms.clauses",
+          "case",
+          "case 'a':"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          27,
+          27,
+          "DecisionForms.clauses",
+          "case",
+          "case 'b':"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          28,
+          29,
+          "DecisionForms.clauses",
+          "case",
+          "case 'c':"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          30,
+          31,
+          "DecisionForms.clauses",
+          "case",
+          "default:"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          36,
+          36,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.ready ? 'ready' : 'waiting'"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          37,
+          37,
+          "DecisionForms.expressions",
+          "coalesce",
+          "entry.owner ?? 'nobody'"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          38,
+          38,
+          "DecisionForms.expressions",
+          "logical",
+          "entry.open && entry.total > 0"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          39,
+          39,
+          "DecisionForms.expressions",
+          "logical",
+          "(entry.open && entry.pinned) || entry.ready"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          40,
+          40,
+          "DecisionForms.expressions",
+          "logical",
+          "item.open || item.pinned"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          41,
+          41,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.total ?.5 : 1"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          42,
+          44,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.total > 9 ? 'high' : 'low'"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          49,
+          51,
+          "DecisionForms.conditions",
+          "if",
+          "if (entry.open && list.some((item) => item.ready && item.total > 0))"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          49,
+          49,
+          "DecisionForms.conditions",
+          "logical",
+          "item.ready && item.total > 0"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          58,
+          58,
+          "DecisionForms.conditions",
+          "ternary",
+          "entry.open && entry.pinned ? 2 : 3"
+        ],
+        [
+          "src/app/features/tally/tally.service.ts",
+          13,
+          15,
+          "TallyService.pick",
+          "if",
+          "if (entry.open)"
+        ]
+      ]
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "8457091092836c60c3d439fde4d8222b391a136d",
+      "branchPoints": [
+        [
+          "src/forms/DecisionForms.ts",
+          9,
+          11,
+          "DecisionForms.branches",
+          "if",
+          "if (entry.open)"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          11,
+          13,
+          "DecisionForms.branches",
+          "else",
+          "else if (mode === 'all')"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          11,
+          13,
+          "DecisionForms.branches",
+          "if",
+          "if (mode === 'all')"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          13,
+          15,
+          "DecisionForms.branches",
+          "else",
+          "else"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          19,
+          19,
+          "DecisionForms.single",
+          "if",
+          "if (entry.pinned)"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          20,
+          20,
+          "DecisionForms.single",
+          "else",
+          "else"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          24,
+          32,
+          "DecisionForms.clauses",
+          "switch",
+          "switch (kind)"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          25,
+          26,
+          "DecisionForms.clauses",
+          "case",
+          "case 'a':"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          27,
+          27,
+          "DecisionForms.clauses",
+          "case",
+          "case 'b':"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          28,
+          29,
+          "DecisionForms.clauses",
+          "case",
+          "case 'c':"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          30,
+          31,
+          "DecisionForms.clauses",
+          "case",
+          "default:"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          36,
+          36,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.ready ? 'ready' : 'waiting'"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          37,
+          37,
+          "DecisionForms.expressions",
+          "coalesce",
+          "entry.owner ?? 'nobody'"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          38,
+          38,
+          "DecisionForms.expressions",
+          "logical",
+          "entry.open && entry.total > 0"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          39,
+          39,
+          "DecisionForms.expressions",
+          "logical",
+          "(entry.open && entry.pinned) || entry.ready"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          40,
+          40,
+          "DecisionForms.expressions",
+          "logical",
+          "item.open || item.pinned"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          41,
+          41,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.total ?.5 : 1"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          42,
+          44,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.total > 9 ? 'high' : 'low'"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          49,
+          51,
+          "DecisionForms.conditions",
+          "if",
+          "if (entry.open && list.some((item) => item.ready && item.total > 0))"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          49,
+          49,
+          "DecisionForms.conditions",
+          "logical",
+          "item.ready && item.total > 0"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          58,
+          58,
+          "DecisionForms.conditions",
+          "ternary",
+          "entry.open && entry.pinned ? 2 : 3"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          84,
+          84,
+          "helpers.pick",
+          "ternary",
+          "x ? 1 : 2"
+        ],
+        [
+          "src/forms/FormsPanel.tsx",
+          5,
+          5,
+          "FormsPanel.close",
+          "if",
+          "if (open)"
+        ],
+        [
+          "src/forms/FormsPanel.tsx",
+          10,
+          10,
+          "FormsPanel.FormsPanel",
+          "logical",
+          "open && <span>open</span>"
+        ],
+        [
+          "src/forms/FormsPanel.tsx",
+          11,
+          11,
+          "FormsPanel.FormsPanel",
+          "ternary",
+          "rows.length > 0 ? <b>many</b> : <i>none?</i>"
+        ],
+        [
+          "src/forms/FormsPanel.tsx",
+          12,
+          12,
+          "FormsPanel.FormsPanel",
+          "ternary",
+          "open ? 'Close' : 'Open'"
+        ],
+        [
+          "src/kiln/KilnPanel.tsx",
+          7,
+          7,
+          "KilnPanel.refresh",
+          "if",
+          "if (kilnId)"
+        ],
+        [
+          "src/kiln/KilnPanel.tsx",
+          12,
+          12,
+          "KilnPanel.KilnPanel",
+          "ternary",
+          "firings.length > 0 ? <ul>{firings.length}</ul> : <p>No firings && none planned</p>"
+        ],
+        [
+          "src/ledger/LedgerService.ts",
+          9,
+          11,
+          "LedgerService.pick",
+          "if",
+          "if (entry.open)"
+        ]
+      ]
+    }
+  },
+  "kite-club/kite.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "4019b302f7f04f6c17b4a85ec7f390dad8b6af2c"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "65b65190be7d6fa4f9140998534a79f0ad40ea9c",
+      "branchPoints": []
+    },
+    "suite.json": {
+      "kind": "playwright",
+      "sha1": "6abd388c1eef73985161d4170c2f0f83646dea75"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "00b4e5dbbf099e03ee0ebb4c637a290d6a0e198c",
+      "branchPoints": [
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ]
+      ]
+    }
+  },
+  "lantern-console/lantern.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "7ab838f8e65a2f6e733e18ec32728b56c2b0b261"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "e4a98370fdebe7652b29d9671ccd84c8c662d619",
+      "branchPoints": []
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "9a24e107f0b449a764943bf94bbc5aaa14070541",
+      "branchPoints": [
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ]
+      ]
+    }
+  },
+  "nursery-mobile/nursery.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "c7472d874ccd95e0e8fa64d5a90accccff5f6425"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "77603a731b15e4c95aa3663d81dfc5d306d4513c",
+      "branchPoints": []
+    }
+  },
+  "orchard-mobile/orchard.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "3a05d1f631dfac5e2d427f19360d41411907c3d8"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "453933c6b4c0f97c4e9c534327a74c07e25f5062",
+      "branchPoints": []
+    }
+  },
+  "orchard-routes/orchard-mounted.config.json": {
+    "web.json": {
+      "kind": "web",
+      "sha1": "c202bfc9fe49a760387e0af691718b888e8e6146",
+      "branchPoints": [
+        [
+          "src/OrchardApp.tsx",
+          43,
+          47,
+          "OrchardApp.OrchardApp",
+          "ternary",
+          "features.pruningPlanner ? ( <Route path=\"pruning\" element={<PruningPlannerPage />} /> ) : ( <Route path=\"pruning\" elemen"
+        ],
+        [
+          "src/greenhouse/GreenhouseRoutes.tsx",
+          9,
+          11,
+          "GreenhouseRoutes.glasshouseRoute",
+          "if",
+          "if (features.greenhouse)"
+        ]
+      ]
+    }
+  },
+  "orchard-routes/orchard.config.json": {
+    "web.json": {
+      "kind": "web",
+      "sha1": "c202bfc9fe49a760387e0af691718b888e8e6146",
+      "branchPoints": [
+        [
+          "src/OrchardApp.tsx",
+          43,
+          47,
+          "OrchardApp.OrchardApp",
+          "ternary",
+          "features.pruningPlanner ? ( <Route path=\"pruning\" element={<PruningPlannerPage />} /> ) : ( <Route path=\"pruning\" elemen"
+        ],
+        [
+          "src/greenhouse/GreenhouseRoutes.tsx",
+          9,
+          11,
+          "GreenhouseRoutes.glasshouseRoute",
+          "if",
+          "if (features.greenhouse)"
+        ]
+      ]
+    }
+  },
+  "quarry-dispatch/quarry.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "790113b3e1974793740b9041948896ea5fa39233"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "8c6e263e526aeb5874ed455314adb4992e0a9172",
+      "branchPoints": [
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ]
+      ]
+    }
+  },
+  "regatta-desk/regatta-mounted.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "a4283be1e2c782c5c8a2e70a67a3732ace6e983b"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "cc0eb71baed1f5e84224ac20f6e6538b96af42d1",
+      "branchPoints": []
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "de6698625827a0a4966291e5ad4409ca50d51aac",
+      "branchPoints": [
+        [
+          "src/crews/SignupPanel.tsx",
+          16,
+          20,
+          "SignupPanel.render",
+          "if",
+          "if (this.props.crewId)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ]
+      ]
+    }
+  },
+  "regatta-desk/regatta.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "a4283be1e2c782c5c8a2e70a67a3732ace6e983b"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "cc0eb71baed1f5e84224ac20f6e6538b96af42d1",
+      "branchPoints": []
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "de6698625827a0a4966291e5ad4409ca50d51aac",
+      "branchPoints": [
+        [
+          "src/crews/SignupPanel.tsx",
+          16,
+          20,
+          "SignupPanel.render",
+          "if",
+          "if (this.props.crewId)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ]
+      ]
+    }
+  },
+  "tidepool-mobile/tidepool-mobile.config.json": {
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "6c7b0c61ddc08a63d69d57ffffe34ca20d993290",
+      "branchPoints": []
+    }
+  },
+  "tidepool-web/tidepool-web.config.json": {
+    "web.json": {
+      "kind": "web",
+      "sha1": "03caa2b7c3b20f89070048e57050d546e2f278de",
+      "branchPoints": [
+        [
+          "src/deck/Deck.tsx",
+          6,
+          6,
+          "Deck.Deck",
+          "if",
+          "if (loading)"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          7,
+          9,
+          "Deck.Deck",
+          "if",
+          "if (!ready || m)"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          12,
+          12,
+          "Deck.Deck",
+          "logical",
+          "flags.flagA && <Pier childFlag={flags.flagA} />"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          13,
+          13,
+          "Deck.Deck",
+          "logical",
+          "ready && (<Pier childFlag={ready} />)"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          14,
+          14,
+          "Deck.Deck",
+          "ternary",
+          "m ? <Pier childFlag={m} /> : <Empty />"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          15,
+          15,
+          "Deck.Deck",
+          "ternary",
+          "inner ? <Pier childFlag={inner} /> : null"
+        ],
+        [
+          "src/deck/Pier.tsx",
+          4,
+          4,
+          "Pier.Pier",
+          "if",
+          "if (!spare)"
+        ],
+        [
+          "src/deck/Pier.tsx",
+          5,
+          5,
+          "Pier.Pier",
+          "logical",
+          "childFlag && (<span>lit</span>)"
+        ],
+        [
+          "src/deck/Skiff.tsx",
+          4,
+          4,
+          "Skiff.Skiff",
+          "logical",
+          "sail && (<span>sail</span>)"
+        ],
+        [
+          "src/quay/Jetty.tsx",
+          6,
+          6,
+          "Jetty.Jetty",
+          "if",
+          "if (open)"
+        ],
+        [
+          "src/quay/Jetty.tsx",
+          7,
+          7,
+          "Jetty.Jetty",
+          "logical",
+          "props.visible && (<span>jetty</span>)"
+        ],
+        [
+          "src/quay/Mooring.tsx",
+          7,
+          7,
+          "Mooring.render",
+          "logical",
+          "this.props.showRope && <span>rope</span>"
+        ],
+        [
+          "src/quay/Mooring.tsx",
+          8,
+          8,
+          "Mooring.render",
+          "logical",
+          "this.state.coiled && <span>coiled</span>"
+        ],
+        [
+          "src/quay/Quay.tsx",
+          7,
+          7,
+          "Quay.Quay",
+          "logical",
+          "latch && <span>latch</span>"
+        ],
+        [
+          "src/quay/Quay.tsx",
+          8,
+          8,
+          "Quay.Quay",
+          "ternary",
+          "level ? <span>level</span> : null"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          12,
+          14,
+          "Shoal.Shoal",
+          "if",
+          "if (mode)"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          17,
+          17,
+          "Shoal.Shoal",
+          "logical",
+          "picked && <span>picked</span>"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          18,
+          18,
+          "Shoal.Shoal",
+          "logical",
+          "captured && <span>captured</span>"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          19,
+          19,
+          "Shoal.Shoal",
+          "logical",
+          "twin && <span>twin</span>"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          20,
+          20,
+          "Shoal.Shoal",
+          "logical",
+          "mode || <span>fallback</span>"
+        ]
+      ]
+    }
+  },
+  "tidewater-ferry/ferry.config.json": {
+    "backend-mirrored.json": {
+      "kind": "backend",
+      "sha1": "e44cabf82f8bad8449debfbb32e08d591e31807b"
+    },
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "cf20c8e6247738e2bdb04dae4541656110c1d0a0"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "041e4c71162225027546a85a91f0995492dce46f",
+      "branchPoints": [
+        [
+          "src/actions/boarding.ts",
+          15,
+          17,
+          "Boarding.loadBoarding",
+          "if",
+          "if (permit)"
+        ],
+        [
+          "src/actions/boarding.ts",
+          17,
+          19,
+          "Boarding.loadBoarding",
+          "else",
+          "else"
+        ],
+        [
+          "src/actions/boarding.ts",
+          52,
+          56,
+          "Boarding.loadNestedBoarding",
+          "if",
+          "if (permit)"
+        ],
+        [
+          "src/actions/boarding.ts",
+          60,
+          62,
+          "Boarding.loadGuardedAll",
+          "if",
+          "if (permit)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ]
+      ]
+    }
+  }
+}

@@ -136,6 +136,7 @@ only where they apply:
 | `page_route` (from a route array) | as above | the same fact for an entry of an array a `.map` renders as `<Route>`: `file`/`line`/`column` stay the rendering `.map`'s `<Route>` site, `endLine` is the line where that opening `<Route>` tag ends, the fact has no `elementLine`, and `entryFile`/`entryLine`/`entryColumn` name the array entry the values came from, with `arrayFile`/`arrayName` naming the iterated constant or the prop it arrived as. An entry's guard carries its own `file`, which is the entry's, not the render site's. `unsupported` adds `route-array-expression` (a computed or concatenated array, or an entry that is not an object literal), `route-array-unresolved` (no readable array behind the iterated name), `route-array-ambiguous` (more than one prop site supplies it), `filter-expression` (a `.filter` predicate that is not one property of the loop binding) and `filter-property` (an entry the filter names by a property it does not state) |
 | `page_mount` | `path`, `source` | where a routed tree is mounted: `source` `app-root` (a root render; `component` names what it renders) or `router` (a router element inside `component`), with `path` the router's literal `basename` or `/`; an unreadable basename has `path: ""` and `unsupported: "basename-expression"` and cannot anchor a page; or `inferred`, the prefix the library's own `navigate()` literals agree on, with `evidence` counting them |
 | `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a decision inside a `method_span` body; `kind` is `if`, `else`, `switch`, `case` (one for each `case` or `default` clause), `ternary`, `logical` (the outermost `&&` or `\|\|` chain) or `coalesce` (the outermost `??` chain); `class` and `method` name the innermost `method_span` that holds it |
+| `caller_gate` | `call`, `class`, `method`, `ordinal`, `gates` | a `method_call`, `gateway_call` or `action_dispatch` fact that a caller decision gates; `call` is the type of that fact, and `file`, `line`, `column` (`null` on mobile), `class` and `method` are its fields, with `class` the service of a `gateway_call`; `ordinal` counts the earlier call facts of the same site, in fact order; `gates` lists the gates of the call, outer first |
 
 A caller `branch_point` is read from the masked text of a method body. String, template
 literal, regex literal and JSX text content gives no fact, and loops, `try`/`catch`,
@@ -149,6 +150,35 @@ its expression.
 `trace` reads backend decisions only. The walk and every reader of its index skip the
 `branch_point` facts of a web or mobile fact set, so they change no walk, seed or `check`
 baseline. `cover --runtime` joins them to line coverage, and `decisions` lists them.
+
+`trace` reads caller decisions only as gates, through the `caller_gate` records. A record
+comes after the other facts of its file, and only for a call site that a decision gates. The
+extractor finds the site by the source offset of the call, never by its line. One entry of
+`gates` has these fields:
+
+- `line` and `endLine` of the decision, and its `kind` and `text`, as its `branch_point` states them.
+- `repeat`: 1 for the first decision of that kind on that line, 2 for the next, and so on.
+- `arm`: `then`, `else`, `case`, `consequent`, `alternate`, `right` or `exit`.
+- `outcomes`: each value of the decision mapped to `sends`, `skips` or `unknown`. The keys
+  are `true` and `false`, `match` and `other` for a `case`, and `nullish` and `set` for a
+  `??`. A known gate maps one value to `sends` and the other to `skips`. A gate with an
+  `unknown` value has no `skips` value.
+- `reason` when an outcome is `unknown`: `fall-through`, `mixed-operators`,
+  `exit-in-one-arm`, `loop-exit` or `exit-in-try`.
+
+The decision id of a gate is `<repo>:<file>:<line>:<kind>`, with `#<repeat>` added when
+`repeat` is more than 1. This is the id form of `decisions`. `trace` attaches a record to the
+one call fact of its set that has the same site fields and ordinal. A record whose site
+fields do not parse, or name no call fact, attaches to nothing. A gate entry does not parse
+when its `arm` does not fit its `kind` (`case` only for a `case`, `right` only for a chain) or
+its `outcomes` break the rules above. A record whose `gates` do not
+parse, and two records of one site, give that call one `unknown` gate with the reason
+`gate-record-unreadable`. The walk, the seeds and every other reader skip the records. A
+fact set from an older extraction has no records, so its walks show no gates until the next
+`extract`.
+An older flowtrace skips the records when it reads `out/facts`. Its `join --against` refuses a
+snapshot that holds them, with `unknown fact type "caller_gate"`. Write the snapshot again with
+that version before you compare with it.
 
 A `component_entry` names one way execution reaches a component, on the site it was
 written at. `kind` is `mount`, `update`, `unmount`, `effect`, `cleanup`, `event` or
