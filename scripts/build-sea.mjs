@@ -21,23 +21,28 @@
  *      dependency).
  *   4. On macOS, remove and reapply an ad-hoc code signature around the
  *      injection step, as required by Node's SEA docs.
+ *   5. Start the binary once with `--help`. A bundle that cannot load
+ *      crashes every command, so a binary that does not exit 0 here fails
+ *      the build before anything signs or uploads it.
  *
  * No npm dependency is required except `postject`, invoked through `npx`
- * at build time only.
+ * at build time only. Importing this file builds nothing: the steps run
+ * only when it is the process entry point.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   copyFileSync,
   chmodSync,
   existsSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { dirname, extname, join, relative, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -47,9 +52,152 @@ const BUNDLE_PATH = join(DIST_DIR, 'bundle.cjs');
 const SEA_CONFIG_PATH = join(ROOT, 'sea-config.json');
 const BLOB_PATH = join(DIST_DIR, 'sea-prep.blob');
 const SEA_FUSE = 'NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2';
+const START_TIMEOUT_MS = 60_000;
 
 function log(message) {
   console.log(`[build-sea] ${message}`);
+}
+
+/** A path as a message shows it: relative to the checkout when it lies inside it. */
+function shown(path) {
+  const rel = relative(ROOT, path);
+  return rel && !rel.startsWith('..') && !isAbsolute(rel) ? rel : path;
+}
+
+// A `/` after one of these words opens a regex literal, as it does after an operator or an
+// opening bracket. After a name, a number, a literal or a closing bracket it divides. That
+// is the one guess a scanner without a parser makes; a source that defeats it shows up as a
+// bundle whose export names differ from the module's own.
+const REGEX_AFTER_WORDS = new Set([
+  'await', 'case', 'delete', 'do', 'else', 'in', 'instanceof', 'new', 'of', 'return', 'throw',
+  'typeof', 'void', 'yield',
+]);
+const WORD_CHAR = /[\w$\u0080-￿]/;
+
+/**
+ * A copy of `src` in which comment text and the contents of strings, template literals and
+ * regex literals are spaces, with every offset and line break kept and the code inside
+ * `${…}` kept as code. Imports and exports are matched on this copy, so text that only
+ * spells one, such as a doc comment's example, is never rewritten. A comment or literal
+ * that does not close throws: a bundle built from a source the scanner misread would carry
+ * exports nothing declares.
+ */
+function maskSource(src, filePath) {
+  const out = src.split('');
+  const blank = (from, to) => {
+    for (let k = from; k < to && k < out.length; k += 1) if (out[k] !== '\n') out[k] = ' ';
+  };
+  const unclosed = (kind, at) =>
+    new Error(
+      `Unreadable source ${shown(filePath)}: ${kind} opened at line ${src.slice(0, at).split('\n').length} is not closed`,
+    );
+  const substitutions = []; // each open `${`: braces opened inside it, where it and its template start
+  let regexAllowed = true;
+
+  // Template text from `from` to the closing backtick or the next `${`; returns where code resumes.
+  const templateText = (from, open) => {
+    let j = from;
+    while (j < src.length) {
+      const ch = src[j];
+      if (ch === '\\') {
+        blank(j, j + 2);
+        j += 2;
+      } else if (ch === '`') {
+        regexAllowed = false;
+        return j + 1;
+      } else if (ch === '$' && src[j + 1] === '{') {
+        substitutions.push({ braces: 0, template: open, at: j });
+        regexAllowed = true;
+        return j + 2;
+      } else {
+        blank(j, j + 1);
+        j += 1;
+      }
+    }
+    throw unclosed('template literal', open);
+  };
+
+  let i = 0;
+  while (i < src.length) {
+    const ch = src[i];
+    if (ch === '/' && src[i + 1] === '/') {
+      const end = src.indexOf('\n', i);
+      const stop = end === -1 ? src.length : end;
+      blank(i, stop);
+      i = stop;
+    } else if (ch === '/' && src[i + 1] === '*') {
+      const end = src.indexOf('*/', i + 2);
+      if (end === -1) throw unclosed('block comment', i);
+      blank(i, end + 2);
+      i = end + 2;
+    } else if (ch === "'" || ch === '"') {
+      let j = i + 1;
+      while (src[j] !== ch) {
+        if (j >= src.length || src[j] === '\n') throw unclosed('string', i);
+        j += src[j] === '\\' ? 2 : 1;
+      }
+      blank(i + 1, j);
+      regexAllowed = false;
+      i = j + 1;
+    } else if (ch === '`') {
+      i = templateText(i + 1, i);
+    } else if (ch === '/' && regexAllowed) {
+      let j = i + 1;
+      let inClass = false;
+      while (inClass || src[j] !== '/') {
+        if (j >= src.length || src[j] === '\n') throw unclosed('regex literal', i);
+        if (src[j] === '\\') {
+          if (src[j + 1] === '\n') throw unclosed('regex literal', i);
+          j += 2;
+          continue;
+        }
+        if (src[j] === '[') inClass = true;
+        else if (src[j] === ']') inClass = false;
+        j += 1;
+      }
+      blank(i + 1, j);
+      i = j + 1;
+      while (i < src.length && WORD_CHAR.test(src[i])) i += 1; // flags
+      regexAllowed = false;
+    } else if (ch === '}' && substitutions.length > 0 && substitutions.at(-1).braces === 0) {
+      i = templateText(i + 1, substitutions.pop().template);
+    } else if (WORD_CHAR.test(ch)) {
+      let j = i + 1;
+      while (j < src.length && WORD_CHAR.test(src[j])) j += 1;
+      regexAllowed = REGEX_AFTER_WORDS.has(src.slice(i, j));
+      i = j;
+    } else if (/\s/.test(ch)) {
+      i += 1;
+    } else {
+      if (substitutions.length > 0) {
+        if (ch === '{') substitutions.at(-1).braces += 1;
+        else if (ch === '}') substitutions.at(-1).braces -= 1;
+      }
+      regexAllowed = ch !== ')' && ch !== ']' && ch !== '}';
+      i += 1;
+    }
+  }
+  if (substitutions.length > 0) throw unclosed('${…} expression', substitutions.at(-1).at);
+  return out.join('');
+}
+
+/**
+ * `src` with each match of `pattern` (flags `d` and `g`) in its code replaced by what
+ * `replace(match, text)` returns. The pattern runs over the masked copy, so a match never
+ * starts inside a comment or a literal. `match` holds the masked groups, in which a comment
+ * is spaces; `text(k)` is group k read from the real source, which a specifier needs because
+ * the masked copy holds only spaces inside a string.
+ */
+function rewriteCode(src, filePath, pattern, replace) {
+  const masked = maskSource(src, filePath);
+  let out = '';
+  let last = 0;
+  for (const match of masked.matchAll(pattern)) {
+    const text = (k) => (match.indices[k] ? src.slice(match.indices[k][0], match.indices[k][1]) : undefined);
+    out += src.slice(last, match.index) + replace(match, text);
+    last = match.index + match[0].length;
+  }
+  return out + src.slice(last);
 }
 
 function isLocalSpecifier(spec) {
@@ -65,7 +213,7 @@ function resolveLocalModule(fromFile, spec) {
     if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
   }
   throw new Error(
-    `Cannot resolve local import "${spec}" from ${relative(ROOT, fromFile)}`,
+    `Cannot resolve local import "${spec}" from ${shown(fromFile)}`,
   );
 }
 
@@ -133,69 +281,51 @@ function destructureExpr(named) {
  * Bundler limitations (throws rather than mis-bundling):
  *   - `export * from '...'` and `export { a } from '...'` (re-export from
  *     another module) are not supported.
- *   - `import`/`export` are recognised in statement position only — at the
- *     start of a line. A module that emits spec source of its own therefore
- *     keeps its generated `import` lines intact instead of having them
- *     rewritten to `require` calls.
+ *   - `import` and `export` count only in code: the same words in a
+ *     comment, a string, a template literal or a regex literal are text
+ *     (see `maskSource`). An import is recognised at the start of a line.
  *   - `export default <anonymous expression>` is only supported for the
  *     named-function, named-class, and bare-identifier forms.
  *   - multi-declarator exports (`export const a = 1, b = 2;`) are not
  *     supported; export one binding per statement.
  */
-function transformExports(src) {
+function transformExports(src, filePath) {
   const exportNames = [];
+  const declaration = (exported) => (match, text) => {
+    exportNames.push({ local: match[2], exported: exported ?? match[2] });
+    return text(1);
+  };
 
-  if (/^export\s*\*/m.test(src)) {
+  const code = maskSource(src, filePath);
+  if (/^export\s*\*/m.test(code)) {
     throw new Error('Unsupported "export * from ..." syntax');
   }
-  if (/^export\s*\{[^}]*\}\s*from\s*['"]/m.test(src)) {
+  if (/^export\s*\{[^}]*\}\s*from\s*['"]/m.test(code)) {
     throw new Error('Unsupported "export { ... } from ..." re-export syntax');
   }
 
-  src = src.replace(
-    /export\s+default\s+((?:async\s+)?function\*?\s+([\w$]+)\s*\()/g,
-    (_m, decl, name) => {
-      exportNames.push({ local: name, exported: 'default' });
-      return decl;
-    },
+  src = rewriteCode(
+    src,
+    filePath,
+    /export\s+default\s+((?:async\s+)?function\*?\s+([\w$]+)\s*\()/dg,
+    declaration('default'),
   );
-  src = src.replace(
-    /export\s+default\s+(class\s+([\w$]+))/g,
-    (_m, decl, name) => {
-      exportNames.push({ local: name, exported: 'default' });
-      return decl;
-    },
-  );
-  src = src.replace(/export\s+default\s+([\w$]+)\s*;/g, (_m, name) => {
-    exportNames.push({ local: name, exported: 'default' });
+  src = rewriteCode(src, filePath, /export\s+default\s+(class\s+([\w$]+))/dg, declaration('default'));
+  src = rewriteCode(src, filePath, /export\s+default\s+([\w$]+)\s*;/dg, (match) => {
+    exportNames.push({ local: match[1], exported: 'default' });
     return '';
   });
-  if (/export\s+default\s+/.test(src)) {
+  if (/export\s+default\s+/.test(maskSource(src, filePath))) {
     throw new Error(
       'Unsupported "export default" form (only named function/class or a bare identifier re-export are supported)',
     );
   }
 
-  src = src.replace(
-    /export\s+((?:async\s+)?function\*?\s+([\w$]+))/g,
-    (_m, decl, name) => {
-      exportNames.push({ local: name, exported: name });
-      return decl;
-    },
-  );
-  src = src.replace(/export\s+(class\s+([\w$]+))/g, (_m, decl, name) => {
-    exportNames.push({ local: name, exported: name });
-    return decl;
-  });
-  src = src.replace(
-    /export\s+((?:const|let|var)\s+([\w$]+)\s*=)/g,
-    (_m, decl, name) => {
-      exportNames.push({ local: name, exported: name });
-      return decl;
-    },
-  );
-  src = src.replace(/export\s*\{([^}]*)\}\s*;?/g, (_m, list) => {
-    for (const part of list.split(',').map((s) => s.trim()).filter(Boolean)) {
+  src = rewriteCode(src, filePath, /export\s+((?:async\s+)?function\*?\s+([\w$]+))/dg, declaration());
+  src = rewriteCode(src, filePath, /export\s+(class\s+([\w$]+))/dg, declaration());
+  src = rewriteCode(src, filePath, /export\s+((?:const|let|var)\s+([\w$]+)\s*=)/dg, declaration());
+  src = rewriteCode(src, filePath, /export\s*\{([^}]*)\}\s*;?/dg, (match) => {
+    for (const part of match[1].split(',').map((s) => s.trim()).filter(Boolean)) {
       const am = part.match(/^([\w$]+)\s+as\s+([\w$]+)$/);
       if (am) exportNames.push({ local: am[1], exported: am[2] });
       else exportNames.push({ local: part, exported: part });
@@ -203,7 +333,7 @@ function transformExports(src) {
     return '';
   });
 
-  if (/(^|\n)\s*export\s/.test(src)) {
+  if (/(^|\n)\s*export\s/.test(maskSource(src, filePath))) {
     throw new Error(
       'Unsupported export syntax remains after transform (multi-declarator export?)',
     );
@@ -216,6 +346,7 @@ const bundled = new Map(); // resolved path -> module var name
 const bundleOrder = []; // completed wrapper source strings, dependency-first
 let moduleCounter = 0;
 const inProgress = new Set();
+const moduleExports = []; // { path, exports } per completed module, dependency-first
 
 // A checkout made with core.autocrlf (the default on Windows) hands the bundler CRLF
 // sources. Every match below anchors on "\n" -- the shebang strip, the import and export
@@ -224,19 +355,17 @@ function readSource(filePath) {
   return readFileSync(filePath, 'utf8').replace(/\r\n?/g, '\n');
 }
 
-function bundleModule(filePath) {
-  const existing = bundled.get(filePath);
-  if (existing) return { varName: existing, cyclic: inProgress.has(filePath) };
-
-  const varName = `__mod_${moduleCounter++}`;
-  bundled.set(filePath, varName); // set before recursing to guard against cycles
-  inProgress.add(filePath);
-  let src = readSource(filePath);
-
-  src = src.replace(/import\.meta\.url/g, "require('node:url').pathToFileURL(__filename).toString()");
+/**
+ * `src` with `import.meta.url` and every import statement rewritten: a local module is
+ * bundled and bound from its module object, anything else is required. The entry and the
+ * modules it reaches share this, so both read imports the same way.
+ */
+function rewriteImports(src, filePath) {
+  src = rewriteCode(src, filePath, /import\.meta\.url/dg, () => "require('node:url').pathToFileURL(__filename).toString()");
 
   // Side-effect-only imports: `import '<spec>';`
-  src = src.replace(/^import\s*['"]([^'"]+)['"]\s*;?/gm, (_m, spec) => {
+  src = rewriteCode(src, filePath, /^import\s*['"]([^'"]+)['"]\s*;?/dgm, (_match, text) => {
+    const spec = text(1);
     if (isLocalSpecifier(spec)) {
       bundleModule(resolveLocalModule(filePath, spec));
       return '';
@@ -245,16 +374,19 @@ function bundleModule(filePath) {
   });
 
   // Value/binding imports: `import <clause> from '<spec>';`
-  src = src.replace(
-    /^import\s+([^;]+?)\s+from\s+['"]([^'"]+)['"]\s*;?/gm,
-    (_m, clause, spec) => {
-      const { defaultName, namespaceName, namedList } = parseImportClause(clause);
+  return rewriteCode(
+    src,
+    filePath,
+    /^import\s+([^;]+?)\s+from\s+['"]([^'"]+)['"]\s*;?/dgm,
+    (match, text) => {
+      const spec = text(2);
+      const { defaultName, namespaceName, namedList } = parseImportClause(match[1]);
       const lines = [];
       if (isLocalSpecifier(spec)) {
         const { varName: childVar, cyclic } = bundleModule(resolveLocalModule(filePath, spec));
         if (cyclic && (namespaceName || defaultName)) {
           throw new Error(
-            `Unsupported cyclic import: ${relative(ROOT, filePath)} imports ${namespaceName ? 'a namespace' : 'a default'} from ${spec} while that module is still initialising. Import named functions instead.`,
+            `Unsupported cyclic import: ${shown(filePath)} imports ${namespaceName ? 'a namespace' : 'a default'} from ${spec} while that module is still initialising. Import named functions instead.`,
           );
         }
         if (namespaceName) lines.push(`const ${namespaceName} = ${childVar};`);
@@ -276,8 +408,18 @@ function bundleModule(filePath) {
       return lines.join('\n');
     },
   );
+}
 
-  const { src: bodySrc, exportNames } = transformExports(src);
+function bundleModule(filePath) {
+  const existing = bundled.get(filePath);
+  if (existing) return { varName: existing, cyclic: inProgress.has(filePath) };
+
+  const varName = `__mod_${moduleCounter++}`;
+  bundled.set(filePath, varName); // set before recursing to guard against cycles
+  inProgress.add(filePath);
+  const src = rewriteImports(readSource(filePath), filePath);
+  const { src: bodySrc, exportNames } = transformExports(src, filePath);
+  moduleExports.push({ path: filePath, exports: exportNames.map(({ exported }) => exported) });
 
   const exportLines = exportNames
     .map(({ local, exported }) => `  module.exports[${JSON.stringify(exported)}] = ${local};`)
@@ -297,51 +439,30 @@ function bundleModule(filePath) {
   return { varName, cyclic: false };
 }
 
-function bundleEntry() {
-  if (!existsSync(ENTRY)) {
+/**
+ * Bundles `entryPath` and the local modules it imports into one CommonJS file at
+ * `bundlePath`, and returns each inlined module with the export names the bundle attaches
+ * to it. A bundle left by an earlier run is removed first, so a run that throws leaves no
+ * file that reads as its own output.
+ */
+export function bundle(entryPath, bundlePath) {
+  rmSync(bundlePath, { force: true });
+  if (!existsSync(entryPath)) {
     throw new Error(
-      `Entry point not found: ${relative(ROOT, ENTRY)}. Run the build from the repository root.`,
+      `Entry point not found: ${shown(entryPath)}. Run the build from the repository root.`,
     );
   }
+  bundled.clear();
+  bundleOrder.length = 0;
+  moduleCounter = 0;
+  inProgress.clear();
+  moduleExports.length = 0;
 
-  let src = readSource(ENTRY);
+  let src = readSource(entryPath);
   src = src.replace(/^#!.*\n/, ''); // drop the shebang; not valid mid-file
-  src = src.replace(/import\.meta\.url/g, "require('node:url').pathToFileURL(__filename).toString()");
+  src = rewriteImports(src, entryPath);
 
-  src = src.replace(/^import\s*['"]([^'"]+)['"]\s*;?/gm, (_m, spec) => {
-    if (isLocalSpecifier(spec)) {
-      bundleModule(resolveLocalModule(ENTRY, spec));
-      return '';
-    }
-    return `require(${JSON.stringify(spec)});`;
-  });
-
-  src = src.replace(
-    /^import\s+([^;]+?)\s+from\s+['"]([^'"]+)['"]\s*;?/gm,
-    (_m, clause, spec) => {
-      const { defaultName, namespaceName, namedList } = parseImportClause(clause);
-      const lines = [];
-      if (isLocalSpecifier(spec)) {
-        const { varName: childVar } = bundleModule(resolveLocalModule(ENTRY, spec));
-        if (namespaceName) lines.push(`const ${namespaceName} = ${childVar};`);
-        if (defaultName) lines.push(`const ${defaultName} = ${childVar}.default;`);
-        if (namedList) {
-          const named = parseNamedList(namedList);
-          lines.push(`const { ${destructureExpr(named)} } = ${childVar};`);
-        }
-      } else {
-        if (namespaceName) lines.push(`const ${namespaceName} = require(${JSON.stringify(spec)});`);
-        if (defaultName) lines.push(`const ${defaultName} = require(${JSON.stringify(spec)});`);
-        if (namedList) {
-          const named = parseNamedList(namedList);
-          lines.push(`const { ${destructureExpr(named)} } = require(${JSON.stringify(spec)});`);
-        }
-      }
-      return lines.join('\n');
-    },
-  );
-
-  const { src: bodySrc } = transformExports(src); // entry exports (if any) are discarded; nothing imports the CLI itself
+  const { src: bodySrc } = transformExports(src, entryPath); // entry exports (if any) are discarded; nothing imports the CLI itself
 
   const bundleText = [
     '#!/usr/bin/env node',
@@ -351,12 +472,12 @@ function bundleEntry() {
     bodySrc,
   ].join('\n\n');
 
-  mkdirSync(DIST_DIR, { recursive: true });
-  writeFileSync(BUNDLE_PATH, bundleText);
-  log(`Bundled ${relative(ROOT, ENTRY)} -> ${relative(ROOT, BUNDLE_PATH)} (${bundled.size} local module(s) inlined)`);
+  mkdirSync(dirname(bundlePath), { recursive: true });
+  writeFileSync(bundlePath, bundleText);
 
   // Fail fast on a bundler bug rather than handing SEA a broken file.
-  execFileSync(process.execPath, ['--check', BUNDLE_PATH], { stdio: 'inherit' });
+  execFileSync(process.execPath, ['--check', bundlePath], { stdio: 'inherit' });
+  return { modules: moduleExports.map((m) => ({ path: m.path, exports: [...m.exports] })) };
 }
 
 function writeSeaConfig() {
@@ -429,6 +550,25 @@ function createBinary() {
   return outPath;
 }
 
+/**
+ * Runs `executable --help` and throws unless it exits 0 within `timeoutMs`. Building,
+ * signing and uploading a binary says nothing about whether it starts, and a bundle that
+ * cannot load fails on every command, `--help` included.
+ */
+export function startCheck(executable, { timeoutMs = START_TIMEOUT_MS } = {}) {
+  const result = spawnSync(executable, ['--help'], { encoding: 'utf8', timeout: timeoutMs });
+  let reason = null;
+  if (result.error?.code === 'ETIMEDOUT') reason = `it ran past ${timeoutMs / 1000} s`;
+  else if (result.error) reason = `it could not be run (${result.error.message})`;
+  else if (result.signal) reason = `it was ended by ${result.signal}`;
+  else if (result.status !== 0) reason = `it exited ${result.status}`;
+  if (reason) {
+    throw new Error(
+      `Built binary ${shown(executable)} did not start with --help: ${reason}.\n${result.stderr ?? ''}`.trimEnd(),
+    );
+  }
+}
+
 function cleanup() {
   for (const p of [SEA_CONFIG_PATH, BUNDLE_PATH, BLOB_PATH]) {
     rmSync(p, { force: true });
@@ -436,12 +576,33 @@ function cleanup() {
 }
 
 function main() {
-  bundleEntry();
+  const { modules } = bundle(ENTRY, BUNDLE_PATH);
+  log(`Bundled ${relative(ROOT, ENTRY)} -> ${relative(ROOT, BUNDLE_PATH)} (${modules.length} local module(s) inlined)`);
   writeSeaConfig();
   generateBlob();
   const outPath = createBinary();
+  startCheck(outPath);
+  log(`Started ${relative(ROOT, outPath)} --help`);
   cleanup();
   log(`Done: ${relative(ROOT, outPath)}`);
 }
 
-main();
+/**
+ * Whether this file was invoked as the process's entry point, however the path to it was
+ * spelled. A checkout reached through a symlinked directory spells that path differently
+ * from the module's own resolved location, and a guard that compared the two spellings
+ * would build nothing and exit zero.
+ */
+function invokedDirectly() {
+  if (!process.argv[1]) return false;
+  const physical = (path) => {
+    try {
+      return realpathSync(path);
+    } catch {
+      return path;
+    }
+  };
+  return physical(resolve(process.argv[1])) === physical(fileURLToPath(import.meta.url));
+}
+
+if (invokedDirectly()) main();
