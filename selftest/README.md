@@ -98,6 +98,13 @@ npm test
   the web extractor cannot resolve. `partial-result.test.js` runs it through the CLI with one
   `Partial result AC-n:` test for each acceptance rule, and calls `trace()` in process for the
   code-index case the public corpus cannot supply.
+- `corpus/kite-club/`: an invented kite club, with an ASP.NET Core backend, a React client
+  with its Cypress suite, an Ionic app and a Playwright suite. It holds one route that a
+  thunk, a function nothing calls and an Ionic service post to, and a screen shape for each
+  hop and gap of `chains`. `route-chains.test.js` runs it through the CLI, one `Route chains
+  AC-n:` test for each acceptance rule. One case imports `callersOf` of `lib/span.js`,
+  because no command prints the callers of a route as data. The corpus README lists each
+  shape and the chain it gives.
 - `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
   output of each corpus with backend routes, written by `node selftest/seed-goldens.js
   --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure
