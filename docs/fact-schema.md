@@ -72,7 +72,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `exception_map` | `scope`, `class`, `exception`, `status` | an exception type is converted to a status — `scope` is `global` for a registered exception filter, `action` for a `catch` inside one controller action |
 
 | `step_composition` | `class`, `field`, `source`, `steps` | the source names the ordered steps of one pipeline's collection field: `source` is `factory` (registration calls on the instance a DI factory lambda builds and returns), `typeof-list` (a literal `typeof(...)` list resolved through the container) or `enumerable` (an injected `IEnumerable<T>` and its `Add*<T, X>()` registrations); `steps` is `[{ type, file, line }]` in run order, or `null` with a `reason` (`step-expression`, `registration-order`, `no-registration`, `factory-count`) when the list cannot be read |
-| `loop_stop` | `class`, `method`, `field`, `form`, `step` | a `foreach` over a collection field calls `step` on each element; `form` is `flag-return` (with `flag`, `negated`, `position` `before` or `after` the call, and `returns`), `flag-break` (with `flag`, `negated` and `after`, the line after the loop that tests the flag), `bool-return` (with `returns`), `none`, or `unresolved` with `reason: "stop-rule"`; `endLine`, `stepLine`, `arg` and `argType` describe the loop and its argument |
+| `loop_stop` | `class`, `method`, `field`, `form`, `step` | a `foreach` over a collection field calls `step` on each element; `form` is `flag-return` (with `flag`, `negated`, `position` `before` or `after` the call, and `returns`), `flag-break` (with `flag`, `negated` and `after`, the line after the loop that tests the flag), `bool-return` (with `returns`), `none`, or `unresolved` with `reason: "stop-rule"`; `endLine`, `stepLine`, `arg` and `argType` describe the loop and its argument. A stop that is a block ending in its jump also carries `rejectFrom` and `rejectTo`, the lines of the statements before the jump |
 | `flag_write` | `class`, `method`, `member`, `value` | a body writes `param.member = value;` for a member that a loop's stop rule reads; `value` is `true`, `false` or `expression`, and `param` names the receiver |
 | `sentinel_return` | `class`, `method`, `value` | a body returns `false` or `null`; `ifLine` names the `if` it answers, when it has one |
 | `return_flow` | `class`, `method`, `field`, `calledMethod` | a method returns a call's value unchanged, so a sentinel passes through it to its caller |
@@ -81,11 +81,23 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `filter_result` | `class`, `method`, `status` | a filter's entry method assigns `context.Result` a result whose status the status rules read |
 | `filter_use` | `filter`, `scope` | a filter applies: `scope` is `global` (an `options.Filters.Add(typeof(X))` registration, with its `position`), or `controller` or `action` for an attribute on that class or method (with `class`, and `method` for an action) |
 | `class_base` | `class`, `base` | a class header names a base class that the repository declares; a framework base such as `ControllerBase` gives no fact |
+| `entry` | `kind`, `class`, `method` | a method starts work that no route is in front of: `kind` is `hub` (a public method of a SignalR `Hub` class, or its connection events), `actor` (a message handler that an actor class registers, with `message`) or a kind that `entryPoints` names; `declaringClass` names the base class that declares an inherited method |
+| `mapper_map` | `class`, `source`, `dest`, `target`, `method`, `role` | a `CreateMap<S, D>` statement in a `Profile` class names a class the mapper runs: `role` is `converter` (`ConvertUsing`), `resolver` (`MapFrom<T>`) or `action` (`BeforeMap`, `AfterMap`), and `method` is the method the walk enters on `target` |
+| `mapper_call` | `class`, `method`, `field`, `dest` | a body calls `Map<D>` or `Map<S, D>` on an `IMapper` field; `source` is present for the two-argument form |
+| `queue_call` | `class`, `method`, `receiver`, `calledMethod`, `delegate`, `target`, `rule` | a body hands a delegate to a background queue: `rule` is `shape` (the receiver declares a method whose delegate parameter takes a `CancellationToken`) or `config` (`workerPatterns.backgroundCalls` names the call); `delegate` is `method-group` or `lambda`, and `target` is the method the delegate runs |
+| `keyed_collection` | `class`, `field`, `iface`, `key`, `param` | a constructor builds a dictionary field from an injected `IEnumerable<iface>` parameter `param` with `ToDictionary`; `key` is the property that the key selector reads |
+| `keyed_call` | `class`, `method`, `field`, `calledMethod`, `key`, `form` | a body reads a keyed collection and calls `calledMethod` on the value: `form` is `indexer`, `local` (the value goes into a local first) or `try-get` (`TryGetValue`), and `key` is the key expression as written |
+| `key_property` | `class`, `property`, `value` | a class returns a constant from the property that a keyed collection uses as its key |
+| `gateway_route` | `verb`, `template`, `downstreamVerb`, `downstreamTemplate`, `hosts`, `handlers` | a `.json` gateway route table forwards one upstream verb and template: `hosts` lists `host:port` values, and `handlers` lists the delegating handlers that the route names. A route with no `UpstreamHttpMethod` gives no fact |
+| `gateway_table` | `state`, `reason` | a `.json` file that holds a gateway route table cannot be read; `state` is `unreadable` |
+| `gateway_handler` | `handler`, `global` | an `AddDelegatingHandler<T>()` registration; `global` is `true` when the call passes `true` |
+| `gateway_middleware` | `middleware`, `position` | a `UseMiddleware<T>()` call before the `UseOcelot` call in the same method; `position` is its order, from 1 |
 
 `param_source` is what makes seed reachability answerable: a branch reading only `jwt` or
 `injected` values cannot be forced by a black-box caller.
 
-The walk reads the last ten types only at a pipeline loop, a sentinel return or a filter. A
+The walk reads the ten types from `step_composition` to `class_base` only at a pipeline loop,
+a sentinel return or a filter. A
 fact set without them gives the same tree and seeds as before, and each pipeline loop then
 shows `composition-not-extracted`. From these facts the walk adds reject decisions: a branch
 of kind `reject` with the sides `taken` and `not-taken`, whose `rejectForm` is `flag-write`,
