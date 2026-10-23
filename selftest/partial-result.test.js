@@ -37,9 +37,9 @@ function corpus(t) {
   return dir;
 }
 
-/** The same corpus as a git checkout, so its facts carry a revision witness. */
-function gitCorpus(t) {
-  const dir = corpus(t);
+/** A named corpus as a git checkout with fresh facts, so they carry a revision witness. */
+function gitFixture(t, name, configName) {
+  const dir = copyFixture(t, name);
   writeFileSync(join(dir, '.gitignore'), 'out/\n');
   const git = (...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
   git('init', '-q');
@@ -47,9 +47,16 @@ function gitCorpus(t) {
   git('config', 'user.name', 'flowtrace selftest');
   git('add', '-A');
   git('commit', '-q', '-m', 'initial');
-  const again = runCli(['extract', '--config', CONFIG], { cwd: dir });
-  assert.equal(again.status, 0, again.stderr);
+  for (const verb of ['extract', 'join']) {
+    const run = runCli([verb, '--config', configName], { cwd: dir });
+    assert.equal(run.status, 0, run.stderr);
+  }
   return dir;
+}
+
+/** The same corpus as a git checkout, so its facts carry a revision witness. */
+function gitCorpus(t) {
+  return gitFixture(t, 'quarry-dispatch', CONFIG);
 }
 
 function traceJson(dir, start, ...flags) {
@@ -140,6 +147,94 @@ test('Partial result AC-2: an unknown edge kind is a discovery stop', (t) => {
   assert.ok(entry, JSON.stringify(result.status.stops));
   assert.equal(entry.target, 'annotates');
   assert.equal(result.status.traversal, 'unknown');
+});
+
+test('Partial result AC-2: every unresolved component arm is a frontier entry', (t) => {
+  const dir = gitFixture(t, 'nursery-mobile', 'nursery.config.json');
+  const selected = (entry) => {
+    const result = runCli(
+      ['span', '--from-component', 'PlotDetailPage', '--config', 'nursery.config.json', '--json', '--require-complete', '--entry', entry],
+      { cwd: dir },
+    );
+    return { ...result, model: JSON.parse(result.stdout) };
+  };
+
+  const effect = selected('onPin');
+  assert.equal(effect.status, 4, 'an entry whose action has no effect is not a complete account');
+  assert.equal(effect.model.status.traversal, 'unknown');
+  const effectEntries = effect.model.status.frontier.filter((item) => item.detail === 'no-effect');
+  assert.equal(effectEntries.length, 1);
+  assert.equal(effectEntries[0].reason, 'unresolved-target');
+  assert.equal(effectEntries[0].target, 'pinPlot');
+  assert.equal(effectEntries[0].remaining, null, 'uncounted work is null, never 0');
+
+  const template = selected('onShareWatchers');
+  assert.equal(template.status, 4, 'a template the extractor could not resolve is not a complete account');
+  const templateEntries = template.model.status.frontier.filter((item) => item.detail === 'template-not-resolved');
+  assert.equal(templateEntries.length, 1);
+  assert.equal(templateEntries[0].reason, 'unresolved-target');
+
+  const clean = selected('onTend');
+  assert.equal(clean.model.status.traversal, 'complete', 'an entry with no unresolved arm keeps its verdict');
+  assert.equal(clean.model.status.frontier.length, 0);
+  assert.equal(clean.model.status.stops.unresolvedTarget, undefined);
+
+  const all = runCli(['span', '--from-component', 'PlotDetailPage', '--config', 'nursery.config.json', '--json'], { cwd: dir });
+  assert.equal(all.status, 0, all.stderr);
+  const whole = JSON.parse(all.stdout);
+  const arms = whole.unresolved.filter((arm) => arm.reason !== 'walk-limit');
+  const entries = whole.status.frontier.filter((item) => item.detail && item.reason === 'unresolved-target');
+  for (const arm of arms) {
+    assert.ok(
+      entries.some((item) => item.detail === arm.reason && item.target === arm.attempted),
+      `${arm.reason} ${arm.attempted} is in the frontier`,
+    );
+  }
+});
+
+test('Partial result AC-2: a walk-limit arm takes the limit reason of its node', (t) => {
+  const dir = gitFixture(t, 'nursery-mobile', 'nursery.config.json');
+  const result = runCli(
+    ['span', '--from-component', 'PlotDetailPage', '--config', 'nursery.config.json', '--json', '--depth', '2'],
+    { cwd: dir },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  const model = JSON.parse(result.stdout);
+  const limited = model.unresolved.filter((arm) => arm.reason === 'walk-limit');
+  assert.ok(limited.length > 0, 'the depth limit leaves arms it could not follow');
+  const stopped = new Set(limited.map((arm) => arm.attempted));
+  const entries = model.status.frontier.filter((item) => item.detail === 'walk-limit');
+  for (const target of stopped) {
+    assert.ok(entries.some((item) => item.target === target), `${target} takes the limit reason of its node`);
+  }
+  assert.ok(entries.every((item) => item.reason === 'depth' || item.reason === 'node-budget'));
+  assert.equal(model.status.traversal, 'partial');
+});
+
+test('Partial result AC-2: a gate walk that stopped is in the route status', (t) => {
+  const dir = gitFixture(t, 'bakery-gates', 'bakery.config.json');
+  const walk = (start) => {
+    const result = runCli(
+      ['trace', start, '--config', 'bakery.config.json', '--seeds', '--json', '--max-nodes', '6', '--require-complete'],
+      { cwd: dir },
+    );
+    return { ...result, body: JSON.parse(result.stdout) };
+  };
+
+  const gate = walk('KitchenAccessFilter.OnAuthorizationAsync');
+  assert.equal(gate.status, 4);
+  assert.equal(gate.body.status.traversal, 'partial');
+  const gateStop = gate.body.status.frontier.find((entry) => entry.reason === 'node-budget');
+  assert.ok(gateStop);
+
+  const route = walk('POST pies/v1/bake');
+  assert.equal(route.status, 4, 'the route used the stopped gate walk to produce its answer');
+  assert.equal(route.body.status.traversal, 'partial');
+  const filter = route.body.stats.gates.find((entry) => entry.method === 'OnAuthorizationAsync').filter;
+  const carried = route.body.status.frontier.filter((entry) => entry.gate === filter);
+  assert.equal(carried.length, 1, 'the gate stop survives the memo that kept its seeds');
+  assert.equal(carried[0].reason, gateStop.reason);
+  assert.equal(carried[0].target, gateStop.target);
 });
 
 test('Partial result AC-3: the header names scope, limits and stops before the tree', (t) => {
@@ -346,6 +441,33 @@ test('Partial result AC-8: every output reads the one status', (t) => {
   const componentBody = JSON.parse(component.stdout);
   assert.equal(componentBody.status.traversal, traceJson(dir, 'DispatchBoard').body.status.traversal);
   assert.equal(complete.traversal, 'complete');
+});
+
+test('Partial result AC-8: a graph walk states its forced hop on every printer', (t) => {
+  const dir = corpus(t);
+  const plain = traceJson(dir, ROUTE).body.status;
+  const graph = traceJson(dir, ROUTE, '--graph').body.status;
+  assert.equal(graph.scope.graph, true);
+  assert.equal(plain.scope.graph, false);
+  assert.notEqual(graph.identity, plain.identity, 'the forced hop is part of the identity');
+  assert.ok(
+    graph.frontier.some((entry) => entry.reason === 'provider-unavailable'),
+    'a forced hop without a code index is a discovery stop',
+  );
+
+  const html = join(dir, 'graph.html');
+  runCli(['trace', ROUTE, '--config', CONFIG, '--graph', '--html', html], { cwd: dir });
+  assert.match(readFileSync(html, 'utf8'), /scope: full, graph hop/);
+
+  const mermaid = runCli(['trace', ROUTE, '--config', CONFIG, '--graph', '--mermaid'], { cwd: dir });
+  assert.match(mermaid.stdout, /^%% scope: full, graph hop$/m);
+  assert.match(mermaid.stdout, new RegExp(`^%% status: traversal ${graph.traversal}, freshness `, 'm'));
+
+  const graphPrinters = [
+    JSON.parse(runCli(['trace', ROUTE, '--config', CONFIG, '--graph'], { cwd: dir }).stdout).status,
+    traceJson(dir, ROUTE, '--graph').body.status,
+  ];
+  assert.deepEqual(graphPrinters[0], graphPrinters[1], 'one forced walk, one status');
 });
 
 test('Partial result AC-9: the fixture set pins each source of uncertainty', (t) => {
