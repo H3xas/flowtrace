@@ -25,6 +25,7 @@ import * as chainsModule from '../lib/chains.js';
 import * as checkModule from '../lib/check.js';
 import * as componentSpanModule from '../lib/component-span.js';
 import * as coverModule from '../lib/cover.js';
+import * as decisionsModule from '../lib/decisions.js';
 import * as joinModule from '../lib/join.js';
 import * as joinDriftModule from '../lib/join-drift.js';
 import * as joinExportModule from '../lib/join-export.js';
@@ -57,9 +58,10 @@ import * as webExtractor from '../lib/extract/web.js';
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
   'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'chains', 'surface', 'skeleton', 'cover',
-  'scope', 'affected', 'scaffold', 'cases', 'readiness', 'split', 'check', 'calibrate', 'all',
+  'scope', 'affected', 'decisions', 'scaffold', 'cases', 'readiness', 'split', 'check', 'calibrate', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
+const REVS_USAGE = 'decisions requires --revs <sha>[,<sha>...]: 7 to 40 hex characters each';
 const USAGE = [
   'usage: flowtrace <command> [options]',
   '',
@@ -76,6 +78,7 @@ const USAGE = [
   '  cover     seed-level coverage of one area, from the existing test evidence',
   '  scope     list an area\'s whole route universe, before any edit',
   '  affected  turn a diff into the specs that must run',
+  '  decisions list the units and decisions a set of revisions changed',
   '  scaffold  write a starting spec per route for the seeds no test reaches',
   '  cases     write a human-readable case sheet per route for the seeds no test reaches',
   '  readiness render an area inventory\'s readiness sheet from the existing facts',
@@ -511,6 +514,10 @@ const USAGE = [
   '  matching status never can, so an outcome-symmetric guard — both arms answering the',
   '  same code — reaches level disposition with verdictSource "runtime-coverage". A hit',
   '  line is not an assertion: it proves the arm ran in that window, nothing more.',
+  '  Web and mobile decisions join the same way and are listed after the backend rows,',
+  '  so the row cap drops them first; a ternary, logical or coalesce decision reads',
+  '  undecidable once its lines ran. A web or mobile repository whose files no snapshot',
+  '  covers is skipped, with one warning when it holds decisions.',
   '  Without the flag nothing is read and the report is the byte-identical static one.',
   '',
   'scope --area <file|name> [--json]',
@@ -587,6 +594,28 @@ const USAGE = [
   '  same commit is not this: it is noted on stderr and carried in --json\x27s "stale" field,',
   '  and never widens — the edit it predates is already inside the diff this run reads.',
   '  Exit 0 a list was produced, 3 nothing was affected, 2 usage, 1 refusal.',
+  '',
+  'decisions --revs <sha>[,<sha>...] [--repo <id>] [--json]',
+  '  Lists each unit (a method_span) that holds a line the revisions changed, and under it',
+  '  each decision (a branch_point) of the unit whose own span holds a changed line. A',
+  '  changed line is a line that "git blame" at the fact set\x27s headSha gives to one of',
+  '  the revisions, so the lines and the fact spans read the same content; the verb reads',
+  '  fact files and git only and parses no source. Each entry of --revs is 7 to 40 hex',
+  '  characters. A revision resolves in the git working tree of a configured root, and',
+  '  each root in that tree takes the changed files under it; a revision that no tree, or',
+  '  more than one, holds is refused, and --repo <id> limits the search to the tree of one',
+  '  repository. A merge revision expands to the commits of <rev>^1..<rev>. A revision',
+  '  outside the history of a repository\x27s headSha is listed as not-ancestor there.',
+  '  A decision id is <repo>:<path>:<line>:<kind>, with #2, #3 for repeats of one kind on',
+  '  one line. A changed line no unit holds is listed under "outside units"; a changed file',
+  '  the facts cannot read under "not extracted" (no-root, excluded, not-source, no-facts);',
+  '  and a line a revision added that blame no longer gives back under "unmapped"',
+  '  (changed-later, with the last commit that held it), with deletion-only hunks and',
+  '  file-gone files. --json emits { schemaVersion: 1, revisions, repos, units,',
+  '  outsideUnits, notExtracted, unmapped }, with no timestamp. A fact set that is missing,',
+  '  has no headSha or is stamped dirty is refused: run extract on a clean checkout. A fact',
+  '  set with no branch_point fact prints a warning to extract again.',
+  '  Exit 0 a listing was produced, 1 refusal, 2 usage.',
   '',
   'scaffold --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run]',
   '            [--include-unreachable]',
@@ -746,6 +775,7 @@ function parseArgs(argv) {
     verdicts: undefined,
     golden: undefined,
     runtime: undefined,
+    revs: undefined,
     seedKeys: [],
     maxLevel: undefined,
     out: undefined,
@@ -992,6 +1022,12 @@ function parseArgs(argv) {
         throw new UsageError('--runtime requires a coverage artifact or manifest');
       }
       options.runtime = value;
+    } else if (argument === '--revs' || argument.startsWith('--revs=')) {
+      // A missing value is refused with the same message as a malformed one, after parsing.
+      let value = argument.startsWith('--revs=') ? argument.slice('--revs='.length) : argv[index + 1];
+      if (argument === '--revs' && (value === undefined || value.startsWith('-'))) value = '';
+      else if (argument === '--revs') index += 1;
+      options.revs = value;
     } else if (argument === '--repo' || argument === '--config') {
       const value = argv[index + 1];
       if (value === undefined || value.startsWith('-')) {
@@ -2291,6 +2327,8 @@ async function runCover(config, options) {
     if (runtime.snapshots.length === 0) throw new Error(`${display(resolve(options.runtime))}: no readable coverage snapshot`);
   }
   const report = cover(factSets, { area: area.name, keys, aliases: config.aliases, traceOptions, runtime });
+  // The reader's warnings printed above; the join adds one for each caller repository it skipped.
+  if (report.runtime) for (const warning of report.runtime.warnings.slice(runtime.warnings.length)) warn(`runtime: ${warning}`);
 
   if (options.verdicts) {
     const { readVerdicts, mergeVerdicts } = packetsModule;
@@ -2422,6 +2460,36 @@ function diffSourceRepo(config, repoFilter) {
   if (backend) return backend;
   const named = repoFilter ? config.repos.find((repo) => repo.id === repoFilter) : undefined;
   return named || config.repos[0];
+}
+
+/**
+ * Each fact set is read by the repository a revision touches, not through `loadFactSets`,
+ * so a missing one is refused by name rather than as an empty facts directory.
+ */
+function runDecisions(config, options) {
+  const readFactSet = (id) => {
+    const target = joinPath(config.out, 'facts', `${id}.json`);
+    if (!existsSync(target)) return null;
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(target, 'utf8'));
+    } catch (error) {
+      throw new Error(`${display(target)}: not valid JSON (${error.message})`);
+    }
+    return { ...parsed, repo: parsed.repo ?? id, facts: Array.isArray(parsed.facts) ? parsed.facts : [] };
+  };
+  const document = decisionsModule.decisions(config, decisionsModule.parseRevs(options.revs), {
+    repo: options.repo,
+    readFactSet,
+  });
+  for (const repo of document.repos) {
+    if (repo.decisionFacts === 0) {
+      warn(`decisions: ${repo.id} holds no branch_point fact, so its units list no decision; run "flowtrace extract" again`);
+    }
+  }
+  if (options.json) log(JSON.stringify(document, null, 2));
+  else process.stdout.write(decisionsModule.renderDecisions(document));
+  return 0;
 }
 
 async function runAffected(config, options) {
@@ -2841,6 +2909,12 @@ async function main() {
   if (options.runtime && options.command !== 'cover') {
     return usage('--runtime is a cover option');
   }
+  if (options.revs !== undefined && options.command !== 'decisions') {
+    return usage('--revs is a decisions option');
+  }
+  if (options.command === 'decisions' && !decisionsModule.parseRevs(options.revs)) {
+    return usage(REVS_USAGE);
+  }
   if (options.command === 'scope' && !options.area) {
     return usage('scope requires --area <file|name>');
   }
@@ -2901,6 +2975,9 @@ async function main() {
     }
     if (options.command === 'affected') {
       return await runAffected(config, options);
+    }
+    if (options.command === 'decisions') {
+      return runDecisions(config, options);
     }
     if (options.command === 'scaffold') {
       return await runScaffold(config, options);

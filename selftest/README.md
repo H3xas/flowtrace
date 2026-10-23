@@ -76,6 +76,13 @@ npm test
   `mobile-component-span.test.js` runs `span --from-component` over it. The fixture's README
   states the header counts each run must give and how the two committed `trace` goldens were
   captured.
+- `corpus/kiln-yard/`: an invented pottery yard with a backend, a React client and an Ionic
+  app. Its web and mobile files hold each decision form the extractors read, and the text that
+  must give none. `caller-decisions.test.js` runs it through the CLI, one `Caller decisions
+  AC-n:` test for each acceptance rule. One case imports `buildRuntimeIndex` and
+  `runtimeSummary` of `lib/runtime-cover.js`, because a corpus with more than 200 decisions
+  would be too large to read. `decisions-verb.test.js` builds its own git working trees in a
+  temporary directory, one `Decisions verb AC-n:` test for each acceptance rule.
 - `corpus/bakery-orders/` and `corpus/bakery-gates/`: an invented bakery backend. Its
   pipelines take their steps from a DI factory, a `typeof(...)` list or an injected
   `IEnumerable<T>`. Their steps write a stop flag, return `false` or `null`, or throw. The

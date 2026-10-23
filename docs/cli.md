@@ -24,6 +24,7 @@ commands:
   cover     seed-level coverage of one area, from the existing test evidence
   scope     list an area's whole route universe, before any edit
   affected  turn a diff into the specs that must run
+  decisions list the units and decisions a set of revisions changed
   scaffold  write a starting spec per route for the seeds no test reaches
   cases     write a human-readable case sheet per route for the seeds no test reaches
   readiness render an area inventory's readiness sheet from the existing facts
@@ -459,6 +460,10 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   matching status never can, so an outcome-symmetric guard — both arms answering the
   same code — reaches level disposition with verdictSource "runtime-coverage". A hit
   line is not an assertion: it proves the arm ran in that window, nothing more.
+  Web and mobile decisions join the same way and are listed after the backend rows,
+  so the row cap drops them first; a ternary, logical or coalesce decision reads
+  undecidable once its lines ran. A web or mobile repository whose files no snapshot
+  covers is skipped, with one warning when it holds decisions.
   Without the flag nothing is read and the report is the byte-identical static one.
 
 scope --area <file|name> [--json]
@@ -535,6 +540,28 @@ affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo
   same commit is not this: it is noted on stderr and carried in --json's "stale" field,
   and never widens — the edit it predates is already inside the diff this run reads.
   Exit 0 a list was produced, 3 nothing was affected, 2 usage, 1 refusal.
+
+decisions --revs <sha>[,<sha>...] [--repo <id>] [--json]
+  Lists each unit (a method_span) that holds a line the revisions changed, and under it
+  each decision (a branch_point) of the unit whose own span holds a changed line. A
+  changed line is a line that "git blame" at the fact set's headSha gives to one of
+  the revisions, so the lines and the fact spans read the same content; the verb reads
+  fact files and git only and parses no source. Each entry of --revs is 7 to 40 hex
+  characters. A revision resolves in the git working tree of a configured root, and
+  each root in that tree takes the changed files under it; a revision that no tree, or
+  more than one, holds is refused, and --repo <id> limits the search to the tree of one
+  repository. A merge revision expands to the commits of <rev>^1..<rev>. A revision
+  outside the history of a repository's headSha is listed as not-ancestor there.
+  A decision id is <repo>:<path>:<line>:<kind>, with #2, #3 for repeats of one kind on
+  one line. A changed line no unit holds is listed under "outside units"; a changed file
+  the facts cannot read under "not extracted" (no-root, excluded, not-source, no-facts);
+  and a line a revision added that blame no longer gives back under "unmapped"
+  (changed-later, with the last commit that held it), with deletion-only hunks and
+  file-gone files. --json emits { schemaVersion: 1, revisions, repos, units,
+  outsideUnits, notExtracted, unmapped }, with no timestamp. A fact set that is missing,
+  has no headSha or is stamped dirty is refused: run extract on a clean checkout. A fact
+  set with no branch_point fact prints a warning to extract again.
+  Exit 0 a listing was produced, 1 refusal, 2 usage.
 
 scaffold --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run]
             [--include-unreachable]

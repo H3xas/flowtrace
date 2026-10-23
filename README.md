@@ -148,6 +148,7 @@ rules that keep the tool's honesty intact in the agent's answer.
 | `cover` | which distinguishable ways through this feature's routes does a test actually pin down? |
 | `scope` | before I touch this area: its whole route universe, which routes already have automated evidence, and which reach a server-side authorization check. |
 | `affected` | I changed these files — which specs must run, and which affected routes have no test at all? |
+| `decisions` | which methods and which decisions in them did these commits change, as the code stands now? |
 | `scaffold` | write a starting spec for each gap. |
 | `cases` | write a plain-English case sheet for each gap, for a person to judge. |
 | `readiness` | per feature area: routes reached, sinks by class, seeds by reachability. |
@@ -199,7 +200,10 @@ published as exactly that.
 - Language and framework support is what is listed above, no more. A second messaging idiom —
   handler interfaces, sagas, and sends through a bus variable — is read once its interface and
   verb names are given in the configuration; only one idiom is recognised without that.
-- `affected` reads diffs through `git`, so the repository it reads must be a git checkout.
+- `affected` and `decisions` read diffs and blame through `git`, so the repository they read must
+  be a git checkout. `decisions` also needs fact sets extracted from a clean checkout.
+- `cover --runtime` joins web and mobile decisions to line coverage too, and skips a web or
+  mobile repository that no coverage snapshot covers.
 - Coverage is evidence overlay, not instrumentation. It reports what the tests *say* they
   touch, from their own source; it never runs them.
 - Two suites cover the tool: the public contract suite under `selftest/`, run by `npm test`
