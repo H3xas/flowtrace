@@ -56,6 +56,28 @@ export async function loadNestedBoarding(permit: boolean, routes: string[]) {
   }
 }
 
+export async function loadGuardedAll(permit: boolean, routes: string[]) {
+  if (permit) {
+    await Promise.all([loadRoute(routes[0]), loadRoute(routes[1])]);
+  }
+  noticeShown('guarded-all');
+}
+
+export async function loadLoopedAll(pairs: string[][]) {
+  for (const pair of pairs) {
+    await Promise.all([loadRoute(pair[0]), loadRoute(pair[1])]);
+  }
+  noticeShown('looped-all');
+}
+
+export async function loadTrySettled(routes: string[]) {
+  try {
+    await Promise.allSettled([loadRoute(routes[0]), loadRoute(routes[1])]);
+  } catch (error) {
+    noticeShown('settled-failed');
+  }
+}
+
 export function watchBoarding(ferryId: string) {
   useEffect(async () => {
     await httpClient.getGatewayClient().get(`/tidewater/v1/ferries/${ferryId}/route`);

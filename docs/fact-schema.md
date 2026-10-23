@@ -173,9 +173,11 @@ one line then have two columns.
 - `await` is `true` when the call heads the chain an `await` operand is, and is absent
   otherwise.
 - `task` marks a started task: `{ id, local, join }`. `id` is `<line>:<column>`. `local` is
-  the variable that holds it, or `null`. `join` is `{ id, form, line, column, tasks }` for the
+  the variable that holds it, or `null`. `join` is `{ id, form, line, column, tasks, path }` for the
   `await`, `Task.WhenAll`, `Task.WhenAny`, `Promise.all` or `Promise.allSettled` that names
-  it, or `null` when nothing joins it.
+  it, or `null` when nothing joins it. A task can start outside a guard and be joined inside
+  it. So `path` lists the frames that hold the join itself, in the same form as the call's
+  own `path`. The projection places the join inside those frames, not at the body's root.
 
 A call in the condition of an `if` or `switch`, or in the collection of a `foreach`, is
 outside that construct. A call in the condition or the step of a `for`, `while` or `do` is

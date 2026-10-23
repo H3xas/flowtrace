@@ -164,7 +164,10 @@ function normalized(key, stdout) {
     }
     return stdout;
   }
-  return stdout.startsWith(`${DEPENDENCY_LABEL}\n`) ? stdout.slice(DEPENDENCY_LABEL.length + 1) : stdout;
+  // The label is the first line of the tree, which the result header stands above.
+  const lines = stdout.split('\n');
+  const at = lines.indexOf(DEPENDENCY_LABEL);
+  return at === -1 ? stdout : `${lines.slice(0, at).concat(lines.slice(at + 1)).join('\n')}`;
 }
 
 function outputRecord(key, runResult) {

@@ -146,6 +146,61 @@ namespace Tidewater.Ferry.Services
             await _access.ReadIdentityAsync(request);
         }
 
+        public async Task GuardedAwait(PassengerRequest request, bool permit)
+        {
+            var pending = _access.ResolveIdentityAsync(request);
+            if (permit)
+            {
+                await pending;
+            }
+
+            await _access.ReadIdentityAsync(request);
+        }
+
+        public async Task LoopJoin(PassengerRequest request, IReadOnlyList<PassengerRequest> queue)
+        {
+            foreach (var item in queue)
+            {
+                var pending = _access.ResolveIdentityAsync(item);
+                await pending;
+            }
+
+            await _access.LoadPermitsAsync(request);
+        }
+
+        public async Task GuardedAll(PassengerRequest request, bool permit)
+        {
+            if (permit)
+            {
+                await Task.WhenAll(_access.ResolveIdentityAsync(request), _access.ReadIdentityAsync(request));
+            }
+
+            await _access.LoadPermitsAsync(request);
+        }
+
+        public async Task TryJoin(PassengerRequest request, bool permit)
+        {
+            var pending = _access.ResolveIdentityAsync(request);
+            try
+            {
+                await pending;
+            }
+            catch (Exception)
+            {
+                await _access.ReadIdentityAsync(request);
+            }
+            finally
+            {
+                await _access.LoadPermitsAsync(request);
+            }
+        }
+
+        public void CallbackJoin(PassengerRequest request)
+        {
+            var pending = _access.ResolveIdentityAsync(request);
+            RunLater(async () => await pending);
+        }
+
         private void RunLater(Action work)
         {
             work();

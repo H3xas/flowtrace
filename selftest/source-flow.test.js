@@ -63,7 +63,9 @@ function allSteps(sourceFlow) {
 
 /** The text of every line the page's tree block carries, tags removed. */
 function pageLinesOf(page) {
-  const tree = page.slice(page.indexOf('<pre class="tree">') + '<pre class="tree">'.length, page.indexOf('</pre>'));
+  const open = page.indexOf('<pre class="tree">') + '<pre class="tree">'.length;
+  const close = page.indexOf('</pre>', open);
+  const tree = page.slice(open, close);
   return [...tree.matchAll(/<div class="ln[^"]*">(.*?)<\/div>/g)].map((match) =>
     match[1].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>'),
   );
@@ -83,7 +85,7 @@ test('Source flow AC-1: the view flag chooses the projection and refuses every o
 
   const dependency = env.cli(['trace', start, '--view', 'dependency']);
   assert.equal(dependency.status, 0, dependency.stderr);
-  assert.equal(dependency.stdout.split('\n')[0], DEPENDENCY_LABEL);
+  assert.ok(dependency.stdout.split('\n').includes(DEPENDENCY_LABEL));
 
   const none = env.cli(['trace', start]);
   assert.equal(none.stdout, dependency.stdout);
@@ -112,8 +114,11 @@ test('Source flow AC-2: the dependency view keeps its bytes and says it is not c
   const start = 'BoardingService.CheckInAsync';
 
   const dependency = text(env, start);
-  assert.equal(dependency.split('\n')[0], DEPENDENCY_LABEL);
-  const withoutLabel = dependency.split('\n').slice(1).join('\n');
+  const dependencyLines = dependency.split('\n');
+  const labelAt = dependencyLines.indexOf(DEPENDENCY_LABEL);
+  assert.ok(labelAt >= 0, 'the dependency tree states which view it is');
+  assert.equal(dependencyLines[labelAt - 1], '', 'the label opens the tree under the result header');
+  const withoutLabel = dependencyLines.slice(labelAt + 1).join('\n');
   assert.match(withoutLabel, /BoardingService\.CheckInAsync/);
 
   for (const flag of ['--graph', '--mermaid']) {
@@ -129,7 +134,13 @@ test('Source flow AC-2: the dependency view keeps its bytes and says it is not c
   const page = readFileSync(html, 'utf8');
   const pageLines = pageLinesOf(page);
   assert.equal(pageLines[0], DEPENDENCY_LABEL);
-  assert.equal(pageLines.slice(1).join('\n'), withoutLabel.split('\n\n')[0]);
+  // The status lines stand between the label and the tree, on the terminal and in the page's
+  // own status block. The tree itself must be the same text on both.
+  const pageTree = pageLines.slice(1);
+  const terminalLines = withoutLabel.split('\n');
+  const treeStart = terminalLines.indexOf(pageTree[0]);
+  assert.ok(treeStart >= 0, 'the page tree starts at the terminal tree');
+  assert.deepEqual(terminalLines.slice(treeStart, treeStart + pageTree.length), pageTree);
 
   const goldens = await checkGoldens();
   assert.equal(goldens.ok, true, goldens.problems.join('\n'));
@@ -142,14 +153,13 @@ test('Source flow AC-3: the JSON answer is additive and declares its projection'
   const dependency = json(env, start);
   assert.equal(dependency.view, 'dependency');
   assert.equal(dependency.sourceFlow, undefined);
-  assert.equal(Object.keys(dependency)[0], 'view');
 
   const source = json(env, start, ['--view', 'source-flow']);
   assert.equal(source.view, 'source-flow');
   assert.equal(source.sourceFlow.schemaVersion, 1);
   assert.equal(source.sourceFlow.evidence, 'static');
-  assert.equal(Object.keys(source)[0], 'view');
-  assert.equal(Object.keys(source).at(-1), 'sourceFlow');
+  assert.deepEqual(Object.keys(source).filter((key) => key !== 'sourceFlow'), Object.keys(dependency));
+  assert.ok(Object.keys(source).includes('sourceFlow'));
 
   const { view: dependencyView, ...dependencyRest } = dependency;
   const { view: sourceView, sourceFlow, ...sourceRest } = source;
@@ -292,6 +302,33 @@ test('Source flow AC-7: the C# control forms keep their shape and never read as 
   assert.ok(between.site.line < join.site.line, 'the join keeps its own position after the call between');
   assert.ok(join.site.line < after.site.line);
 
+  const guarded = json(env, 'TerminalForms.GuardedAwait', ['--view', 'source-flow']).sourceFlow;
+  assert.deepEqual(guarded.root.body.steps.map((step) => step.kind), ['invocation', 'branch', 'invocation']);
+  const guardedArm = guarded.root.body.steps[1].arms.find((arm) => arm.arm === 'then');
+  assert.deepEqual(guardedArm.steps.map((step) => step.kind), ['join'], 'a join written inside a guard stays in its arm');
+  assert.deepEqual(guardedArm.steps[0].tasks, [guarded.root.body.steps[0].id], 'the launch outside the guard is the task it names');
+
+  const loopJoin = forms('TerminalForms.LoopJoin');
+  const perIteration = loopJoin.find((step) => step.kind === 'loop');
+  assert.deepEqual(perIteration.steps.map((step) => step.kind), ['invocation', 'join'], 'a join written in a loop body stays in the loop');
+  assert.deepEqual(perIteration.steps[1].tasks, [perIteration.steps[0].id]);
+
+  const guardedAll = json(env, 'TerminalForms.GuardedAll', ['--view', 'source-flow']).sourceFlow;
+  const allArm = guardedAll.root.body.steps.find((step) => step.kind === 'branch').arms.find((arm) => arm.arm === 'then');
+  assert.deepEqual(allArm.steps.map((step) => step.kind), ['invocation', 'invocation', 'join'], 'a guarded join stays in its arm after its launches');
+  assert.equal(allArm.steps[2].form, 'Task.WhenAll');
+  assert.deepEqual(allArm.steps[2].tasks, [allArm.steps[0].id, allArm.steps[1].id]);
+
+  const tryJoin = json(env, 'TerminalForms.TryJoin', ['--view', 'source-flow']).sourceFlow;
+  const trySteps = tryJoin.root.body.steps.find((step) => step.kind === 'try');
+  assert.deepEqual(trySteps.body.map((step) => step.kind), ['join'], 'a join written in a try body stays in the try');
+  assert.equal(trySteps.body[0].tasks.length, 1);
+
+  const callbackJoin = json(env, 'TerminalForms.CallbackJoin', ['--view', 'source-flow']).sourceFlow;
+  const callback = allSteps(callbackJoin).find((step) => step.kind === 'callback');
+  assert.deepEqual(callback.steps.map((step) => step.kind), ['join'], 'a join written in a lambda body stays in the callback');
+  assert.equal(callback.steps[0].tasks.length, 1);
+
   const loops = forms('TerminalForms.LoopForms').filter((step) => step.kind === 'loop');
   assert.deepEqual(loops.map((step) => step.form), ['for', 'foreach', 'while', 'do']);
   for (const loop of loops) {
@@ -344,6 +381,22 @@ test('Source flow AC-8: the web control forms keep their shape and name the asyn
   const settled = forms('Boarding.loadSettled');
   assert.ok(settled.some((step) => step.kind === 'join' && step.form === 'Promise.allSettled'));
 
+  const guardedAll = json(env, 'Boarding.loadGuardedAll', ['--view', 'source-flow']).sourceFlow;
+  const guardedArm = guardedAll.root.body.steps.find((step) => step.kind === 'branch').arms.find((arm) => arm.arm === 'then');
+  assert.deepEqual(guardedArm.steps.map((step) => step.kind), ['invocation', 'invocation', 'join'], 'a guarded Promise.all stays in its arm');
+  assert.equal(guardedArm.steps[2].form, 'Promise.all');
+  assert.deepEqual(guardedArm.steps[2].tasks, [guardedArm.steps[0].id, guardedArm.steps[1].id]);
+
+  const loopedAll = json(env, 'Boarding.loadLoopedAll', ['--view', 'source-flow']).sourceFlow;
+  const loop = loopedAll.root.body.steps.find((step) => step.kind === 'loop');
+  assert.deepEqual(loop.steps.map((step) => step.kind), ['invocation', 'invocation', 'join'], 'a Promise.all in a loop body stays in the loop');
+  assert.equal(loop.steps[2].form, 'Promise.all');
+
+  const trySettled = json(env, 'Boarding.loadTrySettled', ['--view', 'source-flow']).sourceFlow;
+  const trySteps = trySettled.root.body.steps.find((step) => step.kind === 'try');
+  assert.deepEqual(trySteps.body.map((step) => step.kind), ['invocation', 'invocation', 'join'], 'a Promise.allSettled in a try body stays in the try');
+  assert.equal(trySteps.body[2].form, 'Promise.allSettled');
+
   const fallback = json(env, 'Boarding.loadWithFallback', ['--view', 'source-flow']).sourceFlow;
   const gateway = invocations(fallback)[0];
   assert.deepEqual(gateway.continuations.map((entry) => entry.outcome), ['success', 'failure']);
@@ -385,6 +438,15 @@ test('Source flow AC-9: a body the facts cannot place is an unknown-order group 
   const unreadableGroup = allSteps(unreadable.sourceFlow).find((step) => step.kind === 'unordered' && step.reason === 'control-evidence-unreadable');
   assert.ok(unreadableGroup, 'an unreadable field is unknown order');
   assert.ok(unreadableGroup.sites.length > 0);
+
+  // A join whose own path cannot be read: the projection invents no enclosing frame.
+  const brokenJoin = JSON.parse(JSON.stringify(original));
+  const launchFact = brokenJoin.facts.find((fact) => fact.type === 'method_call' && fact.method === 'JoinLater');
+  launchFact.control.task.join.path = [{ kind: 'loop', form: 'while', id: 'for@1:1', line: 1, column: 1, text: 'while' }];
+  writeFileSync(file, `${JSON.stringify(brokenJoin, null, 2)}\n`);
+  const joinUnreadable = json(env, 'TerminalForms.JoinLater', ['--view', 'source-flow']);
+  const joinGroup = allSteps(joinUnreadable.sourceFlow).find((step) => step.kind === 'unordered' && step.reason === 'control-evidence-unreadable');
+  assert.ok(joinGroup, 'a join path the projection cannot read makes the body unknown order');
 
   // A provider fact in the same body.
   const provided = {
