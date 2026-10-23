@@ -1,0 +1,92 @@
+{
+  "outbound": {
+    "HarborBridge": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/SignalRelay.cs",
+        "line": 9,
+        "target": "backend/src/Services/SignalRelay.cs"
+      }
+    ],
+    "SignalRelay": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/RelaySink.cs",
+        "line": 4,
+        "target": "backend/src/Services/RelaySink.cs"
+      }
+    ],
+    "RelaySink": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/RelaySink.cs",
+        "line": 6,
+        "target": "backend/src/Services/RelayGate.cs"
+      }
+    ],
+    "RelayGate": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/RelayGate.cs",
+        "line": 5,
+        "target": "backend/src/DataAccess/ReadingRepository.cs"
+      }
+    ],
+    "RelayLedger": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/RelayLedger.cs",
+        "line": 7,
+        "target": "backend/src/DataAccess/ZoneRepository.cs"
+      }
+    ]
+  },
+  "inbound": {
+    "HarborBridge": {
+      "ctor-di": {
+        "total": 1,
+        "dropped": 0,
+        "rows": [
+          {
+            "file": "backend/src/Services/SignalRelay.cs",
+            "line": 9
+          }
+        ]
+      }
+    },
+    "SignalRelay": {
+      "uses-type": {
+        "total": 1,
+        "dropped": 0,
+        "rows": [
+          {
+            "file": "backend/src/Services/RelaySink.cs",
+            "line": 4
+          }
+        ]
+      }
+    },
+    "WatcherService": {
+      "ctor-di": {
+        "total": 1,
+        "dropped": 0,
+        "rows": [
+          {
+            "file": "tests/Greenhouse.Alerts.Tests/WatcherFeedTests.cs",
+            "line": 7
+          }
+        ]
+      }
+    }
+  },
+  "impact": {
+    "src/Controllers/ZoneWatchersController.cs": {
+      "rows": [
+        {
+          "file": "src/Services/WatcherService.cs",
+          "hop": 1
+        }
+      ]
+    }
+  }
+}

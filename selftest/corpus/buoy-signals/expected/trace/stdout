@@ -1,0 +1,20 @@
+start: GET glasshouse/v1/zones/*/watchers (route, backend src/Controllers/ZoneWatchersController.cs:22)
+scope: full
+limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
+status: traversal complete, freshness matching
+evidence: 8 source-supported, 4 inferred, runtime not supplied
+stops: none; frontier 0
+
+dependency view: calls grouped by callee, not in call order (--view source-flow shows call order)
+GET glasshouse/v1/zones/*/watchers  backend  src/Controllers/ZoneWatchersController.cs:22  [start]
+└─ ZoneWatchersController.GetWatchers  backend  src/Controllers/ZoneWatchersController.cs:22  [literal]
+   ├─ HarborBridge  backend  src/Controllers/ZoneWatchersController.cs:19  [ctor]
+   │  └─ HarborBridge.Forward  backend  src/Controllers/ZoneWatchersController.cs:19  [body]
+   │     └─ infrastructure (4 nodes, 4 graph hops) — use --expand-infra
+   └─ IWatcherService  backend  src/Controllers/ZoneWatchersController.cs:18  [ctor]
+      └─ WatcherService  backend  src/Services/WatcherService.cs:40  [di]
+         └─ WatcherService.ListWatchers  backend  src/Services/WatcherService.cs:50  [body]
+            └─ IWatcherRepository  backend  src/Services/WatcherService.cs:45  [ctor]
+               └─ ■ WatcherRepository  backend  src/DataAccess/WatcherRepository.cs:13  [db·read]
+
+2 sinks · 0 branch points (0 primary) · 1 repo (backend) · via: body 2, ctor 3, di 2, graph 4, literal 1
