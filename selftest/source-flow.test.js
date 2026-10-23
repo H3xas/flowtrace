@@ -429,8 +429,11 @@ test('Source flow AC-10: a shared call collapses in place and a later body is a 
 
   const answer = json(env, 'BoardingService.CheckInAsync', ['--view', 'source-flow']);
   const expanded = json(env, 'BoardingService.CheckInAsync', ['--view', 'source-flow', '--expand-infra']);
-  assert.equal(JSON.stringify(answer.sourceFlow), JSON.stringify(expanded.sourceFlow));
-  assert.equal(JSON.stringify(answer.stats), JSON.stringify(expanded.stats));
+  const unfolded = json(env, 'BoardingService.CheckInAsync', ['--view', 'source-flow', '--no-fold']);
+  for (const variant of [expanded, unfolded]) {
+    assert.equal(JSON.stringify(answer.sourceFlow), JSON.stringify(variant.sourceFlow));
+    assert.equal(JSON.stringify(answer.stats), JSON.stringify(variant.stats));
+  }
 
   const repeat = json(env, 'BoardingService.RepeatForm', ['--view', 'source-flow']);
   const shown = invocations(repeat.sourceFlow);

@@ -65,6 +65,14 @@
       "outside": []
     },
     {
+      "id": "replace-watchers-source-flow",
+      "exit": 0,
+      "entry": "resolved",
+      "budgetHit": false,
+      "unresolvedMarkers": 0,
+      "outside": []
+    },
+    {
       "id": "harvest-plan-small-budget",
       "exit": 0,
       "entry": "resolved",
@@ -540,7 +548,7 @@
     },
     {
       "id": "repeated-audit-record",
-      "run": "replace-watchers-walk",
+      "run": "replace-watchers-source-flow",
       "sites": [
         {
           "id": "audit-requested",
@@ -564,8 +572,8 @@
         },
         {
           "id": "requested-before-replaced",
-          "held": false,
-          "reason": "same-node"
+          "held": true,
+          "reason": null
         }
       ],
       "counts": {
@@ -573,13 +581,13 @@
         "sitesExpected": 2,
         "outside": 0,
         "entryUnresolved": 0,
-        "assertionsHeld": 1,
+        "assertionsHeld": 2,
         "assertionsAsserted": 2,
         "unknownsMarked": 0,
         "unknownsExpected": 0
       },
       "falselyComplete": false,
-      "classification": "ordering",
+      "classification": "resolved",
       "evidence": ""
     },
     {

@@ -105,7 +105,7 @@ test('rewriting keeps a classification only where the observation did not change
   const file = join(pack.work, 'rewritten.json');
   const committed = readJson(OBSERVED);
   const stale = structuredClone(committed);
-  stale.cases.find((entry) => entry.id === 'repeated-audit-record').assertions[1].held = true;
+  stale.cases.find((entry) => entry.id === 'repeated-audit-record').assertions[1].held = false;
   writeJson(file, stale);
   const out = tempDir(t, 'rewrite');
   const result = replayCli(pack, out, ['--write', file]);

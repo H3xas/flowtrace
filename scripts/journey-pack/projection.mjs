@@ -222,8 +222,11 @@ function projectUnknown(walk, unknown) {
 function projectAssertion(walk, assertion, sitesById) {
   const result = (held, reason = null) => ({ id: assertion.id, held, reason });
   if (assertion.kind === 'before') {
-    const first = matching(walk, sitesById.get(assertion.first))[0];
-    const then = matching(walk, sitesById.get(assertion.then))[0];
+    // A symbol hit can answer for a site the walk never placed; when a site hit exists, it is
+    // the occurrence the question is about.
+    const preferSite = (hits) => hits.find((hit) => hit.bySite) || hits[0];
+    const first = preferSite(matching(walk, sitesById.get(assertion.first)));
+    const then = preferSite(matching(walk, sitesById.get(assertion.then)));
     if (!first) return result(false, `missing:${assertion.first}`);
     if (!then) return result(false, `missing:${assertion.then}`);
     if (first.occurrence.canonical === then.occurrence.canonical) return result(false, 'same-node');
@@ -289,7 +292,9 @@ function outsideOf(walk, run, sitesById) {
   for (const item of runAssertions(walk, run)) {
     const covered = reach.some((site) => {
       if (site.repo !== item.repo) return false;
-      if (run.asserts === 'sinks') return site.symbol === item.ref;
+      if (run.asserts === 'sinks') {
+        return site.symbol === item.ref || (typeof site.symbol === 'string' && site.symbol.startsWith(`${item.ref}.`));
+      }
       return walk.occurrences.some((occurrence) => occurrence.fields === item.node && (matchSite(site, occurrence).bySite || matchSite(site, occurrence).bySymbol));
     });
     if (!covered) outside.push({ repo: item.repo, kind: item.kind, ref: item.ref });
