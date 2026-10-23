@@ -60,8 +60,9 @@ body, and a later call points back at it.
 
 Order comes only from the call site. Within one frame path, steps sort by line, column and
 occurrence. A construct sorts by its own site. The arms of an `if`, `switch` or conditional
-expression are alternatives. A loop body is repeatable. A join sorts after the last task it
-names. A pipeline whose steps the source registers keeps that run order.
+expression are alternatives. A loop body is repeatable. A join sorts at its own site, and
+never before the last task it names. A pipeline whose steps the source registers keeps that
+run order.
 
 Nothing sorts by callee name, declaration line or registration order.
 
