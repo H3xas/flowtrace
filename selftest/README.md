@@ -91,6 +91,13 @@ npm test
   AC-n:` test for each acceptance rule. One case imports `requestIndex` of `lib/skeleton.js`,
   because that reader has no command of its own to run. The corpus README lists its spec
   groups.
+- `corpus/quarry-dispatch/`: an invented dispatch backend and a small React client. Each
+  file exists for one partial-result case: a wide survey chain before a write, eight
+  validations past the seed cap, a two-binding DI choice, a collection of seventeen
+  interface implementations, an action that calls nothing, and a gateway call whose template
+  the web extractor cannot resolve. `partial-result.test.js` runs it through the CLI with one
+  `Partial result AC-n:` test for each acceptance rule, and calls `trace()` in process for the
+  code-index case the public corpus cannot supply.
 - `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
   output of each corpus with backend routes, written by `node selftest/seed-goldens.js
   --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure

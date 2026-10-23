@@ -111,7 +111,8 @@ routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
 trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]
             [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]
             [--from-handler <selector>] [--cover-overlay] [--specs <list|file>]
-trace --area <file>
+            [--require-complete]
+trace --area <file> [--require-complete]
   <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),
   a backend Class.Method, a backend class, a web component name, or a web page path
   ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page
@@ -185,6 +186,34 @@ trace --area <file>
   everywhere else, nothing where no test names the route. No mermaid, no SVG layout,
   nothing fetched. Both may be combined with --seeds; neither may be combined with --json.
 
+  Result status: every walk states one status beside its own fields. It holds a
+  version (schemaVersion 1), traversal (complete, partial or unknown), freshness
+  (matching, mismatched or unknown), evidence strength as the number of
+  source-supported and inferred edges with runtime stated as not supplied, the scope it
+  was asked for, the limits it ran under, the schedule it ran, one entry per place it
+  stopped (reason, caller, call site, via and the remaining work the facts count, or
+  null when they do not) and an identity: one sha256 over the fact-set identities, the
+  start, the scope, the limits and the configuration the walk reads. The stop reasons
+  are depth, node-budget, seed-cap, fan-out-cap, unresolved-target,
+  unresolved-pipeline, provider-unavailable and unknown-edge-kind. A limit reason makes
+  the traversal partial; a discovery reason with no limit beside it makes it unknown.
+  The terminal output starts with the status lines before the tree. --json adds
+  schemaVersion and status; --graph adds status; --mermaid prints the same lines as
+  `%%` comments; --html and both span pages show them at the top. A display limit —
+  folding, or the 120-node mermaid cap — carries its own notice and leaves the status
+  unchanged. A walk the node budget stops is scheduled by call level: every call
+  within the deepest level that fits is entered, and each direct call site of each
+  entered method has a node or a frontier entry. A walk no limit stops keeps its bytes.
+
+  --require-complete (trace, trace --area, span and span --from-component) writes the
+  normal output first, then one stderr line for each reason, and it exits 4 when the
+  traversal is not complete or the freshness is not matching. Evidence strength never
+  fails a run. A start, selector or usage failure keeps exit 2, and 2 wins over 4;
+  without the flag every exit code stays as it was. check, affected, readiness,
+  cover --packets, scope, surface, skeleton and join --against print one stderr notice
+  when a walk they used did not complete, and their stdout, JSON and exit codes do not
+  change; routes-of keeps its incomplete verdict.
+
   --cover-overlay colours every route node by the evidence tier the same index `cover`
   reads already holds for that route: `asserted` (an executing test names the route and
   that test carries an assertion fact), `stubbed-only` (an executing test names it, no
@@ -202,6 +231,7 @@ trace --area <file>
   --html tree text stays byte-identical to the terminal tree either way.
 
 span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
+            [--require-complete]
   Writes one self-contained HTML page for one entry route, read outcome-first for a
   tester rather than line-first for an engineer. Four sections: a span map (who calls
   the route, the endpoint and the services and stores that own it, its success outcomes,
@@ -234,7 +264,7 @@ span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
   or verdict counts.
 
 span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json]
-            [--out <file>] [--specs <list|file>] [--repo <id>]
+            [--out <file>] [--specs <list|file>] [--repo <id>] [--require-complete]
   Resolves a web or mobile component, page or service name through the
   existing chain — component → handler or method body → action_dispatch → action_def →
   effect_handler → gateway_call → route — and writes one page: a header naming the
