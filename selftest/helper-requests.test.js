@@ -232,9 +232,30 @@ test('Helper request evidence AC-5: a followed fact carries receiver and chain f
   git('commit', '-q', '-m', 'initial');
   appendFileSync(join(dir, 'backend', 'src', 'Controllers', 'CrateController.cs'), '// a changed line\n');
   const hit = runCli(['affected', '--area', 'lantern.area.txt', '--json', '--config', CONFIG], { cwd: dir });
-  assert.equal(hit.status, 0, hit.stderr);
-  const specs = JSON.parse(hit.stdout).specs.map((row) => row.spec).sort();
-  assert.deepEqual(specs, ['tests/audit.spec.ts', 'tests/depth.spec.ts']);
+  // The walks stop where no code index answers, so each route whose walk reached no
+  // changed file is selected as well: the part not read can reach the change.
+  assert.equal(hit.status, 4, hit.stderr);
+  const report = JSON.parse(hit.stdout);
+  const specs = report.specs.map((row) => row.spec);
+  for (const spec of ['tests/audit.spec.ts', 'tests/depth.spec.ts']) assert.ok(specs.includes(spec), spec);
+  const added = report.routes.filter((route) => route.reason === 'incomplete-walk');
+  assert.deepEqual(added.map((route) => route.key).sort(), [
+    'DELETE depot/v1/shelves/*',
+    'GET depot/v1/shelves/count',
+    'POST depot/v1/audit/*',
+    'POST depot/v1/bins/*/close',
+    'POST depot/v1/bins/*/open',
+    'PUT depot/v1/bins/*/label',
+    'PUT depot/v1/shelves/*',
+  ]);
+  for (const route of added) {
+    assert.deepEqual(route.walk, { traversal: 'unknown', stops: { 'provider-unavailable': 1 } }, route.key);
+    assert.deepEqual(route.changed, [], route.key);
+  }
+  const hits = report.routes.filter((route) => route.reason === undefined).map((route) => route.key).sort();
+  assert.deepEqual(hits, ['DELETE depot/v2/crates/*', 'POST depot/v2/crates/*/close']);
+  assert.equal(report.incompleteWalk.rung, 'incomplete-walk');
+  assert.deepEqual(report.incompleteWalk.routes, added.map((route) => route.key).sort());
 });
 
 test('Helper request evidence AC-6: a helper that stubs a route is never entered and gives no request', (t) => {

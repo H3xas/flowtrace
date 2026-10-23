@@ -1,0 +1,6 @@
+{
+  "out": "out",
+  "repos": [
+    { "id": "backend", "kind": "backend", "root": "backend", "role": ["api"], "scout": true }
+  ]
+}

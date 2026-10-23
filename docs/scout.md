@@ -9,7 +9,7 @@ a standalone code-index CLI, for three questions:
 
 | question | scout command | used by |
 |---|---|---|
-| what does this symbol reference? | `refs <symbol>` | `trace`, to continue past an unresolved node |
+| what does this symbol reference? | `refs <symbol> --out` | `trace`, to continue past an unresolved node |
 | who references this symbol? | `refs <symbol> --json` | `affected --dotnet-filter`, to find test classes |
 | what does changing this file reach? | `impact <file> --hops N --json` | `affected --hops`, to widen a changed set |
 
@@ -71,3 +71,8 @@ The wrapper never throws. A missing binary, a repository with no index, a non-ze
 unknown symbol — all produce an empty edge list marked `unavailable`, and the walk prints
 the node as unresolved with `graph: unavailable` beside it. A trace without an index is a
 smaller trace, not a failed one.
+
+A `refs --out` reply is an answer only in two forms. The first is the index's own
+`no symbol matches` line. The second is an `outbound:` section in which each kind lists as
+many rows as its header line shows. Any other reply, also one with exit 0, is a lookup that
+the index did not answer.

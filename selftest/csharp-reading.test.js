@@ -313,8 +313,11 @@ test('CSharp reading AC-4: affected never counts an unresolved route as a known 
   const services = join(dir, 'api', 'src', 'Services', 'Services.cs');
   writeFileSync(services, readFileSync(services, 'utf8').replace('public Fare Quote() => Fare.None;', 'public Fare Quote() => Fare.Some;'));
   const run = cli(dir, 'affected', '--all-routes', '--json');
-  assert.equal(run.status, 0, run.stderr);
+  // Without a code index every walk stops, so the selection widens and the run cannot read as complete.
+  assert.equal(run.status, 4, run.stderr);
   const report = JSON.parse(run.stdout);
+  const rungs = [...report.fallbacks.map((fallback) => fallback.rung), report.incompleteWalk?.rung].filter(Boolean);
+  assert.deepEqual(rungs, ['incomplete-walk']);
   const declared = ['api', 'ops'].flatMap((repo) => facts(dir, repo)).filter((f) => f.type === 'route');
   assert.equal(report.universe.routes, declared.filter((f) => !f.unresolvedArgument).length);
   assert.ok(report.routes.length > 0);

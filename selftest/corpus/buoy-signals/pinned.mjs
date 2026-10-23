@@ -1,6 +1,6 @@
 /**
  * What the serial pins are made of. `pin.mjs` reads this module to write `expected/` from
- * the base commit, and the selftest reads it to run the same invocations and the same
+ * a serial reference commit, and the selftest reads it to run the same invocations and the same
  * lookup cases against the branch, so the two can never drift apart.
  */
 import { tmpdir } from 'node:os';
@@ -37,7 +37,7 @@ export const INVOCATIONS = [
 
 /** The stub's dependent lookups, in the order each answer makes the next one known. */
 export const CHAINS = {
-  outbound: ['refs HarborBridge', 'refs SignalRelay', 'refs RelaySink', 'refs RelayGate'],
+  outbound: ['refs HarborBridge --out', 'refs SignalRelay --out', 'refs RelaySink --out', 'refs RelayGate --out'],
   'impact-inbound': [
     'impact src/Controllers/ZoneWatchersController.cs --hops 2 --json',
     'refs WatcherService --json',

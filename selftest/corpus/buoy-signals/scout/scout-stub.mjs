@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * A stand-in for the code index behind `scout.bin`. It answers the three lookups the
- * wrapper makes — `refs <symbol>`, `refs <symbol> --json` and `impact <file> --hops N
+ * wrapper makes — `refs <symbol> --out`, `refs <symbol> --json` and `impact <file> --hops N
  * --json` — from `answers.json` beside this file, and appends one line per process to the
  * file `FLOWTRACE_STUB_LOG` names so a test can count processes, find duplicate lookups
  * and measure how many ran at once.

@@ -63,7 +63,8 @@ test('Scope freshness AC-1: a frozen snapshot keeps its ordered rows after an un
   assert.equal(baseline.status, 0, baseline.stderr);
   const before = JSON.parse(baseline.stdout);
   assert.deepEqual(before.routes.map((route) => route.key), KEYS);
-  assert.deepEqual(Object.keys(before.routes[0]).sort(), ['automation', 'file', 'key', 'line', 'repo', 'serverGate']);
+  // This route's walk stops, so it also carries the walk mark.
+  assert.deepEqual(Object.keys(before.routes[0]).sort(), ['automation', 'file', 'key', 'line', 'repo', 'serverGate', 'walk']);
   assert.equal(before.freshness.value, 'matching');
 
   const human = runCli(['scope', '--config', CONFIG, '--area', AREA], { cwd: dir });
@@ -278,7 +279,8 @@ test('Scope freshness AC-5: area usage stays exit 2, and key order, placeholders
     { key: 'GET nowhere/v1/x', repo: null, file: null, line: null, automation: 'no', serverGate: null },
     {
       key: 'GET gizmos/v1/catalog', repo: 'api', file: 'src/Controllers/GizmoController.cs',
-      line: 17, automation: 'no', serverGate: null,
+      line: 17, automation: 'no', serverGate: 'unknown',
+      walk: { traversal: 'unknown', stops: { 'unresolved-target': 1 } },
     },
   ]);
 });

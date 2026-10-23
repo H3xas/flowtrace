@@ -539,10 +539,15 @@ test('Partial result AC-10: the eight reading commands print one notice and chan
     noticeOf(runCli([...args, '--config', CONFIG, '--max-nodes', '20'], { cwd: dir }), label);
   }
 
+  // The baseline above was written at the same limit, so the boundary matches: the run
+  // compares as before, and each route whose walk stopped carries the walk mark.
   const check = runCli(['check', '--config', CONFIG, '--area', AREA, '--json', '--max-nodes', '20'], { cwd: dir });
   assert.equal(check.status, 0, check.stderr);
   const report = JSON.parse(check.stdout);
-  assert.ok(Array.isArray(report.regressions), 'the JSON stays the report it was');
+  assert.deepEqual(report.regressions, []);
+  assert.equal(report.boundaryChanged, undefined);
+  assert.ok(report.walks.length > 0, 'a stopped walk is marked');
+  for (const entry of report.walks) assert.ok(['partial', 'unknown'].includes(entry.walk.traversal), entry.key);
 
   // `packets` writes only for a route with a candidate test.
   const demo = copyExample(t, join(HERE, '..', 'examples', 'demo-shop'), 'flowtrace.config.json');
