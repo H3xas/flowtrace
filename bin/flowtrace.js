@@ -11,8 +11,11 @@ import { fileURLToPath } from 'node:url';
 import { loadConfig } from '../lib/config.js';
 import { routeSlugFor, writeKeyedPage } from '../lib/slug.js';
 import {
-  externalLocations, fact, factsDigest, factsHeader, loadFactsProvider, mergeFacts, producerSummary, staleFactsWarnings, validateFacts,
+  externalLocations, fact, factState, factsDigest, factsHeader, loadFactsProvider, mergeFacts, producerSummary, staleFactsWarnings, validateFacts,
 } from '../lib/facts.js';
+import {
+  countWalks, frontierLines, noticeLine, requireCompleteLines, statusLines, walkFails,
+} from '../lib/result-status.js';
 
 import * as affectedModule from '../lib/affected.js';
 import * as assertionSurfaceModule from '../lib/assertion-surface.js';
@@ -159,7 +162,8 @@ const USAGE = [
   'trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]',
   '            [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]',
   '            [--from-handler <selector>] [--cover-overlay] [--specs <list|file>]',
-  'trace --area <file>',
+  '            [--require-complete]',
+  'trace --area <file> [--require-complete]',
   '  <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),',
   '  a backend Class.Method, a backend class, a web component name, or a web page path',
   '  ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page',
@@ -233,6 +237,36 @@ const USAGE = [
   '  everywhere else, nothing where no test names the route. No mermaid, no SVG layout,',
   '  nothing fetched. Both may be combined with --seeds; neither may be combined with --json.',
   '',
+  '  Result status: every walk states one status beside its own fields. It holds a',
+  '  version (schemaVersion 1), traversal (complete, partial or unknown), freshness',
+  '  (matching, mismatched or unknown), evidence strength as the number of',
+  '  source-supported and inferred edges with runtime stated as not supplied, the scope it',
+  '  was asked for, the limits it ran under, the schedule it ran, one entry per place it',
+  '  stopped (reason, caller, call site, via and the remaining work the facts count, or',
+  '  null when they do not) and an identity: one sha256 over the fact-set identities, the',
+  '  start, the scope, the limits and the configuration the walk reads. The stop reasons',
+  '  are depth, node-budget, seed-cap, fan-out-cap, unresolved-target,',
+  '  unresolved-pipeline, provider-unavailable and unknown-edge-kind. A limit reason makes',
+  '  the traversal partial; a discovery reason with no limit beside it makes it unknown.',
+  '  The terminal output starts with the status lines before the tree. --json adds',
+  '  schemaVersion and status; --graph adds status; --mermaid prints the same lines as',
+  '  `%%` comments; --html and both span pages show them at the top. A display limit —',
+  '  folding, or the 120-node mermaid cap — carries its own notice and leaves the status',
+  '  unchanged. A component page states one entry for each unresolved arm it lists, and a',
+  '  route states the entries of each gate walk whose seeds it used, with the filter named.',
+  '  A walk the node budget stops is scheduled by call level: every call',
+  '  within the deepest level that fits is entered, and each direct call site of each',
+  '  entered method has a node or a frontier entry. A walk no limit stops keeps its bytes.',
+  '',
+  '  --require-complete (trace, trace --area, span and span --from-component) writes the',
+  '  normal output first, then one stderr line for each reason, and it exits 4 when the',
+  '  traversal is not complete or the freshness is not matching. Evidence strength never',
+  '  fails a run. A start, selector or usage failure keeps exit 2, and 2 wins over 4;',
+  '  without the flag every exit code stays as it was. check, affected, readiness,',
+  '  cover --packets, scope, surface, skeleton and join --against print one stderr notice',
+  '  when a walk they used did not complete, and their stdout, JSON and exit codes do not',
+  '  change; routes-of keeps its incomplete verdict.',
+  '',
   '  --cover-overlay colours every route node by the evidence tier the same index `cover`',
   '  reads already holds for that route: `asserted` (an executing test names the route and',
   '  that test carries an assertion fact), `stubbed-only` (an executing test names it, no',
@@ -250,6 +284,7 @@ const USAGE = [
   '  --html tree text stays byte-identical to the terminal tree either way.',
   '',
   'span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]',
+  '            [--require-complete]',
   '  Writes one self-contained HTML page for one entry route, read outcome-first for a',
   '  tester rather than line-first for an engineer. Four sections: a span map (who calls',
   '  the route, the endpoint and the services and stores that own it, its success outcomes,',
@@ -282,7 +317,7 @@ const USAGE = [
   '  or verdict counts.',
   '',
   'span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json]',
-  '            [--out <file>] [--specs <list|file>] [--repo <id>]',
+  '            [--out <file>] [--specs <list|file>] [--repo <id>] [--require-complete]',
   '  Resolves a web or mobile component, page or service name through the',
   '  existing chain — component → handler or method body → action_dispatch → action_def →',
   '  effect_handler → gateway_call → route — and writes one page: a header naming the',
@@ -691,6 +726,7 @@ function parseArgs(argv) {
     failOn: [],
     allowSkipped: false,
     check: true,
+    requireComplete: false,
   };
   const positional = [];
   for (let index = 0; index < argv.length; index += 1) {
@@ -727,6 +763,10 @@ function parseArgs(argv) {
       options.nx = true;
     } else if (argument === '--no-check') {
       options.check = false;
+    } else if (argument === '--require-complete') {
+      options.requireComplete = true;
+    } else if (argument.startsWith('--require-complete=')) {
+      throw new UsageError('--require-complete takes no value');
     } else if (argument === '--max-specs' || argument.startsWith('--max-specs=')) {
       const value = argument.startsWith('--max-specs=') ? argument.slice('--max-specs='.length) : argv[++index];
       const parsed = Number(value);
@@ -1067,6 +1107,12 @@ async function runCheck(config, options) {
     repos: config.repos,
     outbound: scout.outbound,
   };
+  const counted = countWalks(trace);
+  const finish = (code) => {
+    const notice = noticeLine('check', counted.counts);
+    if (notice) warn(notice);
+    return code;
+  };
   const baselinePath = resolveBaselinePath(area, options.baseline);
 
   let report;
@@ -1076,7 +1122,7 @@ async function runCheck(config, options) {
       keys,
       aliases: config.aliases,
       traceOptions,
-      trace,
+      trace: counted,
       repos: config.repos,
       writeBaseline: true,
     });
@@ -1098,7 +1144,7 @@ async function runCheck(config, options) {
         keys,
         aliases: config.aliases,
         traceOptions,
-        trace,
+        trace: counted,
         repos: config.repos,
         baseline,
       });
@@ -1107,11 +1153,11 @@ async function runCheck(config, options) {
 
   if (options.json) {
     log(JSON.stringify(report, null, 2));
-    return report.exit;
+    return finish(report.exit);
   }
   log(renderCheck(report));
   if (options.writeBaseline && report.exit === 0) log(`baseline -> ${display(baselinePath)}`);
-  return report.exit;
+  return finish(report.exit);
 }
 
 /**
@@ -1340,6 +1386,12 @@ async function runJoinAgainst(config, options, factSets) {
     return usage(error.message);
   }
   warnStaleFacts(factSets, config.repos);
+  const counted = countWalks(traceModule.trace);
+  const finish = (code) => {
+    const notice = noticeLine('join --against', counted.counts);
+    if (notice) warn(notice);
+    return code;
+  };
   const source = resolve(options.against);
   let snapshot;
   try {
@@ -1353,12 +1405,12 @@ async function runJoinAgainst(config, options, factSets) {
   } catch (error) {
     if (!(error instanceof SnapshotError)) throw error;
     process.stderr.write(`flowtrace: ${error.message}\n`);
-    return 4;
+    return finish(4);
   }
   const report = driftOf(
     snapshot,
     { tool: toolIdentity(), factSets },
-    { aliases: config.aliases, sinks: config.sinks },
+    { aliases: config.aliases, sinks: config.sinks, trace: counted },
   );
   if (options.json) log(JSON.stringify(report, null, 2));
   else log(renderDrift(report, { snapshotName: display(source) }));
@@ -1375,14 +1427,14 @@ async function runJoinAgainst(config, options, factSets) {
       `flowtrace: ${plural(report.skipped.length, 'route')} skipped and never compared; ` +
         're-run with --allow-skipped to gate on findings alone',
     );
-    return 5;
+    return finish(5);
   }
   const failing = failingFindings(report, failOn);
   if (failing.length > 0) {
     warn(`flowtrace: ${plural(failing.length, 'finding')} selected by --fail-on`);
-    return 1;
+    return finish(1);
   }
-  return 0;
+  return finish(0);
 }
 
 function loadFlow(config) {
@@ -1496,12 +1548,14 @@ function traceNode(node) {
  */
 function componentSpanJson(model) {
   return {
+    schemaVersion: 1,
     component: model.component,
+    status: model.status,
     header: model.header,
     entries: model.entries,
     selectedEntry: model.selectedEntry,
     orphans: model.orphans,
-    routes: model.routes.map((entry) => ({ key: entry.key, arms: entry.arms })),
+    routes: model.routes.map((entry) => ({ key: entry.key, arms: entry.arms, status: entry.model.status })),
     unresolved: model.unresolved,
     limits: model.limits,
   };
@@ -1517,7 +1571,9 @@ const INVENTORY_KINDS = new Set(['page', 'component', 'service']);
  */
 function traceResult(result, options, foldedGraph) {
   const graph = foldedGraph(result, { fold: options.fold !== false, nodeFields: traceNodeFields });
+  const stubs = graph.nodes.filter((node) => node.kind === undefined).length;
   return {
+    schemaVersion: 1,
     root: traceNode(result.root),
     nodes: graph.nodes,
     edges: graph.edges,
@@ -1526,6 +1582,8 @@ function traceResult(result, options, foldedGraph) {
     seeds: result.seeds,
     seedsTruncated: result.seedsTruncated,
     stats: result.stats,
+    ...(result.status ? { status: result.status } : {}),
+    ...(stubs > 0 ? { display: { fold: { stubs } } } : {}),
   };
 }
 
@@ -1543,7 +1601,8 @@ async function runTrace(config, options) {
     return 2;
   }
   const factSets = loadFactSets(config);
-  warnStaleFacts(factSets, config.repos);
+  const facts = factState(factSets, config.repos);
+  for (const warning of facts.warnings) warn(warning.message);
   const { trace, resolveStart } = traceModule;
   const { renderTree, colorEnabled, foldedGraph } = renderTreeModule;
   const { createScout } = scoutModule;
@@ -1563,6 +1622,14 @@ async function runTrace(config, options) {
     consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
     repos: config.repos,
     outbound: scout.outbound,
+    freshness: { value: facts.value, sets: facts.sets },
+  };
+  // A failed walk writes its ordinary output first, then the reasons, then exit 4. A start
+  // or usage failure keeps exit 2, which wins over 4.
+  const finish = (walked, label = null) => {
+    if (!options.requireComplete || !walked.status || !walkFails(walked.status)) return 0;
+    for (const line of requireCompleteLines(walked.status, label)) process.stderr.write(`${line}\n`);
+    return 4;
   };
 
   if (options.area) {
@@ -1570,14 +1637,24 @@ async function runTrace(config, options) {
       .split('\n')
       .map((line) => line.trim())
       .filter((line) => line && !line.startsWith('#'));
+    const walks = [];
     const results = keys.map((key) => {
       const walked = trace(factSets, key, { ...shared, seeds: true });
+      walks.push({ key, walked });
       if (walked.candidates) return { key, error: 'ambiguous start', reason: 'ambiguous', candidates: walked.candidates };
       if (walked.error) return { key, error: walked.error, reason: walked.reason, ...(walked.frontier ? { frontier: walked.frontier } : {}) };
       markProviderHops(walked, factSets);
       return { key, ...traceResult(walked, options, foldedGraph) };
     });
     log(JSON.stringify(results, null, 2));
+    if (!options.requireComplete) return 0;
+    for (const { key, walked } of walks) {
+      if (walked.status && walkFails(walked.status)) {
+        for (const line of requireCompleteLines(walked.status, key)) process.stderr.write(`${line}\n`);
+      }
+    }
+    if (walks.some(({ walked }) => walked.error || walked.candidates)) return 2;
+    if (walks.some(({ walked }) => walked.status && walkFails(walked.status))) return 4;
     return 0;
   }
 
@@ -1610,7 +1687,7 @@ async function runTrace(config, options) {
   }
   if (options.json) {
     log(JSON.stringify(traceResult(result, options, foldedGraph), null, 2));
-    return 0;
+    return finish(result);
   }
   if (options.html || options.mermaid) {
     const { buildCoverOverlay } = renderGraphModule;
@@ -1630,7 +1707,8 @@ async function runTrace(config, options) {
     if (options.mermaid) {
       const { renderMermaid } = renderGraphModule;
       const graph = foldedGraph(result, { fold: options.fold !== false, nodeFields: traceNodeFields });
-      log(renderMermaid(graph, { coverOverlay }));
+      const stubs = graph.nodes.filter((node) => node.kind === undefined).length;
+      log(renderMermaid(graph, { coverOverlay, status: result.status, foldStubs: stubs }));
     }
     if (options.html) {
       const { renderTreeHtml } = renderTreeHtmlModule;
@@ -1648,13 +1726,25 @@ async function runTrace(config, options) {
       );
       log(`html -> ${display(target)}`);
     }
-    return 0;
+    return finish(result);
   }
   if (options.graph) {
     const graph = foldedGraph(result, { fold: options.fold !== false, nodeFields: traceNodeFields });
     const edges = graph.edges.map((edge) => ({ from: edge.from, to: edge.to, via: edge.via }));
-    log(JSON.stringify({ nodes: graph.nodes, edges }, null, 2));
-    return 0;
+    const stubs = graph.nodes.filter((node) => node.kind === undefined).length;
+    log(
+      JSON.stringify(
+        {
+          nodes: graph.nodes,
+          edges,
+          ...(result.status ? { status: result.status } : {}),
+          ...(stubs > 0 ? { display: { fold: { stubs } } } : {}),
+        },
+        null,
+        2,
+      ),
+    );
+    return finish(result);
   }
   log(
     renderTree(result, {
@@ -1664,7 +1754,7 @@ async function runTrace(config, options) {
       fold: options.fold !== false,
     }),
   );
-  return 0;
+  return finish(result);
 }
 
 /**
@@ -1765,9 +1855,10 @@ async function runRoutesOf(config, options) {
  */
 async function runSpan(config, options) {
   const factSets = loadFactSets(config);
-  warnStaleFacts(factSets, config.repos);
+  const facts = factState(factSets, config.repos);
+  for (const warning of facts.warnings) warn(warning.message);
   if (options.fromComponent) {
-    return runComponentSpan(config, options, factSets);
+    return runComponentSpan(config, options, factSets, facts);
   }
   const { span } = spanModule;
   const { renderSpanHtml } = renderSpanHtmlModule;
@@ -1799,6 +1890,7 @@ async function runSpan(config, options) {
       consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
       outbound: scout.outbound,
+      freshness: { value: facts.value, sets: facts.sets },
     },
   });
   if (model.error) {
@@ -1817,6 +1909,10 @@ async function runSpan(config, options) {
       `${counts['inherited-only']} inherited-only, ${counts.untested} untested ` +
       `(reconciles with cover: ${model.reconcile.ledgerRows}/${model.reconcile.coverSeeds} seeds) -> ${display(target)}`,
   );
+  if (options.requireComplete && model.status && walkFails(model.status)) {
+    for (const line of requireCompleteLines(model.status)) process.stderr.write(`${line}\n`);
+    return 4;
+  }
   return 0;
 }
 
@@ -1844,7 +1940,7 @@ function writeSpanPage(config, options, model, page) {
   return writeKeyedPage(resolve(joinPath(config.out, 'span')), model.slug, '.html', model.pageKey, page);
 }
 
-async function runComponentSpan(config, options, factSets) {
+async function runComponentSpan(config, options, factSets, facts) {
   const { componentSpan } = componentSpanModule;
   const { renderComponentSpanHtml } = renderComponentSpanHtmlModule;
   const { createScout } = scoutModule;
@@ -1869,6 +1965,7 @@ async function runComponentSpan(config, options, factSets) {
       consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
       repos: config.repos,
       outbound: scout.outbound,
+      freshness: { value: facts.value, sets: facts.sets },
     },
   });
   if (model.error) {
@@ -1883,9 +1980,25 @@ async function runComponentSpan(config, options, factSets) {
   for (const token of unmatched) {
     process.stderr.write(`flowtrace: --specs "${token}" matches no spec in the facts\n`);
   }
+  // Every walk the page prints has its own status, so `--require-complete` asks each one.
+  const finish = () => {
+    if (!options.requireComplete) return 0;
+    const failing = [];
+    if (model.status && walkFails(model.status)) failing.push({ status: model.status, label: null });
+    for (const entry of model.routes) {
+      if (entry.model && entry.model.status && walkFails(entry.model.status)) {
+        failing.push({ status: entry.model.status, label: entry.key });
+      }
+    }
+    if (failing.length === 0) return 0;
+    for (const item of failing) {
+      for (const line of requireCompleteLines(item.status, item.label)) process.stderr.write(`${line}\n`);
+    }
+    return 4;
+  };
   if (options.json) {
     log(JSON.stringify(componentSpanJson(model), null, 2));
-    return 0;
+    return finish();
   }
   const startRepo = config.repos.find((repo) => repo.id === model.component.repo);
   const page = renderComponentSpanHtml(model, {
@@ -1897,7 +2010,7 @@ async function runComponentSpan(config, options, factSets) {
     `span --from-component ${options.fromComponent}: ${plural(model.header.routesResolved, 'route')} resolved, ` +
       `${plural(model.header.armsUnresolved, 'arm')} unresolved -> ${display(target)}`,
   );
-  return 0;
+  return finish();
 }
 
 /**
@@ -1916,7 +2029,13 @@ async function runSurface(config, options) {
     outDir: config.out,
     repos: config.repos,
   });
-  const result = trace(factSets, options.start, {
+  const counted = countWalks(trace);
+  const finish = (code) => {
+    const notice = noticeLine('surface', counted.counts);
+    if (notice) warn(notice);
+    return code;
+  };
+  const result = counted(factSets, options.start, {
     depth: options.depth,
     maxNodes: options.maxNodes,
     repo: options.repo,
@@ -1929,7 +2048,7 @@ async function runSurface(config, options) {
   if (result.error) {
     process.stderr.write(`flowtrace: "${options.start}" ${result.error}\n`);
     for (const candidate of result.candidates || []) process.stderr.write(`  ${candidate}\n`);
-    return 2;
+    return finish(2);
   }
   const model = assertionSurface(factSets, options.start, result, { hops: options.hops, sinks: config.sinks });
   const facts = surfaceFacts(model, fact);
@@ -1947,10 +2066,10 @@ async function runSurface(config, options) {
   }
   if (options.json) {
     process.stdout.write(`${JSON.stringify({ ...model, facts }, null, 2)}\n`);
-    return 0;
+    return finish(0);
   }
   if (!options.out) process.stdout.write(renderSurface(model));
-  return 0;
+  return finish(0);
 }
 
 /**
@@ -1972,7 +2091,13 @@ async function runSkeleton(config, options) {
     outDir: config.out,
     repos: config.repos,
   });
-  const result = trace(factSets, options.start, {
+  const walkCounter = countWalks(trace);
+  const finish = (code) => {
+    const notice = noticeLine('skeleton', walkCounter.counts);
+    if (notice) warn(notice);
+    return code;
+  };
+  const result = walkCounter(factSets, options.start, {
     depth: options.depth,
     maxNodes: options.maxNodes,
     repo: options.repo,
@@ -1985,7 +2110,7 @@ async function runSkeleton(config, options) {
   if (result.error) {
     process.stderr.write(`flowtrace: "${options.start}" ${result.error}\n`);
     for (const candidate of result.candidates || []) process.stderr.write(`  ${candidate}\n`);
-    return 2;
+    return finish(2);
   }
   const model = assertionSurface(factSets, options.start, result, { hops: options.hops, sinks: config.sinks });
   const sets = [...factSets];
@@ -2007,7 +2132,7 @@ async function runSkeleton(config, options) {
   });
   if (options.json) {
     process.stdout.write(`${JSON.stringify({ plan, spec, placeholders: counted ?? null }, null, 2)}\n`);
-    return plan.refused && !options.stub ? 3 : 0;
+    return finish(plan.refused && !options.stub ? 3 : 0);
   }
   if (spec === null) {
     process.stderr.write(`flowtrace: ${plan.refusal}\n`);
@@ -2015,7 +2140,7 @@ async function runSkeleton(config, options) {
       process.stderr.write(`  gap ${block.reason}: ${block.state || 'no state'} (${block.file}:${block.line})\n`);
     }
     process.stderr.write('  re-run with --stub to write the gap-only stub instead\n');
-    return 3;
+    return finish(3);
   }
   if (options.out) {
     const target = resolve(options.out);
@@ -2028,10 +2153,10 @@ async function runSkeleton(config, options) {
         (draftsDir ? `, ${plan.counts.drafted} titled from the drafted AC` : '') +
         ` -> ${display(target)}`,
     );
-    return 0;
+    return finish(0);
   }
   process.stdout.write(spec);
-  return 0;
+  return finish(0);
 }
 
 /**
@@ -2091,6 +2216,12 @@ async function runCover(config, options) {
         `${plural(merge.confirmed, 'confirmation')}, rejections ${JSON.stringify(merge.rejections)}`,
     );
   }
+  const counted = countWalks(traceModule.trace);
+  const finish = (code) => {
+    const notice = options.packets ? noticeLine('packets', counted.counts) : null;
+    if (notice) warn(notice);
+    return code;
+  };
   if (options.packets) {
     const { writePackets } = packetsModule;
     const mobileRepo = config.repos.find((repo) => repo.kind === 'mobile');
@@ -2099,6 +2230,7 @@ async function runCover(config, options) {
       area: area.name,
       keys,
       aliases: config.aliases,
+      trace: counted,
       traceOptions,
       mobileRoot: mobileRepo ? mobileRepo.root : undefined,
       repos: config.repos,
@@ -2125,11 +2257,11 @@ async function runCover(config, options) {
   }
   if (options.json) {
     log(JSON.stringify(report, null, 2));
-    return 0;
+    return finish(0);
   }
   log(renderCover(report, { color: colorEnabled() }));
   if (options.md) log(`\nmarkdown -> ${display(resolve(options.md))}`);
-  return 0;
+  return finish(0);
 }
 
 /**
@@ -2165,10 +2297,17 @@ async function runScope(config, options) {
     repos: config.repos,
     outbound: scout.outbound,
   };
+  const counted = countWalks(traceModule.trace);
+  const finish = (code) => {
+    const notice = noticeLine('scope', counted.counts);
+    if (notice) warn(notice);
+    return code;
+  };
   const report = scope(factSets, {
     area: area.name,
     keys,
     aliases: config.aliases,
+    trace: counted,
     traceOptions,
     repos: config.repos,
     gatePatterns: config.scope.gatePatterns,
@@ -2176,14 +2315,14 @@ async function runScope(config, options) {
   const exitCode = report.verdict === 'stale' ? 4 : 0;
   if (options.json) {
     log(JSON.stringify(report, null, 2));
-    return exitCode;
+    return finish(exitCode);
   }
   if (exitCode === 0) {
     log(renderScope(report));
   } else {
     process.stderr.write(`flowtrace: ${renderScope(report)}\n`);
   }
-  return exitCode;
+  return finish(exitCode);
 }
 
 /**
@@ -2213,6 +2352,13 @@ async function runAffected(config, options) {
   } = affectedModule;
   const { readAreaKeys } = coverModule;
   const { createScout } = scoutModule;
+
+  const counted = countWalks(traceModule.trace);
+  const finish = (code) => {
+    const notice = noticeLine('affected', counted.counts);
+    if (notice) warn(notice);
+    return code;
+  };
 
   const source = diffSourceRepo(config, options.repo);
   if (!source) throw new Error('no repository configured to read a diff from');
@@ -2268,6 +2414,7 @@ async function runAffected(config, options) {
     impact: scout.impact,
     dotnet,
     nx,
+    trace: counted,
     // `--repo` names the suite to print, never the repository a route is resolved in:
     // scoping the walk to a test repository would resolve no route at all.
     traceOptions: {
@@ -2291,7 +2438,7 @@ async function runAffected(config, options) {
 
   if (options.json) {
     log(JSON.stringify(report, null, 2));
-    return report.exit;
+    return finish(report.exit);
   }
   if (options.dotnetFilter) {
     const expression = dotnetArgs(report);
@@ -2303,7 +2450,7 @@ async function runAffected(config, options) {
       const rung = report.fallbacks.find((entry) => entry.rung === 'dotnet-filter');
       warn(`flowtrace: dotnet-filter${rung && rung.scope ? ` [${rung.scope}]` : ''}: ${report.dotnetFilter.reason}`);
     }
-    return report.exit;
+    return finish(report.exit);
   }
   if (options.playwrightArgs) {
     const line = playwrightArgs(report, { repo: options.repo, repos: config.repos });
@@ -2312,10 +2459,10 @@ async function runAffected(config, options) {
     // cannot see is exactly the silent zero the --nx contract refuses.
     if (report.nx && report.nx.reason) warn(`flowtrace: ${report.nx.reason}`);
     for (const entry of report.fallbacks) warn(`flowtrace: ${entry.rung}${entry.scope ? ` [${entry.scope}]` : ''}: ${entry.reason}`);
-    return report.exit;
+    return finish(report.exit);
   }
   log(renderAffected(report, { repo: options.repo }));
-  return report.exit;
+  return finish(report.exit);
 }
 
 /**
@@ -2506,7 +2653,13 @@ async function runReadiness(config, options) {
     repos: config.repos,
     outbound: scout.outbound,
   };
-  const report = readiness(factSets, { rows, aliases: config.aliases, traceOptions });
+  const counted = countWalks(traceModule.trace);
+  const finish = (code) => {
+    const notice = noticeLine('readiness', counted.counts);
+    if (notice) warn(notice);
+    return code;
+  };
+  const report = readiness(factSets, { rows, aliases: config.aliases, trace: counted, traceOptions });
 
   if (options.md) {
     mkdirSync(dirname(resolve(options.md)), { recursive: true });
@@ -2514,11 +2667,11 @@ async function runReadiness(config, options) {
   }
   if (options.json) {
     log(JSON.stringify(report, null, 2));
-    return 0;
+    return finish(0);
   }
   log(renderReadinessMarkdown(report));
   if (options.md) log(`\nmarkdown -> ${display(resolve(options.md))}`);
-  return 0;
+  return finish(0);
 }
 
 async function main() {
@@ -2534,6 +2687,9 @@ async function main() {
   }
   if (!COMMANDS.has(options.command)) {
     return usage(options.command ? `unknown command "${options.command}"` : 'no command given');
+  }
+  if (options.requireComplete && options.command !== 'trace' && options.command !== 'span') {
+    return usage('--require-complete is a trace or span option');
   }
   if (options.command === 'trace' && !options.start && !options.area) {
     return usage('trace requires a start, or --area <file>');

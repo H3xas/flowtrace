@@ -25,6 +25,117 @@ test('--allow-skipped on a command other than join is a usage error exiting 2', 
   assert.match(stderr, /--allow-skipped is a join option/);
 });
 
+/** Eight independent validation gates put one route's own seed walk past the 64-seed cap, so
+ * its seed, effect and evidence comparison is skipped and the gate has a truncated route to
+ * report. Two such routes prove the gate names every skipped route, not only the first. Fewer
+ * gates stay under the cap and cannot show the skip rung at all. */
+function writeOverCapRoute(dir) {
+  const file = joinPath(dir, 'backend', 'src', 'Controllers', 'GizmoController.cs');
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const classClose = lines.findLastIndex((line) => line === '    }');
+  assert.ok(classClose > 0, 'the corpus controller declares a class body to extend');
+  const method = (action, template) => [
+    `        [HttpPost("${template}")]`,
+    `        public async Task<IActionResult> ${action}([FromBody] ConfigureGizmoRequest request)`,
+    '        {',
+    ...'ABCDEFGH'
+      .split('')
+      .map((field) => `            if (!request.${field}.IsValid()) { return BadRequest("${field.toLowerCase()}"); }`),
+    '',
+    '            var catalog = await _gizmos.GetCatalog();',
+    '            return Ok(catalog);',
+    '        }',
+  ];
+  lines.splice(classClose, 0, ...method('Configure', 'configure'), ...method('Retune', 'retune'));
+  writeFileSync(file, lines.join('\n'));
+}
+
+/** One more validation gate on a route whose walk stays under the cap, which changes that
+ * route's seed list and so produces a finding the gate can exit 1 on. */
+function writeSeedDrift(dir) {
+  const file = joinPath(dir, 'backend', 'src', 'Controllers', 'GizmoController.cs');
+  const source = readFileSync(file, 'utf8');
+  const call = '            var activated = await _gizmos.Activate(request.SerialCode);';
+  writeFileSync(
+    file,
+    source.replace(call, `            if (!request.SerialCode.IsValid()) { return BadRequest("invalid"); }\n\n${call}`),
+  );
+}
+
+test('a truncated route fails --fail-on on exit 5, and --allow-skipped hands the exit back to findings', (t) => {
+  const dir = copyCorpus(t);
+  writeOverCapRoute(dir);
+  extract(dir);
+  const taken = runCli(['join', '--config', 'gizmo.config.json', '--snapshot', 'snapshot.json'], { cwd: dir });
+  assert.equal(taken.status, 0, taken.stderr);
+
+  const informational = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json'], { cwd: dir });
+  assert.equal(informational.status, 0, informational.stderr);
+  for (const route of ['configure', 'retune']) {
+    assert.match(
+      informational.stdout,
+      new RegExp(`skipped POST gizmos/v1/${route}: the snapshot side and the current side's seed walks were truncated at the 64-seed cap`),
+    );
+  }
+
+  const gated = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(gated.status, 5);
+  for (const route of ['configure', 'retune']) {
+    assert.match(gated.stderr, new RegExp(`flowtrace: skipped POST gizmos/v1/${route}: .*truncated at the 64-seed cap`));
+  }
+  assert.match(gated.stderr, /flowtrace: 2 routes skipped and never compared/);
+
+  writeSeedDrift(dir);
+  extract(dir);
+  const stillGated = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(stillGated.status, 5, 'a skipped route outranks a selected finding');
+  const optedOut = runCli(
+    ['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any', '--allow-skipped'],
+    { cwd: dir },
+  );
+  assert.equal(optedOut.status, 1, optedOut.stderr);
+  assert.match(optedOut.stderr, /1 finding selected by --fail-on/);
+});
+
+test('a skipped entry states the cap and the truncated side in JSON without moving the report schema', (t) => {
+  const dir = copyCorpus(t);
+  writeOverCapRoute(dir);
+  extract(dir);
+  const taken = runCli(['join', '--config', 'gizmo.config.json', '--snapshot', 'snapshot.json'], { cwd: dir });
+  assert.equal(taken.status, 0, taken.stderr);
+
+  const result = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(result.status, 5);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.schemaVersion, 1);
+  assert.deepEqual(
+    report.skipped.map((entry) => entry.route),
+    ['POST gizmos/v1/configure', 'POST gizmos/v1/retune'],
+  );
+  for (const entry of report.skipped) {
+    assert.deepEqual(Object.keys(entry).sort(), ['reason', 'route']);
+    assert.match(entry.reason, /the snapshot side and the current side's seed walks were truncated at the 64-seed cap/);
+  }
+});
+
+test('a drifting pair without truncation exits 1 under --fail-on, and a clean pair exits 0', (t) => {
+  const dir = copyCorpus(t);
+  extract(dir);
+  const taken = runCli(['join', '--config', 'gizmo.config.json', '--snapshot', 'snapshot.json'], { cwd: dir });
+  assert.equal(taken.status, 0, taken.stderr);
+
+  const clean = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(clean.status, 0, clean.stderr);
+
+  writeSeedDrift(dir);
+  extract(dir);
+  const drifted = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(drifted.status, 1);
+  assert.match(drifted.stdout, /seed added: validation=invalid/);
+  assert.match(drifted.stderr, /1 finding selected by --fail-on/);
+  assert.doesNotMatch(drifted.stderr, /skipped/);
+});
+
 /** A caller whose code end has neither file nor line — an incomplete fact a factsProvider
  * or a future extractor could plausibly emit, exactly the shape join-export.js must
  * refuse rather than coerce to null. */
