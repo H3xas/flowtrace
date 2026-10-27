@@ -461,7 +461,7 @@ test('Dynamic URL join AC-1: a request whose URL normalizes to bare star joins n
   ];
   const aliases = [{ from: 'glasshouse', to: 'backend' }];
   const callers = DYNAMIC_TEMPLATES.map((template, index) =>
-    gatewayFact(index % 2 === 0 ? 'GET' : 'ANY', template, `call${index}`, 100 + index, false),
+    gatewayFact(index % 2 === 0 ? 'GET' : 'ANY', template, `call${index}`, 100 + index, index < 3),
   );
   for (const order of [routes, [...routes].reverse()]) {
     const flow = syntheticJoin(t, { routes: order, callers, aliases });
