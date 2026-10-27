@@ -16,6 +16,8 @@ const CURRENT = 'src/app/features/weather/current-weather.service.ts';
 const LEGACY = 'src/app/features/weather/legacy-weather.service.ts';
 const WEATHER_PAGE = 'src/app/features/weather/weather.page.ts';
 const WEATHER_TEMPLATE = 'src/app/features/weather/weather.page.html';
+const SENSORS_EFFECTS = 'src/app/features/weather/sensors.effects.ts';
+const SUMMARY_EFFECTS = 'src/app/features/weather/summary.effects.ts';
 
 let pack = '';
 let config = '';
@@ -289,6 +291,47 @@ test('Mobile declaration identity AC-3: a rendered child keeps its own declarati
   assert.equal(badge[0].file, 'src/app/features/weather/weather-badge.component.ts');
 });
 
+function handlerRoutes(model, handler) {
+  const view = model.entries.find((entry) => entry.identity.handler === handler);
+  assert.ok(view, `entry ${handler}`);
+  return [...view.routes].sort();
+}
+
+test('Mobile declaration identity AC-3: each same-named effect declaration answers only its own action', () => {
+  const run = spanJson('SyncPage');
+  assert.equal(run.status, 0, run.stderr);
+  assert.deepEqual(handlerRoutes(run.model, 'onSensors'), ['GET orchard/v1/weather/current/*']);
+  assert.deepEqual(handlerRoutes(run.model, 'onSummary'), ['GET orchard/v1/weather/current/*/summary']);
+  const trace = traceJson('SyncPage', ['--expand']);
+  assert.equal(trace.status, 0, trace.stderr);
+  const effects = traceNodes(
+    trace.model,
+    (node) => node.ref === 'SyncEffects.sync$' && node.kind === 'method',
+  );
+  assert.deepEqual(effects.map((node) => node.file).sort(), [SENSORS_EFFECTS, SUMMARY_EFFECTS]);
+});
+
+test('Mobile declaration identity AC-3: one action dispatched to two same-named effects keeps both declarations', () => {
+  const run = withFacts(
+    (facts) => {
+      const summary = facts.find((fact) => fact.type === 'effect_handler' && fact.file === SUMMARY_EFFECTS);
+      summary.actions = ['loadSensors'];
+    },
+    () => ({ page: spanJson('SyncPage', ['--entry', 'onSensors']), trace: traceJson('SyncPage', ['--expand']) }),
+  );
+  assert.equal(run.page.status, 0, run.page.stderr);
+  assert.deepEqual(run.page.model.entries.map((entry) => [...entry.routes].sort()), [
+    ['GET orchard/v1/weather/current/*', 'GET orchard/v1/weather/current/*/summary'],
+  ]);
+  assert.equal(run.trace.status, 0, run.trace.stderr);
+  const effects = traceNodes(
+    run.trace.model,
+    (node) => node.ref === 'SyncEffects.sync$' && node.kind === 'method',
+  );
+  assert.deepEqual(effects.map((node) => node.file).sort(), [SENSORS_EFFECTS, SUMMARY_EFFECTS]);
+  assert.ok(effects.every((node) => node.cycle !== true));
+});
+
 test('Mobile declaration identity AC-4: a type-only import used as a runtime value refuses and keeps the independent arm', () => {
   const run = spanJson('ProbePage');
   assert.equal(run.status, 0, run.stderr);
@@ -426,6 +469,16 @@ test('Mobile declaration identity AC-5: reversing the fact order preserves reach
     reversed.ambiguous.stderr.split('\n').filter((line) => line.includes('.page.ts:')).sort(),
     beforeAmbiguous.stderr.split('\n').filter((line) => line.includes('.page.ts:')).sort(),
   );
+});
+
+test('Mobile declaration identity AC-5: reversed facts keep each dispatched action on its own effect declaration', () => {
+  const before = spanJson('SyncPage');
+  assert.equal(before.status, 0, before.stderr);
+  const reversed = withFacts((facts) => facts.reverse(), () => spanJson('SyncPage'));
+  assert.equal(reversed.status, 0, reversed.stderr);
+  for (const handler of ['onSensors', 'onSummary']) {
+    assert.deepEqual(handlerRoutes(reversed.model, handler), handlerRoutes(before.model, handler), handler);
+  }
 });
 
 test('Mobile declaration identity AC-5: a dependency cycle terminates and still reaches the independent request', () => {
