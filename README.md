@@ -155,6 +155,7 @@ rules that keep the tool's honesty intact in the agent's answer.
 | `check` | has this area's coverage regressed against the baseline we committed? |
 | `calibrate` | does the reader whose verdicts move my coverage numbers still read the way it did? |
 | `span` | one self-contained page per route, outcome first — what can happen, which outcomes a test already pins, what to do about the rest. |
+| `chains` | which screens reach this route — each fact-backed path from a web or mobile page down to the request, and each break as a named gap? |
 | `surface` | where can the state this route writes be read back? |
 | `skeleton` | write the spec that calls the route and observes that read-back. |
 | `all` | run `extract`, `join` and `render` in sequence. |
