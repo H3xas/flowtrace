@@ -6,7 +6,7 @@
     "version": "0.5.1"
   },
   "provenance": {
-    "id": "4da423d22cb9da7f",
+    "id": "0d10751878e66d87",
     "producer": "flowtrace-cli 0.5.1",
     "formatVersion": 1,
     "config": {
@@ -58,7 +58,7 @@
         "repo": "api",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "9a432b2b217e8cfc956de8701da8d38485fa584f",
+        "headSha": "a5683c7acc3a72fa04061ec19f5adbac057984ae",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 17,
@@ -68,7 +68,7 @@
         "repo": "e2e",
         "kind": "playwright",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "9a432b2b217e8cfc956de8701da8d38485fa584f",
+        "headSha": "a5683c7acc3a72fa04061ec19f5adbac057984ae",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
@@ -79,10 +79,20 @@
         "digest": "f86d6c490f9f3ae85d0d1e93375173a63c4a868a"
       },
       {
+        "repo": "mobile",
+        "kind": "mobile",
+        "generatedFrom": "flowtrace 0.5.1",
+        "headSha": "a5683c7acc3a72fa04061ec19f5adbac057984ae",
+        "dirty": false,
+        "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+        "fileCount": 4,
+        "digest": "a588da1bac1a66bc6aa08b4a8b2649fed4b3607b"
+      },
+      {
         "repo": "shopfront",
         "kind": "web",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "9a432b2b217e8cfc956de8701da8d38485fa584f",
+        "headSha": "a5683c7acc3a72fa04061ec19f5adbac057984ae",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
@@ -92,7 +102,7 @@
         "repo": "stock",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "9a432b2b217e8cfc956de8701da8d38485fa584f",
+        "headSha": "a5683c7acc3a72fa04061ec19f5adbac057984ae",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 5,
@@ -104,6 +114,23 @@
     ]
   },
   "edges": [
+    {
+      "kind": "calls",
+      "from": {
+        "repo": "mobile",
+        "ref": "ReservationService.reserve",
+        "file": "src/app/features/reservations/reservation.service.ts",
+        "line": 9
+      },
+      "to": {
+        "repo": "stock",
+        "ref": "ReservationsController.Reserve",
+        "file": "src/Controllers/ReservationsController.cs",
+        "line": 18
+      },
+      "key": "POST stock/v1/reservations",
+      "provenance": "0d10751878e66d87"
+    },
     {
       "kind": "calls",
       "from": {
@@ -119,7 +146,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "consumes",
@@ -136,7 +163,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "consumes",
@@ -153,7 +180,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "consumes",
@@ -170,7 +197,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "consumes",
@@ -187,7 +214,7 @@
         "line": 7
       },
       "key": "StockReservedEvent",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "publishes",
@@ -204,7 +231,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "publishes",
@@ -221,7 +248,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "publishes",
@@ -238,7 +265,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "publishes",
@@ -255,7 +282,7 @@
         "line": null
       },
       "key": "StockReservedEvent",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     },
     {
       "kind": "tests",
@@ -272,7 +299,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "4da423d22cb9da7f"
+      "provenance": "0d10751878e66d87"
     }
   ]
 }
