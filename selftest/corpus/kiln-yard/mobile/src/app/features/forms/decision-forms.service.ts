@@ -71,7 +71,7 @@ export class DecisionForms {
     entry.owner ??= 'y';
     type Kind<T> = T extends string ? 'text' : 'other';
     type Loose<T> = { [K in keyof T]?: T[K] };
-    let shape: { name?: string } = {};
+    let shape: { name?: string; size?(): number } = {};
     const make = (first?: string, second?: number) => first;
     return text + template + pattern.source;
   }
