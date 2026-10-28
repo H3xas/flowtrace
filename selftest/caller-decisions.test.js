@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { copyFixture, runCli } from './helpers.js';
+import { callerDecisions } from '../lib/extract/caller-decisions.js';
 import { BRANCH_ROW_CAP, buildRuntimeIndex, runtimeSummary } from '../lib/runtime-cover.js';
 
 const CONFIG = 'kiln.config.json';
@@ -283,4 +284,18 @@ test('Caller decisions AC-12: backend rows sort first, so the row cap drops call
   assert.deepEqual(order(backendRows), order(sorted));
   assert.ok(summary.branches.slice(150).every((row) => row.file.endsWith('.ts')));
   assert.deepEqual(summary.warnings, [], 'a skipped repository with no decision gives no warning');
+});
+
+test('Caller decisions AC-1: truncated or unbalanced source gives facts or none, never an error', () => {
+  const source = readFileSync(new URL(`./corpus/kiln-yard/web/${FORMS}`, import.meta.url), 'utf8');
+  const lineOf = (code) => (index) => code.slice(0, index).split('\n').length;
+  for (let end = 0; end <= source.length; end += 5) {
+    const code = source.slice(0, end);
+    const spans = [{ bodyStart: 0, bodyEnd: code.length, class: 'DecisionForms', method: 'all' }];
+    for (const jsx of [false, true]) {
+      const facts = callerDecisions({ code, spans, relPath: FORMS, lineOf: lineOf(code), jsx });
+      assert.ok(Array.isArray(facts), `cut at ${end}`);
+      for (const item of facts) assert.ok(item.endLine >= item.line, `cut at ${end}: ${item.kind} ${item.line}`);
+    }
+  }
 });

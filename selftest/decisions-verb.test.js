@@ -295,6 +295,10 @@ test('Decisions verb AC-7: revision resolution', (t) => {
   const limited = runCli(['decisions', '--revs', env.shas.a, '--repo', 'web', '--json', '--config', 'two.config.json'], { cwd: env.dir });
   assert.equal(limited.status, 0, limited.stderr);
   assert.deepEqual(JSON.parse(limited.stdout).units, shared.units);
+
+  const unknown = env.cli(['decisions', '--revs', env.shas.a, '--repo', 'nowhere']);
+  assert.equal(unknown.status, 1);
+  assert.match(unknown.stderr, /--repo nowhere: no configured repository with that id/);
 });
 
 test('Decisions verb AC-8: refused input', (t) => {
@@ -381,4 +385,33 @@ test('Decisions verb AC-9: output contract', (t) => {
   const warned = env.cli(args);
   assert.equal(warned.status, 0);
   assert.match(warned.stderr, /decisions: backend holds no branch_point fact.*run "flowtrace extract" again/);
+});
+
+test('Decisions verb AC-4: a changed path with a space and a non-ASCII letter maps like any other', (t) => {
+  const root = mkdtempSync(join(tmpdir(), 'flowtrace-decisions-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const git = makeGit(root);
+  git('init', '-q', '-b', 'main');
+  git('config', 'user.email', 'selftest@example.invalid');
+  git('config', 'user.name', 'flowtrace selftest');
+  write(root, '.gitignore', 'out/\n');
+  write(root, CONFIG, `${JSON.stringify({ out: 'out', repos: [{ id: 'web', kind: 'web', root: 'web' }] })}\n`);
+  const file = 'src/Ledger Café.ts';
+  write(root, `web/${file}`, 'export class Cafe {\n  pick(a: boolean) {\n    return 1;\n  }\n}\n');
+  commit(git, 'base');
+  write(root, `web/${file}`, 'export class Cafe {\n  pick(a: boolean) {\n    return a ? 1 : 2;\n  }\n}\n');
+  write(root, 'web/src/Gone Café.ts', 'export const GONE = 1;\n');
+  const a = commit(git, 'a');
+  unlinkSync(join(root, 'web/src/Gone Café.ts'));
+  commit(git, 'gone');
+  const cli = (args) => runCli([...args, '--config', CONFIG], { cwd: root });
+  assert.equal(cli(['extract']).status, 0);
+  const result = cli(['decisions', '--revs', a, '--json']);
+  assert.equal(result.status, 0, result.stderr);
+  const doc = JSON.parse(result.stdout);
+  assert.deepEqual(doc.units.map((unit) => [unit.file, unit.method, unit.changedLines, unit.decisions.map((d) => d.kind)]), [
+    [file, 'pick', [3], ['ternary']],
+  ]);
+  assert.deepEqual(doc.unmapped.map((row) => [row.reason, row.file]), [['file-gone', 'src/Gone Café.ts']]);
+  assert.deepEqual(doc.notExtracted, []);
 });
