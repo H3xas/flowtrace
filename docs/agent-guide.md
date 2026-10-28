@@ -69,6 +69,7 @@ the rest is stateless:
 | what does this route run, and what can it do | `flowtrace trace "<key>" --seeds --json` | facts |
 | what does this screen or component reach | `flowtrace trace <ComponentName> --expand` | facts |
 | which entry routes run through this file line, method or literal | `flowtrace routes-of "<point>" --json` | facts |
+| which screens reach this route, hop by hop | `flowtrace chains "<key>" --json` | facts |
 | which outcomes do tests already pin | `flowtrace cover --area <file> --json` | facts |
 | **(step 1)** after editing: which specs must run for this diff | `flowtrace affected --diff <range> --area <file> --json` | facts + `git diff` |
 | which `dotnet test` filter covers this diff | `flowtrace affected --diff <range> --area <file> --dotnet-filter` | facts + `git diff` |
@@ -80,7 +81,7 @@ the rest is stateless:
 | has coverage regressed against the committed baseline | `flowtrace check --area <file> --json` | facts + `<area>.baseline.json` |
 | is this reader's judgment still calibrated | `flowtrace calibrate --golden <dir> --verdicts <dir> --json` | two directories, no facts |
 
-`--json` exists on `trace`, `routes-of`, `cover`, `scope`, `affected`, `surface`, `skeleton`,
+`--json` exists on `trace`, `routes-of`, `chains`, `cover`, `scope`, `affected`, `surface`, `skeleton`,
 `readiness`, `split` and `calibrate`;
 `trace --area <file>` emits one JSON array for a list of keys. The terminal form is for
 showing a person; the JSON form is for deciding. Field lists per command are in
