@@ -18,6 +18,7 @@ commands:
   trace     walk one start to its sinks and print the tree
   routes-of list every entry route whose complete walk passes through one point
   span      write one outcome-first HTML page for one entry route, for a QA reader
+  chains    list every fact-backed path from a web or mobile screen to one route
   surface   derive where the state one entry route changes can be read back
   skeleton  emit one spec skeleton from a derived assertion surface
   cover     seed-level coverage of one area, from the existing test evidence
@@ -208,8 +209,8 @@ trace --area <file> [--require-complete]
   within the deepest level that fits is entered, and each direct call site of each
   entered method has a node or a frontier entry. A walk no limit stops keeps its bytes.
 
-  --require-complete (trace, trace --area, span and span --from-component) writes the
-  normal output first, then one stderr line for each reason, and it exits 4 when the
+  --require-complete (trace, trace --area, span, span --from-component and chains)
+  writes the normal output first, then one stderr line for each reason, and it exits 4 when the
   traversal is not complete or the freshness is not matching. Evidence strength never
   fails a run. A start, selector or usage failure keeps exit 2, and 2 wins over 4;
   without the flag every exit code stays as it was. check, affected, readiness,
@@ -322,12 +323,67 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   two selections never share a page; --repo scopes which component the name resolves to,
   never the routes behind it.
 
+  A mobile dependency or template owner resolves by declaration identity. When the facts
+  state `source` and `imported`, the walk enters the declaration in exactly that relative
+  `.ts` file whose `exports` lists the imported name. It enters the declaration's actual
+  class name, so a local alias still reaches the class it names. A written `.ts` specifier
+  names that file. An extensionless specifier names the same path with `.ts` added.
+  Directory indexes, other extensions, barrels, path aliases and packages are not searched.
+  Without that provenance, a declaration in the caller's own file wins, then a single
+  declaration in the repository. A site the facts cannot prove prints as a
+  `mobile-declaration-unresolved` arm at the caller or binding site, with the sorted
+  candidate declaration files when more than one is possible. The walk enters nothing
+  below that arm. An older fact set keeps the name-only behavior, and a fresh extraction
+  adds the provenance.
+
   A name declared in more than one file is ambiguous: with no --file, the
   command exits non-zero and lists every candidate's declaring file so the reader can
   pick one; --file <path-substring> narrows to the declaration whose file path contains
   the substring, and still errors, listing what --file matched, if that leaves anything
   other than exactly one. The entries, bindings and requests are then that declaration's
   own: an entry written in another file of the same name is neither listed nor selectable.
+
+chains "<route key>" [--json] [--depth N] [--max-nodes N] [--require-complete]
+  Lists every fact-backed chain from a web or mobile screen down to one backend route.
+  The key resolves as span resolves it, so "{id}" and "*" name the same route. The walk
+  starts at each web or mobile gateway_call the join matches to the route, never at a
+  Cypress or Playwright request or in a backend repository, and climbs the hop rules the
+  forward component walk follows: method_call, action_dispatch with props_bind,
+  effect_handler, template_handler, component_entry and the Ionic lifecycle hooks, and
+  renders resolved by import path and selector. It stops at the first page on each path:
+  a <Route> whose element is the component, a <Route> whose line range in the same file
+  and owner holds the render (a component passed as an element prop), or an Ionic
+  component with role page. A web page names the route path, its file:line and the
+  browser paths composed above it, each with the source of its mount. Each chain prints
+  its hops from the page down to the request, each with its fact type, repository and
+  file:line. Two render paths from one page to one entry print one chain: the shortest
+  render path, ties broken by file and line, and the number of render variants.
+  Hop kinds: page (page_route or component), render (renders), entry (template_handler,
+  component_entry or method_span), call (method_call), dispatch (action_dispatch), bind
+  (props_bind), effect (effect_handler), request (gateway_call) and gap.
+  A break in a chain is a gap hop with one reason, never a guess:
+    template-not-resolved  the gateway_call carries resolved: false; the climb goes on
+    entry-unresolved       an entry handler names more than one method body; the climb
+                           goes on from its component
+    no-entry               no event, hook or caller reaches a component body; the climb
+                           goes on from that component
+    no-caller              nothing calls a body that no component holds
+    component-ambiguous    more than one file answers a render; neither is entered
+    page-ambiguous         two routes with one line range hold a render
+    no-page                no route and no render reaches a component
+    walk-limit             the depth or the node budget stopped the climb
+  An entry, a call, a dispatch, a bound prop and an effect each spend one level of
+  --depth; renders, pages and self calls spend none. So a chain fits --depth N when the
+  forward walk from its component reaches the request at --depth N. Every hop spends one
+  node of --max-nodes. The result status is the one every walk states, with scope
+  to-pages, and only a walk-limit gap makes it partial. --json prints schemaVersion 1, the
+  route, the status, the counts and the chains with their hops and gaps; no timestamp
+  is written, so two runs over the same facts print the same bytes. Exit 0 for a result,
+  "0 chains" included. A key that does not resolve to exactly one route exits 2 with one
+  "reason:" line on stderr (no-declaration, ambiguous, not-a-route or the reason of a
+  page lookup) and, under --json, one envelope with that reason, and prints no chains.
+  --require-complete exits 4 after the normal output when the traversal is not complete
+  or the freshness is not matching; 2 wins over 4.
 
 surface "<route key>" [--json] [--hops N] [--out <file>]
   Derives the assertion surface of one entry route: the stores it writes — the

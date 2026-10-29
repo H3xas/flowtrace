@@ -960,3 +960,154 @@ test('the pack states one entry per trigger and none for the foreign hooks it al
     'WatcherNotesPanel|useNoteDraft@48:3',
   ]);
 });
+
+/** Every component fact one freshly extracted file states, keyed by component name. */
+function statedExports(directory, file) {
+  const facts = JSON.parse(readFileSync(join(directory, 'out', 'facts', 'web.json'), 'utf8')).facts;
+  return Object.fromEntries(
+    facts
+      .filter((entry) => entry.type === 'component' && entry.file === file)
+      .map((entry) => [entry.name, entry.exports]),
+  );
+}
+
+/** A component module holding one private component the given hook reaches. */
+function privateComponent(name, hook) {
+  return `import React from 'react';\n\nfunction ${name}() {\n  ${hook}();\n  return <div />;\n}\n`;
+}
+
+test('Value export boundaries AC-1: a forwarding list gives no local shadow a value export', () => {
+  const { dir } = bareWeb('export-boundaries-forwarded', {
+    'Actual.tsx': `${privateComponent('Shadow', 'useActualFeed')}export default Shadow;\n`,
+    'ForwardedDefault.tsx': `${privateComponent('Shadow', 'useForwardedDefault')}export { Shadow as default } from './Actual';\n`,
+    'ForwardedLines.tsx': `${privateComponent('Shadow', 'useForwardedLines')}export {\n  Shadow as default\n}\n  from './Actual';\n`,
+    'ForwardedComment.tsx': `${privateComponent('Shadow', 'useForwardedComment')}export /* forwarded */ { Shadow as default } from './Actual';\n`,
+    'ForwardedNamed.tsx': `${privateComponent('Shadow', 'useForwardedNamed')}export { Shadow } from './Actual';\n`,
+    'ForwardedAlias.tsx': `${privateComponent('Shadow', 'useForwardedAlias')}export { Shadow as Shown } from './Actual';\n`,
+    'Control.tsx': `${privateComponent('Genuine', 'useControlFeed')}export { Genuine as default };\n`,
+  });
+  try {
+    assert.deepEqual(statedExports(dir, 'src/ForwardedDefault.tsx').Shadow, [], 'a forwarded default exports nothing here');
+    assert.deepEqual(statedExports(dir, 'src/ForwardedLines.tsx').Shadow, [], 'a forwarded default split over lines exports nothing here');
+    assert.deepEqual(statedExports(dir, 'src/ForwardedComment.tsx').Shadow, [], 'a comment before the list changes nothing');
+    assert.deepEqual(statedExports(dir, 'src/ForwardedNamed.tsx').Shadow, [], 'a forwarded named list exports nothing here');
+    assert.deepEqual(statedExports(dir, 'src/ForwardedAlias.tsx').Shadow, [], 'a forwarded alias exports nothing here');
+    assert.deepEqual(statedExports(dir, 'src/Actual.tsx').Shadow, ['default'], 'the module the list forwards from really exports the name');
+    assert.deepEqual(statedExports(dir, 'src/Control.tsx').Genuine, ['default'], 'a local default list still exports its binding');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Value export boundaries AC-2: type-only lists and entries supply no value evidence', () => {
+  const { dir } = bareWeb('export-boundaries-typed', {
+    'Whole.tsx': `${privateComponent('Shadow', 'useWholeType')}export type { Shadow };\n`,
+    'WholeDefault.tsx': `${privateComponent('Shadow', 'useWholeTypeDefault')}export type { Shadow as default };\n`,
+    'Inline.tsx': `${privateComponent('Shadow', 'useInlineType')}export { type Shadow };\n`,
+    'InlineAlias.tsx': `${privateComponent('Shadow', 'useInlineAlias')}export { type Shadow as Shown };\n`,
+    'InlineDefault.tsx': `${privateComponent('Shadow', 'useInlineTypeDefault')}export { type Shadow as default };\n`,
+    'Mixed.tsx':
+      `${privateComponent('Typed', 'useTypedEntry')}${privateComponent('Kept', 'useKeptEntry')}` +
+      'export { type Typed, Kept, Kept as Shown };\n',
+    'Refused.tsx': `${privateComponent('Mangled', 'useMangledEntry')}export { Mangled as };\n`,
+    'RefusedDefault.tsx': `${privateComponent('Mangled', 'useMangledDefault')}export { Mangled as default, 9Lives };\n`,
+    'Empty.tsx': `${privateComponent('Shadow', 'useEmptyList')}export {};\n`,
+    'Unclosed.tsx': `${privateComponent('Shadow', 'useUnclosedList')}export {\n`,
+  });
+  try {
+    assert.deepEqual(statedExports(dir, 'src/Whole.tsx').Shadow, [], 'a statement-level type list exports no value');
+    assert.deepEqual(statedExports(dir, 'src/WholeDefault.tsx').Shadow, [], 'a type list does not supply a default either');
+    assert.deepEqual(statedExports(dir, 'src/Inline.tsx').Shadow, [], 'an inline type entry exports no value');
+    assert.deepEqual(statedExports(dir, 'src/InlineAlias.tsx').Shadow, [], 'an aliased inline type entry exports no value');
+    assert.deepEqual(statedExports(dir, 'src/InlineDefault.tsx').Shadow, [], 'an inline type entry supplies no default');
+    assert.deepEqual(statedExports(dir, 'src/Mixed.tsx').Typed, [], 'a type entry is dropped from a mixed list');
+    assert.deepEqual(statedExports(dir, 'src/Mixed.tsx').Kept, ['Kept', 'Shown'], 'a mixed list keeps its value entries');
+    assert.deepEqual(statedExports(dir, 'src/Refused.tsx').Mangled, [], 'a list the reader cannot parse proves nothing');
+    assert.deepEqual(statedExports(dir, 'src/Empty.tsx').Shadow, [], 'an empty list exports nothing');
+    assert.deepEqual(statedExports(dir, 'src/Unclosed.tsx').Shadow, [], 'a list with no close proves nothing');
+    assert.deepEqual(
+      statedExports(dir, 'src/RefusedDefault.tsx').Mangled,
+      [],
+      'a matching component name cannot replace the proof a refused list withholds',
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Value export boundaries AC-3: local value exports stay proven and keep resolving', () => {
+  const { dir, config: bareConfig } = bareWeb('export-boundaries-local', {
+    'Direct.tsx': `import React from 'react';\n\nexport function Direct() {\n  useDirectFeed();\n  return <div />;\n}\n`,
+    'Const.tsx': "import React from 'react';\n\nexport const ConstPanel = () => <div />;\n",
+    'Classy.tsx':
+      "import React from 'react';\n\nexport class Classy extends React.Component {\n  render() {\n    return <div />;\n  }\n}\n",
+    'NamedDefault.tsx': 'import React from \'react\';\n\nexport default function NamedDefault() {\n  return <div />;\n}\n',
+    'AliasedDefault.tsx': `${privateComponent('Local', 'useAliasedDefault')}export { Local as default };\n`,
+    'Shown.tsx': `${privateComponent('Local', 'useShownEntry')}export { Local as Shown };\n`,
+    'Wrapped.tsx': `import React, { memo } from 'react';\n\n${privateComponent('Inner', 'useWrappedInner')}export default memo(Inner);\n`,
+    'MixedDefault.tsx':
+      `${privateComponent('Real', 'useRealEntry')}${privateComponent('Typed', 'useTypedKept')}` +
+      'export { type Typed, Real as default };\n',
+    'Unrelated.tsx': `import React from 'react';\n\nexport { Other } from './Elsewhere';\nexport function Kept() {\n  return <div />;\n}\n`,
+    'Trailing.tsx': `${privateComponent('Comma', 'useTrailingComma')}export { Comma, }\nexport const After = () => <div />;\n`,
+    'Parent.tsx':
+      "import React from 'react';\nimport { Direct } from './Direct';\nimport Real from './MixedDefault';\n" +
+      "import { Shown } from './Shown';\n\nexport function Parent() {\n  return (\n    <div>\n" +
+      '      <Direct />\n      <Real />\n      <Shown />\n    </div>\n  );\n}\n',
+  });
+  try {
+    assert.deepEqual(statedExports(dir, 'src/Direct.tsx').Direct, ['Direct']);
+    assert.deepEqual(statedExports(dir, 'src/Const.tsx').ConstPanel, ['ConstPanel']);
+    assert.deepEqual(statedExports(dir, 'src/Classy.tsx').Classy, ['Classy']);
+    assert.deepEqual(statedExports(dir, 'src/NamedDefault.tsx').NamedDefault, ['default']);
+    assert.deepEqual(statedExports(dir, 'src/AliasedDefault.tsx').Local, ['default']);
+    assert.deepEqual(statedExports(dir, 'src/Shown.tsx').Local, ['Shown']);
+    assert.deepEqual(statedExports(dir, 'src/Wrapped.tsx').Inner, ['default']);
+    assert.deepEqual(statedExports(dir, 'src/MixedDefault.tsx').Real, ['default'], 'a mixed list keeps its value default');
+    assert.deepEqual(statedExports(dir, 'src/MixedDefault.tsx').Typed, [], 'a mixed list still drops its type entry');
+    assert.deepEqual(statedExports(dir, 'src/Unrelated.tsx').Kept, ['Kept'], 'an unrelated forwarding list leaves local exports proven');
+    assert.deepEqual(statedExports(dir, 'src/Trailing.tsx').Comma, ['Comma'], 'a trailing comma and no semicolon still export the entry');
+    const result = runCli(['span', '--from-component', 'Parent', '--json', '--config', bareConfig]);
+    assert.equal(result.status, 0, result.stderr);
+    const model = JSON.parse(result.stdout);
+    const entered = [...new Set(model.entries.map((view) => `${view.identity.component}@${view.identity.file}`))].sort();
+    assert.deepEqual(entered, ['Direct@src/Direct.tsx', 'Local@src/Shown.tsx', 'Real@src/MixedDefault.tsx']);
+    assert.deepEqual(model.unresolved.filter((arm) => arm.reason === 'component-unresolved'), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Value export boundaries AC-4: a rejected import keeps the source boundary it was written at', () => {
+  const { dir, config: bareConfig } = bareWeb('export-boundaries-rejected', {
+    'Actual.tsx': "import React from 'react';\n\nexport default function Shadow() {\n  useActualFeed();\n  return <div />;\n}\n",
+    'Relay.tsx': `${privateComponent('Shadow', 'useRelayedFeed')}export { Shadow as default } from './Actual';\n`,
+    'Named.tsx': `${privateComponent('Shadow', 'useNamedShadow')}export { Shadow } from './Actual';\n`,
+    'Proven.tsx': `${privateComponent('Proven', 'useProvenFeed')}export { Proven };\n`,
+    'Parent.tsx':
+      "import React from 'react';\nimport Forwarded from './Relay';\nimport { Shadow as Named } from './Named';\n" +
+      "import { Proven } from './Proven';\n\nexport function Parent() {\n  return (\n    <div>\n" +
+      '      <Forwarded />\n      <Named />\n      <Proven />\n    </div>\n  );\n}\n',
+  });
+  try {
+    const result = runCli(['span', '--from-component', 'Parent', '--json', '--config', bareConfig]);
+    assert.equal(result.status, 0, result.stderr);
+    const model = JSON.parse(result.stdout);
+    const entered = [...new Set(model.entries.map((view) => `${view.identity.component}@${view.identity.file}`))];
+    assert.deepEqual(entered, ['Proven@src/Proven.tsx'], 'only the proven local value is entered');
+    const arms = model.unresolved
+      .filter((arm) => arm.reason === 'component-unresolved')
+      .map(({ reason, attempted, file, line, source }) => ({ reason, attempted, file, line, source }));
+    assert.deepEqual(arms, [
+      { reason: 'component-unresolved', attempted: 'Forwarded', file: 'src/Parent.tsx', line: 9, source: './Relay' },
+      { reason: 'component-unresolved', attempted: 'Named', file: 'src/Parent.tsx', line: 10, source: './Named' },
+    ]);
+    const tree = runCli(['trace', 'Parent', '--expand', '--config', bareConfig]);
+    assert.equal(tree.status, 0, tree.stderr);
+    assert.match(tree.stdout, /Forwarded.*unresolved.*imported from \.\/Relay/);
+    assert.match(tree.stdout, /Named.*unresolved.*imported from \.\/Named/);
+    assert.doesNotMatch(tree.stdout, /useRelayedFeed|useNamedShadow|useActualFeed/, 'a forwarded destination is not traversed');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
