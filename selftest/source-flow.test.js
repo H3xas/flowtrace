@@ -294,9 +294,23 @@ test('Source flow AC-4: every C# and web call carries a column and its control e
     assert.ok(calls.length > 0, `${repo} has calls`);
     for (const fact of calls) {
       assert.ok(Number.isInteger(fact.column) && fact.column > 0, `${repo} ${fact.file}:${fact.line} column`);
-      assert.ok(fact.control === null || typeof fact.control === 'object', `${repo} ${fact.file}:${fact.line} control`);
+      // The web extractor files the arrows of a module-level object under one made-up body.
+      // Those calls are not one sequence, so they keep no control evidence and read as
+      // unknown order.
+      if (repo === 'web' && fact.file === 'src/http/httpClient.ts') assert.equal(fact.control, null);
+      else assert.ok(fact.control && Array.isArray(fact.control.path), `${repo} ${fact.file}:${fact.line} control`);
     }
   }
+
+  // The body of a minimal-API route lambda is a body like any other: its calls carry
+  // control evidence, so the guard and the awaits place them.
+  const manifest = json(env, 'POST ferry/v1/manifest', ['--view', 'source-flow']).sourceFlow;
+  assert.ok(!allSteps(manifest).some((step) => step.kind === 'unordered'), 'the route lambda is read');
+  const [guardStep, read] = manifest.root.body.steps;
+  assert.equal(guardStep.kind, 'branch');
+  assert.equal(guardStep.arms[0].steps[0].declaration.ref, 'PassengerAccess.ResolveIdentityAsync');
+  assert.equal(read.declaration.ref, 'PassengerAccess.ReadIdentityAsync');
+  assert.equal(read.await, true);
 
   const doc = readFileSync(join(REPO_ROOT, 'docs', 'fact-schema.md'), 'utf8');
   assert.match(doc, /controlEvidence/);
