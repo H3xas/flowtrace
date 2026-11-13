@@ -59,5 +59,19 @@ namespace Tidewater.Ferry.Services
         {
             await MutualFirst(request);
         }
+
+        public async Task MutualEntry(PassengerRequest request)
+        {
+            await MutualFirst(request);
+        }
+
+        public async Task GuardAfterForm(PassengerRequest request)
+        {
+            await _access.ReadIdentityAsync(request);
+            if (request.LoadPermits)
+            {
+                await _access.ReadIdentityAsync(request);
+            }
+        }
     }
 }

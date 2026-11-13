@@ -93,3 +93,8 @@ export function scheduleBoarding(ferryId: string) {
 function scheduleLater(work: () => unknown) {
   setTimeout(work, 0);
 }
+
+export function loadThenAll(ferryId: string, routes: string[]) {
+  return httpClient.getGatewayClient().get(`/tidewater/v1/ferries/${ferryId}/route`)
+    .then(() => Promise.all([loadRoute(routes[0]), loadRoute(routes[1])]));
+}
