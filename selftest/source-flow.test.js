@@ -709,6 +709,12 @@ test('Source flow AC-10: a shared call collapses in place and a later body is a 
   const inner = audit.target.body.steps.find((step) => step.kind === 'invocation');
   assert.equal(inner.declaration.ref, 'PassengerAccess.ReadIdentityAsync');
   assert.deepEqual(later.target, { see: inner.id, reason: 'shown-above' });
+  const hiddenStop = audit.target.body.steps.find((step) => step.target && step.target.stop);
+  assert.deepEqual(
+    answer.sourceFlow.frontier.filter((stop) => stop.invocation === hiddenStop.id).map((stop) => stop.reason),
+    [hiddenStop.target.stop],
+    'the frontier lists the stop the collapsed line counts',
+  );
 
   // Collapsed, the shared call is one line at its own site with what it hides, and a later
   // call to a body inside it says where that body is hidden.
