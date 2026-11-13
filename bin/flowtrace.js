@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * flowtrace command line: extract | join | render | trace | routes-of | span | surface | skeleton |
- * cover | scope | affected | scaffold | cases | readiness | split | check | calibrate | all.
+ * flowtrace command line: extract | join | render | trace | routes-of | span | chains | surface |
+ * skeleton | cover | scope | affected | scaffold | cases | readiness | split | check | calibrate | all.
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -21,9 +21,11 @@ import * as affectedModule from '../lib/affected.js';
 import * as assertionSurfaceModule from '../lib/assertion-surface.js';
 import * as calibrateModule from '../lib/calibrate.js';
 import * as casesModule from '../lib/cases.js';
+import * as chainsModule from '../lib/chains.js';
 import * as checkModule from '../lib/check.js';
 import * as componentSpanModule from '../lib/component-span.js';
 import * as coverModule from '../lib/cover.js';
+import * as decisionsModule from '../lib/decisions.js';
 import * as joinModule from '../lib/join.js';
 import * as joinDriftModule from '../lib/join-drift.js';
 import * as joinExportModule from '../lib/join-export.js';
@@ -55,10 +57,11 @@ import * as webExtractor from '../lib/extract/web.js';
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const COMMANDS = new Set([
-  'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'surface', 'skeleton', 'cover', 'scope',
-  'affected', 'scaffold', 'cases', 'readiness', 'split', 'check', 'calibrate', 'all',
+  'extract', 'join', 'render', 'trace', 'routes-of', 'span', 'chains', 'surface', 'skeleton', 'cover',
+  'scope', 'affected', 'decisions', 'scaffold', 'cases', 'readiness', 'split', 'check', 'calibrate', 'all',
 ]);
 const AREAS_DIR = joinPath(PACKAGE_ROOT, 'areas');
+const REVS_USAGE = 'decisions requires --revs <sha>[,<sha>...]: 7 to 40 hex characters each';
 const USAGE = [
   'usage: flowtrace <command> [options]',
   '',
@@ -69,11 +72,13 @@ const USAGE = [
   '  trace     walk one start to its sinks and print the tree',
   '  routes-of list every entry route whose complete walk passes through one point',
   '  span      write one outcome-first HTML page for one entry route, for a QA reader',
+  '  chains    list every fact-backed path from a web or mobile screen to one route',
   '  surface   derive where the state one entry route changes can be read back',
   '  skeleton  emit one spec skeleton from a derived assertion surface',
   '  cover     seed-level coverage of one area, from the existing test evidence',
   '  scope     list an area\'s whole route universe, before any edit',
   '  affected  turn a diff into the specs that must run',
+  '  decisions list the units and decisions a set of revisions changed',
   '  scaffold  write a starting spec per route for the seeds no test reaches',
   '  cases     write a human-readable case sheet per route for the seeds no test reaches',
   '  readiness render an area inventory\'s readiness sheet from the existing facts',
@@ -258,8 +263,8 @@ const USAGE = [
   '  within the deepest level that fits is entered, and each direct call site of each',
   '  entered method has a node or a frontier entry. A walk no limit stops keeps its bytes.',
   '',
-  '  --require-complete (trace, trace --area, span and span --from-component) writes the',
-  '  normal output first, then one stderr line for each reason, and it exits 4 when the',
+  '  --require-complete (trace, trace --area, span, span --from-component and chains)',
+  '  writes the normal output first, then one stderr line for each reason, and it exits 4 when the',
   '  traversal is not complete or the freshness is not matching. Evidence strength never',
   '  fails a run. A start, selector or usage failure keeps exit 2, and 2 wins over 4;',
   '  without the flag every exit code stays as it was. check, affected, readiness,',
@@ -372,12 +377,67 @@ const USAGE = [
   '  two selections never share a page; --repo scopes which component the name resolves to,',
   '  never the routes behind it.',
   '',
+  '  A mobile dependency or template owner resolves by declaration identity. When the facts',
+  '  state `source` and `imported`, the walk enters the declaration in exactly that relative',
+  '  `.ts` file whose `exports` lists the imported name. It enters the declaration\'s actual',
+  '  class name, so a local alias still reaches the class it names. A written `.ts` specifier',
+  '  names that file. An extensionless specifier names the same path with `.ts` added.',
+  '  Directory indexes, other extensions, barrels, path aliases and packages are not searched.',
+  '  Without that provenance, a declaration in the caller\'s own file wins, then a single',
+  '  declaration in the repository. A site the facts cannot prove prints as a',
+  '  `mobile-declaration-unresolved` arm at the caller or binding site, with the sorted',
+  '  candidate declaration files when more than one is possible. The walk enters nothing',
+  '  below that arm. An older fact set keeps the name-only behavior, and a fresh extraction',
+  '  adds the provenance.',
+  '',
   '  A name declared in more than one file is ambiguous: with no --file, the',
   '  command exits non-zero and lists every candidate\'s declaring file so the reader can',
   '  pick one; --file <path-substring> narrows to the declaration whose file path contains',
   '  the substring, and still errors, listing what --file matched, if that leaves anything',
   '  other than exactly one. The entries, bindings and requests are then that declaration\'s',
   '  own: an entry written in another file of the same name is neither listed nor selectable.',
+  '',
+  'chains "<route key>" [--json] [--depth N] [--max-nodes N] [--require-complete]',
+  '  Lists every fact-backed chain from a web or mobile screen down to one backend route.',
+  '  The key resolves as span resolves it, so "{id}" and "*" name the same route. The walk',
+  '  starts at each web or mobile gateway_call the join matches to the route, never at a',
+  '  Cypress or Playwright request or in a backend repository, and climbs the hop rules the',
+  '  forward component walk follows: method_call, action_dispatch with props_bind,',
+  '  effect_handler, template_handler, component_entry and the Ionic lifecycle hooks, and',
+  '  renders resolved by import path and selector. It stops at the first page on each path:',
+  '  a <Route> whose element is the component, a <Route> whose line range in the same file',
+  '  and owner holds the render (a component passed as an element prop), or an Ionic',
+  '  component with role page. A web page names the route path, its file:line and the',
+  '  browser paths composed above it, each with the source of its mount. Each chain prints',
+  '  its hops from the page down to the request, each with its fact type, repository and',
+  '  file:line. Two render paths from one page to one entry print one chain: the shortest',
+  '  render path, ties broken by file and line, and the number of render variants.',
+  '  Hop kinds: page (page_route or component), render (renders), entry (template_handler,',
+  '  component_entry or method_span), call (method_call), dispatch (action_dispatch), bind',
+  '  (props_bind), effect (effect_handler), request (gateway_call) and gap.',
+  '  A break in a chain is a gap hop with one reason, never a guess:',
+  '    template-not-resolved  the gateway_call carries resolved: false; the climb goes on',
+  '    entry-unresolved       an entry handler names more than one method body; the climb',
+  '                           goes on from its component',
+  '    no-entry               no event, hook or caller reaches a component body; the climb',
+  '                           goes on from that component',
+  '    no-caller              nothing calls a body that no component holds',
+  '    component-ambiguous    more than one file answers a render; neither is entered',
+  '    page-ambiguous         two routes with one line range hold a render',
+  '    no-page                no route and no render reaches a component',
+  '    walk-limit             the depth or the node budget stopped the climb',
+  '  An entry, a call, a dispatch, a bound prop and an effect each spend one level of',
+  '  --depth; renders, pages and self calls spend none. So a chain fits --depth N when the',
+  '  forward walk from its component reaches the request at --depth N. Every hop spends one',
+  '  node of --max-nodes. The result status is the one every walk states, with scope',
+  '  to-pages, and only a walk-limit gap makes it partial. --json prints schemaVersion 1, the',
+  '  route, the status, the counts and the chains with their hops and gaps; no timestamp',
+  '  is written, so two runs over the same facts print the same bytes. Exit 0 for a result,',
+  '  "0 chains" included. A key that does not resolve to exactly one route exits 2 with one',
+  '  "reason:" line on stderr (no-declaration, ambiguous, not-a-route or the reason of a',
+  '  page lookup) and, under --json, one envelope with that reason, and prints no chains.',
+  '  --require-complete exits 4 after the normal output when the traversal is not complete',
+  '  or the freshness is not matching; 2 wins over 4.',
   '',
   'surface "<route key>" [--json] [--hops N] [--out <file>]',
   '  Derives the assertion surface of one entry route: the stores it writes — the',
@@ -454,6 +514,10 @@ const USAGE = [
   '  matching status never can, so an outcome-symmetric guard — both arms answering the',
   '  same code — reaches level disposition with verdictSource "runtime-coverage". A hit',
   '  line is not an assertion: it proves the arm ran in that window, nothing more.',
+  '  Web and mobile decisions join the same way and are listed after the backend rows,',
+  '  so the row cap drops them first; a ternary, logical or coalesce decision reads',
+  '  undecidable once its lines ran. A web or mobile repository whose files no snapshot',
+  '  covers is skipped, with one warning when it holds decisions.',
   '  Without the flag nothing is read and the report is the byte-identical static one.',
   '',
   'scope --area <file|name> [--json]',
@@ -533,6 +597,28 @@ const USAGE = [
   '  same commit is not this: it is noted on stderr and carried in --json\x27s "stale" field,',
   '  and never widens — the edit it predates is already inside the diff this run reads.',
   '  Exit 0 a list was produced, 3 nothing was affected, 2 usage, 1 refusal.',
+  '',
+  'decisions --revs <sha>[,<sha>...] [--repo <id>] [--json]',
+  '  Lists each unit (a method_span) that holds a line the revisions changed, and under it',
+  '  each decision (a branch_point) of the unit whose own span holds a changed line. A',
+  '  changed line is a line that "git blame" at the fact set\x27s headSha gives to one of',
+  '  the revisions, so the lines and the fact spans read the same content; the verb reads',
+  '  fact files and git only and parses no source. Each entry of --revs is 7 to 40 hex',
+  '  characters. A revision resolves in the git working tree of a configured root, and',
+  '  each root in that tree takes the changed files under it; a revision that no tree, or',
+  '  more than one, holds is refused, and --repo <id> limits the search to the tree of one',
+  '  repository. A merge revision expands to the commits of <rev>^1..<rev>. A revision',
+  '  outside the history of a repository\x27s headSha is listed as not-ancestor there.',
+  '  A decision id is <repo>:<path>:<line>:<kind>, with #2, #3 for repeats of one kind on',
+  '  one line. A changed line no unit holds is listed under "outside units"; a changed file',
+  '  the facts cannot read under "not extracted" (no-root, excluded, not-source, no-facts);',
+  '  and a line a revision added that blame no longer gives back under "unmapped"',
+  '  (changed-later, with the last commit that held it), with deletion-only hunks and',
+  '  file-gone files. --json emits { schemaVersion: 1, revisions, repos, units,',
+  '  outsideUnits, notExtracted, unmapped }, with no timestamp. A fact set that is missing,',
+  '  has no headSha or is stamped dirty is refused: run extract on a clean checkout. A fact',
+  '  set with no branch_point fact prints a warning to extract again.',
+  '  Exit 0 a listing was produced, 1 refusal, 2 usage.',
   '',
   'scaffold --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run]',
   '            [--include-unreachable]',
@@ -692,6 +778,7 @@ function parseArgs(argv) {
     verdicts: undefined,
     golden: undefined,
     runtime: undefined,
+    revs: undefined,
     seedKeys: [],
     maxLevel: undefined,
     out: undefined,
@@ -938,6 +1025,12 @@ function parseArgs(argv) {
         throw new UsageError('--runtime requires a coverage artifact or manifest');
       }
       options.runtime = value;
+    } else if (argument === '--revs' || argument.startsWith('--revs=')) {
+      // A missing value is refused with the same message as a malformed one, after parsing.
+      let value = argument.startsWith('--revs=') ? argument.slice('--revs='.length) : argv[index + 1];
+      if (argument === '--revs' && (value === undefined || value.startsWith('-'))) value = '';
+      else if (argument === '--revs') index += 1;
+      options.revs = value;
     } else if (argument === '--repo' || argument === '--config') {
       const value = argv[index + 1];
       if (value === undefined || value.startsWith('-')) {
@@ -961,6 +1054,7 @@ function parseArgs(argv) {
     options.command === 'trace' ||
     options.command === 'routes-of' ||
     options.command === 'span' ||
+    options.command === 'chains' ||
     options.command === 'surface' ||
     options.command === 'skeleton'
   ) {
@@ -1485,6 +1579,7 @@ function traceNodeFields(node) {
   for (const field of [
     'sink',
     'unresolved',
+    'candidates',
     'cycle',
     'leaf',
     'graph',
@@ -1762,7 +1857,8 @@ async function runTrace(config, options) {
 
 /**
  * One failed start in the shape every output shares, so text, `--json` and `--html` state the
- * same reason: `no-declaration`, `missing-mount`, `unsupported-expression` or `ambiguous`.
+ * same reason: `no-declaration`, `missing-mount`, `unsupported-expression` or `ambiguous`, and
+ * `not-a-route` for a `chains` key that names something other than a route.
  */
 function lookupFailure(start, resolved) {
   if (resolved.candidates) {
@@ -1849,6 +1945,32 @@ async function runRoutesOf(config, options) {
     else process.stderr.write(`flowtrace: ${output}\n`);
   }
   return exitCode;
+}
+
+/**
+ * Every chain from a screen to one route. A key that is not exactly one route is refused the
+ * way a trace start is, before any walk, so its exit 2 always wins over `--require-complete`.
+ */
+async function runChains(config, options) {
+  const factSets = loadFactSets(config);
+  const facts = factState(factSets, config.repos);
+  for (const warning of facts.warnings) warn(warning.message);
+  const model = chainsModule.routeChains(factSets, options.start, {
+    depth: options.depth,
+    maxNodes: options.maxNodes,
+    aliases: config.aliases,
+    repos: config.repos,
+    freshness: { value: facts.value, sets: facts.sets },
+  });
+  if (model.error || model.candidates) {
+    return reportLookupFailure({ ...options, html: undefined }, lookupFailure(options.start, model));
+  }
+  log(options.json ? JSON.stringify(model, null, 2) : chainsModule.renderChains(model));
+  if (options.requireComplete && walkFails(model.status)) {
+    for (const line of requireCompleteLines(model.status)) process.stderr.write(`${line}\n`);
+    return 4;
+  }
+  return 0;
 }
 
 /**
@@ -2208,6 +2330,8 @@ async function runCover(config, options) {
     if (runtime.snapshots.length === 0) throw new Error(`${display(resolve(options.runtime))}: no readable coverage snapshot`);
   }
   const report = cover(factSets, { area: area.name, keys, aliases: config.aliases, traceOptions, runtime });
+  // The reader's warnings printed above; the join adds one for each caller repository it skipped.
+  if (report.runtime) for (const warning of report.runtime.warnings.slice(runtime.warnings.length)) warn(`runtime: ${warning}`);
 
   if (options.verdicts) {
     const { readVerdicts, mergeVerdicts } = packetsModule;
@@ -2341,6 +2465,36 @@ function diffSourceRepo(config, repoFilter) {
   if (backend) return backend;
   const named = repoFilter ? config.repos.find((repo) => repo.id === repoFilter) : undefined;
   return named || config.repos[0];
+}
+
+/**
+ * Each fact set is read by the repository a revision touches, not through `loadFactSets`,
+ * so a missing one is refused by name rather than as an empty facts directory.
+ */
+function runDecisions(config, options) {
+  const readFactSet = (id) => {
+    const target = joinPath(config.out, 'facts', `${id}.json`);
+    if (!existsSync(target)) return null;
+    let parsed;
+    try {
+      parsed = JSON.parse(readFileSync(target, 'utf8'));
+    } catch (error) {
+      throw new Error(`${display(target)}: not valid JSON (${error.message})`);
+    }
+    return { ...parsed, repo: parsed.repo ?? id, facts: Array.isArray(parsed.facts) ? parsed.facts : [] };
+  };
+  const document = decisionsModule.decisions(config, decisionsModule.parseRevs(options.revs), {
+    repo: options.repo,
+    readFactSet,
+  });
+  for (const repo of document.repos) {
+    if (repo.decisionFacts === 0) {
+      warn(`decisions: ${repo.id} holds no branch_point fact, so its units list no decision; run "flowtrace extract" again`);
+    }
+  }
+  if (options.json) log(JSON.stringify(document, null, 2));
+  else process.stdout.write(decisionsModule.renderDecisions(document));
+  return 0;
 }
 
 async function runAffected(config, options) {
@@ -2693,8 +2847,13 @@ async function main() {
   if (!COMMANDS.has(options.command)) {
     return usage(options.command ? `unknown command "${options.command}"` : 'no command given');
   }
-  if (options.requireComplete && options.command !== 'trace' && options.command !== 'span') {
-    return usage('--require-complete is a trace or span option');
+  if (
+    options.requireComplete &&
+    options.command !== 'trace' &&
+    options.command !== 'span' &&
+    options.command !== 'chains'
+  ) {
+    return usage('--require-complete is a trace, span or chains option');
   }
   if (options.command === 'trace' && !options.start && !options.area) {
     return usage('trace requires a start, or --area <file>');
@@ -2740,6 +2899,9 @@ async function main() {
   if (options.command === 'span' && options.entry && !options.fromComponent) {
     return usage('span --entry requires --from-component <name>');
   }
+  if (options.command === 'chains' && !options.start) {
+    return usage('chains requires a route key, e.g. chains "POST orders/v1/checkout"');
+  }
   if (options.command === 'surface' && !options.start) {
     return usage('surface requires a route key, e.g. surface "POST orders/v1/checkout"');
   }
@@ -2751,6 +2913,12 @@ async function main() {
   }
   if (options.runtime && options.command !== 'cover') {
     return usage('--runtime is a cover option');
+  }
+  if (options.revs !== undefined && options.command !== 'decisions') {
+    return usage('--revs is a decisions option');
+  }
+  if (options.command === 'decisions' && !decisionsModule.parseRevs(options.revs)) {
+    return usage(REVS_USAGE);
   }
   if (options.command === 'scope' && !options.area) {
     return usage('scope requires --area <file|name>');
@@ -2795,6 +2963,9 @@ async function main() {
     if (options.command === 'span') {
       return await runSpan(config, options);
     }
+    if (options.command === 'chains') {
+      return await runChains(config, options);
+    }
     if (options.command === 'surface') {
       return await runSurface(config, options);
     }
@@ -2809,6 +2980,9 @@ async function main() {
     }
     if (options.command === 'affected') {
       return await runAffected(config, options);
+    }
+    if (options.command === 'decisions') {
+      return runDecisions(config, options);
     }
     if (options.command === 'scaffold') {
       return await runScaffold(config, options);

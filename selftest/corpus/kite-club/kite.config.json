@@ -1,0 +1,9 @@
+{
+  "out": "out",
+  "repos": [
+    { "id": "api", "kind": "backend", "root": "backend", "role": ["api"] },
+    { "id": "web", "kind": "web", "root": "web", "cypressSubpath": "cypress" },
+    { "id": "mobile", "kind": "mobile", "root": "mobile" },
+    { "id": "suite", "kind": "playwright", "root": "suite" }
+  ]
+}

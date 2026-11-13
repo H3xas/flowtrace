@@ -10,6 +10,36 @@ Semantic versioning from `0.x`: the CLI surface may still change between minor v
   resolves, the exit code is 0. Stale facts no longer exit 4. The route rows describe the
   snapshot, not the source as it stands now.
 
+Extraction:
+
+- A `web` or `mobile` repository writes one `branch_point` fact for each decision inside a
+  method body: `if`, `else`, `switch`, `case`, `ternary`, `logical` (an outermost `&&` or `||`
+  chain) and `coalesce` (`??`). Strings, template literals, comments, regex literals, JSX
+  text and type syntax give none. Each fact names the innermost method that holds it. A fact
+  set extracted again has a new facts digest, so the status identity of a walk over it and
+  the identities of a `join` snapshot or edge export change with it.
+
+New command:
+
+- `decisions --revs <sha>[,<sha>...]` lists each method that holds a line the revisions
+  changed, as `git blame` at the fact set's `headSha` reads it, and each decision of that
+  method whose span holds such a line, with a stable decision id. Lines that no method
+  holds, files that no fact covers and lines that a later revision replaced or deleted are
+  listed too. `--json` writes the document with `schemaVersion: 1` and no timestamp.
+
+Runtime coverage:
+
+- `cover --runtime` joins web and mobile decisions to line coverage as it joins backend
+  decisions. A `ternary`, `logical` or `coalesce` decision reads `undecidable` once its lines
+  ran. Backend rows come first, so the 200-row cap drops caller rows first. A web or mobile
+  repository whose files no snapshot covers is skipped, with one warning when it holds
+  decisions. Seed proofs read backend decisions only, as before.
+
+The walk:
+
+- `trace` and every reader of its index read backend decisions only, so caller decisions do
+  not change a walk.
+
 ## 0.5.1
 
 Release pipeline only. The CLI and the npm package do not change.
