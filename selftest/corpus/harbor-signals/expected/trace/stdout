@@ -1,3 +1,12 @@
+start: GET glasshouse/v1/zones/*/watchers (route, backend src/Controllers/ZoneWatchersController.cs:22)
+scope: full
+limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
+status: traversal unknown, freshness matching
+evidence: 8 source-supported, 2 inferred, runtime not supplied
+stops: provider-unavailable 1; frontier 1
+frontier: 1 stopped place
+  provider-unavailable  backend  RelaySink  backend/src/Services/RelaySink.cs:1  via graph  caller HarborBridge.Forward src/Controllers/ZoneWatchersController.cs:19  remaining unknown
+
 GET glasshouse/v1/zones/*/watchers  backend  src/Controllers/ZoneWatchersController.cs:22  [start]
 └─ ZoneWatchersController.GetWatchers  backend  src/Controllers/ZoneWatchersController.cs:22  [literal]
    ├─ HarborBridge  backend  src/Controllers/ZoneWatchersController.cs:19  [ctor]

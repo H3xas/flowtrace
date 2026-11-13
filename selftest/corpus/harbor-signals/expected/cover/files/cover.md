@@ -13,7 +13,7 @@ A page is a screen, not a route: it never enters the route index below, and carr
 | page | component | repo | handlers | routes | pw |
 |---|---|---|---|---|---|
 | `/greenhouse/*` | GreenhouseShell | web | 0 | 2 | 0/2 |
-| `/greenhouse/alerts/watchers` (inferred mount) | WatcherPreferencesPage | web | 4 | 2 | 0/2 |
+| `/greenhouse/alerts/watchers` (inferred mount) | WatcherPreferencesPage | web | 4 | 1 | 0/1 |
 | `/greenhouse/overview` (inferred mount) | ZoneOverviewPanel | web | 2 | 1 | 0/1 |
 | `/greenhouse/zones/:zoneId/*` (inferred mount) | ZoneRoutes | web | 0 | 2 | 0/2 |
 
@@ -23,7 +23,7 @@ A page is a screen, not a route: it never enters the route index below, and carr
 
 GET glasshouse/v1/zones/*/watchers — `src/Controllers/ZoneWatchersController.cs:22`
 
-1 seed · no intercept evidence · cypress none (0) · playwright none (0)
+1 seed · no intercept evidence · cypress none (0) · playwright none (0) · seed count partial (unknown: provider-unavailable 1)
 
 | seed | dispositions | sinks | level | branch | sink | evidence |
 |---|---|---|---|---|---|---|

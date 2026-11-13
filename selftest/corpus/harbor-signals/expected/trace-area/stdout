@@ -1,6 +1,7 @@
 [
   {
     "key": "GET glasshouse/v1/zones/*/watchers",
+    "schemaVersion": 1,
     "root": {
       "id": "n1",
       "repo": "backend",
@@ -345,10 +346,79 @@
       "budgetHit": false,
       "graphUnavailable": 1,
       "graphUnknownKinds": []
+    },
+    "status": {
+      "schemaVersion": 1,
+      "traversal": "unknown",
+      "freshness": "matching",
+      "factSets": [
+        {
+          "repo": "backend",
+          "freshness": "matching"
+        },
+        {
+          "repo": "web",
+          "freshness": "matching"
+        }
+      ],
+      "evidence": {
+        "source-supported": 8,
+        "inferred": 2,
+        "runtime": "not supplied"
+      },
+      "scope": {
+        "start": {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "GET glasshouse/v1/zones/*/watchers",
+          "file": "src/Controllers/ZoneWatchersController.cs",
+          "line": 22
+        },
+        "mode": "full",
+        "fromHandler": null,
+        "unscoped": false,
+        "graph": false,
+        "seeds": true,
+        "entries": false
+      },
+      "limits": {
+        "depth": 6,
+        "maxNodes": 1500,
+        "seedCap": 64,
+        "interfaceFanOut": 16,
+        "graphFanOut": 8
+      },
+      "schedule": {
+        "order": "depth-first"
+      },
+      "stops": {
+        "provider-unavailable": 1
+      },
+      "frontier": [
+        {
+          "reason": "provider-unavailable",
+          "repo": "backend",
+          "target": "RelaySink",
+          "caller": {
+            "ref": "HarborBridge.Forward",
+            "file": "src/Controllers/ZoneWatchersController.cs",
+            "line": 19
+          },
+          "callSite": {
+            "file": "backend/src/Services/RelaySink.cs",
+            "line": 1
+          },
+          "via": "graph",
+          "remaining": null,
+          "raisedBy": null
+        }
+      ],
+      "identity": "sha256:401fd4bb1f004b8b92b7697d0c2a0ae9755cd2e33511d3c5072e357f3ebfd076"
     }
   },
   {
     "key": "GET glasshouse/v1/zones/*/readings",
+    "schemaVersion": 1,
     "root": {
       "id": "n1",
       "repo": "backend",
@@ -601,10 +671,59 @@
       "budgetHit": false,
       "graphUnavailable": 0,
       "graphUnknownKinds": []
+    },
+    "status": {
+      "schemaVersion": 1,
+      "traversal": "complete",
+      "freshness": "matching",
+      "factSets": [
+        {
+          "repo": "backend",
+          "freshness": "matching"
+        },
+        {
+          "repo": "web",
+          "freshness": "matching"
+        }
+      ],
+      "evidence": {
+        "source-supported": 6,
+        "inferred": 0,
+        "runtime": "not supplied"
+      },
+      "scope": {
+        "start": {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "GET glasshouse/v1/zones/*/readings",
+          "file": "src/Controllers/ZoneReadingsController.cs",
+          "line": 19
+        },
+        "mode": "full",
+        "fromHandler": null,
+        "unscoped": false,
+        "graph": false,
+        "seeds": true,
+        "entries": false
+      },
+      "limits": {
+        "depth": 6,
+        "maxNodes": 1500,
+        "seedCap": 64,
+        "interfaceFanOut": 16,
+        "graphFanOut": 8
+      },
+      "schedule": {
+        "order": "depth-first"
+      },
+      "stops": {},
+      "frontier": [],
+      "identity": "sha256:64007620842c9da43c4698d665208c093ca63cf14c21d3dfec5a155bdffdc0d6"
     }
   },
   {
     "key": "POST glasshouse/v1/zones/*/harvest-plan",
+    "schemaVersion": 1,
     "root": {
       "id": "n1",
       "repo": "backend",
@@ -2775,6 +2894,54 @@
       "budgetHit": false,
       "graphUnavailable": 0,
       "graphUnknownKinds": []
+    },
+    "status": {
+      "schemaVersion": 1,
+      "traversal": "complete",
+      "freshness": "matching",
+      "factSets": [
+        {
+          "repo": "backend",
+          "freshness": "matching"
+        },
+        {
+          "repo": "web",
+          "freshness": "matching"
+        }
+      ],
+      "evidence": {
+        "source-supported": 69,
+        "inferred": 0,
+        "runtime": "not supplied"
+      },
+      "scope": {
+        "start": {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "POST glasshouse/v1/zones/*/harvest-plan",
+          "file": "src/Controllers/HarvestPlanController.cs",
+          "line": 19
+        },
+        "mode": "full",
+        "fromHandler": null,
+        "unscoped": false,
+        "graph": false,
+        "seeds": true,
+        "entries": false
+      },
+      "limits": {
+        "depth": 6,
+        "maxNodes": 1500,
+        "seedCap": 64,
+        "interfaceFanOut": 16,
+        "graphFanOut": 8
+      },
+      "schedule": {
+        "order": "depth-first"
+      },
+      "stops": {},
+      "frontier": [],
+      "identity": "sha256:cc52b21d409b8637e9a9948ae6e471ef8f04d708adbd02aaaddd77801a8c46b4"
     }
   }
 ]

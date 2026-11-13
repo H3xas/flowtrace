@@ -169,6 +169,13 @@ ul.obs li.off { font-family: var(--sans); color: var(--off); }
 <h1>flowtrace span · <span class="route">GET glasshouse/v1/zones/{zoneId}/watchers</span></h1>
 <p class="sub">What this endpoint can do that somebody could observe, and which of those a test already pins. Code sits behind the expanders. <a href="#honesty">What this page cannot know →</a></p>
 
+<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/watchers (route, backend src/Controllers/ZoneWatchersController.cs:22)
+scope: full
+limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
+status: traversal unknown, freshness matching
+evidence: 8 source-supported, 2 inferred, runtime not supplied
+stops: provider-unavailable 1; frontier 1</pre><details><summary>1 stopped place</summary><ul><li>provider-unavailable  backend  RelaySink  backend/src/Services/RelaySink.cs:1  via graph  caller HarborBridge.Forward src/Controllers/ZoneWatchersController.cs:19  remaining unknown</li></ul></details></div>
+
 <div class="strip"><div class="cell"><span class="k">route</span><span class="v">GET glasshouse/v1/zones/{zoneId}/watchers</span></div><div class="cell"><span class="k">owning action</span><span class="v">ZoneWatchersController.GetWatchers</span></div><div class="cell"><span class="k">outcomes</span><span class="v">1</span></div><div class="cell"><span class="k">tested</span><span class="v off">0</span></div><div class="cell"><span class="k">inherited only</span><span class="v off">0</span></div><div class="cell"><span class="k">untested</span><span class="v warn">1</span></div><div class="cell"><span class="k">route evidence tier</span><span class="v">none</span></div><div class="cell"><span class="k">reconciles with cover</span><span class="v">1/1 seeds</span></div></div>
 
 <h2>1 · Span map</h2>
@@ -187,7 +194,7 @@ ul.obs li.off { font-family: var(--sans); color: var(--off); }
 <div class="row-head"><span class="status off">no status stated</span><span class="what">succeeds on the happy path</span><span class="tag t-untested" title="nothing names this outcome — the draft below is what a test for it would say">untested</span></div>
 
 <div class="row-body"><div class="col"><div class="col-k">given</div><ul class="pre"><li>none (happy path — no deciding branch)</li></ul></div>
-<div class="col"><div class="col-k">then</div><ul class="expect"><li>reads only (no observable write)</li></ul></div></div>
+<div class="col"><div class="col-k">then</div><ul class="expect"><li>observed reads; other effects unknown</li></ul></div></div>
 <div class="row-foot"><span class="seedkey">U1 #0a764c91</span> <a class="jump" href="#seed-0a764c91">what to write →</a></div>
 <details class="where"><summary>where this is written</summary><div class="where-body"><div class="where-row">no deciding branch — this is the route's own happy path</div></div></details>
 </div>
@@ -207,14 +214,14 @@ than claimed here. An <em>inherited only</em> row is never counted as tested in 
 <div class="lrow lrow-t-untested" id="seed-0a764c91">
 <div class="lrow-head"><span class="ord">1</span><span class="tag t-untested" title="nothing names this outcome — the draft below is what a test for it would say">untested</span><span class="status off">—</span><span class="what">succeeds on the happy path</span><span class="seedkey">U1 #0a764c91</span></div>
 
-<details class="draft" id="draft-0a764c91"><summary>what a test for this would say — <code>cases --gherkin-draft</code>, quoted</summary><pre class="gherkin"><span class="gk">## Scenario: GET glasshouse/v1/zones/{zoneId}/watchers · returns with no observable write on the happy path
+<details class="draft" id="draft-0a764c91"><summary>what a test for this would say — <code>cases --gherkin-draft</code>, quoted</summary><pre class="gherkin"><span class="gk">## Scenario: GET glasshouse/v1/zones/{zoneId}/watchers · observed reads; other effects unknown on the happy path
 
 &lt;!-- U1 #0a764c91 --&gt;
 
 Given the GET glasshouse/v1/zones/{zoneId}/watchers endpoint
 And the caller is an authorised user
 When a GET request is made to glasshouse/v1/zones/{zoneId}/watchers
-Then the request returns with no observable write
+Then observed reads; other effects unknown
 
 **Case id:** TODO: pending — see `cases` sheet for the human-readable version</span></pre></details>
 </div>

@@ -92,7 +92,18 @@ test('Mobile component span AC-1: a mobile page start exits 0 and names its repo
   assert.equal(run.status, 0, run.stderr);
   assert.deepEqual(run.model.component, { name: 'PlotDetailPage', repo: 'mobile', kind: 'page', file: PAGE_TS, line: 6 });
   assert.doesNotMatch(run.stderr, /refused|web kind only/i);
-  assert.deepEqual(Object.keys(run.model), ['component', 'header', 'entries', 'selectedEntry', 'orphans', 'routes', 'unresolved', 'limits']);
+  assert.deepEqual(Object.keys(run.model), [
+    'schemaVersion',
+    'component',
+    'status',
+    'header',
+    'entries',
+    'selectedEntry',
+    'orphans',
+    'routes',
+    'unresolved',
+    'limits',
+  ]);
   for (const view of run.model.entries) assert.deepEqual(Object.keys(view), ['identity', 'routes', 'arms', 'unresolved']);
 });
 

@@ -20,6 +20,18 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CONFIG = 'harbor.scout.config.json';
 
+// A walk's status identity hashes the fixture's head commit, so every input of that
+// commit is fixed: the same tree then gives the same commit on any machine and any day.
+const FIXTURE_COMMIT = {
+  GIT_AUTHOR_NAME: 'flowtrace selftest',
+  GIT_AUTHOR_EMAIL: 'selftest@example.invalid',
+  GIT_AUTHOR_DATE: '2026-01-01T00:00:00Z',
+  GIT_COMMITTER_NAME: 'flowtrace selftest',
+  GIT_COMMITTER_EMAIL: 'selftest@example.invalid',
+  GIT_COMMITTER_DATE: '2026-01-01T00:00:00Z',
+};
+const FIXTURE_GIT = ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null'];
+
 const INVOCATIONS = [
   { name: 'check', args: ['check', '--area', 'harbor.area.txt'] },
   { name: 'trace', args: ['trace', 'GET glasshouse/v1/zones/{zoneId}/watchers'] },
@@ -77,10 +89,13 @@ function run(cwd, args, env) {
 function prepare(name, { touch = false } = {}) {
   const dir = join(workRoot, name);
   cpSync(HERE, dir, { recursive: true, filter: (source) => !source.includes(`${HERE}/expected`) });
-  const git = (...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+  const git = (...args) => {
+    const result = spawnSync('git', [...FIXTURE_GIT, ...args], {
+      cwd: dir, encoding: 'utf8', env: { ...process.env, ...FIXTURE_COMMIT },
+    });
+    if (result.status !== 0) throw new Error(`git ${args[0]} failed: ${result.stderr}`);
+  };
   git('init', '-q');
-  git('config', 'user.email', 'selftest@example.invalid');
-  git('config', 'user.name', 'flowtrace selftest');
   git('add', '-A');
   git('commit', '-q', '-m', 'fixture');
   if (touch) {

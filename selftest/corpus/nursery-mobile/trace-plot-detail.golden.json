@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "root": {
     "id": "n1",
     "repo": "mobile",
@@ -292,5 +293,53 @@
     "budgetHit": false,
     "graphUnavailable": 0,
     "graphUnknownKinds": []
+  },
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "complete",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "backend",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "mobile",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 9,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "mobile",
+        "kind": "page",
+        "ref": "PlotDetailPage",
+        "file": "src/app/features/plots/plot-detail.page.ts",
+        "line": 6
+      },
+      "mode": "inventory",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": false,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {},
+    "frontier": [],
+    "identity": "sha256:33ecd99d481010a042882079382e4f14517b003f3beb60c249e241c7cf82e5e6"
   }
 }

@@ -30,6 +30,18 @@ const STUB = join(FIXTURE, 'scout', 'scout-stub.mjs');
 const CONFIG = 'harbor.scout.config.json';
 const TEMP = tmpdir();
 
+// A walk's status identity hashes the fixture's head commit, so every input of that
+// commit is fixed: the same tree then gives the same commit on any machine and any day.
+const FIXTURE_COMMIT = {
+  GIT_AUTHOR_NAME: 'flowtrace selftest',
+  GIT_AUTHOR_EMAIL: 'selftest@example.invalid',
+  GIT_AUTHOR_DATE: '2026-01-01T00:00:00Z',
+  GIT_COMMITTER_NAME: 'flowtrace selftest',
+  GIT_COMMITTER_EMAIL: 'selftest@example.invalid',
+  GIT_COMMITTER_DATE: '2026-01-01T00:00:00Z',
+};
+const FIXTURE_GIT = ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null'];
+
 const INVOCATIONS = [
   { name: 'check', args: ['check', '--area', 'harbor.area.txt'] },
   { name: 'trace', args: ['trace', 'GET glasshouse/v1/zones/{zoneId}/watchers'] },
@@ -60,7 +72,10 @@ function makeDir(prefix) {
 }
 
 function git(cwd, ...args) {
-  spawnSync('git', args, { cwd, encoding: 'utf8' });
+  const result = spawnSync('git', [...FIXTURE_GIT, ...args], {
+    cwd, encoding: 'utf8', env: { ...process.env, ...FIXTURE_COMMIT },
+  });
+  assert.equal(result.status, 0, `git ${args[0]}: ${result.stderr}`);
 }
 
 /** One prepared fixture: the corpus, its git baseline, and its facts. */
@@ -68,8 +83,6 @@ function prepare({ touch = false } = {}) {
   const dir = makeDir('flowtrace-concurrent-base-');
   cpSync(FIXTURE, dir, { recursive: true, filter: (source) => !source.includes(`${FIXTURE}/expected`) });
   git(dir, 'init', '-q');
-  git(dir, 'config', 'user.email', 'selftest@example.invalid');
-  git(dir, 'config', 'user.name', 'flowtrace selftest');
   git(dir, 'add', '-A');
   git(dir, 'commit', '-q', '-m', 'fixture');
   if (touch) {

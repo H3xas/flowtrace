@@ -45,6 +45,24 @@ test('the committed projection classifies every case from the fixed vocabulary',
   assert.doesNotMatch(text, /\.(cs|tsx?)"/);
 });
 
+test('Dynamic URL join AC-4: the run-time report request stays a marked source site', (t) => {
+  const { out } = gate(t);
+  const observed = readJson(join(out, 'projection.json'));
+  const entry = observed.cases.find((item) => item.id === 'nested-page-by-name');
+  assert.ok(entry, 'the committed pack carries nested-page-by-name');
+  assert.deepEqual(entry.unknowns.find((unknown) => unknown.id === 'report-url'), {
+    id: 'report-url',
+    seen: true,
+    marked: true,
+    asserted: false,
+  });
+  for (const site of entry.sites) assert.equal(site.found, true, site.id);
+  assert.equal(entry.classification, 'resolved');
+  const ledger = readLedger(join(PACK, 'expected.json'));
+  const planned = ledger.cases.find((item) => item.id === 'nested-page-by-name');
+  assert.deepEqual(entry.unknowns.map((unknown) => unknown.id), planned.unknowns);
+});
+
 test('the budget pair is pinned for its own case only', () => {
   const observed = readJson(OBSERVED);
   const run = (id) => observed.runs.find((entry) => entry.id === id);

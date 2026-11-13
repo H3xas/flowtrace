@@ -25,6 +25,117 @@ test('--allow-skipped on a command other than join is a usage error exiting 2', 
   assert.match(stderr, /--allow-skipped is a join option/);
 });
 
+/** Eight independent validation gates put one route's own seed walk past the 64-seed cap, so
+ * its seed, effect and evidence comparison is skipped and the gate has a truncated route to
+ * report. Two such routes prove the gate names every skipped route, not only the first. Fewer
+ * gates stay under the cap and cannot show the skip rung at all. */
+function writeOverCapRoute(dir) {
+  const file = joinPath(dir, 'backend', 'src', 'Controllers', 'GizmoController.cs');
+  const lines = readFileSync(file, 'utf8').split('\n');
+  const classClose = lines.findLastIndex((line) => line === '    }');
+  assert.ok(classClose > 0, 'the corpus controller declares a class body to extend');
+  const method = (action, template) => [
+    `        [HttpPost("${template}")]`,
+    `        public async Task<IActionResult> ${action}([FromBody] ConfigureGizmoRequest request)`,
+    '        {',
+    ...'ABCDEFGH'
+      .split('')
+      .map((field) => `            if (!request.${field}.IsValid()) { return BadRequest("${field.toLowerCase()}"); }`),
+    '',
+    '            var catalog = await _gizmos.GetCatalog();',
+    '            return Ok(catalog);',
+    '        }',
+  ];
+  lines.splice(classClose, 0, ...method('Configure', 'configure'), ...method('Retune', 'retune'));
+  writeFileSync(file, lines.join('\n'));
+}
+
+/** One more validation gate on a route whose walk stays under the cap, which changes that
+ * route's seed list and so produces a finding the gate can exit 1 on. */
+function writeSeedDrift(dir) {
+  const file = joinPath(dir, 'backend', 'src', 'Controllers', 'GizmoController.cs');
+  const source = readFileSync(file, 'utf8');
+  const call = '            var activated = await _gizmos.Activate(request.SerialCode);';
+  writeFileSync(
+    file,
+    source.replace(call, `            if (!request.SerialCode.IsValid()) { return BadRequest("invalid"); }\n\n${call}`),
+  );
+}
+
+test('a truncated route fails --fail-on on exit 5, and --allow-skipped hands the exit back to findings', (t) => {
+  const dir = copyCorpus(t);
+  writeOverCapRoute(dir);
+  extract(dir);
+  const taken = runCli(['join', '--config', 'gizmo.config.json', '--snapshot', 'snapshot.json'], { cwd: dir });
+  assert.equal(taken.status, 0, taken.stderr);
+
+  const informational = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json'], { cwd: dir });
+  assert.equal(informational.status, 0, informational.stderr);
+  for (const route of ['configure', 'retune']) {
+    assert.match(
+      informational.stdout,
+      new RegExp(`skipped POST gizmos/v1/${route}: the snapshot side and the current side's seed walks were truncated at the 64-seed cap`),
+    );
+  }
+
+  const gated = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(gated.status, 5);
+  for (const route of ['configure', 'retune']) {
+    assert.match(gated.stderr, new RegExp(`flowtrace: skipped POST gizmos/v1/${route}: .*truncated at the 64-seed cap`));
+  }
+  assert.match(gated.stderr, /flowtrace: 2 routes skipped and never compared/);
+
+  writeSeedDrift(dir);
+  extract(dir);
+  const stillGated = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(stillGated.status, 5, 'a skipped route outranks a selected finding');
+  const optedOut = runCli(
+    ['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any', '--allow-skipped'],
+    { cwd: dir },
+  );
+  assert.equal(optedOut.status, 1, optedOut.stderr);
+  assert.match(optedOut.stderr, /1 finding selected by --fail-on/);
+});
+
+test('a skipped entry states the cap and the truncated side in JSON without moving the report schema', (t) => {
+  const dir = copyCorpus(t);
+  writeOverCapRoute(dir);
+  extract(dir);
+  const taken = runCli(['join', '--config', 'gizmo.config.json', '--snapshot', 'snapshot.json'], { cwd: dir });
+  assert.equal(taken.status, 0, taken.stderr);
+
+  const result = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(result.status, 5);
+  const report = JSON.parse(result.stdout);
+  assert.equal(report.schemaVersion, 1);
+  assert.deepEqual(
+    report.skipped.map((entry) => entry.route),
+    ['POST gizmos/v1/configure', 'POST gizmos/v1/retune'],
+  );
+  for (const entry of report.skipped) {
+    assert.deepEqual(Object.keys(entry).sort(), ['reason', 'route']);
+    assert.match(entry.reason, /the snapshot side and the current side's seed walks were truncated at the 64-seed cap/);
+  }
+});
+
+test('a drifting pair without truncation exits 1 under --fail-on, and a clean pair exits 0', (t) => {
+  const dir = copyCorpus(t);
+  extract(dir);
+  const taken = runCli(['join', '--config', 'gizmo.config.json', '--snapshot', 'snapshot.json'], { cwd: dir });
+  assert.equal(taken.status, 0, taken.stderr);
+
+  const clean = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(clean.status, 0, clean.stderr);
+
+  writeSeedDrift(dir);
+  extract(dir);
+  const drifted = runCli(['join', '--config', 'gizmo.config.json', '--against', 'snapshot.json', '--fail-on', 'any'], { cwd: dir });
+  assert.equal(drifted.status, 1);
+  assert.match(drifted.stdout, /seed added: validation=invalid/);
+  assert.match(drifted.stderr, /1 finding selected by --fail-on/);
+  assert.doesNotMatch(drifted.stderr, /skipped/);
+});
+
 /** A caller whose code end has neither file nor line — an incomplete fact a factsProvider
  * or a future extractor could plausibly emit, exactly the shape join-export.js must
  * refuse rather than coerce to null. */
@@ -293,4 +404,140 @@ test('join --snapshot writes schemaVersion 2 with the provider identity, and a s
   assert.equal(before.digest, after.digest);
   assert.equal(before.provider.comparison.route.externalOnly, after.provider.comparison.route.externalOnly);
   assert.notEqual(before.provider.digest, after.provider.digest);
+});
+
+/** Hand-written facts with no extraction: both sides of the hop are exactly what a test
+ * states, so a joined edge or its absence is the matcher's own decision. */
+function syntheticJoin(t, { routes, callers, aliases = [] }) {
+  const dir = copyCorpus(t);
+  const factsDir = joinPath(dir, 'out', 'facts');
+  mkdirSync(factsDir, { recursive: true });
+  const writeSet = (name, repo, kind, facts) =>
+    writeFileSync(joinPath(factsDir, `${name}.json`), `${JSON.stringify({ repo, kind, facts }, null, 2)}\n`);
+  if (routes.length > 0) writeSet('routes', 'backend', 'backend', routes);
+  if (callers.length > 0) writeSet('callers', 'web', 'mobile', callers);
+  writeFileSync(
+    joinPath(dir, 'join.config.json'),
+    `${JSON.stringify({ out: 'out', repos: [{ id: 'api', kind: 'backend', root: 'backend', role: ['api'] }], aliases }, null, 2)}\n`,
+  );
+  const run = runCli(['join', '--config', 'join.config.json'], { cwd: dir });
+  assert.equal(run.status, 0, run.stderr);
+  return JSON.parse(readFileSync(joinPath(dir, 'out', 'flow.json'), 'utf8'));
+}
+
+function routeFact(verb, template, action, line) {
+  return {
+    type: 'route',
+    file: 'src/Controllers/ZoneController.cs',
+    line,
+    controller: 'ZoneController',
+    action,
+    verb,
+    template,
+  };
+}
+
+function gatewayFact(verb, template, method, line, resolved = true) {
+  return {
+    type: 'gateway_call',
+    file: 'src/actions/zones.ts',
+    line,
+    service: 'httpClient',
+    method,
+    verb,
+    template,
+    resolved,
+  };
+}
+
+const DYNAMIC_TEMPLATES = ['*', '${url}', '{id}', '**', '/**?q=1', '//${value}//#frag'];
+
+test('Dynamic URL join AC-1: a request whose URL normalizes to bare star joins no route', (t) => {
+  const routes = [
+    routeFact('GET', 'glasshouse/v1/zones/{zoneId}/readings', 'Readings', 10),
+    routeFact('GET', 'glasshouse/v1/zones/{zoneId}/alarms', 'Alarms', 20),
+    routeFact('ANY', 'glasshouse/v1/ping', 'Ping', 30),
+    routeFact('GET', '*', 'Anything', 40),
+  ];
+  const aliases = [{ from: 'glasshouse', to: 'backend' }];
+  const callers = DYNAMIC_TEMPLATES.map((template, index) =>
+    gatewayFact(index % 2 === 0 ? 'GET' : 'ANY', template, `call${index}`, 100 + index, index < 3),
+  );
+  for (const order of [routes, [...routes].reverse()]) {
+    const flow = syntheticJoin(t, { routes: order, callers, aliases });
+    assert.deepEqual(
+      flow.edges.filter((edge) => edge.kind === 'calls'),
+      [],
+      `routes in order ${order.map((route) => route.template).join(', ')}`,
+    );
+    const expected = callers
+      .map((fact) => ({ key: `${fact.verb} *`, fact }))
+      .sort((a, b) => a.key.localeCompare(b.key) || a.fact.line - b.fact.line);
+    const actual = [...flow.unjoined.mobile_calls_without_route].sort(
+      (a, b) => a.key.localeCompare(b.key) || a.fact.line - b.fact.line,
+    );
+    assert.deepEqual(actual, expected);
+  }
+});
+
+test('Dynamic URL join AC-2: an unjoined dynamic caller keeps the unresolved representation', (t) => {
+  const route = routeFact('GET', 'glasshouse/v1/zones/{zoneId}/readings', 'Readings', 10);
+  const caller = gatewayFact('GET', '${url}', 'loadReport', 30, false);
+  const flow = syntheticJoin(t, { routes: [route], callers: [caller] });
+
+  assert.deepEqual(Object.keys(flow).sort(), ['edges', 'unjoined']);
+  assert.deepEqual(flow.edges, []);
+  assert.deepEqual(flow.unjoined.mobile_calls_without_route, [{ key: 'GET *', fact: caller }]);
+  assert.deepEqual(flow.unjoined.routes_without_caller, [
+    { key: 'GET glasshouse/v1/zones/*/readings', fact: route },
+  ]);
+  assert.deepEqual(Object.keys(flow.unjoined).sort(), [
+    'consume_without_publisher',
+    'intercepts_without_route',
+    'messages_without_contract',
+    'mobile_calls_without_route',
+    'publish_unresolved',
+    'publish_without_consumer',
+    'routes_without_caller',
+  ]);
+});
+
+test('Dynamic URL join AC-3: known paths keep exact, prefix, alias and suffix joins', (t) => {
+  const readings = routeFact('GET', 'glasshouse/v1/zones/{zoneId}/readings', 'Readings', 10);
+  const watchers = routeFact('PUT', 'glasshouse/v1/zones/{zoneId}/watchers', 'SaveWatchers', 20);
+  const status = routeFact('ANY', 'glasshouse/v1/status', 'Status', 30);
+  const callers = [
+    gatewayFact('GET', 'glasshouse/v1/zones/{zoneId}/readings', 'exactPath', 1),
+    gatewayFact('GET', 'glasshouse/v1/zones/{zoneId}/readings?include=alarms', 'exactWithQuery', 2),
+    gatewayFact('GET', 'glasshouse/v1/zones/*', 'prefixPath', 3),
+    gatewayFact('PUT', 'v1/zones/{zoneId}/watchers', 'aliasPath', 4),
+    gatewayFact('GET', 'status', 'suffixPath', 5),
+    gatewayFact('GET', 'glasshouse/v1/status', 'anyVerb', 6),
+  ];
+  const flow = syntheticJoin(t, {
+    routes: [readings, watchers, status],
+    callers,
+    aliases: [{ from: 'v1', to: 'glasshouse/v1' }],
+  });
+  const calls = flow.edges.filter((edge) => edge.kind === 'calls');
+  const byMethod = new Map(calls.map((edge) => [edge.from.ref, edge]));
+
+  const exact = byMethod.get('httpClient.exactPath');
+  assert.equal(exact.match, 'exact');
+  assert.equal(exact.key, 'GET glasshouse/v1/zones/*/readings');
+  assert.equal(exact.callerKey, 'GET glasshouse/v1/zones/*/readings');
+  assert.equal(exact.to.ref, 'ZoneController.Readings');
+  assert.equal(byMethod.get('httpClient.exactWithQuery').match, 'exact');
+  assert.equal(byMethod.get('httpClient.exactWithQuery').key, 'GET glasshouse/v1/zones/*/readings');
+  assert.equal(byMethod.get('httpClient.prefixPath').match, 'prefix');
+  assert.equal(byMethod.get('httpClient.prefixPath').key, 'GET glasshouse/v1/zones/*/readings');
+  assert.equal(byMethod.get('httpClient.aliasPath').match, 'alias');
+  assert.deepEqual(byMethod.get('httpClient.aliasPath').alias, { from: 'v1', to: 'glasshouse/v1' });
+  assert.equal(byMethod.get('httpClient.aliasPath').key, 'PUT glasshouse/v1/zones/*/watchers');
+  assert.equal(byMethod.get('httpClient.suffixPath').match, 'suffix');
+  assert.equal(byMethod.get('httpClient.suffixPath').key, 'ANY glasshouse/v1/status');
+  assert.equal(byMethod.get('httpClient.anyVerb').match, 'exact');
+  assert.equal(byMethod.get('httpClient.anyVerb').key, 'ANY glasshouse/v1/status');
+  assert.deepEqual(flow.unjoined.mobile_calls_without_route, []);
+  assert.deepEqual(flow.unjoined.routes_without_caller, []);
 });

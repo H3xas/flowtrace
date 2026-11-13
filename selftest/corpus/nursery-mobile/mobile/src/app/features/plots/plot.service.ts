@@ -45,14 +45,16 @@ export class PlotService {
   }
 
   replaceWatchers(plotId: string) {
-    return this.gateway.put(this.watchUrl(plotId), {});
+    return this.gateway.put(`nursery/v1/plots/${plotId}/` + this.watchKind(), {});
   }
 
   markHealthy(plotId: string) {
     return this.gateway.post(`nursery/v1/plots/${plotId}/health`, {});
   }
 
-  private watchUrl(plotId: string) {
-    return ['nursery/v1/plots', plotId, 'watchers'].join('/');
+  // Built by a call the extractor cannot read, so the request template stays unresolved
+  // while its literal path prefix still names the collection.
+  private watchKind() {
+    return ['watchers', 'shares'].join('/');
   }
 }
