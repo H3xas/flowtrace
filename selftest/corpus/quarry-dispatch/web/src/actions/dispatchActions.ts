@@ -8,6 +8,6 @@ const buildDispatchUrl = (bucket: string) => `/dispatch/v1/${bucket}/archive`;
 
 export function loadPlans() {
   return (dispatch: Dispatch) =>
-    httpClient.getGatewayClient().post(buildDispatchUrl('plans'), {})
+    httpClient.getGatewayClient().post('/dispatch/v1/' + buildDispatchUrl('plans'), {})
       .then((items) => dispatch({ type: PLANS_LOADED, items }));
 }
