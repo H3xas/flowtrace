@@ -76,6 +76,13 @@ npm test
   `mobile-component-span.test.js` runs `span --from-component` over it. The fixture's README
   states the header counts each run must give and how the two committed `trace` goldens were
   captured.
+- `corpus/kiln-yard/`: an invented pottery yard with a backend, a React client and an Ionic
+  app. Its web and mobile files hold each decision form the extractors read, and the text that
+  must give none. `caller-decisions.test.js` runs it through the CLI, one `Caller decisions
+  AC-n:` test for each acceptance rule. One case imports `buildRuntimeIndex` and
+  `runtimeSummary` of `lib/runtime-cover.js`, because a corpus with more than 200 decisions
+  would be too large to read. `decisions-verb.test.js` builds its own git working trees in a
+  temporary directory, one `Decisions verb AC-n:` test for each acceptance rule.
 - `corpus/bakery-orders/` and `corpus/bakery-gates/`: an invented bakery backend. Its
   pipelines take their steps from a DI factory, a `typeof(...)` list or an injected
   `IEnumerable<T>`. Their steps write a stop flag, return `false` or `null`, or throw. The
@@ -105,6 +112,13 @@ npm test
   the web extractor cannot resolve. `partial-result.test.js` runs it through the CLI with one
   `Partial result AC-n:` test for each acceptance rule, and calls `trace()` in process for the
   code-index case the public corpus cannot supply.
+- `corpus/kite-club/`: an invented kite club, with an ASP.NET Core backend, a React client
+  with its Cypress suite, an Ionic app and a Playwright suite. It holds one route that a
+  thunk, a function nothing calls and an Ionic service post to, and a screen shape for each
+  hop and gap of `chains`. `route-chains.test.js` runs it through the CLI, one `Route chains
+  AC-n:` test for each acceptance rule. One case imports `callersOf` of `lib/span.js`,
+  because no command prints the callers of a route as data. The corpus README lists each
+  shape and the chain it gives.
 - `dependency-goldens.js` and `corpus/dependency-goldens.json`: the dependency answer of each
   corpus, as the release before the source-flow work wrote it. The record holds the exit
   status and the sha256 of stdout and stderr for six outputs of every start. `--write` captures

@@ -25,6 +25,7 @@ injects `PlotService` and the NgRx `Store`, and its template renders `SeedlingBa
 | An assign binding | `(ionInput)="draft = $event"` | No entry. |
 | A rendered child with its own handler, injecting the same service | `SeedlingBadgeComponent.onMark` | A `SeedlingBadgeComponent` entry with the `health` route. The page's own requests to the service still print. |
 | Two classes of one name in two folders | `features/archive/` and `features/legacy/` `ArchiveListPage` | Without `--file` the name exits 2 and lists both files. `--file legacy` picks one, with its `ngOnDestroy` entry only. |
+| An injectable declared outside the extraction roots | `mobile/src/app/core/gateway.service.ts` | `PlotService` starts, but its `GatewayService` dependency states `mobile-declaration-unresolved`: the target has no declaration fact inside the configured roots. |
 
 ## Expected header counts
 
@@ -40,7 +41,7 @@ test reads this block and compares every `header` with it.
   "PlotDetailPage --entry click@6": { "routesResolved": 1, "armsResolved": 1, "armsUnresolved": 0, "entries": 1, "armsWithoutEntry": 0 },
   "PlotDetailPage --entry onExport": { "routesResolved": 0, "armsResolved": 0, "armsUnresolved": 1, "entries": 1, "armsWithoutEntry": 0 },
   "SeedlingBadgeComponent": { "routesResolved": 1, "armsResolved": 1, "armsUnresolved": 0, "entries": 1, "armsWithoutEntry": 0 },
-  "PlotService": { "routesResolved": 8, "armsResolved": 8, "armsUnresolved": 2, "entries": 0, "armsWithoutEntry": 10 }
+  "PlotService": { "routesResolved": 8, "armsResolved": 8, "armsUnresolved": 3, "entries": 0, "armsWithoutEntry": 11 }
 }
 ```
 
@@ -57,3 +58,8 @@ without entry, which is why that run has ten of them.
 directory after `extract` and `join`. It used the CLI from before the mobile component span,
 and two captures were byte-identical. They prove that the span's entries leave mobile `trace`
 output as it was. Change a golden only together with a deliberate change to mobile `trace`.
+
+The declaration-identity change added optional fields to the extracted facts. The
+`status.identity` field digests the fact sets, so both goldens changed there. Their `root`,
+`nodes`, `edges` and `stats` are unchanged. The walk reaches the same declarations and
+requests.
