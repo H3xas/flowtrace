@@ -6,7 +6,7 @@
     "version": "0.5.1"
   },
   "provenance": {
-    "id": "7a500fe5e0f1d8c7",
+    "id": "7308ca77d0375d07",
     "producer": "flowtrace-cli 0.5.1",
     "formatVersion": 1,
     "config": {
@@ -58,20 +58,19 @@
         "repo": "api",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "b13a6dde132e48278fbfb03cd8c17eaa57faa8ec",
+        "headSha": "e5f3bf61c151c23188fad41043950637853abfc7",
         "dirty": true,
-        "dirtyDigest": "473eebc31ec961b79e336d8378914e4a7cfe20d1",
+        "dirtyDigest": "9e1050e3cbec3e85ce28f751060556536c3c7bbb",
         "fileCount": 17,
-        "controlEvidence": 1,
         "digest": "44a3e39423f745c4e07cf5a2137f1a55ec002176"
       },
       {
         "repo": "e2e",
         "kind": "playwright",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "b13a6dde132e48278fbfb03cd8c17eaa57faa8ec",
+        "headSha": "e5f3bf61c151c23188fad41043950637853abfc7",
         "dirty": true,
-        "dirtyDigest": "473eebc31ec961b79e336d8378914e4a7cfe20d1",
+        "dirtyDigest": "9e1050e3cbec3e85ce28f751060556536c3c7bbb",
         "fileCount": 3,
         "titles": {
           "status": "failed",
@@ -83,9 +82,9 @@
         "repo": "mobile",
         "kind": "mobile",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "b13a6dde132e48278fbfb03cd8c17eaa57faa8ec",
+        "headSha": "e5f3bf61c151c23188fad41043950637853abfc7",
         "dirty": true,
-        "dirtyDigest": "473eebc31ec961b79e336d8378914e4a7cfe20d1",
+        "dirtyDigest": "9e1050e3cbec3e85ce28f751060556536c3c7bbb",
         "fileCount": 4,
         "digest": "a588da1bac1a66bc6aa08b4a8b2649fed4b3607b"
       },
@@ -93,22 +92,20 @@
         "repo": "shopfront",
         "kind": "web",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "b13a6dde132e48278fbfb03cd8c17eaa57faa8ec",
+        "headSha": "e5f3bf61c151c23188fad41043950637853abfc7",
         "dirty": true,
-        "dirtyDigest": "473eebc31ec961b79e336d8378914e4a7cfe20d1",
+        "dirtyDigest": "9e1050e3cbec3e85ce28f751060556536c3c7bbb",
         "fileCount": 3,
-        "controlEvidence": 1,
         "digest": "bd524681433af6aae7d1766f717406a069970033"
       },
       {
         "repo": "stock",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "b13a6dde132e48278fbfb03cd8c17eaa57faa8ec",
+        "headSha": "e5f3bf61c151c23188fad41043950637853abfc7",
         "dirty": true,
-        "dirtyDigest": "473eebc31ec961b79e336d8378914e4a7cfe20d1",
+        "dirtyDigest": "9e1050e3cbec3e85ce28f751060556536c3c7bbb",
         "fileCount": 5,
-        "controlEvidence": 1,
         "digest": "b7fd58bcc964ce02d21e011c0eec62bdd3baa1c5"
       }
     ],
@@ -132,7 +129,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "calls",
@@ -149,7 +146,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "consumes",
@@ -166,7 +163,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "consumes",
@@ -183,7 +180,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "consumes",
@@ -200,7 +197,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "consumes",
@@ -217,7 +214,7 @@
         "line": 7
       },
       "key": "StockReservedEvent",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "publishes",
@@ -234,7 +231,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "publishes",
@@ -251,7 +248,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "publishes",
@@ -268,7 +265,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "publishes",
@@ -285,7 +282,7 @@
         "line": null
       },
       "key": "StockReservedEvent",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     },
     {
       "kind": "tests",
@@ -302,7 +299,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "7a500fe5e0f1d8c7"
+      "provenance": "7308ca77d0375d07"
     }
   ]
 }
