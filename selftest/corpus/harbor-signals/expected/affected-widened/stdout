@@ -1,0 +1,85 @@
+{
+  "area": "harbor.area",
+  "universe": {
+    "source": "area",
+    "routes": 3,
+    "seeds": 3
+  },
+  "changed": {
+    "files": [
+      {
+        "repo": "backend",
+        "path": "src/Controllers/ZoneWatchersController.cs",
+        "kind": "source"
+      }
+    ],
+    "counts": {
+      "source": 1,
+      "spec": 0,
+      "harness": 0,
+      "config": 0,
+      "generated": 0,
+      "excluded": 0,
+      "unmapped": 0
+    }
+  },
+  "routes": [
+    {
+      "key": "GET glasshouse/v1/zones/*/watchers",
+      "ref": "GET glasshouse/v1/zones/*/watchers",
+      "file": "src/Controllers/ZoneWatchersController.cs",
+      "line": 22,
+      "state": "none",
+      "seeds": 1,
+      "changed": [
+        "src/Controllers/ZoneWatchersController.cs",
+        "src/Services/WatcherService.cs"
+      ]
+    }
+  ],
+  "seeds": {
+    "affected": 1,
+    "universe": 3
+  },
+  "specs": [],
+  "changedSpecs": [],
+  "uncovered": [
+    {
+      "route": "GET glasshouse/v1/zones/*/watchers",
+      "seeds": 1,
+      "scaffold": "flowtrace scaffold --area harbor.area --seed 0a764c91"
+    }
+  ],
+  "suites": [],
+  "reasons": [
+    "dotnet-filter: index-unavailable: 3 of 4 type names unresolved (no symbol matches) — the file scan answered for them"
+  ],
+  "fallbacks": [],
+  "fullSuite": [],
+  "widened": [
+    {
+      "from": "src/Controllers/ZoneWatchersController.cs",
+      "to": "src/Services/WatcherService.cs",
+      "via": "direct"
+    }
+  ],
+  "widenDropped": [],
+  "braked": [],
+  "stale": [],
+  "dotnetFilter": {
+    "classes": [
+      "WatcherFeedTests"
+    ],
+    "expression": "FullyQualifiedName~WatcherFeedTests",
+    "fallback": false,
+    "reason": "1 of 4 test classes (25 %) reference a changed type",
+    "source": "index+scan",
+    "suite": 4,
+    "share": 0.25,
+    "notes": [
+      "index-unavailable: 3 of 4 type names unresolved (no symbol matches) — the file scan answered for them"
+    ]
+  },
+  "exit": 0,
+  "widenHops": 2
+}

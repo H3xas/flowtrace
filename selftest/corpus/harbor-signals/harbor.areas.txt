@@ -1,2 +1,2 @@
-zones,src/zones/**
-readings,src/**
+zones,src/app/features/zones/**
+readings,src/app/features/readings/**

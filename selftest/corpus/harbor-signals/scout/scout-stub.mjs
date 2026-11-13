@@ -52,7 +52,12 @@ if (typeof name === 'string' && name.endsWith('__timeout')) {
   });
 }
 if (typeof name === 'string' && name.endsWith('__flood')) {
-  finish('x'.repeat(200000), 0);
+  record();
+  process.stdout.write('x'.repeat(200000));
+  // Held open, so the caller's output limit ends the process and never a race with its own
+  // exit: a pipe write is asynchronous on some platforms, and an early exit could win.
+  setInterval(() => {}, 1000);
+  await new Promise(() => {});
 }
 
 if (command === 'refs' && !args.includes('--json')) {

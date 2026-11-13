@@ -385,7 +385,7 @@ stops: provider-unavailable 1; frontier 1</pre><details><summary>1 stopped place
 <h2>1 · Span map</h2>
 
 <h3>Who calls it</h3>
-<div class="chain"><div class="chain-row"><span class="chain-name">web › httpClient.loadPrimaryZone</span><span class="chain-verb">literal url</span></div><div class="chain-row"><span class="chain-name">web › httpClient.loadWatchers</span><span class="chain-verb">literal url</span></div></div><details class="where"><summary>where these calls are written</summary><div class="where-body"><div class="where-site">web — src/actions/primaryZone.ts:9 — /greenhouse/v1/zones/${growerId}/watchers</div><div class="where-site">web — src/actions/watchers.ts:10 — /greenhouse/v1/zones/${zoneId}/watchers</div></div></details>
+<div class="chain"><div class="chain-row"><span class="chain-name">mobile › ZoneWatcherFeed.listWatchers</span><span class="chain-verb">literal url</span></div><div class="chain-row"><span class="chain-name">web › httpClient.loadPrimaryZone</span><span class="chain-verb">literal url</span></div><div class="chain-row"><span class="chain-name">web › httpClient.loadWatchers</span><span class="chain-verb">literal url</span></div></div><details class="where"><summary>where these calls are written</summary><div class="where-body"><div class="where-site">mobile — src/app/features/zones/zone-watcher-feed.service.ts:9 — greenhouse/v1/zones/${zoneId}/watchers</div><div class="where-site">web — src/actions/primaryZone.ts:9 — /greenhouse/v1/zones/${growerId}/watchers</div><div class="where-site">web — src/actions/watchers.ts:10 — /greenhouse/v1/zones/${zoneId}/watchers</div></div></details>
 
 <h3>The endpoint</h3>
 <div class="endpoint"><span class="verb">GET</span> <span class="path">glasshouse/v1/zones/*/watchers</span>

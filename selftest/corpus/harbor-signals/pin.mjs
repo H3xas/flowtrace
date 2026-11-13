@@ -5,9 +5,10 @@
  * Run it with the CLI of the commit the pins are pinned from. Each verb gets its own run
  * in a fresh copy of the prepared fixture, and `expected/<name>/` holds that run's status,
  * stdout, stderr and every file the run created or changed. The temporary root is written
- * as `<ROOT>` so a pin reads the same from any directory.
+ * as `<ROOT>` so a pin reads the same from any directory. `expected/lookups.json` holds
+ * the answers of that commit's own `lib/scout.js` to every lookup case in `pinned.mjs`.
  *
- *   node pin.mjs --cli /path/to/bin/flowtrace.js [--out expected]
+ *   node pin.mjs --cli /path/to/bin/flowtrace.js [--scout /path/to/lib/scout.js] [--out expected]
  */
 import { spawnSync } from 'node:child_process';
 import {
@@ -15,10 +16,10 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { CONFIG, INVOCATIONS, serialAnswers } from './pinned.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const CONFIG = 'harbor.scout.config.json';
 
 // A walk's status identity hashes the fixture's head commit, so every input of that
 // commit is fixed: the same tree then gives the same commit on any machine and any day.
@@ -32,22 +33,6 @@ const FIXTURE_COMMIT = {
 };
 const FIXTURE_GIT = ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null'];
 
-const INVOCATIONS = [
-  { name: 'check', args: ['check', '--area', 'harbor.area.txt'] },
-  { name: 'trace', args: ['trace', 'GET glasshouse/v1/zones/{zoneId}/watchers'] },
-  { name: 'trace-area', args: ['trace', '--area', 'harbor.area.txt'] },
-  { name: 'span', args: ['span', 'GET glasshouse/v1/zones/{zoneId}/watchers', '--out', 'span/page.html'] },
-  { name: 'component-span', args: ['span', '--from-component', 'WatcherNotesPanel', '--out', 'span-panel/page.html'] },
-  { name: 'surface', args: ['surface', 'GET glasshouse/v1/zones/{zoneId}/watchers'] },
-  { name: 'skeleton', args: ['skeleton', 'GET glasshouse/v1/zones/{zoneId}/watchers', '--stub'] },
-  { name: 'cover', args: ['cover', '--area', 'harbor.area.txt', '--packets', 'packets', '--md', 'cover.md'] },
-  { name: 'scope', args: ['scope', '--area', 'harbor.area.txt'] },
-  { name: 'affected', args: ['affected', '--area', 'harbor.area.txt', '--json'] },
-  { name: 'scaffold', args: ['scaffold', '--area', 'harbor.area.txt'] },
-  { name: 'cases', args: ['cases', '--area', 'harbor.area.txt'] },
-  { name: 'readiness', args: ['readiness', '--areas', 'harbor.areas.txt'] },
-];
-
 function argument(flag) {
   const at = process.argv.indexOf(flag);
   return at === -1 ? null : process.argv[at + 1];
@@ -55,6 +40,7 @@ function argument(flag) {
 
 const cli = resolve(argument('--cli') || join(HERE, '..', '..', '..', 'bin', 'flowtrace.js'));
 const outRoot = resolve(argument('--out') || join(HERE, 'expected'));
+const scoutModule = resolve(argument('--scout') || join(dirname(cli), '..', 'lib', 'scout.js'));
 const workRoot = mkdtempSync(join(tmpdir(), 'flowtrace-pins-'));
 
 /** Every regular file under `dir`, relative to it, in sorted order. */
@@ -121,7 +107,7 @@ mkdirSync(outRoot, { recursive: true });
 
 for (const invocation of INVOCATIONS) {
   const dir = join(workRoot, invocation.name);
-  cpSync(invocation.name === 'affected' ? baseWithDiff : base, dir, { recursive: true });
+  cpSync(invocation.touch ? baseWithDiff : base, dir, { recursive: true });
   const before = readAll(dir);
   const result = run(dir, invocation.args, { FLOWTRACE_STUB_LOG: join(dir, 'stub.log') });
   const after = readAll(dir);
@@ -143,5 +129,9 @@ for (const invocation of INVOCATIONS) {
   if (removed.length > 0) writeFileSync(join(target, 'removed'), `${removed.sort().join('\n')}\n`);
   process.stdout.write(`${invocation.name}: exit ${result.status}\n`);
 }
+
+const { createScout } = await import(pathToFileURL(scoutModule).href);
+writeFileSync(join(outRoot, 'lookups.json'), `${JSON.stringify(serialAnswers(createScout), null, 2)}\n`);
+process.stdout.write('lookups: written\n');
 
 rmSync(workRoot, { recursive: true, force: true });

@@ -41,13 +41,25 @@
           }
         ]
       }
+    },
+    "WatcherService": {
+      "ctor-di": {
+        "total": 1,
+        "dropped": 0,
+        "rows": [
+          {
+            "file": "tests/Greenhouse.Alerts.Tests/WatcherFeedTests.cs",
+            "line": 7
+          }
+        ]
+      }
     }
   },
   "impact": {
-    "backend/src/Services/ZoneReadingService.cs": {
+    "src/Controllers/ZoneWatchersController.cs": {
       "rows": [
         {
-          "file": "depot/tests/readings.spec.ts",
+          "file": "src/Services/WatcherService.cs",
           "hop": 1
         }
       ]

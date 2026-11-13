@@ -2,11 +2,13 @@
  * Concurrent code-index lookups: the query verbs answer their lookups in bounded parallel
  * passes, and the answer does not change.
  *
- * The fixture is `corpus/harbor-signals`. Its stub index answers one chain of lookups
- * (`HarborBridge` to `SignalRelay` to `RelaySink`), so a verb that follows it needs at
- * least three passes; every other lookup answers the indexer's own "no symbol matches"
- * page. `expected/` holds the serial pins, written by the corpus's own `pin.mjs` against
- * the base commit.
+ * The fixture is `corpus/harbor-signals`. Its stub index answers one chain of outbound
+ * lookups (`HarborBridge` to `SignalRelay` to `RelaySink`), which the backend route reaches
+ * from the web app and from the mobile app, so a verb that follows it needs at least three
+ * passes. A changed controller widens through `impact` to `WatcherService`, and only the
+ * inbound answer for that class selects a test class. Every other lookup answers the
+ * indexer's own "no symbol matches" page. `expected/` holds the serial pins, written by the
+ * corpus's own `pin.mjs` against the base commit, and `pinned.mjs` holds what both read.
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -21,13 +23,16 @@ import { SCOUT_CONCURRENCY_ENV, validateConfig } from '../lib/config.js';
 import {
   LOOKUP_MAX_BUFFER, LOOKUP_TIMEOUT_MS, createScout, defaultConcurrency, runLookupAsync,
 } from '../lib/scout.js';
+import {
+  ARGUMENT, BARE_BIN, BARE_REPO, BIN, CASES, CHAINS, CONFIG, INVOCATIONS, REPO, ROOT,
+  bareSerial, caseRunner, missingSerial, serialCase, shape,
+} from './corpus/harbor-signals/pinned.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, '..', 'bin', 'flowtrace.js');
 const FIXTURE = join(HERE, 'corpus', 'harbor-signals');
 const EXPECTED = join(FIXTURE, 'expected');
 const STUB = join(FIXTURE, 'scout', 'scout-stub.mjs');
-const CONFIG = 'harbor.scout.config.json';
 const TEMP = tmpdir();
 
 // A walk's status identity hashes the fixture's head commit, so every input of that
@@ -41,22 +46,6 @@ const FIXTURE_COMMIT = {
   GIT_COMMITTER_DATE: '2026-01-01T00:00:00Z',
 };
 const FIXTURE_GIT = ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null'];
-
-const INVOCATIONS = [
-  { name: 'check', args: ['check', '--area', 'harbor.area.txt'] },
-  { name: 'trace', args: ['trace', 'GET glasshouse/v1/zones/{zoneId}/watchers'] },
-  { name: 'trace-area', args: ['trace', '--area', 'harbor.area.txt'] },
-  { name: 'span', args: ['span', 'GET glasshouse/v1/zones/{zoneId}/watchers', '--out', 'span/page.html'] },
-  { name: 'component-span', args: ['span', '--from-component', 'WatcherNotesPanel', '--out', 'span-panel/page.html'] },
-  { name: 'surface', args: ['surface', 'GET glasshouse/v1/zones/{zoneId}/watchers'] },
-  { name: 'skeleton', args: ['skeleton', 'GET glasshouse/v1/zones/{zoneId}/watchers', '--stub'] },
-  { name: 'cover', args: ['cover', '--area', 'harbor.area.txt', '--packets', 'packets', '--md', 'cover.md'] },
-  { name: 'scope', args: ['scope', '--area', 'harbor.area.txt'] },
-  { name: 'affected', args: ['affected', '--area', 'harbor.area.txt', '--json'] },
-  { name: 'scaffold', args: ['scaffold', '--area', 'harbor.area.txt'] },
-  { name: 'cases', args: ['cases', '--area', 'harbor.area.txt'] },
-  { name: 'readiness', args: ['readiness', '--areas', 'harbor.areas.txt'] },
-];
 
 const scratch = [];
 const LOOKUP_LOGS = [];
@@ -164,7 +153,7 @@ function base(touch = false) {
 
 /** Run one pinned invocation in a fresh copy, and compare the answer with its pin. */
 function pinnedRun(invocation, limit) {
-  const source = invocation.name === 'affected' ? base(true) : base();
+  const source = invocation.touch ? base(true) : base();
   const dir = makeDir(`flowtrace-concurrent-${invocation.name}-`);
   cpSync(source, dir, { recursive: true });
   const before = snapshot(dir);
@@ -197,13 +186,22 @@ test('Concurrent scout lookups AC-1: every verb prints and writes the serial pin
     pinnedRun(invocation, undefined);
     pinnedRun(invocation, '1');
   }
-  const traced = LOOKUP_LOGS.find((entry) => entry.name === 'trace' && entry.limit === 'default');
-  const symbols = traced.entries.map((entry) => entry.args.join(' '));
-  for (const expected of ['refs HarborBridge', 'refs SignalRelay', 'refs RelaySink']) {
-    assert.ok(symbols.includes(expected), `the trace run asked the index for ${expected}`);
+  for (const run of LOOKUP_LOGS) {
+    const invocation = INVOCATIONS.find((entry) => entry.name === run.name);
+    for (const chain of invocation.chains) {
+      const links = CHAINS[chain].map((lookup) => {
+        const entry = run.entries.find((logged) => logged.args.join(' ') === lookup);
+        assert.ok(entry, `${run.name} at ${run.limit} asked the index for ${lookup}`);
+        return entry;
+      });
+      for (let at = 1; at < links.length; at += 1) {
+        assert.ok(
+          links[at].start >= links[at - 1].end,
+          `${run.name} at ${run.limit} asked for ${CHAINS[chain][at]} only after ${CHAINS[chain][at - 1]} answered`,
+        );
+      }
+    }
   }
-  const lastStart = Math.max(...traced.entries.map((entry) => entry.start));
-  assert.ok(traced.entries.some((entry) => entry.end < lastStart), 'a lookup started after another one ended, so at least two passes ran');
 });
 
 test('Concurrent scout lookups AC-2: the peak number of processes is bounded by the limit', () => {
@@ -260,95 +258,52 @@ test('Concurrent scout lookups AC-3: one invocation asks the index for each key 
   }
 });
 
-const REPO = { id: 'api', kind: 'backend', root: '/fixture/backend', scout: true };
-const ROOT = REPO.root;
+const LOOKUPS = JSON.parse(readFileSync(join(EXPECTED, 'lookups.json'), 'utf8'));
 
-const OUT_TEXT = ['outbound:', '  uses-type (1):', '    Backend/A.cs:4  uses-type  -> Backend/B.cs', ''].join('\n');
-const INBOUND_JSON = JSON.stringify({
-  status: 'resolved',
-  inbound: { 'ctor-di': { total: 1, dropped: 0, rows: [{ file: 'Tests/A.cs', line: 3 }] } },
-});
-const INBOUND_EMPTY = JSON.stringify({ status: 'resolved', inbound: {} });
-const IMPACT_JSON = JSON.stringify({ status: 'resolved', rows: [{ file: 'Tests/A.cs', hop: 1 }], braked: [] });
-const IMPACT_EMPTY = JSON.stringify({ status: 'resolved', rows: [], braked: [] });
-
-const CASES = {
-  outbound: [
-    { name: 'edges', result: { status: 0, stdout: OUT_TEXT } },
-    { name: 'ambiguous', result: { status: 1, stdout: 'Ambiguous: two matches\n' } },
-    { name: 'exit 3', result: { status: 3, stdout: '' } },
-    { name: 'no symbol matches', result: { status: 0, stdout: 'no symbol matches\n' } },
-    { name: 'timeout', result: { status: null, signal: 'SIGTERM', error: { code: 'ETIMEDOUT' } } },
-    { name: 'output above the limit', result: { status: null, signal: 'SIGTERM', error: { code: 'ENOBUFS' } } },
-    { name: 'exit by signal', result: { status: null, signal: 'SIGTERM', error: null, stdout: '' } },
-    { name: 'start throws', throws: true },
-  ],
-  inbound: [
-    { name: 'edges', result: { status: 0, stdout: INBOUND_JSON } },
-    { name: 'exit 3 with a payload', result: { status: 3, stdout: INBOUND_EMPTY } },
-    { name: 'ambiguous', result: { status: 1, stdout: 'Ambiguous: two matches\n' } },
-    { name: 'no symbol matches', result: { status: 0, stdout: 'no symbol matches\n' } },
-    { name: 'timeout', result: { status: null, signal: 'SIGTERM', error: { code: 'ETIMEDOUT' } } },
-    { name: 'exit by signal', result: { status: null, signal: 'SIGTERM', error: null, stdout: '' } },
-    { name: 'start throws', throws: true },
-  ],
-  impact: [
-    { name: 'edges', result: { status: 0, stdout: IMPACT_JSON } },
-    { name: 'exit 3 with a payload', result: { status: 3, stdout: IMPACT_EMPTY } },
-    { name: 'ambiguous', result: { status: 1, stdout: 'not a file\n' } },
-    { name: 'no file match', result: { status: 0, stdout: 'no file match\n' } },
-    { name: 'timeout', result: { status: null, signal: 'SIGTERM', error: { code: 'ETIMEDOUT' } } },
-    { name: 'exit by signal', result: { status: null, signal: 'SIGTERM', error: null, stdout: '' } },
-    { name: 'start throws', throws: true },
-  ],
-};
-
-const ARGUMENT = {
-  outbound: ['ZoneWatchersController'],
-  inbound: ['ZoneWatchersController'],
-  impact: ['backend/src/Services/ZoneReadingService.cs', { hops: 3 }],
-};
-
-function shape(result) {
-  return {
-    edges: Array.from(result, (edge) => ({ ...edge })),
-    unavailable: Boolean(result && result.unavailable),
-    reason: result && result.reason ? result.reason : null,
-    counts: result && result.counts ? result.counts : null,
-    dropped: result && result.dropped !== undefined ? result.dropped : null,
-    braked: result && result.braked ? result.braked : null,
-  };
+/** One case through the shared path: the lookup is asked in a pass and answered by `runAsync`. */
+async function passesCase(kind, item, { fileExists = () => true } = {}) {
+  const runner = caseRunner(item);
+  const scout = createScout({ bin: BIN, outDir: 'out', repos: [REPO], runAsync: runner.runAsync, fileExists });
+  const result = await scout.passes((lookups) => lookups[kind](ROOT, ...ARGUMENT[kind]));
+  return { ...shape(result), calls: runner.calls };
 }
 
-async function bothPaths(kind, item) {
-  const run = () => {
-    if (item.throws) throw new Error('cannot start');
-    return item.result;
-  };
-  const runAsync = async () => run();
-  const sync = createScout({ bin: '/bin/scout', outDir: 'out', repos: [REPO], run });
-  const passes = createScout({ bin: '/bin/scout', outDir: 'out', repos: [REPO], runAsync });
-  const serial = sync[kind](ROOT, ...ARGUMENT[kind]);
-  const concurrent = await passes.passes((lookups) => lookups[kind](ROOT, ...ARGUMENT[kind]));
-  return [shape(serial), shape(concurrent)];
-}
-
-test('Concurrent scout lookups AC-4: every lookup kind keeps the serial edges, mark and reason', async () => {
+test('Concurrent scout lookups AC-4: every lookup kind keeps the base serial edges, mark and reason', async () => {
   for (const [kind, cases] of Object.entries(CASES)) {
     for (const item of cases) {
-      const [serial, concurrent] = await bothPaths(kind, item);
-      assert.deepEqual(concurrent, serial, `${kind}: ${item.name}`);
+      const pinned = LOOKUPS.cases[kind][item.name];
+      assert.ok(pinned, `${kind}: ${item.name} has a base pin`);
+      assert.equal(pinned.calls.length, 1, `${kind}: ${item.name}: the base path started one process`);
+      assert.deepEqual(serialCase(createScout, kind, item), pinned, `${kind}: ${item.name}: serial path`);
+      assert.deepEqual(await passesCase(kind, item), pinned, `${kind}: ${item.name}: shared path`);
     }
+    const answers = Object.values(LOOKUPS.cases[kind]);
+    assert.ok(answers.some((answer) => answer.edges.length > 0 && !answer.unavailable), `${kind}: a case answers edges`);
+    const reasons = new Set(answers.map((answer) => answer.reason));
+    for (const reason of ['indexer exited with an error', 'indexer could not be started']) {
+      assert.ok(reasons.has(reason), `${kind}: a case answers "${reason}"`);
+    }
+    assert.ok(reasons.has(kind === 'impact' ? 'no file match' : 'no symbol matches'), `${kind}: a case answers no match`);
   }
 
   // A path binary that is not on disk never reaches a process, on either path.
   for (const kind of Object.keys(CASES)) {
-    const sync = createScout({ bin: '/missing/scout', repos: [REPO], fileExists: () => false });
-    const passes = createScout({ bin: '/missing/scout', repos: [REPO], fileExists: () => false });
-    const serial = shape(sync[kind](ROOT, ...ARGUMENT[kind]));
-    const concurrent = shape(await passes.passes((lookups) => lookups[kind](ROOT, ...ARGUMENT[kind])));
-    assert.deepEqual(concurrent, serial, `${kind}: missing binary`);
-    assert.equal(serial.reason, 'binary not found');
+    const pinned = LOOKUPS.missing[kind];
+    assert.equal(pinned.reason, 'binary not found');
+    assert.deepEqual(pinned.calls, []);
+    assert.deepEqual(missingSerial(createScout, kind), pinned, `${kind}: missing binary, serial path`);
+    assert.deepEqual(await passesCase(kind, CASES[kind][0], { fileExists: () => false }), pinned, `${kind}: missing binary, shared path`);
+  }
+
+  // A bare name is looked up on `PATH` only when the process starts, so the real runners
+  // meet the missing binary and must report it the same way.
+  for (const kind of Object.keys(CASES)) {
+    const pinned = LOOKUPS.bare[kind];
+    assert.equal(pinned.unavailable, true, `${kind}: the base marks a binary on no PATH unavailable`);
+    assert.deepEqual(bareSerial(createScout, kind), pinned, `${kind}: bare binary, serial path`);
+    const scout = createScout({ bin: BARE_BIN, outDir: 'out', repos: [BARE_REPO] });
+    const shared = shape(await scout.passes((lookups) => lookups[kind](BARE_REPO.root, ...ARGUMENT[kind])));
+    assert.deepEqual(shared, pinned, `${kind}: bare binary, shared path`);
   }
 });
 
@@ -375,7 +330,9 @@ test('Concurrent scout lookups AC-4: the async runner gives the same result as s
   const flood = pair(['refs', 'AnySymbol__flood'], { cwd: FIXTURE, timeout: 30000, maxBuffer: 1000 });
   const floodAsync = await flood.async;
   assert.equal(floodAsync.status, flood.sync.status);
+  assert.equal(floodAsync.signal, flood.sync.signal);
   assert.equal(code(floodAsync), code(flood.sync));
+  assert.equal(code(floodAsync), 'ENOBUFS');
 
   const timeout = pair(['refs', 'AnySymbol__timeout'], { cwd: FIXTURE, timeout: 300, maxBuffer: LOOKUP_MAX_BUFFER });
   const timeoutAsync = await timeout.async;
