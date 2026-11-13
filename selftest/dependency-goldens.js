@@ -1,16 +1,18 @@
 /**
- * The dependency view of every committed corpus, captured once against the release the
- * source-flow work starts from and compared on every run. A change that should leave the
- * dependency view alone has to leave these bytes alone: the source-flow work adds a label
- * line and a `view` key, and nothing else in the dependency output may move.
+ * The dependency view of every committed corpus, as the release the source-flow work merges
+ * into renders it, compared on every run. A change that should leave the dependency view
+ * alone has to leave these bytes alone: the source-flow work adds a label line and a `view`
+ * key, and nothing else in the dependency output may move.
  *
- *   node selftest/dependency-goldens.js --write
+ *   node selftest/dependency-goldens.js --write --cli <release checkout>/bin/flowtrace.js
  *   node selftest/dependency-goldens.js --check
  *   node selftest/dependency-goldens.js --check --cli <checkout>/bin/flowtrace.js
  *
- * `--cli` runs the same starts against another checkout, so review compares this branch
- * with the release it was cut from. Each corpus is copied to a temporary directory and
- * extracted there, so a capture never writes into the tracked fixture.
+ * This checkout always extracts, so every capture reads facts that carry the control
+ * evidence fields; `--cli` names only the binary that renders. A golden written with the
+ * release's binary therefore states what the release prints for those same facts, which is
+ * the comparison a check of this checkout needs. Each corpus is copied to a temporary
+ * directory and extracted there, so a capture never writes into the tracked fixture.
  *
  * One record per start holds the exit status and the sha256 of stdout and stderr for six
  * outputs: the tree, the tree with seeds, the tree with infrastructure expanded and folding
@@ -29,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, '..');
 export const GOLDEN_FILE = join(HERE, 'corpus', 'dependency-goldens.json');
+const EXTRACTOR = join(REPO_ROOT, 'bin', 'flowtrace.js');
 
 /** The corpora this golden set covers, with the configuration each is extracted under. */
 export const GOLDEN_CORPORA = Object.freeze([
@@ -149,20 +152,19 @@ function matrixStarts(source) {
 /**
  * What a golden compares: the dependency answer without the one line that names the view
  * and the one key that declares it. Those are the only additions this work makes to the
- * dependency output, so everything else has to keep the bytes the release wrote.
+ * dependency output, so everything else has to keep the bytes the release wrote. A JSON
+ * answer is always written back in one form, so an answer with the key and one without it
+ * compare on their content.
  */
 function normalized(key, stdout) {
   if (key === 'json') {
     try {
       const parsed = JSON.parse(stdout);
-      if (parsed && Object.hasOwn(parsed, 'view')) {
-        delete parsed.view;
-        return JSON.stringify(parsed);
-      }
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) delete parsed.view;
+      return JSON.stringify(parsed);
     } catch {
       return stdout;
     }
-    return stdout;
   }
   // The label is the first line of the tree, which the result header stands above.
   const lines = stdout.split('\n');
@@ -178,14 +180,14 @@ function outputRecord(key, runResult) {
   };
 }
 
-/** Capture one corpus with one CLI: facts digests and the six outputs of every start. */
+/** Capture one corpus rendered by one CLI: facts digests and the six outputs of every start. */
 export async function captureCorpus(corpus, cli) {
   const dir = mkdtempSync(join(tmpdir(), 'flowtrace-dependency-'));
   try {
     cpSync(corpus.source, dir, { recursive: true });
     rmSync(join(dir, 'out'), { recursive: true, force: true });
     const config = corpus.configs[0];
-    const extracted = run(cli, ['extract', '--config', config], dir);
+    const extracted = run(EXTRACTOR, ['extract', '--config', config], dir);
     if (extracted.status !== 0) {
       throw new Error(`extract ${corpus.name} exited ${extracted.status}: ${extracted.stderr}`);
     }
