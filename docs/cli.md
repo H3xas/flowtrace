@@ -116,10 +116,11 @@ trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand
             [--view dependency|source-flow] [--require-complete]
 trace --area <file> [--require-complete]
   --view picks the projection. The default, dependency, groups the calls of each body by
-  callee and is not in call order; its first line says so. source-flow prints each call at
-  its own call site, in the order the source supports, marks guards, loops, awaits,
-  launches and joins, and puts a call the facts cannot place in an unknown-order group
-  that names the reason. It reads the call-site fields a backend or web extraction writes;
+  callee and is not in call order; the line that opens its tree says so. source-flow prints
+  each call at its own call site, in the order the source supports, marks guards, loops,
+  awaits, launches and joins, and puts a call the facts cannot place in an unknown-order
+  group that names the reason. A shared call collapses to its own line; --expand-infra
+  prints its calls under it. It reads the call-site fields a backend or web extraction writes;
   facts from an older extraction read as unknown order until the next extract. --json adds
   the view and, under source-flow, a sourceFlow member carrying the same invocations.
   --graph and --mermaid have no source-flow view and exit 2 with it.

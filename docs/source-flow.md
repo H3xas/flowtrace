@@ -16,7 +16,8 @@ flowtrace trace <start> [--view dependency|source-flow] [--seeds] [--json] [--ht
 `dependency` is the default. Each other value exits 2, writes no stdout and names the two
 values on stderr. `--graph` and `--mermaid` have no source-flow view and exit 2 with it.
 
-The first line of each view names the projection:
+Both views start with the same result status lines: the start, the freshness of the facts and
+any limits of the answer. A blank line follows. Then one line names the projection:
 
 ```text
 dependency view: calls grouped by callee, not in call order (--view source-flow shows call order)
@@ -44,13 +45,22 @@ src/Services/BoardingService.cs:26:19 → RouteLookup.FindRouteAsync  backend  s
 | `await` | the call heads the chain an `await` operand is |
 | `launch <local>` | the call starts a task that a join names |
 | `launched, not joined` | the call starts a task that nothing joins |
-| `↑ <label> (body shown at <site>)` | the callee body printed above |
-| `↺ <label> (recursion, active at <site>)` | the call re-enters a body that is active |
+| `↑ <label> (body shown at <site>)` | the callee body printed above, under the call at `<site>` |
+| `↑ <label> (body hidden at <site>, use --expand-infra)` | the callee body is inside a shared call that is collapsed at `<site>` |
+| `↺ <label> (recursion, active at <site>)` | the call re-enters the body that the call at `<site>` entered, or `the start` |
+| `infrastructure: <n> invocations, <m> walk stops hidden (use --expand-infra)` | a shared call, collapsed: its calls do not print |
+| `infrastructure` | a shared call under `--expand-infra`: its calls print under it |
 | `stop: <reason>` | the walk stopped here: `unresolved-target`, `depth`, `node-budget`, `unscoped-hop`, `code-index-unavailable` or `cycle-guard` |
 | `? order unknown: <reason>` | a group of calls the facts cannot order |
 
 The trailer counts invocations, bodies, unknown-order groups and walk stops. If the walk ran
 out of nodes, the trailer adds `node budget reached`.
+
+A shared call is a call into a body that many classes take in their constructors, such as an
+audit trail or a logger. It collapses to its own line, at its own call site, and the mark
+states how many invocations and walk stops it hides. With `--expand-infra`, the same line
+prints and its calls print under it. A later call to a body inside a collapsed shared call
+says where that body is hidden. The JSON is the same with and without `--expand-infra`.
 
 ## Order
 
@@ -63,6 +73,7 @@ occurrence. A construct sorts by its own site. The arms of an `if`, `switch` or 
 expression are alternatives. A loop body is repeatable. A join sorts at its own site, and
 never before the last task it names. A join written inside a guard, loop, try part or
 callback prints in that construct. The facts state the frames around the join itself. A
+`.then` or `.catch` written on a `Promise.all` or `Promise.allSettled` follows that join. A
 pipeline whose steps the source registers keeps that run order.
 
 Nothing sorts by callee name, declaration line or registration order.
@@ -76,7 +87,7 @@ A group names one reason from a closed list:
 | `no-control-evidence` | the fact set declares no control-evidence version, so run `extract` again |
 | `provider-facts` | an external provider supplied the call |
 | `mobile-body` | the body belongs to a mobile repository |
-| `control-evidence-unreadable` | a field the projection cannot read, and the detail names it |
+| `control-evidence-unreadable` | a field the projection cannot read, or two calls that state one join differently. All calls of the body go into the group, and the detail names the field |
 | `code-index` | a hop the code index made, whose order it does not state |
 | `publish`, `bus-consumer`, `worker`, `push`, `http-out` | a message or network hop |
 | `independent-entries` | entries the source states separately |
@@ -122,11 +133,13 @@ walk's answer.
 A step is one of:
 
 - `invocation`: `id`, `factSet`, `occurrence`, `site`, `caller`, `declaration`, `node`,
-  optional `await`, `task`, `infra`, `hidden`, `continuations`, and a `target`.
+  optional `await`, `task`, `infra`, `hidden`, `continuations`, and a `target`. A shared call
+has `infra: true` and `hidden: { invocations, stops }`, the counts that a collapsed line
+states.
 - `branch`: `form`, `id`, `site`, `text`, `arms` (each with its own `steps`).
 - `try`: `id`, `site`, `text`, `body`, `catches`, `finally`.
 - `loop`: `form`, `id`, `site`, `text`, `repeatable`, `steps`.
-- `join`: `form`, `id`, `site`, `tasks`.
+- `join`: `form`, `id`, `site`, `tasks`, optional `continuations`.
 - `callback`: `form`, `id`, `site`, `host`, `scheduling`, `steps`.
 - `unordered`: `reason`, optional `form` and `detail`, `sites`, `steps`.
 - a hop: `node`, `declaration`, `site`, optional `body`.
@@ -138,7 +151,8 @@ sites are always two ids.
 A `target` is one of:
 
 - `{ body }`: the callee's body, printed here.
-- `{ see, reason }`: a body shown above (`shown-above`) or active (`recursion`).
+- `{ see, reason }`: a body shown above (`shown-above`) or active (`recursion`). `see` is the
+  id of the invocation that holds the body, or the root node id for the start.
 - `{ hop }`: a hop the call reaches.
 - `{ sink: true }`: a data sink.
 - `{ stop }`: the walk stopped at this call.
