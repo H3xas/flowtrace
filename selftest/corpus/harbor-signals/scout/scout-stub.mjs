@@ -46,10 +46,10 @@ if (typeof name === 'string' && name.endsWith('__signal')) {
   await new Promise(() => {});
 }
 if (typeof name === 'string' && name.endsWith('__timeout')) {
-  // A pending promise alone does not keep Node alive, so the timer does.
-  await new Promise((hold) => {
-    setInterval(hold, 1000);
-  });
+  // A pending promise alone does not keep Node alive, so the timer does. The process is
+  // held for good, so only the caller's timeout ends it, however late that timer fires.
+  setInterval(() => {}, 1000);
+  await new Promise(() => {});
 }
 if (typeof name === 'string' && name.endsWith('__flood')) {
   record();
