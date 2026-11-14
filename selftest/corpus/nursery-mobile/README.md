@@ -67,4 +67,6 @@ requests.
 The gateway call rule then read a call split over lines, so `PlotService.addNote` states its
 `gateway_call` and the `onNote` entry reaches `POST nursery/v1/plots/*/notes`. Both goldens
 were captured again for that one cause. Only `status.identity` changed, because it digests the
-fact sets. Their `root`, `nodes`, `edges` and `stats` are unchanged.
+fact sets. Their `root`, `nodes`, `edges` and `stats` are unchanged. The nursery seed golden in
+`selftest/corpus/seed-goldens/nursery-mobile.json` was captured again for the same cause. Its
+route keys, seeds and cover output are unchanged, and only the `identity` of each trace changed.

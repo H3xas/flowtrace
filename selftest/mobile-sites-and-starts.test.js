@@ -806,3 +806,97 @@ test('Mobile sites and starts AC-7: each cut kind has its own word, an action ke
     assert.match(page, /The text of a walk-limit arm names the kind of node that was cut: action, method, service, component, page or entry\. Its JSON reason stays walk-limit\./);
   }
 });
+
+const ROUTE_ARM_FIELDS = ['key', 'via', 'breadcrumb', 'entry', 'file', 'line', 'route'];
+const UNRESOLVED_ARM_FIELDS = ['reason', 'attempted', 'caller', 'breadcrumb', 'entry', 'file', 'line'];
+const UNRESOLVED_OPTIONAL = ['candidates', 'source', 'cause', 'continuedBy', 'outcome'];
+const WEB_HOP_KINDS = ['page', 'component', 'entry', 'method', 'store_action', 'route'];
+const MOBILE_HOP_KINDS = ['page', 'component', 'service', 'class', 'entry', 'method', 'store_action', 'route'];
+
+/** The hop that stands for an entry in a breadcrumb: its handler, its prop or its trigger. */
+function entryHopIndex(breadcrumb, identity) {
+  return breadcrumb.findIndex((hop) =>
+    identity.kind === 'event'
+      ? (hop.via === 'handler' && hop.ref === `${identity.component}.${identity.handler}`) || (hop.via === 'props' && hop.ref === identity.handler)
+      : hop.kind === 'entry' && hop.ref.startsWith(`${identity.component}.${identity.trigger}`),
+  );
+}
+
+/** The contract checks every component span model passes, web or mobile. */
+function checkSpanContract(model, start, hopKinds) {
+  assert.deepEqual(Object.keys(model), ['schemaVersion', 'component', 'status', 'header', 'entries', 'selectedEntry', 'orphans', 'routes', 'unresolved', 'limits']);
+  assert.equal(model.schemaVersion, 1);
+  const identities = new Map(model.entries.map((view) => [view.identity.id, view.identity]));
+  const arms = [];
+  for (const route of model.routes) {
+    assert.deepEqual(Object.keys(route), ['key', 'arms', 'status']);
+    for (const arm of route.arms) {
+      assert.deepEqual(Object.keys(arm), ROUTE_ARM_FIELDS);
+      const last = arm.breadcrumb[arm.breadcrumb.length - 1];
+      assert.deepEqual([last.kind, last.ref], ['route', arm.key], 'a reached breadcrumb ends at its request');
+      arms.push(arm);
+    }
+  }
+  for (const arm of model.unresolved) {
+    assert.deepEqual(Object.keys(arm).filter((field) => !UNRESOLVED_OPTIONAL.includes(field)), UNRESOLVED_ARM_FIELDS);
+    assert.equal(arm.breadcrumb[arm.breadcrumb.length - 1].ref, arm.attempted, 'an unresolved breadcrumb ends at the node that failed');
+    arms.push(arm);
+  }
+  assert.ok(arms.length > 0);
+  for (const arm of arms) {
+    assert.deepEqual(arm.breadcrumb.map((hop) => Object.keys(hop)), arm.breadcrumb.map(() => ['kind', 'ref', 'via']));
+    assert.deepEqual([arm.breadcrumb[0].ref, arm.breadcrumb[0].via], [start, 'start'], 'a breadcrumb starts at the start component');
+    for (const hop of arm.breadcrumb) assert.ok(hopKinds.includes(hop.kind), `hop kind ${hop.kind}`);
+    if (arm.entry === null) continue;
+    const identity = identities.get(arm.entry);
+    assert.ok(identity, `arm entry ${arm.entry} is a listed entry`);
+    const at = entryHopIndex(arm.breadcrumb, identity);
+    assert.ok(at > 0, `the breadcrumb passes through entry ${arm.entry}`);
+    assert.ok(arm.breadcrumb.slice(1, at).every((hop) => hop.via === 'template'), 'only rendered components come before the entry');
+  }
+  const byEntry = new Map();
+  for (const route of model.routes) {
+    for (const arm of route.arms) {
+      if (arm.entry === null) continue;
+      const list = byEntry.get(arm.entry) || [];
+      list.push(JSON.stringify(arm.breadcrumb));
+      byEntry.set(arm.entry, list);
+    }
+  }
+  for (const [entry, crumbs] of byEntry) assert.equal(new Set(crumbs).size, crumbs.length, `${entry}: each request its own breadcrumb`);
+  return { identities, byEntry };
+}
+
+test('Mobile sites and starts AC-10: the nursery page span passes the contract, with ordered paths, branching, separate entries and unresolved paths', () => {
+  const model = nursery({}).json(['span', '--from-component', 'PlotDetailPage']);
+  const { byEntry } = checkSpanContract(model, 'PlotDetailPage', MOBILE_HOP_KINDS);
+  const tend = entryOf(model, 'onTend');
+  assert.equal(byEntry.get(tend.identity.id).length, 2, 'one click that reaches two endpoints is two arms under one entry');
+  const init = entryOf(model, 'ngOnInit');
+  const summary = model.routes.find((route) => route.key === 'GET nursery/v1/plots/*/summary');
+  assert.deepEqual(summary.arms.map((arm) => arm.entry), [init.identity.id], 'the startup request is only under its hook');
+  assert.deepEqual([summary.arms[0].breadcrumb[1].kind, summary.arms[0].breadcrumb[1].via], ['entry', 'entry']);
+  assert.ok(model.unresolved.length >= 3 && model.unresolved.every((arm) => typeof arm.entry === 'string'));
+});
+
+test('Mobile sites and starts AC-10: a web component span passes the same contract with the same field names', () => {
+  const model = pack('greenhouse-alerts', 'greenhouse.config.json').json(['span', '--from-component', 'ZoneRoutes']);
+  checkSpanContract(model, 'ZoneRoutes', WEB_HOP_KINDS);
+  const mount = model.entries.find((view) => view.identity.trigger === 'componentDidMount');
+  const readings = model.routes.find((route) => route.key === 'GET glasshouse/v1/zones/*/readings');
+  assert.deepEqual(readings.arms.map((arm) => arm.entry), [mount.identity.id]);
+  assert.ok(model.unresolved.length > 0 && model.unresolved.every((arm) => typeof arm.entry === 'string'));
+});
+
+test('Mobile sites and starts AC-10: the span help and the CLI doc state one JSON contract for web and mobile', () => {
+  const help = runCli(['span', '--help']).stdout.replace(/\s+/g, ' ');
+  const doc = readFileSync(join(REPO_ROOT, 'docs', 'cli.md'), 'utf8').replace(/\s+/g, ' ');
+  for (const text of [help, doc]) {
+    assert.match(text, /That model, schemaVersion 1, is one contract for web and mobile/);
+    assert.match(text, /top-level fields are component, status, header, entries, selectedEntry, orphans, routes \(each with key, arms and status\), unresolved and limits/);
+    assert.match(text, /A reached arm, under routes, has key, via, breadcrumb, entry, file, line and route\./);
+    assert.match(text, /An unresolved arm has reason, attempted, caller, breadcrumb, entry, file and line, and it can also have candidates, source, cause, continuedBy and outcome\./);
+    assert.match(text, new RegExp(`Web hop kinds are ${WEB_HOP_KINDS.slice(0, -1).join(', ')} and ${WEB_HOP_KINDS.at(-1)}\\.`));
+    assert.match(text, new RegExp(`Mobile hop kinds are ${MOBILE_HOP_KINDS.slice(0, -1).join(', ')} and ${MOBILE_HOP_KINDS.at(-1)}\\.`));
+  }
+});
