@@ -132,7 +132,8 @@ npm test
   `calls` edges and the `tests` edges apart. A second route is intercepted only by a page
   model. The corpus README lists its files.
 - `dependency-goldens.js` and `corpus/dependency-goldens.json`: the dependency answer of each
-  corpus, as the release before the source-flow work wrote it. The record holds the exit
+  corpus, as the release branch renders it. A change that moves the dependency view on purpose
+  writes the golden again with `--write`. The record holds the exit
   status and the sha256 of stdout and stderr for six outputs of every start. `--write` captures
   it and `--check` compares it. The label line and the `view` key are the only stated
   additions, so both are taken off before the comparison.

@@ -1,6 +1,7 @@
 /**
- * The dependency view of every committed corpus, as the release the source-flow work merges
- * into renders it, compared on every run. A change that should leave the dependency view
+ * The dependency view of every committed corpus, as the release branch renders it, compared
+ * on every run. A change that moves the dependency view on purpose writes the golden again
+ * with `--write`. A change that should leave the dependency view
  * alone has to leave these bytes alone: the source-flow work adds a label line and a `view`
  * key, and nothing else in the dependency output may move.
  *
