@@ -373,3 +373,157 @@ test('Mobile sites and starts AC-6: a static call to a relative module with no s
   assert.equal(ghost.status, 2);
   assert.match(ghost.stderr, /no page, component, service, route, method or class matches "Ghost"/);
 });
+
+const BEDS = 'mobile/src/app/features/beds';
+const GATEWAY_IMPORT = "import { GatewayService } from '../../core/gateway.service';";
+const page = (name, selector, base, baseImport, body = []) => [
+  "import { Component } from '@angular/core';",
+  GATEWAY_IMPORT,
+  baseImport,
+  '',
+  `@Component({ selector: '${selector}', template: '<p></p>' })`,
+  `export class ${name} extends ${base} {`,
+  ...body,
+  '}',
+  '',
+].join('\n');
+
+/** Pages that inherit lifecycle hooks through one, two and cyclic base levels. */
+const INHERITED_FILES = {
+  [`${BEDS}/bed-root.ts`]: [
+    GATEWAY_IMPORT,
+    '',
+    'export class BedRoot {',
+    "  plotId = 'p1';",
+    '  constructor(private root: GatewayService) {}',
+    '',
+    '  ionViewWillEnter() {',
+    '    return this.root.get(`nursery/v1/plots/${this.plotId}/forecast`);',
+    '  }',
+    '',
+    '  ngOnDestroy() {',
+    '    return this.root.get(`nursery/v1/plots/${this.plotId}/history`);',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  [`${BEDS}/bed-base.page.ts`]: [
+    GATEWAY_IMPORT,
+    "import { BedRoot } from './bed-root';",
+    '',
+    'export class BedBasePage extends BedRoot {',
+    '  constructor(private api: GatewayService) {',
+    '    super(api);',
+    '  }',
+    '',
+    '  ngOnInit() {',
+    '    this.load();',
+    '  }',
+    '',
+    '  load() {',
+    '    return this.api.get(`nursery/v1/plots/${this.plotId}/sensors`);',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  [`${BEDS}/bed-grid.page.ts`]: page('BedGridPage', 'app-bed-grid', 'BedBasePage', "import { BedBasePage } from './bed-base.page';"),
+  [`${BEDS}/bed-list.page.ts`]: page('BedListPage', 'app-bed-list', 'BedBasePage', "import { BedBasePage } from './bed-base.page';", [
+    '  constructor(private list: GatewayService) {',
+    '    super(list);',
+    '  }',
+    '',
+    '  ngOnDestroy() {',
+    '    return this.list.get(`nursery/v1/plots/${this.plotId}/summary`);',
+    '  }',
+  ]),
+  [`${BEDS}/loop-a.ts`]: ["import { LoopB } from './loop-b';", '', 'export class LoopA extends LoopB {}', ''].join('\n'),
+  [`${BEDS}/loop-b.ts`]: [
+    GATEWAY_IMPORT,
+    "import { LoopA } from './loop-a';",
+    '',
+    'export class LoopB extends LoopA {',
+    "  plotId = 'p1';",
+    '  constructor(private loop: GatewayService) {',
+    '    super();',
+    '  }',
+    '',
+    '  ionViewDidEnter() {',
+    '    return this.loop.get(`nursery/v1/plots/${this.plotId}/sensors`);',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  [`${BEDS}/bed-loop.page.ts`]: page('BedLoopPage', 'app-bed-loop', 'LoopA', "import { LoopA } from './loop-a';"),
+  [`${BEDS}/bed-orphan.page.ts`]: page('BedOrphanPage', 'app-bed-orphan', 'MissingBase', "import { MissingBase } from './missing-base';"),
+  [`${BEDS}/bed-ionic.page.ts`]: page('BedIonicPage', 'app-bed-ionic', 'IonicBase', "import { IonicBase } from '@ionic/angular';"),
+};
+
+let inheritedCache = null;
+function inheritedPack() {
+  if (!inheritedCache) inheritedCache = nursery(INHERITED_FILES);
+  return inheritedCache;
+}
+
+const entrySummary = (model) =>
+  model.entries
+    .map((view) => [view.identity.trigger, view.identity.kind, view.identity.component, view.identity.file, view.routes.slice().sort()])
+    .sort((a, b) => a[0].localeCompare(b[0]));
+
+test('Mobile sites and starts AC-5: a page that declares no hook gets one entry for each hook its bases declare, through two levels', () => {
+  const model = inheritedPack().json(['span', '--from-component', 'BedGridPage']);
+  assert.deepEqual(entrySummary(model), [
+    ['ionViewWillEnter', 'mount', 'BedGridPage', 'src/app/features/beds/bed-root.ts', ['GET nursery/v1/plots/*/forecast']],
+    ['ngOnDestroy', 'unmount', 'BedGridPage', 'src/app/features/beds/bed-root.ts', ['GET nursery/v1/plots/*/history']],
+    ['ngOnInit', 'mount', 'BedGridPage', 'src/app/features/beds/bed-base.page.ts', ['GET nursery/v1/plots/*/sensors']],
+  ]);
+  const facts = inheritedPack().facts('mobile');
+  const spanLine = (cls, method) => facts.find((fact) => fact.type === 'method_span' && fact.class === cls && fact.method === method).line;
+  assert.equal(entryOf(model, 'ngOnInit').identity.line, spanLine('BedBasePage', 'ngOnInit'), 'the entry site is the base hook');
+  assert.deepEqual(model.unresolved, []);
+  assert.deepEqual(model.orphans, { arms: 0, routes: [] });
+});
+
+test('Mobile sites and starts AC-5: a hook the page declares is the only entry for that trigger, and two pages on one base get two ids', () => {
+  const list = inheritedPack().json(['span', '--from-component', 'BedListPage']);
+  assert.deepEqual(entrySummary(list), [
+    ['ionViewWillEnter', 'mount', 'BedListPage', 'src/app/features/beds/bed-root.ts', ['GET nursery/v1/plots/*/forecast']],
+    ['ngOnDestroy', 'unmount', 'BedListPage', 'src/app/features/beds/bed-list.page.ts', ['GET nursery/v1/plots/*/summary']],
+    ['ngOnInit', 'mount', 'BedListPage', 'src/app/features/beds/bed-base.page.ts', ['GET nursery/v1/plots/*/sensors']],
+  ]);
+  const grid = inheritedPack().json(['span', '--from-component', 'BedGridPage']);
+  assert.notEqual(entryOf(list, 'ngOnInit').identity.id, entryOf(grid, 'ngOnInit').identity.id);
+});
+
+test('Mobile sites and starts AC-5: a base cycle ends, and the hook found before the cycle is an entry', () => {
+  const model = inheritedPack().json(['span', '--from-component', 'BedLoopPage']);
+  assert.deepEqual(entrySummary(model), [
+    ['ionViewDidEnter', 'mount', 'BedLoopPage', 'src/app/features/beds/loop-b.ts', ['GET nursery/v1/plots/*/sensors']],
+  ]);
+});
+
+test('Mobile sites and starts AC-5: an unresolved relative base is one arm at the extends site, and a package base gives nothing', () => {
+  const { json, facts } = inheritedPack();
+  const orphan = json(['span', '--from-component', 'BedOrphanPage']);
+  assert.deepEqual(orphan.entries, []);
+  const declaration = facts('mobile').find((fact) => fact.type === 'component' && fact.name === 'BedOrphanPage');
+  const arms = orphan.unresolved;
+  assert.equal(arms.length, 1, JSON.stringify(arms));
+  assert.equal(arms[0].entry, null, 'no entry reaches the refused base');
+  assert.deepEqual([arms[0].reason, arms[0].file, arms[0].line], ['mobile-declaration-unresolved', declaration.file, declaration.line]);
+  const ionic = json(['span', '--from-component', 'BedIonicPage']);
+  assert.deepEqual([ionic.entries, ionic.unresolved, ionic.orphans], [[], [], { arms: 0, routes: [] }]);
+});
+
+test('Mobile sites and starts AC-5: the lifecycle comment, the span help and the CLI doc describe inherited hooks as entries', async () => {
+  const { MOBILE_LIFECYCLE_KINDS } = await import('../lib/trace.js');
+  assert.ok(MOBILE_LIFECYCLE_KINDS.has('ngOnInit'));
+  const source = readFileSync(join(REPO_ROOT, 'lib', 'trace.js'), 'utf8');
+  assert.match(source, /A listed hook that the class inherits from a base class in the\n \* repository is an entry of the class too\./);
+  const help = runCli(['span', '--help']).stdout.replace(/\s+/g, ' ');
+  const doc = readFileSync(join(REPO_ROOT, 'docs', 'cli.md'), 'utf8').replace(/\s+/g, ' ');
+  for (const text of [help, doc]) {
+    assert.match(text, /A listed hook the class inherits is an entry too, at the hook in the first base class up the extends chain that declares it\./);
+    assert.match(text, /a relative base that resolves to no one declaration prints as one mobile-declaration-unresolved arm at the extends site/);
+    assert.doesNotMatch(text, /each lifecycle hook the class itself declares/);
+  }
+});
