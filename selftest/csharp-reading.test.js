@@ -118,6 +118,96 @@ test('CSharp reading AC-1: an attribute over several lines is read as one attrib
   assert.deepEqual(JSON.parse(reached.stdout).routes.map((r) => r.key), ['GET sailings/*/stops']);
 });
 
+test('CSharp reading AC-1: an attribute argument that holds an array initializer keeps the route in every reader', (t) => {
+  const dir = copyFixture(t, FERRY);
+  const src = join(dir, 'api', 'src');
+  writeFileSync(
+    join(src, 'Controllers', 'MooringsController.cs'),
+    [
+      'namespace Ferry.Api.Controllers;',
+      '',
+      '[ApiController]',
+      '[Route("moorings")]',
+      '[SwaggerTag(',
+      '    Tags = new[] { "harbor" })]',
+      'public class MooringsController : ControllerBase',
+      '{',
+      '    [HttpGet("array")]',
+      '    [SwaggerOperation(Tags = new[] { "harbor", "ferry" })]',
+      '    public IActionResult Array()',
+      '    {',
+      '        return Ok();',
+      '    }',
+      '',
+      '    [HttpGet("array-lines")]',
+      '    [SwaggerOperation(',
+      '        Summary = "Moorings by berth",',
+      '        Tags = new[]',
+      '        {',
+      '            "harbor",',
+      '            "ferry",',
+      '        })]',
+      '    public IActionResult ArrayLines()',
+      '    {',
+      '        return Ok();',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+  );
+  writeFileSync(
+    join(src, 'Pages', 'Harbor', 'Berths.cshtml.cs'),
+    [
+      'namespace Ferry.Api.Pages.Harbor;',
+      '',
+      '[Route("harbor/berths")]',
+      '[BindProperties(Names = new[] { "berth" })]',
+      'public class BerthsModel : PageModel',
+      '{',
+      '    public IActionResult OnGet()',
+      '    {',
+      '        return Page();',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+  );
+  writeFileSync(
+    join(src, 'Endpoints', 'SlipEndpoint.cs'),
+    [
+      'namespace Ferry.Api.Endpoints;',
+      '',
+      '[Route("slips")]',
+      '[SwaggerTag(Tags = new[] { "slips" })]',
+      'public class SlipEndpoint : EndpointBaseAsync',
+      '    .WithRequest<SlipRequest>',
+      '    .WithActionResult<SlipResult>',
+      '{',
+      '    [HttpPost("{slip}")]',
+      '    [SwaggerOperation(',
+      '        Summary = "Hold one slip",',
+      '        Tags = new[] { "slips", "harbor" })]',
+      '    public override Task<ActionResult<SlipResult>> HandleAsync(SlipRequest request)',
+      '    {',
+      '        return Task.FromResult<ActionResult<SlipResult>>(Ok());',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+  );
+  const run = runCli(['extract', ...CONFIG], { cwd: dir });
+  assert.equal(run.status, 0, run.stderr);
+  assert.doesNotMatch(run.stderr, /Moorings|Berths|Slip/);
+
+  const array = route(dir, 'MooringsController', 'Array');
+  assert.deepEqual([array.verb, array.template, array.line, array.unresolvedArgument], ['GET', 'moorings/array', 9, undefined]);
+  const lines = route(dir, 'MooringsController', 'ArrayLines');
+  assert.deepEqual([lines.verb, lines.template, lines.line, lines.unresolvedArgument], ['GET', 'moorings/array-lines', 16, undefined]);
+  assert.equal(route(dir, 'BerthsModel', 'OnGet').template, 'harbor/berths');
+  const slip = route(dir, 'SlipEndpoint', 'HandleAsync');
+  assert.deepEqual([slip.verb, slip.template, slip.line], ['POST', 'slips/{slip}', 9]);
+});
+
 test('CSharp reading AC-2: an attribute line that ends with a comment still reads as the attribute', (t) => {
   const { dir } = extracted(t);
   const upload = route(dir, 'SailingsController', 'Upload');
