@@ -150,3 +150,73 @@ test('Test evidence AC-7: trace, span and component-span reach a parameter route
     [{ key: 'GET reef/v1/divers/*/logs', via: ['parameter'] }],
   );
 });
+
+test('Test evidence AC-29: a segment of values meets only a route parameter', () => {
+  const index = routeIndex(['api/items/{id}', 'api/items/featured']);
+  assert.deepEqual(outcome(index, 'api/items/${id}', { glob: true }), { key: 'GET api/items/*', match: 'exact' });
+  const literalOnly = routeIndex(['api/items/featured', 'api/items/featured/{x}']);
+  assert.equal(outcome(literalOnly, 'api/items/${id}', { glob: true }), null);
+  assert.deepEqual(outcome(literalOnly, 'api/items/${id}'), { key: 'GET api/items/featured', match: 'prefix' });
+  assert.equal(outcome(literalOnly, 'api/items/${id}/${part}', { glob: true }), null);
+});
+
+test('Test evidence AC-29: a value after literal text at the end of the path stands for two readings', () => {
+  const both = routeIndex(['api/items', 'api/items/{id}']);
+  assert.deepEqual(outcome(both, 'api/items${x}', { glob: true }), { ambiguous: ['GET api/items', 'GET api/items/*'] });
+  assert.equal(matchRoute(both, 'GET', 'api/items${x}', [], { glob: true }), null);
+  assert.deepEqual(outcome(both, 'api/items${x}'), { key: 'GET api/items', match: 'prefix' });
+  const deep = routeIndex(['api/items/{id}']);
+  assert.deepEqual(outcome(deep, 'api/items${query()}', { glob: true }), { key: 'GET api/items/*', match: 'prefix' });
+  const single = routeIndex(['api/items']);
+  assert.deepEqual(outcome(single, 'api/items${query()}', { glob: true }), { key: 'GET api/items', match: 'prefix' });
+
+  const tails = routeIndex(['shop/v1/items', 'shop/v1/items/{id}']);
+  assert.deepEqual(outcome(tails, 'v1/items${x}', { glob: true }), {
+    ambiguous: ['GET shop/v1/items', 'GET shop/v1/items/*'],
+  });
+  const longer = routeIndex(['shop/v1/items/{id}']);
+  assert.deepEqual(outcome(longer, 'v1/items${x}', { glob: true }), { key: 'GET shop/v1/items/*', match: 'suffix' });
+});
+
+test('Test evidence AC-29: a value beside literal text compares as a template segment', () => {
+  const index = routeIndex(['org/CS{companyId}/users']);
+  assert.deepEqual(outcome(index, 'org/cs${id}/users', { glob: true }), { key: 'GET org/cs*/users', match: 'exact' });
+  const parameter = routeIndex(['org/{part}/users']);
+  assert.deepEqual(outcome(parameter, 'org/cs${id}/users', { glob: true }), { key: 'GET org/*/users', match: 'parameter' });
+  const literal = routeIndex(['org/cs42/users']);
+  assert.equal(outcome(literal, 'org/cs${id}/users', { glob: true }), null);
+  assert.equal(outcome(literal, 'org/${id}-cs/users', { glob: true }), null);
+});
+
+test('Test evidence AC-29: a segment with a value and a glob reads as a glob segment', () => {
+  const index = routeIndex(['api/items/featured', 'api/items/featured/sizes']);
+  assert.deepEqual(outcome(index, 'api/items/${kind}*', { glob: true }), { key: 'GET api/items/featured', match: 'prefix' });
+  assert.deepEqual(outcome(index, 'api/items/f${kind}*', { glob: true }), { key: 'GET api/items/featured', match: 'prefix' });
+  assert.deepEqual(outcome(index, 'api/items/${kind}/**', { glob: true }), null);
+  const deep = routeIndex(['api/items/{id}/sizes']);
+  assert.deepEqual(outcome(deep, 'api/items/${kind}/**', { glob: true }), { key: 'GET api/items/*/sizes', match: 'prefix' });
+});
+
+test('Test evidence AC-29: a span is read whole, with a nested brace, a slash or a query mark inside it', () => {
+  const index = routeIndex(['api/items/{id}', 'api/items/{a}/{b}', 'api/items/featured']);
+  const nested = 'api/items/${ids.map((i) => { return i; }).join()}';
+  assert.deepEqual(outcome(index, nested, { glob: true }), { key: 'GET api/items/*', match: 'exact' });
+  assert.deepEqual(outcome(index, "api/items/${a + '/' + b}", { glob: true }), { key: 'GET api/items/*', match: 'exact' });
+  assert.deepEqual(outcome(index, "api/items/${q ? 'x#y' : 'z'}", { glob: true }), { key: 'GET api/items/*', match: 'exact' });
+  assert.deepEqual(outcome(index, 'api/items/${id}?expand=1', { glob: true }), { key: 'GET api/items/*', match: 'exact' });
+});
+
+test('Test evidence AC-29: a pattern with no literal segment names no route, and an alias keeps the span reading', () => {
+  const index = routeIndex(['api/items/{id}', 'inventory/v1/items/{id}']);
+  assert.equal(outcome(index, '${base}/${id}', { glob: true }), null);
+  assert.equal(outcome(index, '*/${id}', { glob: true }), null);
+  const aliases = [{ from: 'catalog/v1', to: 'inventory/v1' }];
+  assert.deepEqual(outcome(index, 'catalog/v1/items/${id}', { glob: true }, 'GET', aliases), {
+    key: 'GET inventory/v1/items/*',
+    match: 'alias',
+    alias: { from: 'catalog/v1', to: 'inventory/v1' },
+  });
+  const literal = routeIndex(['inventory/v1/items/featured']);
+  assert.equal(outcome(literal, 'catalog/v1/items/${id}', { glob: true }, 'GET', aliases), null);
+  assert.deepEqual(outcome(literal, 'catalog/v1/items/${id}', {}, 'GET', aliases).key, 'GET inventory/v1/items/featured');
+});
