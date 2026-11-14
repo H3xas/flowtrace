@@ -52,6 +52,7 @@ import { renderSourceFlowTrailer, sourceFlowLines, SOURCE_FLOW_LABEL } from '../
 import * as traceModule from '../lib/trace.js';
 
 import * as backendExtractor from '../lib/extract/backend.js';
+import * as emailTemplatesExtractor from '../lib/extract/email-templates.js';
 import * as mobileExtractor from '../lib/extract/mobile.js';
 import * as playwrightExtractor from '../lib/extract/playwright.js';
 import * as pwTitlesModule from '../lib/extract/pw-titles.js';
@@ -1091,6 +1092,7 @@ const EXTRACTORS = {
   mobile: mobileExtractor,
   playwright: playwrightExtractor,
   web: webExtractor,
+  'email-templates': emailTemplatesExtractor,
 };
 
 function loadExtractor(repo) {
@@ -1319,6 +1321,8 @@ async function runExtract(config, repoFilter) {
       cypressSubpath: repo.cypressSubpath,
       caseIdCalls: config.caseId ? config.caseId.calls : [],
       backendCalls: config.backend,
+      email: config.email,
+      templates: repo.templates,
       workerPatterns: config.workerPatterns,
     });
     let count;

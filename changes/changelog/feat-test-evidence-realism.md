@@ -85,3 +85,12 @@
   matched no page, matched two pages of equal rank, or could not be read. The text and Markdown
   reports label the line as inferred. Page reach is not named evidence, so the route state,
   levels, evidence counts and parity do not change.
+- The configuration accepts a top-level `email` object. `email.reads` lists the calls that read
+  an email, each with the position of its subject: an argument index, or `"<index>.<key>"` for a
+  key of an object argument. `email.senders` lists the backend class members that name an email.
+  Without the key, no extractor gives an email fact. A malformed value is one refusal that names
+  `email`.
+- A repository of the new kind `email-templates` has a `templates` object with `files` (globs),
+  and `id` and `subject` selectors. A selector is dotted keys, and a key can carry a
+  `[field=value]` filter that picks one array element. A malformed value is one refusal that
+  names `templates`.
