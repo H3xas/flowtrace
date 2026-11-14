@@ -224,3 +224,116 @@ test('Web extractor reach AC-18: the existing shapes keep their facts and join e
   const spans = ofType(factsOf(dir), 'method_span').filter((span) => span.class === 'ItemsPage');
   assert.deepEqual(spans.map((span) => span.method).sort(), ['componentDidMount', 'handleClick', 'render']);
 });
+
+const JS_CLIENT = [
+  'export class HttpClient {',
+  '  getGatewayClient() {',
+  '    return window.gateway;',
+  '  }',
+  '}',
+  '',
+  'export const httpClient = new HttpClient();',
+  '',
+].join('\n');
+
+test('Web extractor reach AC-1: .js and .jsx sources give facts, JSX in a .js file included', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([BACKEND, WEB]),
+    'backend/src/ItemsController.cs': controller('ItemsController', 'api/v1/items', [['Get', '{id}', 'GetItem']]),
+    'web/src/http/httpClient.js': JS_CLIENT,
+    'web/src/actions/items.js': [
+      "import { httpClient } from '../http/httpClient';",
+      '',
+      'export function loadItem(id) {',
+      '  return httpClient.getGatewayClient().get(`/api/v1/items/${id}`);',
+      '}',
+      '',
+    ].join('\n'),
+    'web/src/components/ItemRow.jsx': [
+      "import React from 'react';",
+      '',
+      'export function ItemRow({ label }) {',
+      '  return <li>{label}</li>;',
+      '}',
+      '',
+    ].join('\n'),
+    'web/src/pages/ItemsPage.js': [
+      "import React from 'react';",
+      "import { ItemRow } from '../components/ItemRow';",
+      "import { loadItem } from '../actions/items';",
+      '',
+      'export function ItemsPage({ ready, count }) {',
+      '  if (count < 3) {',
+      "    loadItem('few');",
+      '  }',
+      '  return (',
+      '    <div>',
+      '      <p>Ready? Yes && no</p>',
+      '      {ready && <ItemRow label="one" />}',
+      '    </div>',
+      '  );',
+      '}',
+      '',
+    ].join('\n'),
+    'web/src/pages/ItemsPage.test.js': "export function TestPage() { return <div />; }\n",
+    'web/src/components/ItemRow.spec.jsx': "export function SpecRow() { return <div />; }\n",
+    'web/src/components/ItemRow.stories.js': "export function StoryRow() { return <div />; }\n",
+    'web/src/pages/ItemsPage.cy.js': "export function CypressPage() { return <div />; }\n",
+  });
+  extractAndJoin(dir);
+  const facts = factsOf(dir);
+  const files = new Set(facts.map((entry) => entry.file));
+  for (const excluded of ['ItemsPage.test.js', 'ItemRow.spec.jsx', 'ItemRow.stories.js', 'ItemsPage.cy.js']) {
+    assert.ok(![...files].some((file) => file.endsWith(excluded)), `${excluded} gives no facts`);
+  }
+  assert.deepEqual(
+    ofType(facts, 'component').map((entry) => `${entry.file} ${entry.name}`).sort(),
+    ['src/components/ItemRow.jsx ItemRow', 'src/pages/ItemsPage.js ItemsPage'],
+  );
+  assert.deepEqual(
+    ofType(facts, 'renders').map((entry) => `${entry.from}->${entry.to} ${entry.source}`),
+    ['ItemsPage->ItemRow ../components/ItemRow'],
+  );
+  assert.ok(ofType(facts, 'method_span').some((span) => span.file === 'src/actions/items.js' && span.method === 'loadItem'));
+  assert.deepEqual(
+    ofType(facts, 'gateway_call').map((entry) => `${entry.file} ${entry.verb} ${entry.template} ${entry.resolved}`),
+    ['src/actions/items.js GET /api/v1/items/${id} true'],
+  );
+  const decisions = ofType(facts, 'branch_point').filter((entry) => entry.file === 'src/pages/ItemsPage.js');
+  assert.deepEqual(decisions.map((entry) => `${entry.line} ${entry.kind}`), ['6 if', '12 logical']);
+  assert.ok(flowOf(dir).edges.some((edge) => edge.kind === 'calls' && edge.to.ref === 'ItemsController.GetItem'));
+});
+
+test('Web extractor reach AC-1: a TypeScript repository reads its .js and .jsx files too', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/App.tsx': [
+      "import React from 'react';",
+      "import { LegacyBanner } from './legacy/LegacyBanner';",
+      '',
+      'export function App(): JSX.Element {',
+      '  return <LegacyBanner />;',
+      '}',
+      '',
+    ].join('\n'),
+    'web/src/legacy/LegacyBanner.jsx': [
+      "import React from 'react';",
+      '',
+      'export function LegacyBanner() {',
+      '  return <header>legacy</header>;',
+      '}',
+      '',
+    ].join('\n'),
+    'web/src/legacy/format.js': [
+      'export function formatLabel(value) {',
+      "  return value ? String(value) : '';",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  extractAndJoin(dir);
+  const facts = factsOf(dir);
+  assert.ok(ofType(facts, 'component').some((entry) => entry.file === 'src/legacy/LegacyBanner.jsx' && entry.name === 'LegacyBanner'));
+  assert.ok(ofType(facts, 'method_span').some((span) => span.file === 'src/legacy/format.js' && span.method === 'formatLabel'));
+  assert.ok(ofType(facts, 'branch_point').some((entry) => entry.file === 'src/legacy/format.js' && entry.kind === 'ternary'));
+});
