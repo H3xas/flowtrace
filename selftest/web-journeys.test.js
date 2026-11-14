@@ -88,3 +88,41 @@ test('Web journeys AC-13: one thunk statement prints one chain, in the dispatch 
   assert.equal(joinPage[0].complete, true);
   assert.equal(limited.status.frontier.some((stop) => stop.caller.file === 'src/join/JoinPage.tsx'), false);
 });
+
+const REGATTA = ['regatta-desk', 'regatta.config.json'];
+const BASE = JSON.parse(readFileSync(join(CORPUS, 'regatta-desk', 'base-capture.json'), 'utf8'));
+
+test('Web journeys AC-11: a page-load entry prints its kind word, and its ids stay', async () => {
+  const { traceNodes } = await import('./corpus/regatta-desk/golden.mjs');
+  const dir = fixture(...REGATTA);
+  const header = cli(dir, REGATTA[1], ['trace', 'RegattaHeader']);
+  assert.equal(header.status, 0, header.stderr);
+  assert.match(header.stdout, /─ mount RegattaHeader\.componentDidMount@12:3 {2}web {2}src\/regatta\/RegattaHeader\.tsx:12 {2}\[entry\]/);
+  assert.match(header.stdout, /─ update RegattaHeader\.componentDidUpdate@16:3 {2}web {2}src\/regatta\/RegattaHeader\.tsx:16 {2}\[entry\]/);
+  const board = cli(dir, REGATTA[1], ['trace', 'ResultsBoard']);
+  assert.match(board.stdout, /─ effect ResultsBoard\.useEffect@8:3 {2}web {2}src\/results\/ResultsBoard\.tsx:8 {2}\[entry\]/);
+
+  for (const [key, kind, site] of [
+    ['GET regattas/v1/{id}', 'mount', 'src/regatta/RegattaHeader.tsx:12'],
+    ['GET regattas/v1/{id}/entries', 'update', 'src/regatta/RegattaHeader.tsx:16'],
+    ['GET regattas/v1/results', 'effect', 'src/results/ResultsBoard.tsx:8'],
+  ]) {
+    const text = cli(dir, REGATTA[1], ['chains', key]);
+    assert.equal(text.status, 0, text.stderr);
+    const line = text.stdout.split('\n').find((candidate) => candidate.startsWith('  entry ') && candidate.includes(site));
+    assert.ok(line, `${key}: an entry line at ${site}`);
+    assert.ok(line.endsWith(`  kind ${kind}`), line);
+    const model = json(dir, REGATTA[1], ['chains', key]);
+    const entries = (chains) => [...new Set(chains.filter((chain) => chain.entry).map((chain) => JSON.stringify(chain.entry)))].sort();
+    assert.deepEqual(entries(model.chains), entries(BASE.chains[key]), key);
+  }
+
+  for (const start of ['RegattaHeader', 'ResultsBoard']) {
+    const entryNodes = (nodes) => nodes.filter((node) => node.kind === 'entry');
+    assert.deepEqual(entryNodes(traceNodes(json(dir, REGATTA[1], ['trace', start]))), entryNodes(BASE.trace[start]), start);
+    for (const identity of BASE.span[start].entries.filter((entry) => entry.kind !== 'event')) {
+      const span = json(dir, REGATTA[1], ['span', '--from-component', start, '--entry', identity.id]);
+      assert.deepEqual(span.entries.map((entry) => entry.identity), [identity], identity.id);
+    }
+  }
+});
