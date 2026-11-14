@@ -353,3 +353,74 @@ test('Backend entries AC-12: a constant key keeps only the matching and the unre
   assert.equal(viaEdges(traceJson(env, 'POST finishes/v1/{kind}'), 'keyed_dispatch').length, 3);
   assert.deepEqual(routesOf(env, 'GlossFinisher.Apply').report.routes.map((route) => route.key).includes('POST finishes/v1/matte'), false);
 });
+
+function stepEdges(report) {
+  return viaEdges(report, 'step').map((hop) => ({ ref: hop.to.ref, step: hop.to.step, conditional: hop.edge.conditional === true }));
+}
+
+test('Backend entries AC-13: a block stop resolves and each step reject runs the statements before its jump', (t) => {
+  const env = corpus(t, ...QUILL).extract();
+  const stop = facts(env, 'quill').find((item) => item.type === 'loop_stop' && item.class === 'SealPipeline');
+  assert.equal(stop.form, 'bool-return');
+  assert.equal(typeof stop.rejectFrom, 'number');
+  assert.equal(stop.rejectTo, stop.rejectFrom);
+
+  const report = traceJson(env, 'POST seals/v1/press');
+  assert.equal(report.stats.pipelines.resolved, 1);
+  const rejects = report.seeds.filter((seed) => seed.kind === 'reject');
+  assert.equal(rejects.length, 2);
+  for (const seed of rejects) {
+    assert.deepEqual(seed.outcomes.map((item) => `${item.ref}.${item.method}`), ['ISealLedgerRepository.SaveRejected'], seed.key);
+  }
+  const [effect] = report.seeds.filter((seed) => seed.kind === 'effect');
+  assert.deepEqual(effect.outcomes.map((item) => `${item.ref}.${item.method}`), ['ISealLedgerRepository.SaveSealed']);
+
+  const byId = new Map(report.nodes.map((node) => [node.id, node]));
+  const parentOf = new Map(report.edges.map((edge) => [edge.to, byId.get(edge.from)]));
+  const audits = report.nodes.filter((node) => node.ref === 'SealPipeline.Audit');
+  assert.ok(audits.length > 0);
+  for (const audit of audits) {
+    const block = parentOf.get(audit.id);
+    assert.equal(block.ref, 'SealPipeline.Run');
+    assert.equal(parentOf.get(block.id).kind, 'branch');
+  }
+  assert.match(traceText(env, 'POST seals/v1/press'), /before the reject: ■ db ISealLedgerRepository\.SaveRejected/);
+});
+
+test('Backend entries AC-14: every step after the first is conditional unless the loop never stops', (t) => {
+  const quill = corpus(t, ...QUILL).extract();
+  const bakery = corpus(t, 'bakery-orders', 'bakery.config.json').extract();
+  const stopping = [
+    [quill, 'POST seals/v1/press', 'bool-return block'],
+    [bakery, 'POST bakery/v1/orders', 'flag-return'],
+    [bakery, 'POST bakery/v1/orders/check', 'bool-return'],
+    [bakery, 'DELETE bakery/v1/orders/{id}', 'flag-break'],
+  ];
+  for (const [env, key, form] of stopping) {
+    const steps = stepEdges(traceJson(env, key));
+    assert.ok(steps.length >= 2, form);
+    assert.deepEqual(steps.map((step) => step.conditional), steps.map((step) => step.step > 1), form);
+    assert.match(traceText(env, key), /\[step\] {2}step 2 · conditional/, form);
+  }
+  const sweep = stepEdges(traceJson(quill, 'POST seals/v1/sweep'));
+  assert.equal(sweep.length, 2);
+  assert.ok(sweep.every((step) => !step.conditional));
+  assert.doesNotMatch(traceText(quill, 'POST seals/v1/sweep'), /conditional/);
+});
+
+test('Backend entries AC-15: an unreadable stop rule walks the steps in registration order and stays unresolved', (t) => {
+  const env = corpus(t, ...QUILL).extract();
+  const report = traceJson(env, 'POST seals/v1/twin');
+  assert.deepEqual(stepEdges(report), [
+    { ref: 'StampStep', step: 1, conditional: false },
+    { ref: 'WaxStep', step: 2, conditional: true },
+  ]);
+  assert.equal(report.stats.pipelines.resolved, 0);
+  assert.deepEqual(report.stats.pipelines.unresolved.map((item) => item.reason), ['stop-rule']);
+  assert.ok(report.status.frontier.some((entry) => entry.reason === 'unresolved-pipeline' && entry.detail === 'stop-rule'));
+  const stepRejects = report.nodes.filter(
+    (node) => node.kind === 'branch' && node.branchKind === 'reject' && /^(StampStep|WaxStep)\./.test(node.ref),
+  );
+  assert.deepEqual(stepRejects, []);
+  assert.match(traceText(env, 'POST seals/v1/twin'), /pipeline unresolved: stop-rule/);
+});
