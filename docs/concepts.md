@@ -36,6 +36,11 @@ Templates on either side are normalised before comparison — a `{productId}` on
 and a `${id}` on the caller are the same segment. `aliases` in the configuration file
 rewrite a route prefix when a gateway serves one path under another name.
 
+Only a `calls` edge, built from a `gateway_call` fact, is an app caller. A `tests` edge
+comes from a `cypress_intercept` written in a Cypress spec, a support file or a page model.
+It is test evidence that `cover` counts, and no caller list reads it. A route that only a
+test requests stays in `routes_without_caller`.
+
 ## The walk
 
 `flowtrace trace <start>` walks forward from a start to everything it reaches: the
