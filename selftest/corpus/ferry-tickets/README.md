@@ -39,3 +39,8 @@ the one its own `return` or `throw` answers, beside a multi-line branch.
 `ferry.config.json` maps some of those types, `GateFaultFilter` maps one globally, and
 `CheckinController.Caught` catches one in the action. `PierDownException` maps to a 5xx,
 `ManifestException` maps nowhere, and only the `ops` table names `TicketLostException`.
+
+`Embark/` holds a pipeline that tests each step with `ShouldExecute` before it runs it.
+`BadgeStep` stores the answer of a call in the flag the loop stops on, and `DeckStep` throws.
+`EmbarkController.Fast` runs the pipeline only under a feature toggle. `embark.area.txt`
+names both embark routes.

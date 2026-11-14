@@ -10,7 +10,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { validateConfig } from '../lib/config.js';
-import { mergeBranchFacts } from '../lib/trace.js';
+import { validateFacts } from '../lib/facts.js';
+import { conditionedReachability, mergeBranchFacts } from '../lib/trace.js';
 import { captureBranchPoints, pinnedFacts, readBaseline } from './branch-point-baseline.js';
 import { copyFixture, runCli } from './helpers.js';
 
@@ -570,4 +571,139 @@ test('CSharp reading AC-15: a deep throw a catch, a filter or the table maps to 
     assert.deepEqual(faults, expected, key);
     assert.deepEqual(demotedThrows(dir, key), ['ManifestException', 'PierDownException', 'TicketLostException'], key);
   }
+});
+
+const BOARD = 'POST embark/{ticket}';
+const FAST = 'POST embark/{ticket}/fast';
+const PIPELINE = 'src/Embark/EmbarkPipeline.cs';
+const STEPS = 'src/Embark/EmbarkSteps.cs';
+const EMBARK_CONTROLLER = 'src/Controllers/EmbarkController.cs';
+
+/** The three conditions the embark corpus writes, each as kind, file, line and source text. */
+function embarkConditions(dir) {
+  const at = (kind, file, needle) => {
+    const line = lineOf(join(dir, 'api'), file, needle);
+    return { kind, file, line, text: readFileSync(join(dir, 'api', file), 'utf8').split('\n')[line - 1].trim() };
+  };
+  return {
+    toggle: at('toggle', EMBARK_CONTROLLER, 'Toggles.FastEmbark'),
+    gate: at('step-gate', PIPELINE, 'step.ShouldExecute'),
+    call: at('flag-call', STEPS, '_access.AllowsAsync'),
+  };
+}
+
+const plain = ({ kind, file, line, text }) => ({ kind, file, line, text });
+
+/** Each seed of `key` as response and the conditions it lists, from `cover --json`. */
+function coverConditions(dir, key) {
+  const cover = cli(dir, 'cover', '--area', 'embark.area.txt', '--json');
+  assert.equal(cover.status, 0, cover.stderr);
+  const found = JSON.parse(cover.stdout).routes.find((entry) => entry.key === key);
+  assert.ok(found, key);
+  return found.seeds.map((seed) => [seed.response, (seed.conditions || []).map(plain)]);
+}
+
+test('CSharp reading AC-16: the loop gate and the call a flag write stores are facts with a checked shape', (t) => {
+  const { dir } = extracted(t);
+  const { gate, call } = embarkConditions(dir);
+  const stop = facts(dir, 'api').find((f) => f.type === 'loop_stop' && f.file === PIPELINE);
+  assert.deepEqual(stop.gate, { method: 'ShouldExecute', line: gate.line, text: gate.text });
+  assert.equal(stop.step, 'ProcessAsync', 'the gate test is never read as the step call');
+  const write = facts(dir, 'api').find((f) => f.type === 'flag_write' && f.file === STEPS);
+  assert.deepEqual(write.call, { field: '_access', calledMethod: 'AllowsAsync' });
+  assert.equal(write.line, call.line);
+  assert.ok(!facts(dir, 'api').some((f) => f.type === 'flag_write' && f.call && f.value !== 'expression'));
+
+  for (const [bad, field] of [
+    [{ ...stop, gate: { method: 'ShouldExecute', line: 0, text: 'x' } }, 'gate'],
+    [{ ...stop, gate: { line: 3, text: 'x' } }, 'gate'],
+    [{ ...stop, gate: 'ShouldExecute' }, 'gate'],
+    [{ ...write, call: { field: '_access' } }, 'call'],
+    [{ ...write, call: { calledMethod: 'AllowsAsync', field: '' } }, 'call'],
+    [{ ...write, call: ['AllowsAsync'] }, 'call'],
+  ]) {
+    assert.throws(() => validateFacts([bad]), new RegExp(`field "${field}" must be an object`), JSON.stringify(bad[field]));
+  }
+  assert.equal(validateFacts([stop, write]), 2);
+});
+
+test('CSharp reading AC-16: span rows and cover seeds list the toggle, the step gate and the flag call', (t) => {
+  const { dir } = extracted(t);
+  const { toggle, gate, call } = embarkConditions(dir);
+
+  assert.deepEqual(coverConditions(dir, BOARD), [
+    ['400 BadRequest', []],
+    ['409 Conflict', [gate, call]],
+    ['throw DeckFullException (500)', [gate, call]],
+    [null, []],
+  ]);
+  assert.deepEqual(coverConditions(dir, FAST), [
+    ['404 NotFound', []],
+    [null, [toggle]],
+    ['409 Conflict', [toggle, gate, call]],
+    ['throw DeckFullException (500)', [toggle, gate, call]],
+    [null, [toggle]],
+  ]);
+
+  const text = cli(dir, 'cover', '--area', 'embark.area.txt');
+  assert.equal(text.status, 0, text.stderr);
+  for (const condition of [toggle, gate, call]) {
+    assert.ok(text.stdout.includes(`condition ${condition.kind} ${condition.file}:${condition.line}  ${condition.text}`), condition.kind);
+  }
+
+  const run = cli(dir, 'span', FAST);
+  assert.equal(run.status, 0, run.stderr);
+  const page = readFileSync(join(dir, run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim()), 'utf8');
+  const rows = page.split('<div class="row row-').slice(1).map((block) => ({
+    kind: block.slice(0, block.indexOf('"')),
+    status: /<span class="status[^"]*">([^<]*)/.exec(block)[1],
+    conditions: [...block.matchAll(/<li class="condition" data-kind="([^"]+)"><code>[^<]*<\/code> ([^ ]+) <code>([^<]*)<\/code>/g)].map((m) => [m[1], m[2], m[3]]),
+  }));
+  const shown = (condition) => [condition.kind, `${condition.file}:${condition.line}`, condition.text.replace(/&/g, '&amp;')];
+  const listed = (status) => rows.find((row) => row.status === status).conditions;
+  assert.deepEqual(listed('409'), [toggle, gate, call].map(shown), 'the gated step with a flag call shows both');
+  assert.deepEqual(listed('500'), [toggle, gate, call].map(shown));
+  assert.deepEqual(listed('404'), []);
+  assert.ok(rows.filter((row) => row.kind === 'success').every((row) => row.conditions.length === 0));
+});
+
+test('CSharp reading AC-17: a gate or a flag call with no request-driven branch reads unknown, a toggle stays reachable', (t) => {
+  const { dir } = extracted(t);
+  const { gate } = embarkConditions(dir);
+  const seeds = (key) => {
+    const run = cli(dir, 'trace', key, '--seeds', '--json');
+    assert.equal(run.status, 0, run.stderr);
+    return JSON.parse(run.stdout).seeds.map((seed) => [seed.response, seed.reachability, seed.reachabilityReason ?? null]);
+  };
+  const step = (name) => `step gate ${name}.ShouldExecute at ${PIPELINE}:${gate.line}`;
+  assert.deepEqual(seeds(BOARD), [
+    ['400 BadRequest', 'edge', 'ticket ← route'],
+    ['409 Conflict', 'unknown', step('BadgeStep')],
+    ['throw DeckFullException (500)', 'unknown', step('DeckStep')],
+    [null, 'reachable', null],
+  ]);
+  assert.deepEqual(seeds(FAST), [
+    ['404 NotFound', 'unknown', 'no readable condition'],
+    [null, 'reachable', null],
+    ['409 Conflict', 'unknown', step('BadgeStep')],
+    ['throw DeckFullException (500)', 'unknown', step('DeckStep')],
+    [null, 'reachable', null],
+  ]);
+  assert.ok(!JSON.parse(cli(dir, 'trace', FAST, '--seeds', '--json').stdout).seeds.some((seed) => 'conditions' in seed), 'trace seeds gain no field');
+});
+
+test('CSharp reading AC-17: a branch the request drives keeps its reachability beside a run-time condition', () => {
+  const flagCall = { kind: 'flag-call', file: 'src/Steps.cs', line: 9, text: 'request.Valid = await _access.AllowsAsync(request.Ticket);', call: { field: '_access', calledMethod: 'AllowsAsync' } };
+  const driven = { kind: 'error_return', disposition: 'taken', reachability: 'reachable', reachabilityReason: 'ticket ← body' };
+  const blind = { kind: 'reject', disposition: 'taken', reachability: 'unknown' };
+  const base = { reachability: 'reachable', reason: 'ticket ← body' };
+  assert.deepEqual(conditionedReachability(base, [driven, blind], [flagCall]), base);
+  assert.deepEqual(conditionedReachability({ reachability: 'edge', reason: 'x ← route' }, [blind], [flagCall]), {
+    reachability: 'unknown',
+    reason: 'flag call _access.AllowsAsync at src/Steps.cs:9',
+  });
+  const unreachable = { reachability: 'unreachable', reason: 'x ← config' };
+  assert.deepEqual(conditionedReachability(unreachable, [blind], [flagCall]), unreachable);
+  const toggleOnly = { reachability: 'reachable', reason: null };
+  assert.deepEqual(conditionedReachability(toggleOnly, [], [{ kind: 'toggle', file: 'a.cs', line: 3, text: 'if (on)' }]), toggleOnly);
 });
