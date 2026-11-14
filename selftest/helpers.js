@@ -60,6 +60,12 @@ export function extractRepoFacts(dir, repo) {
   return JSON.parse(readFileSync(join(dir, 'out', 'facts', `${repo}.json`), 'utf8')).facts;
 }
 
+/** The facts an extractor gave before the stub pass read `tests/` specs: every fact but a
+ * `pw_stub` of such a spec. A pin of that extractor compares with these. */
+export function withoutTestsSpecStubs(facts) {
+  return facts.filter((candidate) => !(candidate.type === 'pw_stub' && String(candidate.spec).startsWith('tests/')));
+}
+
 /** Copies the synthetic corpus into a fresh temp directory, registered for cleanup on
  * `t` (a node:test TestContext). Returns the directory. */
 export function copyCorpus(t) {

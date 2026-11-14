@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractRepoFacts as extractFacts, writeRepo } from './helpers.js';
+import { extractRepoFacts as extractFacts, runCli, writeRepo } from './helpers.js';
 
 const ITEMS_CONTROLLER = `using Microsoft.AspNetCore.Mvc;
 
@@ -153,4 +153,89 @@ test('reads the items', async ({ request }) => {
     ['api/items/${cfg.ids[0]}', true],
     ['api/items/${a + b}', true],
   ]);
+});
+
+const STUB_SUPPORT = {
+  'suite/support/endpoints.ts': `export default {
+  catalogue: {
+    listItems: { route: '**/api/items', method: 'GET' },
+  },
+};
+`,
+  'suite/support/stubs.ts': `export async function stubEndpoint(endpoint) {
+  await page.route(endpoint.route, (route) => route.fulfill({ json: [] }));
+}
+export async function stubUrl(url) {
+  await page.route(url, (route) => route.abort());
+}
+`,
+};
+
+const TESTS_SPEC = `import { test } from '@playwright/test';
+
+test('shows the featured item', async ({ page }) => {
+  await page.route('**/api/items/featured', (route) => route.fulfill({ json: {} }));
+  await stubEndpoint(endpoints.catalogue.listItems);
+  await stubUrl('**/api/items/42');
+  await page.goto('/items');
+});
+`;
+
+const PW_SPEC = `import { test } from '@playwright/test';
+
+test('lists the items', async ({ page }) => {
+  await page.route('**/api/items/featured', (route) => route.continue());
+  await stubEndpoint(endpoints.catalogue.listItems);
+  await page.goto('/items');
+});
+`;
+
+test('Test evidence AC-9: a tests/ spec gives route stubs, with the registry and the helper index, when it is the only spec', (t) => {
+  const dir = writeRepo(
+    t,
+    { 'backend/src/Controllers/ItemController.cs': ITEMS_CONTROLLER, ...STUB_SUPPORT, 'suite/tests/items.spec.ts': TESTS_SPEC },
+    PLAYWRIGHT_REPOS,
+  );
+  const stubs = extractFacts(dir, 'suite')
+    .filter((fact) => fact.type === 'pw_stub')
+    .map((fact) => [fact.spec, fact.test, fact.kind, fact.verb, fact.pattern, fact.resolved, fact.handler]);
+  assert.deepEqual(stubs, [
+    ['tests/items.spec.ts', 'shows the featured item', 'route', 'ANY', '**/api/items/featured', true, 'fulfill'],
+    ['tests/items.spec.ts', 'shows the featured item', 'route', 'GET', '**/api/items', true, 'fulfill'],
+    ['tests/items.spec.ts', 'shows the featured item', 'route', 'ANY', '**/api/items/42', true, 'abort'],
+  ]);
+});
+
+test('Test evidence AC-9: a tests/ spec leaves the stubs of a .pw.ts spec as they are, and cover counts its own stubs', (t) => {
+  const withTests = writeRepo(
+    t,
+    {
+      'backend/src/Controllers/ItemController.cs': ITEMS_CONTROLLER,
+      ...STUB_SUPPORT,
+      'suite/e2e/items.pw.ts': PW_SPEC,
+      'suite/tests/items.spec.ts': TESTS_SPEC,
+      'items.area.txt': 'GET api/items\nGET api/items/featured\nGET api/items/*\n',
+    },
+    PLAYWRIGHT_REPOS,
+  );
+  const alone = writeRepo(
+    t,
+    { 'backend/src/Controllers/ItemController.cs': ITEMS_CONTROLLER, ...STUB_SUPPORT, 'suite/e2e/items.pw.ts': PW_SPEC },
+    PLAYWRIGHT_REPOS,
+  );
+  const pwStubs = (facts) => facts.filter((fact) => fact.type === 'pw_stub' && fact.spec === 'e2e/items.pw.ts');
+  const both = extractFacts(withTests, 'suite');
+  assert.deepEqual(pwStubs(both), pwStubs(extractFacts(alone, 'suite')));
+  assert.equal(pwStubs(both).length, 2);
+
+  const covered = runCli(['cover', '--area', 'items.area.txt', '--json', '--config', 'evidence.config.json'], { cwd: withTests });
+  assert.equal(covered.status, 0, covered.stderr);
+  assert.deepEqual(
+    JSON.parse(covered.stdout).routes.map((route) => [route.key, route.evidence.playwrightSpecs, route.evidence.match]),
+    [
+      ['GET api/items', ['e2e/items.pw.ts', 'tests/items.spec.ts'], ['exact']],
+      ['GET api/items/featured', ['e2e/items.pw.ts', 'tests/items.spec.ts'], ['exact']],
+      ['GET api/items/*', ['tests/items.spec.ts'], ['parameter']],
+    ],
+  );
 });

@@ -41,3 +41,8 @@
   as a `${…}` span now has `resolved: false`. A bare name or a `name.prop` span keeps
   `resolved: true`, as a path parameter. A stub that the endpoint registry names and a
   `pw_request` keep their `resolved` value. Extract again to get the new value.
+- A Playwright spec under `tests/` now gives `pw_stub` facts for its `page.route(` calls and
+  its stub helper calls, as a `.pw.ts` spec does. The reader builds the endpoint registry and
+  the stub helper index when only `tests/` specs exist. `cover` counts these stubs as
+  Playwright stub evidence, so a route and the parity summary can gain evidence. Extract
+  again to get the new facts.
