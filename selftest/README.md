@@ -56,6 +56,12 @@ npm test
   inside a body, a `test` reached through a member access, a title wrapped in a configured
   case-id call, and a title supplied as a table identifier — plus a listing whose positions
   sit below the source so nothing can resolve by line.
+- `corpus/widget-till/` — an invented Playwright suite and a one-route backend for case ids in
+  a configured call: a wrapper in title position on every declaration form and over several
+  lines, body calls, a same-file table, arguments no reader resolves, and a misaligned file.
+  It has three configurations (both callees, the body call alone, none) and `pw-list.json`, a
+  listing whose wrapped titles carry the text the wrapper adds; `title-wrapper-case-ids.test.js`
+  reads it.
 - `corpus/greenhouse-alerts/` — the journey pack: an invented React + Redux client and
   ASP.NET Core service, the expected ledger (`expected.json`), the committed observed projection
   (`observed.json`) and a README with the formats, the replay commands and the rules for tickets

@@ -37,7 +37,7 @@ checkouts named as siblings of the file.
 | `repos` | yes | non-empty array of repositories, below |
 | `aliases` | no | route-prefix rewrites the join step applies when a call finds no route |
 | `sinks` | no | what makes a class a data sink, below |
-| `caseId` | no | call shapes whose literal arguments are test-management case ids, below |
+| `caseId` | no | callees whose first argument is a test-management case id, below |
 | `backend` | no | the calls that mock or patch the backend of a browser test, below |
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
@@ -162,8 +162,9 @@ extractor found in it.
 
 A spec file resolves either every declaration or none. Two guards must hold first: the two
 sides must count the same number of declarations in the file, and every declaration whose
-title has no `${` must find that title verbatim at its own site. If either fails the whole
-file is refused, because one missed declaration shifts every ordinal after it; its titles
+title has no `${` must find that title verbatim at its own site. A title inside a configured
+case-id wrapper is held to containment instead: see [`caseId`](#caseid). If either fails the
+whole file is refused, because one missed declaration shifts every ordinal after it; its titles
 then stay `raw` and the header counts the file under `refused`. A missing title is visible;
 a wrong one would not be. A title reaches that check as text, with any quotes already stripped,
 so a title whose text reads as a single identifier, a dotted path or a call — `checkout`,
@@ -324,15 +325,33 @@ a call flowtrace cannot know about. `caseId` names those callees. It defaults to
 }
 ```
 
-- `calls` — callee names whose call sites carry case ids: the entry `tms.id` makes every
-  string-literal argument of a `tms.id(...)` site a case id. Ids resolved either way join
-  the test's `case_id` fact ([fact-schema.md](fact-schema.md)).
+- `calls` — callee names whose call sites carry case ids. Ids resolved either way join the
+  test's `case_id` fact ([fact-schema.md](fact-schema.md)).
 
-A configured callee is also read in title position. A test declared as
-`test(tms.id(9001, 'refunds a sale'), …)` has the title the runner reports carried inside the
-wrapper, so title collection compares against `refunds a sale` rather than against the whole
-call. Without the entry the wrapper is opaque and the declaration resolves on its position in
-the file alone.
+A configured callee is read in two places. In both, its first argument is the case id, and
+later arguments are not read for an id:
+
+- In a test body, `tms.id(9001)` and `tms.id(9001, 'note')` both give the id `9001`.
+- In title position, as a wrapper, `test(tms.id(9001, 'refunds a sale'), …)` gives the id
+  `9001`, and the second argument, `refunds a sale`, is the title. A wrapper with one argument
+  holds a title and no id. The same is true for `test.skip(`, `test.only(` and `test.fixme(`,
+  and for a call written over several lines. The fact is on the line of the `test(` call.
+
+The first argument resolves when it is a number, a quoted string, an array of those, or a row
+property such as `row.id` of a same-file `for (const row of ROWS)` over an array of object
+literals. An empty string, an empty array and `'TODO'` are placeholders and give no fact. Each
+other first argument (an identifier, a subscript, a call, a template, a conditional) gives one
+unresolved record: a `case_id` fact with `ids: []`, `source: "unresolved"` and `expression`,
+the argument text on one line, cut at 160 characters. Title text is never read as an id.
+
+Title collection ([Playwright titles](#playwright-titles)) holds a wrapped title to
+containment. Each title that the runner reports at the declaration's site must contain the
+string-literal title argument. So `refunds a sale (Case 9001)` and `[9001] refunds a sale`
+both pass, and any other title refuses the spec file. A title argument that is not a string
+literal rests on its position. Containment has a limit: a misaligned file in which each
+shifted wrapped title occurs inside the runner title that it meets resolves with the titles of
+those sites. Without the entry, the wrapper is opaque and the declaration rests on its position
+in the file alone.
 
 ## `backend`
 

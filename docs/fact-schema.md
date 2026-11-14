@@ -179,7 +179,7 @@ readable. It keeps the name-only limits, and a fresh extraction adds the provena
 | `pw_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `pw_test`: whether the test runs on a real backend, on patched responses or on a mocked backend |
 | `cypress_test` | `spec`, `test`, `skipped` | a Cypress test is declared |
 | `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL |
-| `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal argument of a configured case-id call, `table` for one row of a same-file data table the test iterates |
+| `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal first argument of a configured case-id call, `table` for one row of a same-file data table the test iterates, `unresolved` for a configured call whose first argument none of those readers resolve; an `unresolved` fact has empty `ids` and adds `expression`, the argument text |
 | `pw_title` | `spec`, `titles` | *(optional)* the titles a collector resolved for one `pw_test` declaration, one per parameter instance; its `line` is that declaration's *source* line |
 
 A `pw_request` can have four optional fields. `via: "helper"` marks a request that the test
@@ -259,14 +259,18 @@ holds it, else the line of the test's call into `via`.
 takes the kind that every repo-wide helper of that name agrees on, else `unresolved`. The field
 adds nothing to the set of `pw_stub` facts, and `cover` reads neither field.
 
-`case_id` resolves only three shapes and refuses the rest: a
+`case_id` resolves only three shapes: a
 `test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is
-a string literal, a literal argument of a configured case-id call (`caseId.calls` in the
-configuration file — an entry like `tms.id` matches `tms.id(...)` sites; none are
-configured out of the box), or a member expression whose object is the loop binding of a
-same-file `for (const row of ROWS)` over an array of object literals. A subscript, a
-computed value, a template or a cross-file table stays absent rather than being
-approximated — the id a tester pastes into a case tool is never invented.
+a string literal, a literal first argument of a configured case-id call (`caseId.calls` in the
+configuration file — an entry like `tms.id` matches `tms.id(...)` sites in a test body and a
+`tms.id(…)` wrapper in title position; none are configured out of the box), or a first
+argument that is a member expression whose object is the loop binding of a same-file
+`for (const row of ROWS)` over an array of object literals. A configured call whose first
+argument is anything else (a subscript, a computed value, a template, a cross-file table)
+gives one `unresolved` record with `ids: []` and `expression`, the argument text with its
+white space collapsed and cut at 160 characters. It is never approximated, so the id a
+tester pastes into a case tool is never invented. A reader that counts ids reads the record
+as no ids; the `span` page shows the test with no case id.
 
 `pw_title` is written by `extract` for a `playwright` repository configured `"titles": true`
 (see [configuration.md](configuration.md#playwright-titles)): Playwright's own list mode

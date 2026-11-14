@@ -12,6 +12,16 @@ Extraction:
   text and type syntax give none. Each fact names the innermost method that holds it. A fact
   set extracted again has a new facts digest, so the status identity of a walk over it and
   the identities of a `join` snapshot or edge export change with it.
+- A test that names its case id through a configured `caseId.calls` wrapper in title
+  position, such as `test(tms.id(9001, 'refunds a sale'), …)`, gets a `case_id` fact. The
+  first argument of a configured call is the case id, in title position and in a test body.
+  The second argument of a wrapper is its title. The call can span several lines.
+- A configured call whose first argument no reader resolves (an identifier, a subscript, a
+  call, a template, a conditional) gives a new `case_id` record with `source: "unresolved"`,
+  `ids: []` and `expression`, the argument text. Before, the call gave no fact.
+- Title collection holds the title of a configured wrapper to containment, not to equality.
+  Each title that the runner reports at the site must contain the title argument, so text that
+  the wrapper adds to the title no longer refuses the spec file.
 
 New command:
 
