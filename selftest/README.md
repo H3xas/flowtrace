@@ -119,6 +119,11 @@ npm test
   through the CLI, one `Web journeys AC-n:` test for each acceptance rule. `base-facts/` and
   `base-capture.json` hold what the base code wrote and printed for it. The corpus README
   lists each shape and the rule that reads it.
+- `corpus/lantern-console/`: an invented settings console with an ASP.NET Core backend, a
+  React service, an Ionic service, and Cypress suites for both clients. One app request and
+  five Cypress requests name the same route, so `cypress-evidence.test.js` can count the
+  `calls` edges and the `tests` edges apart. A second route is intercepted only by a page
+  model. The corpus README lists its files.
 - `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
   output of each corpus with backend routes, written by `node selftest/seed-goldens.js
   --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure

@@ -2,9 +2,18 @@
 
 ## Before the tag
 
-Bump `version` in `package.json`, add the `CHANGELOG.md` section and update the release named
-in `README.md` and commit them, then regenerate the worked example's pinned export from that
-clean tree:
+Do these steps in this order, each one as its own commit:
+
+1. Fold the changelog fragments. For each file under `changes/changelog/`, move each of its
+   `### <Label>` blocks under the heading of the same label in `## Unreleased` of
+   `CHANGELOG.md`, or add the heading at the end of that section when it has none. Then
+   delete the fragment files. This commit changes nothing else. Check it: `changes/changelog/`
+   holds no file, every fragment entry is in `## Unreleased` once, and
+   `node scripts/docs-check.mjs` passes.
+2. Bump `version` in `package.json` and update the release named in `README.md`. In
+   `CHANGELOG.md`, rename `## Unreleased` to the version heading, and open a new empty
+   `## Unreleased` above it.
+3. Regenerate the worked example's pinned export from that clean tree:
 
 ```sh
 cd examples/demo-shop
