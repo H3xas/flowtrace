@@ -35,3 +35,10 @@ for (const { id } of ROWS) {
     caseRef.id(id);
   });
 }
+
+for (const [mode, id] of [
+  ['open', 9231],
+  ['shut', 9232],
+] as const) {
+  test(caseRef(id, `reads a row by position ${mode}`), async () => {});
+}

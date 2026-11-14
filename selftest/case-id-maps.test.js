@@ -49,7 +49,7 @@ test('Case id maps AC-24: a two-axis loop over a same-file map gives one record 
   assert.deepEqual(caseFactsAt(facts, spec, 28), SIX, 'a forEach outer loop');
 });
 
-test('Case id maps AC-25: literal keys, ternary keys, bounded locals, array elements and destructured rows', (t) => {
+test('Case id maps AC-25: literal keys, ternary keys, bounded locals, array elements and destructured rows of both shapes', (t) => {
   const { facts } = extractLedger(t);
   const spec = 'tests/keys.spec.ts';
   const evaluated = (id, instance) => ({ ids: [id], source: 'evaluated', instance });
@@ -58,6 +58,7 @@ test('Case id maps AC-25: literal keys, ternary keys, bounded locals, array elem
   assert.deepEqual(caseFactsAt(facts, spec, 23), [evaluated(9202, { flag: false }), evaluated(9201, { flag: true })], 'a block-local const');
   assert.deepEqual(caseFactsAt(facts, spec, 29), [evaluated(9212, {})], 'an element of a same-file array');
   assert.deepEqual(caseFactsAt(facts, spec, 34), [evaluated(9221, { id: 9221 }), evaluated(9222, { id: 9222 })], 'a destructured row');
+  assert.deepEqual(caseFactsAt(facts, spec, 43), [evaluated(9231, { id: 9231 }), evaluated(9232, { id: 9232 })], 'a row read by position');
 });
 
 test('Case id maps AC-26: refusals and the instance limit give the unresolved record, and every id is in the file', (t) => {
