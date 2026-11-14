@@ -263,3 +263,93 @@ test('Backend entries AC-7: routes-of reports entries beside routes under schema
   assert.match(text.stdout, /^entries: 1 \(complete across 6 entries\)$/m);
   assert.match(text.stdout, /^hub entry DockHub\.Ping — harbor:src\/Hubs\/DockHub\.cs:\d+$/m);
 });
+
+const QUILL = ['quill-works', 'quill.config.json'];
+const QUILL_QUEUE = ['quill-works', 'quill-queue.config.json'];
+
+function viaEdges(report, via) {
+  const byId = new Map(report.nodes.map((node) => [node.id, node]));
+  return report.edges.filter((edge) => edge.via === via).map((edge) => ({ edge, from: byId.get(edge.from), to: byId.get(edge.to) }));
+}
+
+test('Backend entries AC-8: a mapper call reaches the converters, resolvers and actions its map names', (t) => {
+  const env = corpus(t, ...QUILL).extract();
+  const label = viaEdges(traceJson(env, 'POST inks/v1/label'), 'mapper').map((hop) => hop.to.ref);
+  assert.deepEqual(label, ['BatchCodeConverter.Convert', 'TintResolver.Resolve', 'LabelStamp.Process']);
+  const receipt = viaEdges(traceJson(env, 'POST inks/v1/receipt'), 'mapper').map((hop) => hop.to.ref);
+  assert.deepEqual(receipt, ['InkReceiptConverter.Convert']);
+  assert.deepEqual(viaEdges(traceJson(env, 'POST inks/v1/note'), 'mapper'), []);
+  assert.ok(!facts(env, 'quill').some((item) => item.type === 'mapper_map' && item.target === 'NoteConverter'));
+
+  const { status, report } = routesOf(env, 'InkReceiptConverter.Convert');
+  assert.equal(status, 0);
+  assert.equal(report.verdict, 'routes');
+  assert.deepEqual(report.routes.map((route) => route.key), ['POST inks/v1/receipt']);
+  assert.equal(report.routes[0].witness.hops.at(-1).via, 'mapper');
+  assert.equal(routesOf(env, 'NoteConverter.Convert').report.verdict, 'empty');
+});
+
+test('Backend entries AC-9: work handed to a queue by its delegate shape hangs under one queue node', (t) => {
+  const env = corpus(t, ...QUILL).extract();
+  const expected = { fire: 'GlazeStore.Fire', cool: 'GlazeStore.Cool', seal: 'GlazeStore.Seal' };
+  for (const [path, effect] of Object.entries(expected)) {
+    const key = `POST glazes/v1/${path}`;
+    const report = traceJson(env, key);
+    const queues = report.nodes.filter((node) => node.kind === 'queue');
+    assert.equal(queues.length, 1, key);
+    assert.equal(queues[0].ref, 'IKilnQueue.QueueWork');
+    const queued = viaEdges(report, 'queued');
+    assert.ok(queued.length > 0 && queued.every((hop) => hop.from.kind === 'queue'), key);
+    assert.ok(report.nodes.some((node) => node.ref === effect), key);
+    assert.ok(!report.nodes.some((node) => node.ref === 'KilnQueue.QueueWork' || node.ref === 'KilnWorker.ExecuteAsync'), key);
+    assert.ok(!report.status.frontier.some((entry) => entry.reason === 'provider-unavailable' && entry.target.endsWith('QueueWork')), key);
+    assert.match(traceText(env, key), /IKilnQueue\.QueueWork .*\n.*\[queued\]/);
+  }
+  const { status, report } = routesOf(env, 'GlazeController.SealLater');
+  assert.equal(status, 0);
+  assert.deepEqual(report.routes.map((route) => route.key), ['POST glazes/v1/seal']);
+  assert.ok(report.routes[0].witness.hops.some((hop) => hop.via === 'queued'));
+});
+
+test('Backend entries AC-10: a configured background call is a queue call, and without the key an ordinary call', (t) => {
+  const configured = corpus(t, ...QUILL_QUEUE).extract();
+  const report = traceJson(configured, 'POST glazes/v1/polish');
+  assert.deepEqual(report.nodes.filter((node) => node.kind === 'queue').map((node) => node.ref), ['IGlazeScheduler.Schedule']);
+  assert.ok(viaEdges(report, 'queued').some((hop) => hop.from.kind === 'queue'));
+  assert.ok(facts(configured, 'quill').some((item) => item.type === 'queue_call' && item.calledMethod === 'Schedule' && item.rule === 'config'));
+
+  const plain = corpus(t, ...QUILL).extract();
+  const ordinary = traceJson(plain, 'POST glazes/v1/polish');
+  assert.equal(ordinary.nodes.filter((node) => node.kind === 'queue').length, 0);
+  assert.deepEqual(viaEdges(ordinary, 'queued'), []);
+  assert.ok(facts(plain, 'quill').some((item) => item.type === 'method_call' && item.calledMethod === 'Schedule'));
+});
+
+test('Backend entries AC-11: each keyed collection read form reaches every implementation for a run-time key', (t) => {
+  const env = corpus(t, ...QUILL).extract();
+  const forms = facts(env, 'quill').filter((item) => item.type === 'keyed_call').map((item) => item.form).sort();
+  assert.deepEqual(forms, ['indexer', 'local', 'try-get']);
+  for (const key of ['POST finishes/v1/{kind}', 'POST finishes/v1/maybe/{kind}']) {
+    const report = traceJson(env, key);
+    const keyed = viaEdges(report, 'keyed_dispatch');
+    assert.deepEqual(keyed.map((hop) => hop.to.ref), ['GlossFinisher.Apply', 'MatteFinisher.Apply', 'TunedFinisher.Apply'], key);
+    assert.ok(keyed.every((hop) => hop.edge.inferred === true && hop.edge.key === 'kind'), key);
+    assert.ok(report.status.evidence.inferred >= 3, key);
+    assert.match(traceText(env, key), /\[keyed_dispatch\] {2}keyed kind \(inferred\)/);
+  }
+  assert.ok(!facts(env, 'quill').some((item) => item.type === 'method_call' && item.elementAccess && item.field === '_finishers'));
+  const { status, report } = routesOf(env, 'GlossFinisher.Apply');
+  assert.equal(status, 0);
+  assert.deepEqual(report.routes.map((route) => route.key), ['POST finishes/v1/*', 'POST finishes/v1/maybe/*']);
+});
+
+test('Backend entries AC-12: a constant key keeps only the matching and the unreadable implementations', (t) => {
+  const env = corpus(t, ...QUILL).extract();
+  const properties = facts(env, 'quill').filter((item) => item.type === 'key_property').map((item) => `${item.class}=${item.value}`).sort();
+  assert.deepEqual(properties, ['GlossFinisher=FinishKind.Gloss', 'MatteFinisher=FinishKind.Matte']);
+  const constant = viaEdges(traceJson(env, 'POST finishes/v1/matte'), 'keyed_dispatch');
+  assert.deepEqual(constant.map((hop) => hop.to.ref), ['MatteFinisher.Apply', 'TunedFinisher.Apply']);
+  assert.ok(constant.every((hop) => hop.edge.key === 'FinishKind.Matte'));
+  assert.equal(viaEdges(traceJson(env, 'POST finishes/v1/{kind}'), 'keyed_dispatch').length, 3);
+  assert.deepEqual(routesOf(env, 'GlossFinisher.Apply').report.routes.map((route) => route.key).includes('POST finishes/v1/matte'), false);
+});
