@@ -50,3 +50,10 @@
   declaration line of the test that holds the call, or `null` outside a test. Two tests with the
   same title in one spec now have different owner lines. Facts extracted again have a new facts
   digest, so the `trace` status identity and the export identities change once.
+- Both Cypress readers give `cypress_intercept` the optional field `handler`, with the words
+  `pw_stub` uses: `spy` for no handler, a `req.continue()` that changes nothing or a handler that
+  only reads the request; `fulfill` for a static response or a `req.reply(`; `fetch-fulfill` for
+  a `res.send(` in a `req.continue(` callback or a `response` or `before:response` listener;
+  `abort` for `req.destroy(` or `forceNetworkError`; `unresolved` for a handler the file does not
+  define or a request handed to other code. The two readers give the same word for the same
+  source.

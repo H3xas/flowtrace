@@ -311,3 +311,99 @@ test('Test evidence AC-13: a request, a stub and an intercept carry the line of 
     assert.deepEqual(tests, [4, 8], repo);
   }
 });
+
+const HANDLER_SPEC = `function replyWithItems(req) {
+  req.reply({ body: [] });
+}
+const dropRequest = (req) => req.destroy();
+
+describe('handlers', () => {
+  it('reads each handler form', () => {
+    cy.intercept('GET', '**/api/spy');
+    cy.intercept('GET', '**/api/fixture', { fixture: 'items.json' });
+    cy.intercept('**/api/text', 'plain text');
+    cy.intercept('GET', '**/api/reply', (req) => {
+      req.reply({ body: [] });
+    });
+    cy.intercept('GET', '**/api/continue-send', (req) => {
+      req.continue((res) => {
+        res.send({ body: [] });
+      });
+    });
+    cy.intercept('GET', '**/api/before-response', (req) => {
+      req.on('before:response', (res) => res.send(200));
+    });
+    cy.intercept('GET', '**/api/response', (req) => req.on('response', (res) => res.send(200)));
+    cy.intercept('GET', '**/api/continue', (req) => {
+      req.continue();
+    });
+    cy.intercept('GET', '**/api/continue-look', (req) => {
+      req.continue((res) => {
+        expect(res.statusCode).to.eq(200);
+      });
+    });
+    cy.intercept('GET', '**/api/destroy', (req) => {
+      req.destroy();
+    });
+    cy.intercept('GET', '**/api/network-error', { forceNetworkError: true });
+    cy.intercept('GET', '**/api/reply-network-error', (req) => req.reply({ forceNetworkError: true }));
+    cy.intercept('GET', '**/api/named', replyWithItems);
+    cy.intercept('GET', '**/api/named-arrow', dropRequest);
+    cy.intercept('GET', '**/api/imported', importedHandler);
+    cy.intercept('GET', '**/api/look', (req) => {
+      cy.log('forceNetworkError');
+      expect(req.body).to.exist;
+    });
+    cy.intercept('GET', '**/api/handed-on', (req) => {
+      handOff(req);
+    });
+    cy.intercept({ method: 'GET', url: '**/api/matcher' }, function (req) {
+      req.reply('ok');
+    });
+  });
+});
+`;
+
+test('Test evidence AC-10: both Cypress readers give each intercept handler form the same pw_stub handler word', (t) => {
+  const dir = writeRepo(
+    t,
+    {
+      'backend/src/Controllers/ItemController.cs': ITEMS_CONTROLLER,
+      'web/cypress/e2e/handlers.cy.ts': HANDLER_SPEC,
+      'mobile/cypress/e2e/handlers.cy.ts': HANDLER_SPEC,
+    },
+    {
+      repos: [
+        PLAYWRIGHT_REPOS.repos[0],
+        { id: 'web', kind: 'web', root: 'web', cypressSubpath: 'cypress' },
+        { id: 'mobile', kind: 'mobile', root: 'mobile' },
+      ],
+    },
+  );
+  const handlers = (repo) =>
+    extractFacts(dir, repo)
+      .filter((fact) => fact.type === 'cypress_intercept')
+      .map((fact) => [fact.pattern.replace('**/api/', ''), fact.handler]);
+  const expected = [
+    ['spy', 'spy'],
+    ['fixture', 'fulfill'],
+    ['text', 'fulfill'],
+    ['reply', 'fulfill'],
+    ['continue-send', 'fetch-fulfill'],
+    ['before-response', 'fetch-fulfill'],
+    ['response', 'fetch-fulfill'],
+    ['continue', 'spy'],
+    ['continue-look', 'spy'],
+    ['destroy', 'abort'],
+    ['network-error', 'abort'],
+    ['reply-network-error', 'abort'],
+    ['named', 'fulfill'],
+    ['named-arrow', 'abort'],
+    ['imported', 'unresolved'],
+    ['look', 'spy'],
+    ['handed-on', 'unresolved'],
+    ['matcher', 'fulfill'],
+  ];
+  assert.deepEqual(handlers('web'), expected);
+  assert.deepEqual(handlers('mobile'), expected);
+});
