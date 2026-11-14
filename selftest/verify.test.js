@@ -20,12 +20,14 @@ import {
   EXAMPLE_STEPS,
   PACKAGE_REQUIRED_FILES,
   STAGES,
+  SUITE_COMMAND,
   goldenPacketProblems,
   packageProblems,
   pickRange,
   reportFailure,
   stageFailure,
-  suiteProblems,
+  suiteFiles,
+  suiteScriptProblems,
   tapNames,
   tapSummary,
 } from '../scripts/verify.mjs';
@@ -201,16 +203,31 @@ function triggerBranches(workflow, event) {
     .filter(Boolean);
 }
 
-test('a test file the suite list omits is named, with the list as the repair', () => {
-  const problems = suiteProblems(['selftest/affected.test.js'], ['selftest/affected.test.js', 'selftest/new.test.js']);
-  assert.equal(problems.length, 1);
-  assert.match(problems[0], /selftest\/new\.test\.js exists and the "test" script in package\.json never runs it/);
+test('Repo process AC-13: the test script is the glob command and nothing else', () => {
+  assert.deepEqual(suiteScriptProblems(SUITE_COMMAND), []);
+  for (const value of [
+    'node --test selftest/affected.test.js selftest/verify.test.js',
+    "node --test 'selftest/*.test.js'",
+    'node --test --test-concurrency=1 selftest/*.test.js',
+    undefined,
+  ]) {
+    const problems = suiteScriptProblems(value);
+    assert.equal(problems.length, 1, `${value}: ${problems.join('\n')}`);
+    assert.match(problems[0], /"test" script in package\.json must be exactly "node --test selftest\/\*\.test\.js"/);
+  }
 });
 
-test('a suite entry with no file behind it is named', () => {
-  const problems = suiteProblems(['selftest/gone.test.js'], []);
-  assert.equal(problems.length, 1);
-  assert.match(problems[0], /package\.json runs selftest\/gone\.test\.js, which does not exist/);
+test('Repo process AC-13: the suite is every top-level selftest name the shell glob matches', () => {
+  assert.deepEqual(suiteFiles(['b.test.js', 'a.test.js', '.hidden.test.js', 'a.test.mjs', 'helper.js', 'corpus', 'README.md']), [
+    'selftest/a.test.js',
+    'selftest/b.test.js',
+  ]);
+});
+
+test('Repo process AC-13: package.json runs the suite by the glob', () => {
+  const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8'));
+  assert.equal(pkg.scripts.test, SUITE_COMMAND);
+  assert.equal(SUITE_COMMAND, 'node --test selftest/*.test.js');
 });
 
 test('the TAP summary is read from the lines node prints', () => {
