@@ -1299,6 +1299,7 @@ async function runExtract(config, repoFilter) {
       cypress: repo.cypress,
       srcSubpath: repo.srcSubpath,
       cypressSubpath: repo.cypressSubpath,
+      httpClients: repo.httpClients,
       caseIdCalls: config.caseId ? config.caseId.calls : [],
       backendCalls: config.backend,
       workerPatterns: config.workerPatterns,

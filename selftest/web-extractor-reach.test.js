@@ -838,3 +838,193 @@ test('Web extractor reach AC-8: a URL a helper of the file returns resolves to t
   assert.deepEqual(callsFrom(dir, 'loadHosted'), []);
   assert.equal(read('loadTail'), "/feed/${tail('items')} false", 'a helper inside a + part keeps its reading');
 });
+
+const AXIOS_SOURCES = {
+  'web/src/api/defaultImport.ts': [
+    "import http from 'axios';",
+    '',
+    'interface Item {',
+    '  id: string;',
+    '}',
+    '',
+    'export function loadA(id: string) {',
+    '  return http.get<Item>(`/shop/v1/a/${id}`);',
+    '}',
+    '',
+    'export function readUri() {',
+    '  return http.getUri({});',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/api/instance.ts': [
+    "import axios from 'axios';",
+    '',
+    "const client = axios.create({ baseURL: '/' });",
+    '',
+    'export function loadB(body: unknown) {',
+    "  return client.post('/shop/v1/b', body);",
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/api/classes.ts': [
+    "import axios, { AxiosInstance } from 'axios';",
+    '',
+    'export class FieldApi {',
+    '  private http = axios.create();',
+    '',
+    '  loadC(id: string) {',
+    '    return this.http.put(`/shop/v1/c/${id}`);',
+    '  }',
+    '}',
+    '',
+    'export class AssignedApi {',
+    '  client: AxiosInstance;',
+    '',
+    '  constructor() {',
+    '    this.client = axios.create();',
+    '  }',
+    '',
+    '  loadD(id: string) {',
+    '    return this.client.delete(`/shop/v1/d/${id}`);',
+    '  }',
+    '}',
+    '',
+    'export class TypedApi {',
+    '  constructor(private readonly api: AxiosInstance) {}',
+    '',
+    '  loadE(id: string) {',
+    '    return this.api.patch(`/shop/v1/e/${id}`, {});',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/api/negatives.ts': [
+    'const axios = { get: (url: string) => url };',
+    'const store = { get: (key: string) => key };',
+    '',
+    'export function fakeA() {',
+    "  return axios.get('/shop/v1/a/1');",
+    '}',
+    '',
+    'export function fromStore() {',
+    "  return store.get('/shop/v1/b');",
+    '}',
+    '',
+  ].join('\n'),
+  'backend/src/ShopController.cs': controller('ShopController', 'shop/v1', [
+    ['Get', 'a/{id}', 'GetA'],
+    ['Post', 'b', 'PostB'],
+    ['Put', 'c/{id}', 'PutC'],
+    ['Delete', 'd/{id}', 'DeleteD'],
+    ['Patch', 'e/{id}', 'PatchE'],
+  ]),
+};
+
+test('Web extractor reach AC-2: a call on axios or on an axios instance gives a gateway call named by its receiver', (t) => {
+  const dir = buildRepo(t, { 'flowtrace.config.json': config([WEB, BACKEND]), ...AXIOS_SOURCES });
+  extractAndJoin(dir);
+  const calls = ofType(factsOf(dir), 'gateway_call').map(
+    (entry) => `${entry.file} ${entry.service} ${entry.method} ${entry.verb} ${entry.template} ${entry.resolved}`,
+  );
+  assert.deepEqual(calls.sort(), [
+    'src/api/classes.ts api loadE PATCH /shop/v1/e/${id} true',
+    'src/api/classes.ts client loadD DELETE /shop/v1/d/${id} true',
+    'src/api/classes.ts http loadC PUT /shop/v1/c/${id} true',
+    'src/api/defaultImport.ts http loadA GET /shop/v1/a/${id} true',
+    'src/api/instance.ts client loadB POST /shop/v1/b true',
+  ], 'a non-verb member, a plain object and a local axios that is not the import give none');
+  const joined = flowOf(dir).edges.filter((edge) => edge.kind === 'calls').map((edge) => `${edge.from.ref} -> ${edge.to.ref}`).sort();
+  assert.deepEqual(joined, [
+    'api.loadE -> ShopController.PatchE',
+    'client.loadB -> ShopController.PostB',
+    'client.loadD -> ShopController.DeleteD',
+    'http.loadA -> ShopController.GetA',
+    'http.loadC -> ShopController.PutC',
+  ]);
+});
+
+const WRAPPER_SOURCES = {
+  'web/src/client/ApiClient.js': [
+    "import axios from 'axios';",
+    '',
+    'export class ApiClient {',
+    '  constructor() {',
+    "    this.http = axios.create({ baseURL: '/' });",
+    '  }',
+    '',
+    '  get(url) {',
+    '    return this.http.get(url);',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/items/itemsApi.js': [
+    'export function makeItemsApi(apiClient) {',
+    '  return async (id) => apiClient.get(`/api/v2/items/${id}`);',
+    '}',
+    '',
+    'export class ItemsStore {',
+    '  constructor(apiClient) {',
+    '    this.apiClient = apiClient;',
+    '  }',
+    '',
+    '  refresh(id) {',
+    '    return this.apiClient.get(`/api/v2/items/${id}`);',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  'backend/src/ItemsController.cs': controller('ItemsController', 'api/v2/items', [['Get', '{id}', 'GetItem']]),
+};
+
+test('Web extractor reach AC-3: a receiver the repository lists in httpClients gives a gateway call', (t) => {
+  const listed = buildRepo(t, {
+    'flowtrace.config.json': config([BACKEND, { ...WEB, httpClients: ['apiClient'] }]),
+    ...WRAPPER_SOURCES,
+  });
+  extractAndJoin(listed);
+  const read = (dir) =>
+    ofType(factsOf(dir), 'gateway_call')
+      .map((entry) => `${entry.file}:${entry.line} ${entry.service} ${entry.method} ${entry.verb} ${entry.template} ${entry.resolved}`)
+      .sort();
+  assert.deepEqual(read(listed), [
+    'src/client/ApiClient.js:9 http get GET ${url} false',
+    'src/items/itemsApi.js:11 apiClient refresh GET /api/v2/items/${id} true',
+    'src/items/itemsApi.js:2 apiClient makeItemsApi GET /api/v2/items/${id} true',
+  ]);
+  const calls = flowOf(listed).edges.filter((edge) => edge.kind === 'calls');
+  assert.deepEqual(
+    calls.map((edge) => `${edge.from.file}:${edge.from.line} ${edge.key} ${edge.to.ref}`).sort(),
+    [
+      'src/items/itemsApi.js:11 GET api/v2/items/* ItemsController.GetItem',
+      'src/items/itemsApi.js:2 GET api/v2/items/* ItemsController.GetItem',
+    ],
+    'the forwarding call inside the wrapper stays unjoined',
+  );
+
+  const unlisted = buildRepo(t, { 'flowtrace.config.json': config([BACKEND, WEB]), ...WRAPPER_SOURCES });
+  extractAndJoin(unlisted);
+  assert.deepEqual(read(unlisted), ['src/client/ApiClient.js:9 http get GET ${url} false'], 'without the key the injected receiver is unknown');
+});
+
+test('Web extractor reach AC-4: a bad httpClients value or the key off a web repository is refused', (t) => {
+  const dir = buildRepo(t, { 'web/src/a.ts': 'export const a = 1;\n' });
+  const run = (repo) => {
+    writeFileSync(join(dir, 'flowtrace.config.json'), JSON.stringify({ out: 'out', repos: [repo] }));
+    return cli(dir, ['extract']);
+  };
+  const shape = /config .*flowtrace\.config\.json: "repos\[0\]\.httpClients" must be an array of JavaScript identifier names\n/;
+  for (const value of ['apiClient', [''], ['api-client'], [3], { apiClient: true }, null, ['ok', ' padded']]) {
+    const result = run({ ...WEB, httpClients: value });
+    assert.equal(result.status, 2, JSON.stringify(value));
+    assert.match(result.stderr, shape, JSON.stringify(value));
+    assert.equal(result.stderr.match(/httpClients/g).length, 1, 'one error names the key');
+  }
+  const backend = run({ ...BACKEND, root: 'web', httpClients: ['apiClient'] });
+  assert.equal(backend.status, 2);
+  assert.match(backend.stderr, /"repos\[0\]\.httpClients" applies to a web repository only \(kind "backend"\)/);
+  for (const value of [[], ['apiClient', '$http', '_client', 'kliënt']]) {
+    const loaded = run({ ...WEB, httpClients: value });
+    assert.equal(loaded.status, 0, loaded.stderr);
+  }
+});
