@@ -17,5 +17,8 @@ namespace WidgetGate.Api.Controllers
 
         [HttpGet("parked")]
         public IActionResult Parked() => Ok();
+
+        [HttpGet("folded")]
+        public IActionResult Folded() => Ok();
     }
 }

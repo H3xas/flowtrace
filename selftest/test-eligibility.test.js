@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 import { validateConfig } from '../lib/config.js';
 import { buildEvidenceIndex, stateOf } from '../lib/cover.js';
+import { inlineFunctionBody } from '../lib/extract/text.js';
 import { validateFacts } from '../lib/facts.js';
 import { copyFixture, extract, runCli } from './helpers.js';
 
@@ -64,6 +65,62 @@ test('Test eligibility AC-27: static skips read with no value, and skipped means
   assert.deepEqual(parked('pw_backend'), [true], 'pw_backend reads it too');
   const backend = facts.filter((entry) => entry.type === 'pw_backend' && entry.spec === spec).map((entry) => entry.skipped);
   assert.deepEqual(backend, states.map(([, , skipped]) => skipped));
+});
+
+test('Test eligibility AC-27: a function-expression or expression-body describe keeps its skip', (t) => {
+  const { facts } = extractGate(t);
+  const spec = 'tests/function-callbacks.spec.ts';
+  for (const [line, label] of [
+    [4, 'a test with a destructured arrow inside test.describe.skip(..., function () {'],
+    [10, 'a test inside test.describe.fixme(..., async function parked() {'],
+    [33, 'a test that is the expression body of test.describe.skip('],
+  ]) {
+    assert.equal(stateAt(facts, spec, line).eligibility, 'static-skip', label);
+    assert.equal(stateAt(facts, spec, line).skipped, true, label);
+  }
+});
+
+test('Test eligibility AC-28: a function-expression hook, describe and test body keep their guards', (t) => {
+  const dev = extractGate(t, 'gate-dev.config.json').facts;
+  const stage = extractGate(t, 'gate-stage.config.json').facts;
+  const spec = 'tests/function-callbacks.spec.ts';
+  assert.deepEqual(guardsAt(dev, spec, 18), [[15, 'hook', false]], 'a function hook with a destructured parameter');
+  assert.equal(stateAt(dev, spec, 18).eligibility, 'eligible');
+  assert.deepEqual(guardsAt(stage, spec, 18), [[15, 'hook', true]]);
+  assert.equal(stateAt(stage, spec, 18).eligibility, 'environment-skip');
+  assert.deepEqual(
+    guardsAt(dev, spec, 26),
+    [
+      [24, 'describe', false],
+      [28, 'test', true],
+    ],
+    'a function test body whose nested arrow comes before its guard',
+  );
+  assert.equal(stateAt(dev, spec, 26).eligibility, 'environment-skip');
+  assert.deepEqual(guardsAt(stage, spec, 26), [
+    [24, 'describe', true],
+    [28, 'test', false],
+  ]);
+});
+
+test('Test eligibility AC-28: a callback body is the one after its own parameter list', () => {
+  const bodyOf = (source) => {
+    const found = inlineFunctionBody(source, 0, source.length);
+    return found && { text: source.slice(found.open, found.close + 1), expression: found.expression };
+  };
+  const brace = (text) => ({ text, expression: false });
+  assert.deepEqual(bodyOf('function () { run(() => { inner(); }); }'), brace('{ run(() => { inner(); }); }'));
+  assert.deepEqual(bodyOf('async function ({ page }) { go(); }'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('async function* named<T>(a: T): Promise<void> { go(); }'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('async ({ request }) => { go(); }'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('async ({ page }: { page: Page }): Promise<void> => { go(); }'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('(a /* => { */, b = "{") => { go(); }'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('async => { go(); }'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('row => { go(); }'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('() => test("x", () => {})'), { text: ' test("x", () => {})', expression: true });
+  for (const source of ['handler', 'make(() => {})', 'function () {', '() =>', '{ a: 1 }']) {
+    assert.equal(bodyOf(source), null, source);
+  }
 });
 
 test('Test eligibility AC-28: guards are carried to each test in their scope, and two environments differ', (t) => {
@@ -163,12 +220,14 @@ test('Test eligibility AC-31: cover counts only an eligible test as one that run
     'GET gate/v1/staged': 'route',
     'GET gate/v1/unread': 'skipped',
     'GET gate/v1/parked': 'skipped',
+    'GET gate/v1/folded': 'skipped',
   });
   assert.deepEqual(stateFor('gate-stage.config.json'), {
     'GET gate/v1/open': 'route',
     'GET gate/v1/staged': 'skipped',
     'GET gate/v1/unread': 'skipped',
     'GET gate/v1/parked': 'skipped',
+    'GET gate/v1/folded': 'skipped',
   });
 
   const route = { type: 'route', file: 'A.cs', line: 1, verb: 'GET', template: 'gate/v1/open' };
