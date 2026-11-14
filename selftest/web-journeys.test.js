@@ -3,11 +3,12 @@
  * `span --from-component` and `chains`, over the regatta-desk corpus and kite-club.
  */
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
 
+import { trace } from '../lib/trace.js';
 import { REPO_ROOT, runCli } from './helpers.js';
 
 const CORPUS = join(REPO_ROOT, 'selftest', 'corpus');
@@ -185,4 +186,78 @@ test('Web journeys AC-7: tied candidates of two route trees exit 2 with both can
     assert.equal(document.reason, 'ambiguous');
     assert.deepEqual(document.candidates, CANDIDATES.map((line) => line.trim()));
   }
+});
+
+/** The fact sets one extracted copy wrote, as the walk reads them. */
+function factSetsOf(dir) {
+  const folder = join(dir, 'out', 'facts');
+  return readdirSync(folder)
+    .filter((name) => name.endsWith('.json'))
+    .sort()
+    .map((name) => JSON.parse(readFileSync(join(folder, name), 'utf8')));
+}
+
+const routeRefs = (nodes) => nodes.filter((node) => node.kind === 'route').map((node) => `${node.ref} ${node.via}`).sort();
+
+/** The page hops of every chain that climbs through `component`. */
+function chainPages(dir, keys, component) {
+  const pages = new Set();
+  for (const key of keys) {
+    for (const chain of json(dir, REGATTA[1], ['chains', key]).chains) {
+      if (!chain.page || !chain.hops.some((hop) => hop.component === component || hop.to === component || hop.class === component)) continue;
+      for (const entry of chain.page.paths) pages.add(`page ${entry.path} ${chain.page.file}:${chain.page.line} ${entry.host}`);
+    }
+  }
+  return [...pages].sort();
+}
+
+test('Web journeys AC-8: a component start lists its pages as mount hops', () => {
+  const dir = fixture(...REGATTA);
+  for (const [component, keys, page] of [
+    ['CrewRoster', ['GET crews/v1/{id}'], 'page /crews/:crewId src/app.tsx:19 declared'],
+    ['SignupPanel', ['GET crews/v1/signups'], 'page /crews/:crewId src/app.tsx:19 declared'],
+    ['BoatList', ['POST boats/v1/{id}/pick'], 'page /boats src/app.tsx:20 declared'],
+    ['BoatRow', ['POST boats/v1/{id}/inspect'], 'page /boats src/app.tsx:20 declared'],
+  ]) {
+    const [path, site, host] = page.slice('page '.length).split(' ');
+    const text = cli(dir, REGATTA[1], ['trace', component]);
+    assert.equal(text.status, 0, text.stderr);
+    assert.ok(text.stdout.includes(`─ page ${path}  web  ${site}  [mount]  ${host}\n`), `${component}:\n${text.stdout}`);
+    const model = json(dir, REGATTA[1], ['trace', component]);
+    const hops = model.nodes
+      .filter((node) => node.kind === 'mount' && node.segment === 'page')
+      .map((node) => `${node.ref} ${node.file}:${node.line} ${node.source}`);
+    assert.deepEqual(hops, [page], component);
+    assert.deepEqual(
+      model.root.pages.pages.flatMap((entry) => entry.paths.map((one) => `page ${one.path} ${entry.file}:${entry.line} ${one.host}`)),
+      [page],
+    );
+    assert.deepEqual(model.root.pages.reasons, []);
+    assert.equal(model.root.mount, undefined);
+    assert.deepEqual(chainPages(dir, keys, component), [page], `${component}: the page hops of chains`);
+  }
+});
+
+test('Web journeys AC-9: a component with no page or with tied pages says so, and its routes stay', () => {
+  const dir = fixture(...REGATTA);
+  const sets = factSetsOf(dir);
+  for (const [component, line, reason] of [
+    ['DriftNotice', '─ no-page DriftNotice  web  src/marks/DriftNotice.tsx:9  [mount]', { reason: 'no-page', repo: 'web', file: 'src/marks/DriftNotice.tsx', line: 9, ref: 'DriftNotice' }],
+    [
+      'MarkBoard',
+      '─ page-ambiguous App -> MarkBoard  web  src/app.tsx:21  [mount]  candidates src/app.tsx:21:7, src/app.tsx:21:83',
+      { reason: 'page-ambiguous', repo: 'web', file: 'src/app.tsx', line: 21, ref: 'App -> MarkBoard', candidates: ['src/app.tsx:21:7', 'src/app.tsx:21:83'] },
+    ],
+  ]) {
+    const text = cli(dir, REGATTA[1], ['trace', component]);
+    assert.equal(text.status, 0, text.stderr);
+    assert.ok(text.stdout.includes(`${line}\n`), `${component}:\n${text.stdout}`);
+    const model = json(dir, REGATTA[1], ['trace', component]);
+    assert.deepEqual(model.root.pages, { pages: [], reasons: [reason] });
+    const without = trace(sets, component, {});
+    assert.deepEqual(routeRefs(model.nodes), routeRefs(without.nodes), `${component}: the routes of the walk without pages`);
+    assert.deepEqual(model.status.frontier, without.status.frontier);
+  }
+  const chains = json(dir, REGATTA[1], ['chains', 'GET marks/v1/{id}']);
+  assert.ok(chains.chains.some((chain) => chain.gaps.includes('no-page') && chain.hops[0].component === 'DriftNotice'));
 });

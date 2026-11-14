@@ -23,6 +23,7 @@ import * as calibrateModule from '../lib/calibrate.js';
 import * as casesModule from '../lib/cases.js';
 import * as chainsModule from '../lib/chains.js';
 import * as checkModule from '../lib/check.js';
+import * as componentPagesModule from '../lib/component-pages.js';
 import * as componentSpanModule from '../lib/component-span.js';
 import * as coverModule from '../lib/cover.js';
 import * as decisionsModule from '../lib/decisions.js';
@@ -1625,6 +1626,8 @@ function traceNodeFields(node) {
     'rejectForm',
     'statusReason',
     'statusVia',
+    'pages',
+    'pageGap',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }
@@ -1756,6 +1759,11 @@ async function runTrace(config, options) {
   const resolved = resolveStart(factSets, options.start, { repo: options.repo, repos: config.repos, strictComponentNames: true });
   if (resolved.candidates || resolved.error) return reportLookupFailure(options, lookupFailure(options.start, resolved));
   const inventory = !options.expand && INVENTORY_KINDS.has(resolved.node.kind);
+  // The pages of a start named by its component; a URL start already states its page.
+  const pages =
+    options.fromHandler || resolved.node.mount
+      ? null
+      : componentPagesModule.pagesOf(factSets, resolved.node, { index: resolved.index, repos: config.repos });
   const result = trace(factSets, options.start, {
     ...shared,
     index: resolved.index,
@@ -1763,6 +1771,7 @@ async function runTrace(config, options) {
     seeds: options.seeds,
     inventory,
     fromHandler: options.fromHandler,
+    pages,
   });
   markProviderHops(result, factSets);
   if (result.fromHandlerCandidates) {
