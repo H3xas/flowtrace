@@ -336,8 +336,8 @@ test('Mobile sites and starts AC-6: each --repo start resolves, and the mobile w
   assert.equal(route.ref, 'GET nursery/v1/plots/*/summary');
 });
 
-test('Mobile sites and starts AC-6: a static call from a page method is followed in trace and in span --from-component', () => {
-  const { json } = helperPack();
+test('Mobile sites and starts AC-6: a static call from a page method is followed in trace, in its source-flow view and in span --from-component', () => {
+  const { json, cli } = helperPack();
   const walk = json(['trace', 'PlotDetailPage', '--expand', '--from-handler', 'onAudit']);
   const byId = new Map(walk.nodes.map((node) => [node.id, node]));
   const helper = walk.nodes.find((node) => node.ref === 'BedRules' && node.via === 'static');
@@ -345,6 +345,9 @@ test('Mobile sites and starts AC-6: a static call from a page method is followed
   assert.equal(helper.file, 'src/app/features/plots/bed-rules.ts');
   const audit = walk.edges.filter((edge) => edge.from === helper.id).map((edge) => byId.get(edge.to));
   assert.deepEqual(audit.map((node) => node.ref), ['BedRules.audit']);
+  const flow = cli(['trace', 'PlotDetailPage', '--expand', '--from-handler', 'onAudit', '--view', 'source-flow']);
+  assert.equal(flow.status, 0, flow.stderr);
+  assert.match(flow.stdout, /plot-detail\.page\.ts:\d+ → BedRules\.audit {2}mobile {2}src\/app\/features\/plots\/bed-rules\.ts:\d+/);
   const model = json(['span', '--from-component', 'PlotDetailPage']);
   const entry = entryOf(model, 'onAudit');
   const arms = model.unresolved.filter((arm) => arm.entry === entry.identity.id);
@@ -355,6 +358,44 @@ test('Mobile sites and starts AC-6: a static call from a page method is followed
     ['method', 'BedRules.audit', 'body'],
     ['class', 'Tally', 'static'],
   ]);
+});
+
+test('Mobile sites and starts AC-6: a static call back into a class on the path keeps the body that makes it in the source-flow view', () => {
+  const { cli } = nursery({
+    [`${PLOTS}/ping.ts`]: [
+      "import { Pong } from './pong';",
+      '',
+      'export class Ping {',
+      '  static go(plotId: string) {',
+      '    return Pong.back(plotId);',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    [`${PLOTS}/pong.ts`]: [
+      "import { Ping } from './ping';",
+      '',
+      'export class Pong {',
+      '  static back(plotId: string) {',
+      '    return Ping.go(plotId);',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+    [`${PLOTS}/plot-detail.page.ts`]: (text) =>
+      text
+        .replace("import { PlotService } from './plot.service';", "import { PlotService } from './plot.service';\nimport { Ping } from './ping';")
+        .replace('  onPin() {', '  onRally() {\n    Ping.go(this.plotId);\n  }\n\n  onPin() {'),
+    [PAGE_HTML]: (text) =>
+      text.replace(
+        '  <ion-button (click)="onPin()">Pin</ion-button>',
+        '  <ion-button (click)="onPin()">Pin</ion-button>\n  <ion-button (click)="onRally()">Rally</ion-button>',
+      ),
+  });
+  const flow = cli(['trace', 'PlotDetailPage', '--expand', '--from-handler', 'onRally', '--view', 'source-flow']);
+  assert.equal(flow.status, 0, flow.stderr);
+  assert.match(flow.stdout, /ping\.ts:\d+ → Pong\.back {2}mobile {2}src\/app\/features\/plots\/pong\.ts:\d+/);
+  assert.match(flow.stdout, /pong\.ts:\d+ → .*stop: cycle-guard/);
 });
 
 test('Mobile sites and starts AC-6: a static call to a relative module with no such class is one refusal arm that enters no same-named class', () => {
