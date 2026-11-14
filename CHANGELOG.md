@@ -4,7 +4,7 @@ Semantic versioning from `0.x`: the CLI surface may still change between minor v
 
 ## Unreleased
 
-Extraction:
+### Extraction
 
 - A `web` or `mobile` repository writes one `branch_point` fact for each decision inside a
   method body: `if`, `else`, `switch`, `case`, `ternary`, `logical` (an outermost `&&` or `||`
@@ -55,7 +55,7 @@ Reports:
 - The `span` page shows an unresolved case id as `case id not read: <expression>`, so a test
   that names a case id is never shown with no case id.
 
-New command:
+### New command
 
 - `decisions --revs <sha>[,<sha>...]` lists each method that holds a line the revisions
   changed, as `git blame` at the fact set's `headSha` reads it, and each decision of that
@@ -63,7 +63,7 @@ New command:
   holds, files that no fact covers and lines that a later revision replaced or deleted are
   listed too. `--json` writes the document with `schemaVersion: 1` and no timestamp.
 
-Runtime coverage:
+### Runtime coverage
 
 - `cover --runtime` joins web and mobile decisions to line coverage as it joins backend
   decisions. A `ternary`, `logical` or `coalesce` decision reads `undecidable` once its lines
@@ -71,7 +71,7 @@ Runtime coverage:
   repository whose files no snapshot covers is skipped, with one warning when it holds
   decisions. Seed proofs read backend decisions only, as before.
 
-The walk:
+### The walk
 
 - `trace` and every reader of its index read backend decisions only, so caller decisions do
   not change a walk.
@@ -89,7 +89,7 @@ Release pipeline only. The CLI and the npm package do not change.
 
 ## 0.5.0
 
-Extraction:
+### Extraction
 
 - A `playwright` repository writes one `pw_backend` fact for each `pw_test`. Its class is
   `real`, `patched` or `mocked`. If the reader cannot tell, the class is `unknown` with a
@@ -105,7 +105,7 @@ Extraction:
   `abort`, `spy` or `unresolved`). The set of `pw_stub` facts and the `cover` output do not
   change.
 
-Pipeline, sentinel and filter outcomes:
+### Pipeline, sentinel and filter outcomes
 
 - `trace --seeds`, `span` and `cover` list each refusal of a backend pipeline step as its own
   fault outcome, with its status and file:line. A refusal is a stop-flag write, a `false` or
@@ -142,7 +142,7 @@ Pipeline, sentinel and filter outcomes:
   walk gives the earlier tree, and each pipeline loop shows `composition-not-extracted`. Run
   `extract` again for the new outcomes, then write the `check` baseline again.
 
-Worked example:
+### Worked example
 
 - `examples/demo-shop/e2e/ui/storefront.pw.ts` adds a UI spec with a hook that patches the
   catalog response and a block on the live catalog.
@@ -161,7 +161,7 @@ Worked example:
   the written packet of its route. A golden packet that differs, a route with no packet on one
   side, or a packet that cannot be read or paired fails the stage.
 
-Component span:
+### Component span
 
 - `span --from-component` accepts a mobile (Ionic) component, page or service and writes the
   same page and `--json` model as for a web one. A mobile name no longer exits `2` with a
@@ -184,7 +184,7 @@ Component span:
 The first 0.4 release. The `v0.4.0` tag was created in error on the 0.3.0 tree and was never
 published to npm.
 
-Provenance:
+### Provenance
 
 - A fact set's identity in a snapshot and an edge export now carries its facts provider:
   producer, version, merge mode, counts, comparison and a digest of the provider's own facts.
@@ -201,7 +201,7 @@ Provenance:
   so a fact set in the envelope never reads as a witness for edges it did not produce. The
   record shape and `schemaVersion` 1 are unchanged.
 
-Worked example:
+### Worked example
 
 - `examples/demo-shop` gains a second backend (`stock`) and a web client with a Cypress suite
   (`shopfront`), so the pinned edge export carries `calls`, `tests`, `publishes` and
@@ -213,7 +213,7 @@ Worked example:
   canonical structural and provenance equality against the pinned copy, and literal byte
   equality of two exports within one checkout.
 
-Extraction:
+### Extraction
 
 - Playwright declaration counting no longer mistakes two other constructs for a test. A
   `test.skip(condition, reason)` guard written inside a test body was counted as a declaration
@@ -245,7 +245,7 @@ Extraction:
 
 ## 0.3.0
 
-Gates:
+### Gates
 
 - `join --against` no longer passes a comparison it never ran: under `--fail-on`, a non-empty
   `skipped` set exits `5`, because a boundary that was never compared is not evidence that the
@@ -257,7 +257,7 @@ Gates:
 - The worked example now pins a public `flowtrace-edges` export, so a change to the export shape
   is caught by the example's own check rather than by a consumer.
 
-Index adapter:
+### Index adapter
 
 - Every edge kind the graph declares is read, instead of a frozen three. A graph that gains a
   kind is no longer silently narrowed on the way in.
@@ -267,7 +267,7 @@ Index adapter:
   against the changed shape. A bare namespace import stays visible in the counts but never
   selects a class on its own.
 
-Repository:
+### Repository
 
 - CI guards comment hygiene on every run and requires a signed-off commit.
 
@@ -275,7 +275,7 @@ Repository:
 
 Dual-licensed MIT OR Apache-2.0.
 
-New verbs:
+### New verbs
 
 - `scope --area <file|name>` — the area's whole route universe before an edit: one line per
   route, an `automation: yes|no` flag from `cover`'s executing-evidence state, and the
@@ -297,7 +297,7 @@ New verbs:
 - `join --export-edges <file>` — the joined cross-repo edges in one versioned, provenance-tagged
   file a code index can import, byte-identical over unchanged facts.
 
-Extraction:
+### Extraction
 
 - Message consumers are read off the parsed class declaration, so a C# 12 primary constructor, a
   consumer base anywhere in the base list and several `IConsumer<T>` interfaces on one class all
@@ -320,13 +320,13 @@ Extraction:
   route's action, its injected parameters are that action's fields, and its body owns the branches,
   calls and publishes. A method-group handler is walked as the method it names.
 
-Walk:
+### Walk
 
 - A consumer reached over a publish hop is entered through the method whose parameter carries the
   message it consumes, falling back to a verb list that now includes a job consumer's `Run`. A
   consumer that matches neither is marked `unresolved` rather than entered through a guess.
 
-Facts:
+### Facts
 
 - A repository may name one external fact provider — a file or a command. Its document is validated
   against the schema, every fact it supplies is stamped with its producer, and the two sources are
@@ -337,7 +337,7 @@ Facts:
   the warnings and their kinds in `--json`; `check` refuses both, because a gate compares against a
   committed baseline.
 
-Fixes:
+### Fixes
 
 - The configuration validator accepts the two `scaffold` fields the scaffold already read and
   defaulted, `poll` and `importAliases.caseId`, so a reporter-calling placeholder can compile.
