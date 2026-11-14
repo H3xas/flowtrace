@@ -98,3 +98,24 @@ export function loadThenAll(ferryId: string, routes: string[]) {
   return httpClient.getGatewayClient().get(`/tidewater/v1/ferries/${ferryId}/route`)
     .then(() => Promise.all([loadRoute(routes[0]), loadRoute(routes[1])]));
 }
+
+export function loadGatewayAllCatch(ferryId: string) {
+  return Promise.all([
+    httpClient.getGatewayClient().get(`/tidewater/v1/ferries/${ferryId}/identity`),
+    httpClient.getGatewayClient().get(`/tidewater/v1/ferries/${ferryId}/route`),
+  ]).then(() => noticeShown('loaded')).catch(() => noticeShown('failed'));
+}
+
+export function loadAllNested(routes: string[]) {
+  return Promise.all([loadRoute(routes[0]), loadRoute(routes[1])])
+    .then(() => Promise.allSettled([loadRoute(routes[2]), loadRoute(routes[3])])
+      .then(() => noticeShown('nested-loaded'))
+      .catch(() => noticeShown('nested-failed')));
+}
+
+export function loadRouteThenCatch(routeId: string) {
+  httpClient.getGatewayClient().get(`/tidewater/v1/ferries/${routeId}/identity`);
+  return loadRoute(routeId)
+    .then(() => noticeShown('route-loaded'))
+    .catch(() => noticeShown('route-failed'));
+}

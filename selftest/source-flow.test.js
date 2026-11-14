@@ -294,13 +294,38 @@ test('Source flow AC-4: every C# and web call carries a column and its control e
     assert.ok(calls.length > 0, `${repo} has calls`);
     for (const fact of calls) {
       assert.ok(Number.isInteger(fact.column) && fact.column > 0, `${repo} ${fact.file}:${fact.line} column`);
-      // The web extractor files the arrows of a module-level object under one made-up body.
-      // Those calls are not one sequence, so they keep no control evidence and read as
-      // unknown order.
-      if (repo === 'web' && fact.file === 'src/http/httpClient.ts') assert.equal(fact.control, null);
-      else assert.ok(fact.control && Array.isArray(fact.control.path), `${repo} ${fact.file}:${fact.line} control`);
+      assert.ok(fact.control && Array.isArray(fact.control.path), `${repo} ${fact.file}:${fact.line} control`);
     }
   }
+
+  // The functions of a module-level object are filed under one module body. Each one runs
+  // when something calls it, so each is a callback with unknown scheduling, never one
+  // sequence with its siblings.
+  const gateway = json(env, 'HttpClient.HttpClient', ['--view', 'source-flow']).sourceFlow;
+  assert.ok(!allSteps(gateway).some((step) => step.kind === 'unordered'), 'the module body is read');
+  const members = gateway.root.body.steps.filter((step) => step.kind === 'callback');
+  assert.equal(members.length, 2, 'get and post are two callbacks');
+  for (const member of members) {
+    assert.equal(member.scheduling, 'unknown');
+    assert.deepEqual(member.steps.map((step) => step.kind), ['invocation']);
+  }
+
+  // A member written as an async block keeps its guard and its awaits.
+  const client = join(env.dir, 'web', 'src', 'http', 'httpClient.ts');
+  writeFileSync(
+    client,
+    readFileSync(client, 'utf8').replace(
+      "get: (url: string) => request('GET', url),",
+      "get: async (url: string) => {\n    if (url) await request('HEAD', url);\n    return await request('GET', url);\n  },",
+    ),
+  );
+  assert.equal(env.cli(['extract']).status, 0);
+  const blockMember = json(env, 'HttpClient.HttpClient', ['--view', 'source-flow']).sourceFlow.root.body.steps.find(
+    (step) => step.kind === 'callback',
+  );
+  assert.deepEqual(blockMember.steps.map((step) => step.kind), ['branch', 'invocation']);
+  assert.equal(blockMember.steps[0].arms[0].steps[0].await, true);
+  assert.equal(blockMember.steps[1].await, true);
 
   // The body of a minimal-API route lambda is a body like any other: its calls carry
   // control evidence, so the guard and the awaits place them.
@@ -487,6 +512,39 @@ test('Source flow AC-7: the C# control forms keep their shape and never read as 
   assert.deepEqual(collectedJoin.tasks, added.map((step) => step.id));
   assert.ok(added.every((step) => step.task.local === 'pending' && step.task.join === collectedJoin.id));
 
+  // A join waits on the value a local holds when the join runs: an overwritten task is
+  // launched and not joined.
+  const replaced = forms('TerminalForms.ReplacedTask');
+  const replacedJoin = replaced.find((step) => step.kind === 'join');
+  const [overwritten, current] = replaced.filter((step) => step.kind === 'invocation');
+  assert.deepEqual(replacedJoin.tasks, [current.id]);
+  assert.deepEqual([overwritten.task.local, overwritten.task.join], ['pending', null], 'the overwritten task is not joined');
+  assert.equal(current.task.join, replacedJoin.id);
+
+  // A value assigned in one arm may or may not replace the one before it, so the join
+  // names both.
+  const inArm = forms('TerminalForms.ReplacedInArm');
+  const inArmJoin = inArm.find((step) => step.kind === 'join');
+  const inArmLaunches = inArm.filter((step) => step.kind === 'invocation');
+  assert.equal(inArmLaunches.length, 2);
+  assert.deepEqual(inArmJoin.tasks, inArmLaunches.map((step) => step.id));
+
+  // A task held in a local and then added to a collection joins where the collection is named.
+  const collectedLater = forms('TerminalForms.CollectedLaterTask');
+  const collectedLaterJoin = collectedLater.find((step) => step.kind === 'join');
+  assert.ok(collectedLaterJoin, 'the collection join is a join');
+  assert.equal(collectedLaterJoin.form, 'Task.WhenAll');
+  const collectedLaunch = collectedLater.find((step) => step.kind === 'invocation');
+  assert.deepEqual(collectedLaterJoin.tasks, [collectedLaunch.id]);
+  assert.equal(collectedLaunch.task.join, collectedLaterJoin.id);
+
+  // An operand that is no call fact, such as a delay, is no task the join can name.
+  const delayed = forms('TerminalForms.DelayedJoin');
+  assert.ok(!delayed.some((step) => step.kind === 'unordered'), 'the body is read');
+  const delayedJoin = delayed.find((step) => step.kind === 'join');
+  assert.deepEqual(delayedJoin.tasks, delayed.filter((step) => step.kind === 'invocation' && step.task).map((step) => step.id));
+  assert.equal(delayedJoin.tasks.length, 1);
+
   assert.ok(!JSON.stringify({ guard, switchy, tried, conditional, loops, concurrent, callbacks }).includes('"totalOrder"'));
 });
 
@@ -555,6 +613,27 @@ test('Source flow AC-8: the web control forms keep their shape and name the asyn
   const gateway = invocations(fallback)[0];
   assert.deepEqual(gateway.continuations.map((entry) => entry.outcome), ['success', 'failure']);
 
+  // A `.catch` chained after a `.then` answers the same base: the join, or the call.
+  const allCatch = json(env, 'Boarding.loadGatewayAllCatch', ['--view', 'source-flow']).sourceFlow;
+  assert.ok(!allSteps(allCatch).some((step) => step.kind === 'unordered'), 'every continuation finds its join');
+  const allCatchJoin = allCatch.root.body.steps.find((step) => step.kind === 'join');
+  assert.deepEqual(allCatchJoin.continuations.map((entry) => entry.outcome), ['success', 'failure']);
+  assert.ok(!invocations(allCatch).some((step) => step.continuations), 'no request owns the join continuation');
+
+  const nestedAll = json(env, 'Boarding.loadAllNested', ['--view', 'source-flow']).sourceFlow;
+  assert.ok(!allSteps(nestedAll).some((step) => step.kind === 'unordered'), 'every nested continuation finds its join');
+  const outerJoin = nestedAll.root.body.steps.find((step) => step.kind === 'join');
+  assert.deepEqual(outerJoin.continuations.map((entry) => entry.outcome), ['success']);
+  const innerJoin = outerJoin.continuations[0].steps.find((step) => step.kind === 'join');
+  assert.equal(innerJoin.form, 'Promise.allSettled');
+  assert.deepEqual(innerJoin.continuations.map((entry) => entry.outcome), ['success', 'failure']);
+
+  const thenCatch = json(env, 'Boarding.loadRouteThenCatch', ['--view', 'source-flow']).sourceFlow;
+  const [earlier, base] = thenCatch.root.body.steps.filter((step) => step.kind === 'invocation');
+  assert.equal(earlier.continuations, undefined, 'an earlier request does not own a later chain');
+  assert.equal(base.declaration.ref, 'Boarding.loadRoute');
+  assert.deepEqual(base.continuations.map((entry) => entry.outcome), ['success', 'failure']);
+
   const race = forms('Boarding.loadFirst').find((step) => step.kind === 'unordered');
   assert.equal(race.reason, 'async-form');
   assert.equal(race.form, 'Promise.race');
@@ -618,6 +697,58 @@ test('Source flow AC-9: a body the facts cannot place is an unknown-order group 
   const disagreeingGroup = allSteps(disagreeing.sourceFlow).find((step) => step.kind === 'unordered' && step.reason === 'control-evidence-unreadable');
   assert.ok(disagreeingGroup, 'one join id with two descriptions makes the body unknown order');
   assert.match(disagreeingGroup.detail, /one join id/);
+
+  // A join that names a task no call of the body carries, beside one it does carry.
+  const strayTask = JSON.parse(JSON.stringify(original));
+  const strayLaunch = strayTask.facts.find((fact) => fact.type === 'method_call' && fact.method === 'JoinLater' && fact.control && fact.control.task);
+  strayLaunch.control.task.join.tasks = [strayLaunch.control.task.id, '999:1'];
+  writeFileSync(file, `${JSON.stringify(strayTask, null, 2)}\n`);
+  const strayGroup = allSteps(json(env, 'TerminalForms.JoinLater', ['--view', 'source-flow']).sourceFlow).find(
+    (step) => step.kind === 'unordered' && step.reason === 'control-evidence-unreadable',
+  );
+  assert.ok(strayGroup, 'a join that names an unknown task makes the body unknown order');
+  assert.match(strayGroup.detail, /no call of the body carries/);
+
+  // A join of a form the vocabulary does not hold.
+  const oddJoin = JSON.parse(JSON.stringify(original));
+  oddJoin.facts.find((fact) => fact.type === 'method_call' && fact.method === 'JoinLater' && fact.control && fact.control.task).control.task.join.form = 'Task.WhenSome';
+  writeFileSync(file, `${JSON.stringify(oddJoin, null, 2)}\n`);
+  assert.ok(
+    allSteps(json(env, 'TerminalForms.JoinLater', ['--view', 'source-flow']).sourceFlow).some(
+      (step) => step.kind === 'unordered' && step.reason === 'control-evidence-unreadable',
+    ),
+    'an unknown join form makes the body unknown order',
+  );
+  writeFileSync(file, JSON.stringify(original));
+
+  // A continuation that names no request it answers, or names it twice in two ways.
+  const webFile = join(env.dir, 'out', 'facts', 'web.json');
+  const web = JSON.parse(readFileSync(webFile, 'utf8'));
+  const continued = (set) => set.facts.filter((fact) => fact.method === 'loadWithFallback' && fact.control && fact.control.path.some((frame) => frame.kind === 'continuation'));
+  const frameOf = (fact) => fact.control.path.find((frame) => frame.kind === 'continuation');
+  for (const [label, edit] of [
+    ['no of', (copy) => continued(copy).forEach((fact) => delete frameOf(fact).of)],
+    ['of with no line', (copy) => continued(copy).forEach((fact) => (frameOf(fact).of = { column: 3 }))],
+    [
+      'of named two ways',
+      (copy) => {
+        // A second call in the same continuation that names another request for it.
+        const twin = JSON.parse(JSON.stringify(continued(copy)[0]));
+        frameOf(twin).of = { line: 1, column: 1 };
+        copy.facts.push({ ...twin, column: twin.column + 1 });
+      },
+    ],
+  ]) {
+    const copy = JSON.parse(JSON.stringify(web));
+    assert.ok(continued(copy).length > 0, 'the fallback chain has continuation calls');
+    edit(copy);
+    writeFileSync(webFile, JSON.stringify(copy));
+    const result = env.cli(['trace', 'Boarding.loadWithFallback', '--json', '--view', 'source-flow']);
+    assert.equal(result.status, 0, `${label}: ${result.stderr}`);
+    const group = allSteps(JSON.parse(result.stdout).sourceFlow).find((step) => step.kind === 'unordered' && step.reason === 'control-evidence-unreadable');
+    assert.ok(group, `${label}: the body is unknown order`);
+  }
+  writeFileSync(webFile, JSON.stringify(web));
 
   // A provider fact in the same body.
   const provided = {
@@ -836,4 +967,5 @@ test('Source flow AC-12: the site comes first and the limits stay visible', (t) 
 
   const shallow = json(env, 'BoardingService.CheckInAsync', ['--view', 'source-flow', '--depth', '1']);
   assert.ok(shallow.sourceFlow.frontier.some((stop) => stop.reason === 'depth'));
+
 });

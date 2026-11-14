@@ -229,6 +229,38 @@ namespace Tidewater.Ferry.Services
             await Task.WhenAll(pending);
         }
 
+        public async Task ReplacedTask(PassengerRequest request)
+        {
+            Task<PassengerIdentity> pending;
+            pending = _access.ResolveIdentityAsync(request);
+            pending = _access.ReadIdentityAsync(request);
+            await pending;
+        }
+
+        public async Task ReplacedInArm(PassengerRequest request, bool permit)
+        {
+            var pending = _access.ResolveIdentityAsync(request);
+            if (permit)
+            {
+                pending = _access.ReadIdentityAsync(request);
+            }
+            await pending;
+        }
+
+        public async Task CollectedLaterTask(PassengerRequest request)
+        {
+            Task<PassengerIdentity> pending;
+            var tasks = new List<Task>();
+            pending = _access.ResolveIdentityAsync(request);
+            tasks.Add(pending);
+            await Task.WhenAll(tasks);
+        }
+
+        public async Task DelayedJoin(PassengerRequest request)
+        {
+            await Task.WhenAll(Task.Delay(10), _access.ResolveIdentityAsync(request));
+        }
+
         private void RunLater(Action work)
         {
             work();
