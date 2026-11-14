@@ -72,3 +72,16 @@
   `realism`, with counts for executing and skipped entries apart and the entries themselves, and
   `--json` gets a `realism` total. The text and Markdown reports show a realism line for each
   route with named evidence. The route state, levels, evidence counts and parity do not change.
+- `extract` reads page visits. A `page.goto(` call gives a `pw_visit` fact and a `cy.visit(`
+  call gives a `cypress_visit` fact, with `spec`, `test`, `testLine`, `path`, `skipped` and
+  `where`. They are read from the regions that decide the backend class of the test: its body,
+  its hooks, and the functions and Cypress commands those call. A path that is not a string
+  literal gives `path: null` and `reason: "not-literal"`.
+- `cover` shows the inferred page reach of each route. A visit path loses its origin, query and
+  fragment, and then matches a page path by the route comparator. A page also answers under the
+  app-root mount of its repository, and a trailing `*` takes the rest of the path. Each route
+  gets `pageReach`: the tests by backend class that visit a page whose page walk reaches the
+  route, with executing and skipped tests apart. `notes.visits` counts the visits that matched,
+  matched no page, matched two pages of equal rank, or could not be read. The text and Markdown
+  reports label the line as inferred. Page reach is not named evidence, so the route state,
+  levels, evidence counts and parity do not change.
