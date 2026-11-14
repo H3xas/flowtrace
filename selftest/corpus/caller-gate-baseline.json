@@ -1,0 +1,744 @@
+{
+  "demo-shop/flowtrace.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "d4320ac165528d0b1cae28e62e5c588c04163948"
+    },
+    "e2e.json": {
+      "kind": "playwright",
+      "sha1": "f86d6c490f9f3ae85d0d1e93375173a63c4a868a"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "a588da1bac1a66bc6aa08b4a8b2649fed4b3607b",
+      "branchPoints": []
+    },
+    "shopfront.json": {
+      "kind": "web",
+      "sha1": "bd524681433af6aae7d1766f717406a069970033",
+      "branchPoints": []
+    },
+    "stock.json": {
+      "kind": "backend",
+      "sha1": "17934dbda111d7c018d438b7f4ba0b3c747cb3f7"
+    }
+  },
+  "greenhouse-alerts/greenhouse.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "e59fe9742b4de055a1e2dd4962b9871fe1ec2ca5"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "5789003f1cea29e68c5c9543a096773d3daf90c5",
+      "branchPoints": [
+        [
+          "src/actions/primaryZone.ts",
+          12,
+          14,
+          "PrimaryZone.loadPrimaryZone",
+          "if",
+          "if (growers.length > 0)"
+        ],
+        [
+          "src/actions/watchers.ts",
+          18,
+          21,
+          "Watchers.saveWatchers",
+          "if",
+          "if (!response.stored)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ],
+        [
+          "src/zones/ZoneOverviewPanel.tsx",
+          16,
+          18,
+          "ZoneOverviewPanel.componentDidMount",
+          "if",
+          "if (this.props.zoneId)"
+        ],
+        [
+          "src/zones/ZonesLandingPanel.tsx",
+          14,
+          16,
+          "ZonesLandingPanel.componentDidMount",
+          "if",
+          "if (this.props.growerId)"
+        ]
+      ]
+    }
+  },
+  "kiln-yard/kiln.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "d57bb7d441679ddaefa5795c67148f5179b41a58"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "972d099c462f44d51777e07d3beceb2405c6435d",
+      "branchPoints": [
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          9,
+          11,
+          "DecisionForms.branches",
+          "if",
+          "if (entry.open)"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          11,
+          13,
+          "DecisionForms.branches",
+          "else",
+          "else if (mode === 'all')"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          11,
+          13,
+          "DecisionForms.branches",
+          "if",
+          "if (mode === 'all')"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          13,
+          15,
+          "DecisionForms.branches",
+          "else",
+          "else"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          19,
+          19,
+          "DecisionForms.single",
+          "if",
+          "if (entry.pinned)"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          20,
+          20,
+          "DecisionForms.single",
+          "else",
+          "else"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          24,
+          32,
+          "DecisionForms.clauses",
+          "switch",
+          "switch (kind)"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          25,
+          26,
+          "DecisionForms.clauses",
+          "case",
+          "case 'a':"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          27,
+          27,
+          "DecisionForms.clauses",
+          "case",
+          "case 'b':"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          28,
+          29,
+          "DecisionForms.clauses",
+          "case",
+          "case 'c':"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          30,
+          31,
+          "DecisionForms.clauses",
+          "case",
+          "default:"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          36,
+          36,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.ready ? 'ready' : 'waiting'"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          37,
+          37,
+          "DecisionForms.expressions",
+          "coalesce",
+          "entry.owner ?? 'nobody'"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          38,
+          38,
+          "DecisionForms.expressions",
+          "logical",
+          "entry.open && entry.total > 0"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          39,
+          39,
+          "DecisionForms.expressions",
+          "logical",
+          "(entry.open && entry.pinned) || entry.ready"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          40,
+          40,
+          "DecisionForms.expressions",
+          "logical",
+          "item.open || item.pinned"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          41,
+          41,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.total ?.5 : 1"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          42,
+          44,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.total > 9 ? 'high' : 'low'"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          49,
+          51,
+          "DecisionForms.conditions",
+          "if",
+          "if (entry.open && list.some((item) => item.ready && item.total > 0))"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          49,
+          49,
+          "DecisionForms.conditions",
+          "logical",
+          "item.ready && item.total > 0"
+        ],
+        [
+          "src/app/features/forms/decision-forms.service.ts",
+          58,
+          58,
+          "DecisionForms.conditions",
+          "ternary",
+          "entry.open && entry.pinned ? 2 : 3"
+        ],
+        [
+          "src/app/features/tally/tally.service.ts",
+          13,
+          15,
+          "TallyService.pick",
+          "if",
+          "if (entry.open)"
+        ]
+      ]
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "d98948d2cf48d5dccee43e477bba742834a43980",
+      "branchPoints": [
+        [
+          "src/forms/DecisionForms.ts",
+          9,
+          11,
+          "DecisionForms.branches",
+          "if",
+          "if (entry.open)"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          11,
+          13,
+          "DecisionForms.branches",
+          "else",
+          "else if (mode === 'all')"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          11,
+          13,
+          "DecisionForms.branches",
+          "if",
+          "if (mode === 'all')"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          13,
+          15,
+          "DecisionForms.branches",
+          "else",
+          "else"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          19,
+          19,
+          "DecisionForms.single",
+          "if",
+          "if (entry.pinned)"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          20,
+          20,
+          "DecisionForms.single",
+          "else",
+          "else"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          24,
+          32,
+          "DecisionForms.clauses",
+          "switch",
+          "switch (kind)"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          25,
+          26,
+          "DecisionForms.clauses",
+          "case",
+          "case 'a':"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          27,
+          27,
+          "DecisionForms.clauses",
+          "case",
+          "case 'b':"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          28,
+          29,
+          "DecisionForms.clauses",
+          "case",
+          "case 'c':"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          30,
+          31,
+          "DecisionForms.clauses",
+          "case",
+          "default:"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          36,
+          36,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.ready ? 'ready' : 'waiting'"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          37,
+          37,
+          "DecisionForms.expressions",
+          "coalesce",
+          "entry.owner ?? 'nobody'"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          38,
+          38,
+          "DecisionForms.expressions",
+          "logical",
+          "entry.open && entry.total > 0"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          39,
+          39,
+          "DecisionForms.expressions",
+          "logical",
+          "(entry.open && entry.pinned) || entry.ready"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          40,
+          40,
+          "DecisionForms.expressions",
+          "logical",
+          "item.open || item.pinned"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          41,
+          41,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.total ?.5 : 1"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          42,
+          44,
+          "DecisionForms.expressions",
+          "ternary",
+          "entry.total > 9 ? 'high' : 'low'"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          49,
+          51,
+          "DecisionForms.conditions",
+          "if",
+          "if (entry.open && list.some((item) => item.ready && item.total > 0))"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          49,
+          49,
+          "DecisionForms.conditions",
+          "logical",
+          "item.ready && item.total > 0"
+        ],
+        [
+          "src/forms/DecisionForms.ts",
+          58,
+          58,
+          "DecisionForms.conditions",
+          "ternary",
+          "entry.open && entry.pinned ? 2 : 3"
+        ],
+        [
+          "src/forms/FormsPanel.tsx",
+          5,
+          5,
+          "FormsPanel.close",
+          "if",
+          "if (open)"
+        ],
+        [
+          "src/forms/FormsPanel.tsx",
+          10,
+          10,
+          "FormsPanel.FormsPanel",
+          "logical",
+          "open && <span>open</span>"
+        ],
+        [
+          "src/forms/FormsPanel.tsx",
+          11,
+          11,
+          "FormsPanel.FormsPanel",
+          "ternary",
+          "rows.length > 0 ? <b>many</b> : <i>none?</i>"
+        ],
+        [
+          "src/forms/FormsPanel.tsx",
+          12,
+          12,
+          "FormsPanel.FormsPanel",
+          "ternary",
+          "open ? 'Close' : 'Open'"
+        ],
+        [
+          "src/kiln/KilnPanel.tsx",
+          7,
+          7,
+          "KilnPanel.refresh",
+          "if",
+          "if (kilnId)"
+        ],
+        [
+          "src/kiln/KilnPanel.tsx",
+          12,
+          12,
+          "KilnPanel.KilnPanel",
+          "ternary",
+          "firings.length > 0 ? <ul>{firings.length}</ul> : <p>No firings && none planned</p>"
+        ],
+        [
+          "src/ledger/LedgerService.ts",
+          9,
+          11,
+          "LedgerService.pick",
+          "if",
+          "if (entry.open)"
+        ]
+      ]
+    }
+  },
+  "kite-club/kite.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "4019b302f7f04f6c17b4a85ec7f390dad8b6af2c"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "6183402e73624d9115bb8224a514e08174117eb4",
+      "branchPoints": []
+    },
+    "suite.json": {
+      "kind": "playwright",
+      "sha1": "4604d68fa494995a586a93b7b69e4d7f4eb81a4f"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "8f5d48d4b1b014317a9ebd0ecc503637700bf15e",
+      "branchPoints": [
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ]
+      ]
+    }
+  },
+  "lantern-console/lantern.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "7ab838f8e65a2f6e733e18ec32728b56c2b0b261"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "e4a98370fdebe7652b29d9671ccd84c8c662d619",
+      "branchPoints": []
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "809fc1627156adc3f49e588a7b4a65dc05f439f8",
+      "branchPoints": [
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ]
+      ]
+    }
+  },
+  "nursery-mobile/nursery.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "c7472d874ccd95e0e8fa64d5a90accccff5f6425"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "699c68e814372f0b27a969a8fac5cb5bff5d1247",
+      "branchPoints": []
+    }
+  },
+  "orchard-mobile/orchard.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "3a05d1f631dfac5e2d427f19360d41411907c3d8"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "67c198b7a06792294e5e700a045773dd90eba503",
+      "branchPoints": []
+    }
+  },
+  "orchard-routes/orchard-mounted.config.json": {
+    "web.json": {
+      "kind": "web",
+      "sha1": "29d0e51e34df0f142c2eb9176f9f64f36a1fa6ab",
+      "branchPoints": [
+        [
+          "src/OrchardApp.tsx",
+          43,
+          47,
+          "OrchardApp.OrchardApp",
+          "ternary",
+          "features.pruningPlanner ? ( <Route path=\"pruning\" element={<PruningPlannerPage />} /> ) : ( <Route path=\"pruning\" elemen"
+        ],
+        [
+          "src/greenhouse/GreenhouseRoutes.tsx",
+          9,
+          11,
+          "GreenhouseRoutes.glasshouseRoute",
+          "if",
+          "if (features.greenhouse)"
+        ]
+      ]
+    }
+  },
+  "orchard-routes/orchard.config.json": {
+    "web.json": {
+      "kind": "web",
+      "sha1": "29d0e51e34df0f142c2eb9176f9f64f36a1fa6ab",
+      "branchPoints": [
+        [
+          "src/OrchardApp.tsx",
+          43,
+          47,
+          "OrchardApp.OrchardApp",
+          "ternary",
+          "features.pruningPlanner ? ( <Route path=\"pruning\" element={<PruningPlannerPage />} /> ) : ( <Route path=\"pruning\" elemen"
+        ],
+        [
+          "src/greenhouse/GreenhouseRoutes.tsx",
+          9,
+          11,
+          "GreenhouseRoutes.glasshouseRoute",
+          "if",
+          "if (features.greenhouse)"
+        ]
+      ]
+    }
+  },
+  "quarry-dispatch/quarry.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "790113b3e1974793740b9041948896ea5fa39233"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "8259d8035c72015170e02a577a0b5cf1c90656d8",
+      "branchPoints": [
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ]
+      ]
+    }
+  },
+  "tidewater-ferry/ferry.config.json": {
+    "backend-mirrored.json": {
+      "kind": "backend",
+      "sha1": "e44cabf82f8bad8449debfbb32e08d591e31807b"
+    },
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "cf20c8e6247738e2bdb04dae4541656110c1d0a0"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "679b7941c1672f9c5c913927accad1b51f402d17",
+      "branchPoints": [
+        [
+          "src/actions/boarding.ts",
+          15,
+          17,
+          "Boarding.loadBoarding",
+          "if",
+          "if (permit)"
+        ],
+        [
+          "src/actions/boarding.ts",
+          17,
+          19,
+          "Boarding.loadBoarding",
+          "else",
+          "else"
+        ],
+        [
+          "src/actions/boarding.ts",
+          52,
+          56,
+          "Boarding.loadNestedBoarding",
+          "if",
+          "if (permit)"
+        ],
+        [
+          "src/actions/boarding.ts",
+          60,
+          62,
+          "Boarding.loadGuardedAll",
+          "if",
+          "if (permit)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ]
+      ]
+    }
+  }
+}
