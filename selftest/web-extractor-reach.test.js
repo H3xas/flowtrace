@@ -666,3 +666,175 @@ test('Web extractor reach AC-13: the methods of a module-level object literal ar
     'httpClient.save -> ItemsController.Save',
   ]);
 });
+
+const GATEWAY_CLIENT = 'export class HttpClient {\n  getGatewayClient() {\n    return null;\n  }\n}\nexport const httpClient = new HttpClient();\n';
+
+const CONTENT_API = [
+  "import { httpClient } from '../http/httpClient';",
+  '',
+  "const REVISIONS_URL = '/content/v1/revisions';",
+  "const NOTES_ROOT = '/content/v1';",
+  'const NOTES_URL = `${NOTES_ROOT}/notes`;',
+  'const HOST = window.location.host;',
+  '',
+  'export function loadRevision(id: string, rev: number) {',
+  '  const url = `${REVISIONS_URL}?contentId=${encodeURIComponent(id)}&rev=${rev}`;',
+  '  return httpClient.getGatewayClient().get(url);',
+  '}',
+  '',
+  'export function loadDraft() {',
+  "  const DRAFTS = '/content/v1/' + 'drafts';",
+  '  return httpClient.getGatewayClient().get(`${DRAFTS}/latest`);',
+  '}',
+  '',
+  'export function loadNote(id: string) {',
+  '  return httpClient.getGatewayClient().get(`${NOTES_URL}/${id}`);',
+  '}',
+  '',
+  'export function loadMirror(id: string) {',
+  '  return httpClient.getGatewayClient().get(`${HOST}/content/v1/mirror/${id}`);',
+  '}',
+  '',
+  'export function loadAnything(param: string) {',
+  '  const url = `${param}?a=1`;',
+  '  return httpClient.getGatewayClient().get(url);',
+  '}',
+  '',
+].join('\n');
+
+const CONTENT_BACKEND = controller('ContentController', 'content/v1', [
+  ['Get', 'revisions', 'GetRevision'],
+  ['Get', 'drafts/latest', 'GetLatestDraft'],
+  ['Get', 'notes/{id}', 'GetNote'],
+  ['Get', 'unrelated', 'GetUnrelated'],
+]);
+
+function gatewayAt(dir, method) {
+  return ofType(factsOf(dir), 'gateway_call').find((entry) => entry.method === method);
+}
+
+function callsFrom(dir, method) {
+  return flowOf(dir).edges.filter((edge) => edge.kind === 'calls' && edge.from.ref.endsWith(`.${method}`));
+}
+
+function contentRepo(t, extra = {}) {
+  return buildRepo(t, {
+    'flowtrace.config.json': config([WEB, BACKEND]),
+    'web/src/http/httpClient.ts': GATEWAY_CLIENT,
+    'web/src/api/contentApi.ts': CONTENT_API,
+    'backend/src/ContentController.cs': CONTENT_BACKEND,
+    ...extra,
+  });
+}
+
+test('Web extractor reach AC-5: a URL built from a literal const joins the route the const names', (t) => {
+  const dir = contentRepo(t);
+  extractAndJoin(dir);
+  const revision = gatewayAt(dir, 'loadRevision');
+  assert.equal(revision.template, '/content/v1/revisions?contentId=${encodeURIComponent(id)}&rev=${rev}');
+  assert.equal(revision.resolved, true);
+  assert.deepEqual(
+    callsFrom(dir, 'loadRevision').map((edge) => `${edge.to.ref} ${edge.match}`),
+    ['ContentController.GetRevision exact'],
+    'the query string is no part of the join',
+  );
+  assert.equal(gatewayAt(dir, 'loadDraft').template, '/content/v1/drafts/latest', 'a local const counts as a module one does');
+  assert.deepEqual(callsFrom(dir, 'loadDraft').map((edge) => `${edge.to.ref} ${edge.match}`), ['ContentController.GetLatestDraft exact']);
+  assert.equal(gatewayAt(dir, 'loadNote').template, '/content/v1/notes/${id}', 'a const composed from another const is a literal too');
+  assert.deepEqual(callsFrom(dir, 'loadNote').map((edge) => edge.to.ref), ['ContentController.GetNote']);
+  assert.equal(gatewayAt(dir, 'loadMirror').template, '${HOST}/content/v1/mirror/${id}', 'a const holding a runtime value stays as written');
+});
+
+test('Web extractor reach AC-6: a URL built only from a runtime value stays without a caller edge', (t) => {
+  const dir = contentRepo(t);
+  extractAndJoin(dir);
+  const call = gatewayAt(dir, 'loadAnything');
+  assert.equal(call.template, '${param}?a=1');
+  assert.deepEqual(callsFrom(dir, 'loadAnything'), []);
+  const { unjoined } = flowOf(dir);
+  assert.ok(
+    unjoined.mobile_calls_without_route.some((entry) => entry.fact.method === 'loadAnything' && entry.fact.line === call.line),
+    'the call stays in the caller bucket with its fact',
+  );
+  assert.ok(
+    unjoined.routes_without_caller.some((entry) => entry.key === 'GET content/v1/unrelated'),
+    'an unrelated route is not handed to the runtime URL',
+  );
+});
+
+const HELPER_API = [
+  "import { httpClient } from '../http/httpClient';",
+  '',
+  'function feedUrl(suffix: string) {',
+  '  const handler = () => {',
+  "    return '/elsewhere';",
+  '  };',
+  '  return `/feed/v1/recommendations${suffix}`;',
+  '}',
+  '',
+  'const itemUrl = (id: string) => `/feed/v1/items/${id}`;',
+  '',
+  'function listUrl(kind: string) {',
+  "  if (kind === 'top') {",
+  "    return '/feed/v1/lists/top';",
+  '  }',
+  '  return `/feed/v1/lists/${kind}/recent`;',
+  '}',
+  '',
+  'function hostUrl(host: string) {',
+  '  return `${host}/feed/v1/items`;',
+  '}',
+  '',
+  'function tail(name: string) {',
+  "  return 'v1/' + name;",
+  '}',
+  '',
+  'export function loadFeed(suffix: string) {',
+  '  return httpClient.getGatewayClient().get(feedUrl(suffix));',
+  '}',
+  '',
+  'export function loadItem(id: string) {',
+  '  const url = itemUrl(id);',
+  '  return httpClient.getGatewayClient().get(url);',
+  '}',
+  '',
+  'export function loadList(kind: string) {',
+  '  return httpClient.getGatewayClient().get(listUrl(kind));',
+  '}',
+  '',
+  'export function loadHosted(host: string) {',
+  '  return httpClient.getGatewayClient().get(hostUrl(host));',
+  '}',
+  '',
+  'export function loadTail() {',
+  "  return httpClient.getGatewayClient().get('/feed/' + tail('items'));",
+  '}',
+  '',
+].join('\n');
+
+test('Web extractor reach AC-8: a URL a helper of the file returns resolves to the text its returns share', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB, BACKEND]),
+    'web/src/http/httpClient.ts': GATEWAY_CLIENT,
+    'web/src/api/feedApi.ts': HELPER_API,
+    'backend/src/FeedController.cs': controller('FeedController', 'feed/v1', [
+      ['Get', 'recommendations', 'GetRecommendations'],
+      ['Get', 'items/{id}', 'GetItem'],
+      ['Get', 'lists/{kind}/recent', 'GetRecentList'],
+    ]),
+  });
+  extractAndJoin(dir);
+  const read = (method) => {
+    const call = gatewayAt(dir, method);
+    return `${call.template} ${call.resolved}`;
+  };
+  assert.equal(read('loadFeed'), '/feed/v1/recommendations${suffix} true', 'a return inside a nested function is not a return of the helper');
+  assert.deepEqual(callsFrom(dir, 'loadFeed').map((edge) => `${edge.to.ref} ${edge.match}`), ['FeedController.GetRecommendations prefix']);
+  assert.equal(read('loadItem'), '/feed/v1/items/${id} true', 'a const arrow with an expression body, reached through a local const');
+  assert.deepEqual(callsFrom(dir, 'loadItem').map((edge) => edge.to.ref), ['FeedController.GetItem']);
+  assert.equal(read('loadList'), '/feed/v1/lists/* true', 'returns that differ keep the text up to their last common slash');
+  assert.deepEqual(callsFrom(dir, 'loadList').map((edge) => `${edge.to.ref} ${edge.match}`), ['FeedController.GetRecentList prefix']);
+  assert.equal(read('loadHosted'), '${hostUrl(host)} false', 'a helper with a runtime prefix stays unresolved');
+  assert.deepEqual(callsFrom(dir, 'loadHosted'), []);
+  assert.equal(read('loadTail'), "/feed/${tail('items')} false", 'a helper inside a + part keeps its reading');
+});
