@@ -20,7 +20,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { fact, validateFacts } from '../lib/facts.js';
+import { fact, factIdentity, validateFacts } from '../lib/facts.js';
 import { echoedTitle, refusalReason, titleFacts, titlesByLine } from '../lib/extract/pw-titles.js';
 import { span } from '../lib/span.js';
 import { copyFixture, extract } from './helpers.js';
@@ -58,17 +58,35 @@ function specsOf(listing, file) {
 function caseFactsAt(facts, spec, line) {
   return facts
     .filter((candidate) => candidate.type === 'case_id' && candidate.spec === spec && candidate.line === line)
-    .map(({ ids, source, expression }) => (expression === undefined ? { ids, source } : { ids, source, expression }));
+    .map(({ ids, source, expression, instance }) => ({
+      ids,
+      source,
+      ...(expression === undefined ? {} : { expression }),
+      ...(instance === undefined ? {} : { instance }),
+    }));
 }
 
 function declarationsOf(facts, spec) {
   return facts.filter((candidate) => candidate.type === 'pw_test' && candidate.spec === spec);
 }
 
-function refusalsFor(facts, sitesBySpec, calls) {
+function refusalsFor(facts, sitesBySpec, calls, options = {}) {
   const refusals = [];
-  titleFacts(facts, sitesBySpec, refusals, calls);
+  titleFacts(facts, sitesBySpec, refusals, calls, options);
   return refusals;
+}
+
+/** The till corpus with extra spec files written into its suite, extracted with `config`. */
+function extractWith(t, files, config = 'till.config.json', extraConfig = null) {
+  return extractTill(t, config, (dir) => {
+    for (const [path, text] of Object.entries(files)) writeFileSync(join(dir, 'e2e', path), text);
+    if (extraConfig) writeFileSync(join(dir, config), JSON.stringify(extraConfig));
+  });
+}
+
+/** One listing site per declaration of `spec`, holding the titles given for it in order. */
+function sitesFor(spec, titlesPerSite) {
+  return new Map([[spec, titlesPerSite.map((titles) => ({ titles }))]]);
 }
 
 /**
@@ -142,8 +160,11 @@ test('Title wrapper case ids AC-3: a table row in title position gives one fact 
   ]);
   assert.deepEqual(
     caseFactsAt(facts, spec, 19),
-    [{ ids: [], source: 'unresolved', expression: 'row.id' }],
-    'a table with a row that is not a plain integer resolves no row',
+    [
+      { ids: [9022], source: 'evaluated', instance: { 'row.id': 9022 } },
+      { ids: ['later'], source: 'evaluated', instance: { 'row.id': 'later' } },
+    ],
+    'a table with a string row is read row by row by the bounded reader',
   );
 });
 
@@ -170,7 +191,7 @@ test('Title wrapper case ids AC-5: title text and a subscript index are never re
   const emitted = caseFacts.flatMap((candidate) => candidate.ids);
   assert.ok(!emitted.includes(4012), 'the number at the start of a title is title text');
   assert.ok(!emitted.includes(0), 'the index of a subscript is not an id');
-  assert.deepEqual(caseFactsAt(facts, 'tests/text.spec.ts', 10), [{ ids: [], source: 'unresolved', expression: 'caseId' }]);
+  assert.deepEqual(caseFactsAt(facts, 'tests/text.spec.ts', 10), [{ ids: [9030], source: 'evaluated', instance: {} }]);
   assert.deepEqual(caseFactsAt(facts, 'tests/text.spec.ts', 12), [{ ids: [], source: 'unresolved', expression: 'rows[0].id' }]);
 
   const unwritten = [];
@@ -180,7 +201,11 @@ test('Title wrapper case ids AC-5: title text and a subscript index are never re
     const args = firstArguments(source);
     for (const id of candidate.ids) {
       const written =
-        candidate.source === 'table'
+        candidate.source === 'evaluated'
+          ? typeof id === 'number'
+            ? new RegExp(`(^|[^\\w.])${id}([^\\w.]|$)`).test(source)
+            : source.includes(`'${id}'`) || source.includes(`"${id}"`)
+          : candidate.source === 'table'
           ? args.includes('row.id') && new RegExp(`\\bid:\\s*${id}\\b`).test(source)
           : typeof id === 'number'
             ? args.some((arg) => new RegExp(`(^|[^\\d])${id}([^\\d]|$)`).test(arg))
@@ -188,23 +213,44 @@ test('Title wrapper case ids AC-5: title text and a subscript index are never re
       if (!written) unwritten.push({ spec: candidate.spec, line: candidate.line, id });
     }
   }
-  assert.deepEqual(unwritten, [], 'every emitted id is written in the first argument of a configured call');
+  assert.deepEqual(unwritten, [], 'every literal or table id is in the first argument of a configured call, every evaluated id in the file');
 });
 
 test('Title wrapper case ids AC-6: an argument no reader resolves gives one unresolved record', (t) => {
-  const { facts } = extractTill(t);
+  const extra = [
+    "import { test } from '@playwright/test';",
+    '',
+    "import { caseRef } from '../support/case-ref';",
+    "import { refundIds } from '../support/refund-ids';",
+    '',
+    'function declareFor(id: number) {',
+    "  test(caseRef(id, 'reads a parameter'), async () => {});",
+    '}',
+    '',
+    "test(caseRef(process.env.CASE_ID, 'reads the environment'), async () => {});",
+    '',
+    "test(caseRef(refundIds['card'], 'reads an imported value'), async () => {});",
+    '',
+    "test('reads them in a body', async () => {",
+    '  const check = (n: number) => caseRef.id(n);',
+    '  caseRef.id(process.env.CASE_ID);',
+    "  caseRef.id(refundIds['card']);",
+    '});',
+    '',
+  ].join('\n');
+  const { facts } = extractWith(t, {
+    'tests/runtime.spec.ts': extra,
+    'support/refund-ids.ts': "export const refundIds = { card: 9046 };\n",
+  });
   const spec = 'tests/unresolved.spec.ts';
-  const shapes = ['someId', 'ids[1]', "caseIdOf('drawer')", '`${base}43`', 'flag ? 9044 : 9045'];
-  const titleLines = [15, 17, 19, 21, 23];
-  titleLines.forEach((line, i) => {
-    assert.deepEqual(caseFactsAt(facts, spec, line), [{ ids: [], source: 'unresolved', expression: shapes[i] }], `title position: ${shapes[i]}`);
+  const unresolved = (expression) => ({ ids: [], source: 'unresolved', expression });
+  const evaluated = (id) => ({ ids: [id], source: 'evaluated', instance: {} });
+  const expected = [evaluated(9042), evaluated(9041), unresolved("caseIdOf('drawer')"), unresolved('`${base}43`'), evaluated(9044)];
+  [15, 17, 19, 21, 23].forEach((line, i) => {
+    assert.deepEqual(caseFactsAt(facts, spec, line), [expected[i]], `title position, line ${line}`);
   });
   const body = caseFactsAt(facts, spec, 25);
-  assert.deepEqual(
-    body.slice(0, 5),
-    shapes.map((expression) => ({ ids: [], source: 'unresolved', expression })),
-    'the same shapes in a test body',
-  );
+  assert.deepEqual(body.slice(0, 5), expected, 'the same shapes in a test body');
   assert.equal(body.length, 6);
   const long = body[5].expression;
   assert.equal(long.length, 160, 'a long argument is cut at 160 characters');
@@ -213,6 +259,16 @@ test('Title wrapper case ids AC-6: an argument no reader resolves gives one unre
   assert.deepEqual(caseFactsAt(facts, spec, 38), [], 'a TODO placeholder, in title position and in the body');
   assert.deepEqual(caseFactsAt(facts, spec, 42), [], 'a wrapper with one argument holds a title and no id');
   assert.equal(declarationsOf(facts, spec).length, 8, 'no declaration of the file is lost');
+
+  const runtime = 'tests/runtime.spec.ts';
+  assert.deepEqual(caseFactsAt(facts, runtime, 7), [unresolved('id')], 'a function parameter');
+  assert.deepEqual(caseFactsAt(facts, runtime, 10), [unresolved('process.env.CASE_ID')], 'the environment');
+  assert.deepEqual(caseFactsAt(facts, runtime, 12), [unresolved("refundIds['card']")], 'a subscript of an imported value');
+  assert.deepEqual(
+    caseFactsAt(facts, runtime, 14),
+    [unresolved('n'), unresolved('process.env.CASE_ID'), unresolved("refundIds['card']")],
+    'the same in a test body',
+  );
 });
 
 test('Title wrapper case ids AC-7: the schema accepts the unresolved record and refuses a malformed one', () => {
@@ -241,6 +297,28 @@ test('Title wrapper case ids AC-7: the schema accepts the unresolved record and 
     ]),
     4,
   );
+  assert.equal(
+    validateFacts([
+      { ...base, ids: [], source: 'unresolved', expression: 'ids[key]', instance: { 'row.name': 'delta' } },
+      { ...base, ids: [9101], source: 'evaluated', instance: { g: false, 'row.name': 'alpha' } },
+      { ...base, ids: ['TC-4'], source: 'evaluated', instance: {} },
+    ]),
+    3,
+    'the unresolved record with an instance, and the evaluated record',
+  );
+  assert.throws(
+    () => validateFacts([{ ...base, ids: [], source: 'evaluated', instance: {} }]),
+    /field "ids" must be non-empty when "source" is "evaluated"/,
+  );
+  for (const instance of [undefined, null, [], 'g=false', { g: { nested: true } }]) {
+    const candidate = { ...base, ids: [9101], source: 'evaluated' };
+    if (instance !== undefined) candidate.instance = instance;
+    assert.throws(
+      () => validateFacts([candidate]),
+      /field "instance" must be an object of string, number or boolean values/,
+      `instance ${JSON.stringify(instance)}`,
+    );
+  }
 });
 
 function declaration(expression) {
@@ -249,6 +327,11 @@ function declaration(expression) {
 
 function site(titles) {
   return { titles };
+}
+
+/** A declaration whose title argument source is at hand, as title collection reads it from the file. */
+function fromSource(source) {
+  return { ...declaration(source), titleSource: source };
 }
 
 test('Title wrapper case ids AC-8: a wrapped title is found inside the runner title', (t) => {
@@ -265,10 +348,17 @@ test('Title wrapper case ids AC-8: a wrapped title is found inside the runner ti
     refusalReason([stringId], [site(['TC-3'])], CALLS),
     'declaration 1 reads "refunds a sale", the listing resolves ["TC-3"] there',
   );
-  for (const expression of ['caseRef(9001, title)', 'caseRef(9001, `refunds a ${kind}`)', 'caseRef(9001, row.title)']) {
+  for (const expression of ['caseRef(9001, title)', 'caseRef(9001, row.title)']) {
     assert.equal(echoedTitle(expression, CALLS), null, expression);
     assert.equal(refusalReason([declaration(expression)], [site(['anything at all'])], CALLS), null, expression);
+    assert.equal(refusalReason([fromSource(expression)], [site(['anything at all'])], CALLS), null, `${expression}, read from the source`);
   }
+  const template = fromSource('caseRef(9001, `refunds a ${kind}`)');
+  assert.equal(refusalReason([template], [site(['[9001] refunds a sale'])], CALLS), null, 'a wrapped template is held to its literal parts');
+  assert.equal(
+    refusalReason([template], [site(['anything at all'])], CALLS),
+    'declaration 1 reads "refunds a ${kind}", the listing resolves ["anything at all"] there',
+  );
 
   const { dir, facts } = extractTill(t);
   const extra = titleFacts(facts, loadListing(dir), [], CALLS);
@@ -321,7 +411,7 @@ test('Title wrapper case ids AC-9: case_id, pw_test and pw_title share one key, 
   assert.deepEqual(byRaw.get("caseRef(9001, 'refunds a sale')"), [9001]);
   assert.deepEqual(byRaw.get("caseRef(row.id, 'refunds by tender')"), [9020, 9021]);
   assert.deepEqual(byRaw.get("caseRef(9012, 'refunds a voucher')"), [9012, 9013]);
-  assert.deepEqual(byRaw.get("caseRef(row.id, 'refunds a pending row')"), [], 'an unresolved record joins as no ids');
+  assert.deepEqual(byRaw.get("caseRef(row.id, 'refunds a pending row')"), [9022, 'later'], 'each evaluated row joins in row order');
 });
 
 test('Title wrapper case ids AC-10: with no caseId key a wrapped title gives no fact and resolution does not change', (t) => {
@@ -339,6 +429,9 @@ test('Title wrapper case ids AC-10: with no caseId key a wrapped title gives no 
   assert.deepEqual(refusalsFor(facts, sitesBySpec, []), []);
   assert.deepEqual(refusalsFor(facts, sitesBySpec, ['caseRef.id']), []);
   assert.deepEqual(refusalsFor(facts, sitesBySpec, CALLS), []);
+  const root = { root: join(dir, 'e2e') };
+  assert.deepEqual(refusalsFor(facts, sitesBySpec, [], root), [], 'reading the titles from the source changes nothing here');
+  assert.deepEqual(refusalsFor(facts, sitesBySpec, CALLS, root), []);
 
   const bodyOnly = extractTill(t, 'till-body-call.config.json').facts;
   assert.deepEqual(
@@ -393,5 +486,122 @@ test('Title wrapper case ids AC-15: a site with several runner titles passes onl
     refusalReason([declaration('refunds a sale')], [site(['refunds a sale', 'refunds a sale again'])], CALLS),
     'declaration 1 reads "refunds a sale", the listing resolves ["refunds a sale","refunds a sale again"] there',
     'a plain literal keeps equality with exactly one title',
+  );
+});
+
+const HEAD = "import { test } from '@playwright/test';\n\nimport { caseRef } from '../support/case-ref';\n\n";
+
+function resolvedFor(facts, dir, spec, titlesPerSite, calls = CALLS) {
+  return refusalsFor(facts, sitesFor(spec, titlesPerSite), calls, { root: join(dir, 'e2e') })
+    .filter((refusal) => refusal.spec === spec)
+    .map((refusal) => refusal.reason);
+}
+
+test('Title wrapper case ids AC-16: a long wrapped title is read from the source, not from the cut test text', (t) => {
+  const title = 'refunds a sale '.repeat(14).trim().slice(0, 200);
+  assert.equal(title.length, 200);
+  const spec = 'tests/long.spec.ts';
+  const { dir, facts } = extractWith(t, { [spec]: `${HEAD}test(caseRef(9060, '${title}'), async () => {});\n` });
+  assert.equal(declarationsOf(facts, spec)[0].test.length, 160, 'the pw_test text is cut');
+  assert.deepEqual(resolvedFor(facts, dir, spec, [[`${title} (Case 9060)`]]), [], 'the full argument is in the runner title');
+  const cut = `${title.slice(0, 160)} (Case 9060)`;
+  assert.deepEqual(resolvedFor(facts, dir, spec, [[cut]]), [
+    `declaration 1 reads ${JSON.stringify(title)}, the listing resolves ${JSON.stringify([cut])} there`,
+  ]);
+});
+
+test('Title wrapper case ids AC-17: a string-literal title is compared after its escapes are read', (t) => {
+  const spec = 'tests/escapes.spec.ts';
+  const source = `${HEAD}test('it\\'s open', async () => {});\n\ntest("a \\"b\\"", async () => {});\n\ntest(caseRef(9061, 'it\\'s shut'), async () => {});\n`;
+  const { dir, facts } = extractWith(t, { [spec]: source });
+  assert.deepEqual(resolvedFor(facts, dir, spec, [["it's open"], ['a "b"'], ["it's shut (Case 9061)"]]), []);
+  assert.deepEqual(resolvedFor(facts, dir, spec, [["it\\'s open"], ['a "b"'], ["it's shut (Case 9061)"]]), [
+    `declaration 1 reads "it's open", the listing resolves ${JSON.stringify(["it\\'s open"])} there`,
+  ]);
+});
+
+test('Title wrapper case ids AC-18: a configured call that is a member of another object is not that call', (t) => {
+  const spec = 'tests/members.spec.ts';
+  const source = [
+    "import { test } from '@playwright/test';",
+    '',
+    "test('reads member calls', async () => {",
+    '  x.tms.id(9111);',
+    '  x?.tms.id(9111);',
+    '  tms.id(9112);',
+    '});',
+    '',
+  ].join('\n');
+  const config = JSON.parse(readFileSync(join(process.cwd(), 'selftest', 'corpus', 'widget-till', 'till.config.json'), 'utf8'));
+  config.caseId.calls = ['tms.id'];
+  const { facts } = extractWith(t, { [spec]: source }, 'till.config.json', config);
+  assert.deepEqual(caseFactsAt(facts, spec, 3), [{ ids: [9112], source: 'literal' }]);
+});
+
+test('Title wrapper case ids AC-20: a template title is held to its literal parts', (t) => {
+  const spec = 'tests/templates.spec.ts';
+  const source = [
+    "import { test } from '@playwright/test';",
+    '',
+    "import { caseRef } from '../support/case-ref';",
+    '',
+    "const kind = 'sale';",
+    "const title = 'anything';",
+    '',
+    'test(`refunds a ${kind} now`, async () => {});',
+    '',
+    'test(caseRef(9070, `voids a ${kind} today`), async () => {});',
+    '',
+    'test(`${title}`, async () => {});',
+    '',
+  ].join('\n');
+  const { dir, facts } = extractWith(t, { [spec]: source });
+  const aligned = [['refunds a sale now'], ['[9070] voids a sale today'], ['whatever the runner says']];
+  assert.deepEqual(resolvedFor(facts, dir, spec, aligned), [], 'a plain template, a wrapped one and one with no literal part');
+  assert.deepEqual(resolvedFor(facts, dir, spec, [['refunds a sale now (Case 1)'], aligned[1], aligned[2]]), [
+    'declaration 1 reads "refunds a ${kind} now", the listing resolves ["refunds a sale now (Case 1)"] there',
+  ], 'a plain template matches the whole runner title');
+  assert.deepEqual(resolvedFor(facts, dir, spec, [aligned[1], aligned[0], aligned[2]]), [
+    'declaration 1 reads "refunds a ${kind} now", the listing resolves ["[9070] voids a sale today"] there',
+  ], 'two template titles with different literal parts, swapped');
+});
+
+test('Title wrapper case ids AC-21: the identity of an unresolved or evaluated record carries what tells it apart', () => {
+  const base = { type: 'case_id', file: 'tests/one.spec.ts', line: 3, spec: 'tests/one.spec.ts' };
+  const unresolved = (expression) => factIdentity({ ...base, ids: [], source: 'unresolved', expression });
+  assert.notEqual(unresolved('row.id'), unresolved('rows[0].id'));
+  assert.equal(unresolved('row.id'), unresolved('row.id'));
+  const evaluated = (instance) => factIdentity({ ...base, ids: [9101], source: 'evaluated', instance });
+  assert.notEqual(evaluated({ g: false }), evaluated({ g: true }));
+  assert.equal(evaluated({ g: false, 'row.name': 'a' }), evaluated({ 'row.name': 'a', g: false }), 'key order does not matter');
+  assert.notEqual(
+    factIdentity({ ...base, ids: [], source: 'unresolved', expression: 'k', instance: { 'row.name': 'a' } }),
+    factIdentity({ ...base, ids: [], source: 'unresolved', expression: 'k', instance: { 'row.name': 'b' } }),
+  );
+});
+
+test('Title wrapper case ids AC-22: a computed title rests on its position', (t) => {
+  const spec = 'tests/computed.spec.ts';
+  const source = `${HEAD}const suffix = 'b';\n\ntest(caseRef(9080, 'a') + ' b', async () => {});\n\ntest('a' + suffix, async () => {});\n`;
+  const { dir, facts } = extractWith(t, { [spec]: source });
+  const listing = [['a (Case 9080) b'], ['a b']];
+  const fromText = refusalsFor(facts, sitesFor(spec, listing), CALLS).filter((refusal) => refusal.spec === spec);
+  assert.equal(fromText.length, 1, 'the text check alone holds the computed title to its source text');
+  assert.deepEqual(resolvedFor(facts, dir, spec, listing), [], 'read from the source, both rest on their position');
+});
+
+test('Title wrapper case ids AC-23: the wrapper title check reads only the title argument', (t) => {
+  const spec = 'tests/interpolated.spec.ts';
+  const source = `${HEAD}const base = 90;\n\ntest(caseRef(\`\${base}1\`, 'opens the drawer'), async () => {});\n\ntest(caseRef('\${x}', 'closes the till'), async () => {});\n`;
+  const { dir, facts } = extractWith(t, { [spec]: source });
+  const swapped = [['closes the till (Case 2)'], ['opens the drawer (Case 901)']];
+  const expected = ['declaration 1 reads "opens the drawer", the listing resolves ["closes the till (Case 2)"] there'];
+  assert.deepEqual(resolvedFor(facts, dir, spec, swapped), expected, 'read from the source');
+  assert.deepEqual(
+    refusalsFor(facts, sitesFor(spec, swapped), CALLS)
+      .filter((refusal) => refusal.spec === spec)
+      .map((refusal) => refusal.reason),
+    expected,
+    'read from the test text',
   );
 });
