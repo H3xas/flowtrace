@@ -44,6 +44,9 @@ const BARE_FLAGS = new Set(['--seeds', '--expand']);
 // A selector narrows the walk to one handler rather than changing what the run prints, so it
 // belongs in the same family as the flags above; it is checked as a name, not as a number.
 const SELECTOR_FLAGS = new Set(['--from-handler']);
+// The projection a run answers in. It changes which shape the answer is read in, not where it
+// reads from, so a run may state it and the replay reads the answer accordingly.
+const VIEW_VALUES = new Set(['dependency', 'source-flow']);
 
 export class LedgerError extends Error {
   constructor(problems) {
@@ -192,6 +195,16 @@ export function argProblems(args) {
       continue;
     }
     if (BARE_FLAGS.has(arg)) continue;
+    if (arg === '--view') {
+      const value = args[index + 1];
+      if (!VIEW_VALUES.has(value)) problems.push('--view needs dependency or source-flow');
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--view=')) {
+      if (!VIEW_VALUES.has(arg.slice('--view='.length))) problems.push('--view needs dependency or source-flow');
+      continue;
+    }
     if (SELECTOR_FLAGS.has(arg)) {
       const value = args[index + 1];
       if (typeof value !== 'string' || value.trim() === '' || value.startsWith('-')) {
