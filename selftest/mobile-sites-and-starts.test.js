@@ -900,3 +900,43 @@ test('Mobile sites and starts AC-10: the span help and the CLI doc state one JSO
     assert.match(text, new RegExp(`Mobile hop kinds are ${MOBILE_HOP_KINDS.slice(0, -1).join(', ')} and ${MOBILE_HOP_KINDS.at(-1)}\\.`));
   }
 });
+
+test('Mobile sites and starts AC-11: the committed mobile corpora extract no class role, no extends field and no static call, and the README names the golden cause', () => {
+  const mobileCorpora = [
+    ['nursery-mobile', 'nursery.config.json'],
+    ['kite-club', 'kite.config.json'],
+    ['orchard-mobile', 'orchard.config.json'],
+    ['kiln-yard', 'kiln.config.json'],
+  ];
+  for (const [corpus, config] of mobileCorpora) {
+    const facts = pack(corpus, config).facts('mobile');
+    assert.ok(facts.length > 0, corpus);
+    assert.deepEqual(facts.filter((fact) => fact.type === 'component' && fact.role === 'class'), [], `${corpus}: no class role`);
+    assert.deepEqual(facts.filter((fact) => 'extends' in fact || 'extendsSource' in fact || 'extendsImported' in fact), [], `${corpus}: no extends`);
+    assert.deepEqual(facts.filter((fact) => fact.static === true), [], `${corpus}: no static call`);
+  }
+  const readme = readFileSync(join(CORPUS, 'nursery-mobile', 'README.md'), 'utf8').replace(/\s+/g, ' ');
+  assert.match(readme, /The gateway call rule then read a call split over lines, so `PlotService\.addNote` states its `gateway_call`/);
+  assert.match(readme, /Both goldens were captured again for that one cause\. Only `status\.identity` changed/);
+});
+
+test('Mobile sites and starts AC-1: a handler each same-named page binds once prints no site on either page', async () => {
+  const yard = nursery({
+    ...ARCHIVE_FILES,
+    'mobile/src/app/features/yard/plot-detail.page.ts': ARCHIVE_FILES['mobile/src/app/features/yard/plot-detail.page.ts'].replace(
+      '  onArchive() {',
+      '  onSync() {\n    return 2;\n  }\n\n  onArchive() {',
+    ),
+    'mobile/src/app/features/yard/plot-detail.page.html': '<ion-button (click)="onArchive()">Archive</ion-button>\n<ion-button (click)="onSync()">Sync</ion-button>\n',
+  });
+  const { trace } = await import('../lib/trace.js');
+  const factSets = ['backend', 'mobile'].map((repo) => JSON.parse(readFileSync(join(yard.dir, 'out', 'facts', `${repo}.json`), 'utf8')));
+  for (const file of ['src/app/features/plots/plot-detail.page.ts', 'src/app/features/yard/plot-detail.page.ts']) {
+    const line = factSets[1].facts.find((fact) => fact.type === 'component' && fact.file === file).line;
+    const startNode = { repo: 'mobile', kind: 'page', ref: 'PlotDetailPage', file, line };
+    const walk = trace(factSets, 'PlotDetailPage', { startNode });
+    const handlers = walk.nodes.filter((node) => node.via === 'handler' && node.ref === 'PlotDetailPage.onSync');
+    assert.equal(handlers.length, 1, file);
+    assert.ok(!('site' in handlers[0]), file);
+  }
+});
