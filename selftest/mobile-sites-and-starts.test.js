@@ -117,3 +117,259 @@ test('Mobile sites and starts AC-3: the committed two-line addNote call reaches 
   assert.doesNotMatch(help, /written over more than one line states no fact/);
   assert.doesNotMatch(readFileSync(join(REPO_ROOT, 'docs', 'cli.md'), 'utf8'), /written over more than one line states no fact/);
 });
+
+const PLOTS = 'mobile/src/app/features/plots';
+const PAGE_TS = `${PLOTS}/plot-detail.page.ts`;
+const PAGE_HTML = `${PLOTS}/plot-detail.page.html`;
+
+/** Plain helper classes beside the nursery page, and a backend class that shares one name. */
+const HELPER_FILES = {
+  'backend/src/Services/BedRules.cs': [
+    'namespace Nursery.Api.Services',
+    '{',
+    '    public class BedRules',
+    '    {',
+    '        private readonly ISoilStore _soil;',
+    '',
+    '        public BedRules(ISoilStore soil)',
+    '        {',
+    '            _soil = soil;',
+    '        }',
+    '',
+    '        public bool Check(string plotId)',
+    '        {',
+    '            return _soil.Has(plotId);',
+    '        }',
+    '    }',
+    '}',
+    '',
+  ].join('\n'),
+  [`${PLOTS}/bed-rules.ts`]: [
+    "import { Store } from '@ngrx/store';",
+    "import { GatewayService } from '../../core/gateway.service';",
+    "import { PlotMath } from './plot-math';",
+    "import { Tally } from './tally';",
+    "import * as Geo from './geo';",
+    "import { pinPlot } from './plot.actions';",
+    '',
+    'export class BedRules {',
+    '  constructor(private gateway: GatewayService, private store: Store) {}',
+    '',
+    '  check(plotId: string) {',
+    '    PlotMath.area(plotId);',
+    '    return this.gateway.get(`nursery/v1/plots/${plotId}/summary`);',
+    '  }',
+    '',
+    '  pin(plotId: string) {',
+    '    this.store.dispatch(pinPlot({ plotId }));',
+    '    this.check(plotId);',
+    '    Geo.area(plotId);',
+    '    Math.max(1, 2);',
+    '    Local.size();',
+    '  }',
+    '',
+    '  static audit(plotId: string) {',
+    '    return Tally.count(plotId);',
+    '  }',
+    '}',
+    '',
+    'class Local {',
+    '  static size() {',
+    '    return 1;',
+    '  }',
+    '}',
+    '',
+    'declare class Ambient {',
+    '  run(): void;',
+    '}',
+    '',
+  ].join('\n'),
+  [`${PLOTS}/plot-math.ts`]: ['export class PlotMath {', '  static area(plotId: string) {', '    return plotId.length;', '  }', '}', ''].join('\n'),
+  [`${PLOTS}/tally.ts`]: ['export class Counter {', '  count() {', '    return 0;', '  }', '}', ''].join('\n'),
+  'mobile/src/app/features/legacy/tally.ts': ['export class Tally {', '  static count(plotId: string) {', '    return plotId;', '  }', '}', ''].join('\n'),
+  [`${PLOTS}/plot-detail.page.ts`]: (text) =>
+    text
+      .replace("import { PlotService } from './plot.service';", "import { PlotService } from './plot.service';\nimport { BedRules } from './bed-rules';\nimport { Ghost } from './ghost';")
+      .replace('  onPin() {', '  onAudit() {\n    BedRules.audit(this.plotId);\n  }\n\n  onHaunt() {\n    Ghost.boo();\n  }\n\n  onPin() {'),
+  [PAGE_HTML]: (text) =>
+    text.replace(
+      '  <ion-button (click)="onPin()">Pin</ion-button>',
+      '  <ion-button (click)="onPin()">Pin</ion-button>\n  <ion-button (click)="onAudit()">Audit</ion-button>\n  <ion-button (click)="onHaunt()">Haunt</ion-button>',
+    ),
+};
+
+/** Every `extends` form the extractor reads, and an ambient class it skips. */
+const BASE_FILES = {
+  [`${PLOTS}/bed-base.ts`]: ['export class BedBase {', '  ngOnInit() {', '    return 1;', '  }', '}', ''].join('\n'),
+  [`${PLOTS}/bed-forms.ts`]: [
+    "import { Component } from '@angular/core';",
+    "import { BedBase } from './bed-base';",
+    "import BaseTwo from './base-two';",
+    "import { IonicThing } from '@ionic/angular';",
+    "import type { Shape } from './shape';",
+    "import * as ns from './ns';",
+    '',
+    'export class FromValue extends BedBase {}',
+    'export class FromDefault extends BaseTwo {}',
+    'class InFile {}',
+    'export class FromInFile extends InFile {}',
+    'export class FromPackage extends IonicThing {}',
+    'export class FromTypeOnly extends Shape {}',
+    'export class FromQualified extends ns.Base {}',
+    'export class Generic<T> extends BedBase implements Iterable<T> {}',
+    '',
+    "@Component({ selector: 'app-bed-card', template: '<p></p>' })",
+    'export class BedCardComponent extends BedBase {}',
+    '',
+  ].join('\n'),
+};
+
+let helperPackCache = null;
+function helperPack() {
+  if (!helperPackCache) helperPackCache = nursery({ ...HELPER_FILES, ...BASE_FILES });
+  return helperPackCache;
+}
+
+test('Mobile sites and starts AC-4: an undecorated class states a class declaration with exports, members, calls, injections, gateway calls and dispatches', async () => {
+  const { validateFacts } = await import('../lib/facts.js');
+  const facts = helperPack().facts('mobile');
+  const file = 'src/app/features/plots/bed-rules.ts';
+  const inFile = facts.filter((fact) => fact.file === file);
+  const declarations = inFile.filter((fact) => fact.type === 'component');
+  assert.deepEqual(
+    declarations.map((fact) => [fact.name, fact.role, fact.selector, fact.exports]),
+    [
+      ['BedRules', 'class', '', ['BedRules']],
+      ['Local', 'class', '', []],
+    ],
+    'an ambient declare class states nothing',
+  );
+  const of = (type, method) => inFile.filter((fact) => fact.type === type && (!method || fact.method === method));
+  assert.deepEqual(of('method_span').map((fact) => `${fact.class}.${fact.method}`).sort(), [
+    'BedRules.audit',
+    'BedRules.check',
+    'BedRules.constructor',
+    'BedRules.pin',
+    'Local.size',
+  ]);
+  assert.deepEqual(of('injects').map((fact) => [fact.from, fact.to]), [
+    ['BedRules', 'GatewayService'],
+    ['BedRules', 'Store'],
+  ]);
+  assert.deepEqual(of('gateway_call').map((fact) => [fact.method, fact.verb, fact.template]), [
+    ['check', 'GET', 'nursery/v1/plots/${plotId}/summary'],
+  ]);
+  assert.deepEqual(of('action_dispatch').map((fact) => [fact.method, fact.action]), [['pin', 'pinPlot']]);
+  const calls = of('method_call').map(({ type, file: _file, line: _line, ...rest }) => rest);
+  assert.deepEqual(calls, [
+    { class: 'BedRules', method: 'check', field: 'PlotMath', calledMethod: 'area', static: true, source: './plot-math', imported: 'PlotMath' },
+    { class: 'BedRules', method: 'pin', field: 'this', calledMethod: 'check' },
+    { class: 'BedRules', method: 'pin', field: 'Local', calledMethod: 'size', static: true },
+    { class: 'BedRules', method: 'audit', field: 'Tally', calledMethod: 'count', static: true, source: './tally', imported: 'Tally' },
+  ], 'a namespace import and a global state no static call');
+  const page = facts.filter((fact) => fact.type === 'method_call' && fact.class === 'PlotDetailPage' && fact.static === true);
+  assert.deepEqual(page.map((fact) => [fact.method, fact.field, fact.calledMethod, fact.source, fact.imported]), [
+    ['onAudit', 'BedRules', 'audit', './bed-rules', 'BedRules'],
+    ['onHaunt', 'Ghost', 'boo', './ghost', 'Ghost'],
+  ]);
+  assert.equal(validateFacts(facts), facts.length);
+  assert.ok(facts.every((fact) => fact.type !== 'component' || fact.name !== 'Ambient'));
+});
+
+test('Mobile sites and starts AC-4: a class with an extends clause states its base as written with the import provenance of injects', () => {
+  const facts = helperPack().facts('mobile').filter((fact) => fact.type === 'component' && fact.file === 'src/app/features/plots/bed-forms.ts');
+  const base = Object.fromEntries(
+    facts.map((fact) => [fact.name, [fact.role, fact.extends ?? null, fact.extendsSource ?? null, fact.extendsImported ?? null]]),
+  );
+  assert.deepEqual(base, {
+    FromValue: ['class', 'BedBase', './bed-base', 'BedBase'],
+    FromDefault: ['class', 'BaseTwo', './base-two', null],
+    InFile: ['class', null, null, null],
+    FromInFile: ['class', 'InFile', null, null],
+    FromPackage: ['class', 'IonicThing', '@ionic/angular', 'IonicThing'],
+    FromTypeOnly: ['class', 'Shape', './shape', null],
+    FromQualified: ['class', null, null, null],
+    Generic: ['class', 'BedBase', './bed-base', 'BedBase'],
+    BedCardComponent: ['component', 'BedBase', './bed-base', 'BedBase'],
+  });
+});
+
+test('Mobile sites and starts AC-4: the fact schema doc and the validator name the class role and the new fields', async () => {
+  const { validateFacts } = await import('../lib/facts.js');
+  const schema = readFileSync(join(REPO_ROOT, 'docs', 'fact-schema.md'), 'utf8');
+  for (const word of ['`class`', '`extends`', '`extendsSource`', '`extendsImported`', '`static: true`']) {
+    assert.ok(schema.includes(word), word);
+  }
+  const ok = { type: 'component', file: 'a.ts', line: 1, name: 'A', selector: '', role: 'class', extends: 'B', extendsSource: './b', extendsImported: 'B' };
+  assert.equal(validateFacts([ok]), 1);
+  assert.throws(() => validateFacts([{ ...ok, extends: '' }]), /field "extends" must be a non-empty string/);
+  assert.throws(() => validateFacts([{ ...ok, extendsSource: 3 }]), /field "extendsSource" must be a non-empty string/);
+  const call = { type: 'method_call', file: 'a.ts', line: 1, class: 'A', method: 'm', field: 'B', calledMethod: 'n', static: true };
+  assert.equal(validateFacts([call]), 1);
+  assert.throws(() => validateFacts([{ ...call, static: false }]), /field "static" must be true when present/);
+});
+
+test('Mobile sites and starts AC-6: a backend helper and a plain mobile helper share a name: the bare start exits 2 and lists both', () => {
+  const { cli } = helperPack();
+  const bare = cli(['trace', 'BedRules']);
+  assert.equal(bare.status, 2, bare.stderr);
+  assert.match(bare.stderr, /BedRules backend src\/Services\/BedRules\.cs:\d+/);
+  assert.match(bare.stderr, /BedRules mobile src\/app\/features\/plots\/bed-rules\.ts:8/);
+});
+
+test('Mobile sites and starts AC-6: each --repo start resolves, and the mobile walk goes through members, a static call and a gateway call', () => {
+  const { json } = helperPack();
+  const backend = json(['trace', 'BedRules', '--repo', 'backend']);
+  assert.deepEqual([backend.root.kind, backend.root.repo, backend.root.file], ['class', 'backend', 'src/Services/BedRules.cs']);
+  const mobile = json(['trace', 'BedRules', '--repo', 'mobile']);
+  assert.deepEqual([mobile.root.kind, mobile.root.repo, mobile.root.file, mobile.root.line], ['class', 'mobile', 'src/app/features/plots/bed-rules.ts', 8]);
+  const byId = new Map(mobile.nodes.map((node) => [node.id, node]));
+  const kids = (node) => mobile.edges.filter((edge) => edge.from === node.id).map((edge) => byId.get(edge.to));
+  assert.deepEqual(kids(mobile.root).map((node) => node.ref), ['BedRules.constructor', 'BedRules.check', 'BedRules.pin', 'BedRules.audit']);
+  const check = kids(mobile.root).find((node) => node.ref === 'BedRules.check');
+  const reached = kids(check);
+  const math = reached.find((node) => node.ref === 'PlotMath');
+  assert.ok(math, 'the static call enters the second plain helper');
+  assert.deepEqual([math.kind, math.via, math.file], ['class', 'static', 'src/app/features/plots/plot-math.ts']);
+  assert.deepEqual(kids(math).map((node) => node.ref), ['PlotMath.area']);
+  const route = reached.find((node) => node.kind === 'route');
+  assert.equal(route.ref, 'GET nursery/v1/plots/*/summary');
+});
+
+test('Mobile sites and starts AC-6: a static call from a page method is followed in trace and in span --from-component', () => {
+  const { json } = helperPack();
+  const walk = json(['trace', 'PlotDetailPage', '--expand', '--from-handler', 'onAudit']);
+  const byId = new Map(walk.nodes.map((node) => [node.id, node]));
+  const helper = walk.nodes.find((node) => node.ref === 'BedRules' && node.via === 'static');
+  assert.ok(helper, 'the page handler enters the helper through its static call');
+  assert.equal(helper.file, 'src/app/features/plots/bed-rules.ts');
+  const audit = walk.edges.filter((edge) => edge.from === helper.id).map((edge) => byId.get(edge.to));
+  assert.deepEqual(audit.map((node) => node.ref), ['BedRules.audit']);
+  const model = json(['span', '--from-component', 'PlotDetailPage']);
+  const entry = entryOf(model, 'onAudit');
+  const arms = model.unresolved.filter((arm) => arm.entry === entry.identity.id);
+  assert.equal(arms.length, 1);
+  assert.equal(arms[0].reason, 'mobile-declaration-unresolved');
+  assert.deepEqual(arms[0].breadcrumb.map((hop) => [hop.kind, hop.ref, hop.via]).slice(-3), [
+    ['class', 'BedRules', 'static'],
+    ['method', 'BedRules.audit', 'body'],
+    ['class', 'Tally', 'static'],
+  ]);
+});
+
+test('Mobile sites and starts AC-6: a static call to a relative module with no such class is one refusal arm that enters no same-named class', () => {
+  const { json, cli } = helperPack();
+  const walk = json(['trace', 'BedRules', '--repo', 'mobile']);
+  const refused = walk.nodes.filter((node) => node.ref === 'Tally');
+  assert.equal(refused.length, 1);
+  assert.deepEqual([refused[0].unresolved, refused[0].file, refused[0].via], [
+    'mobile-declaration-unresolved',
+    'src/app/features/plots/bed-rules.ts',
+    'static',
+  ]);
+  assert.ok(!walk.nodes.some((node) => node.file === 'src/app/features/legacy/tally.ts'), 'the same-named class in another folder is not entered');
+  assert.equal(walk.edges.filter((edge) => edge.from === refused[0].id).length, 0);
+  const ghost = cli(['trace', 'Ghost']);
+  assert.equal(ghost.status, 2);
+  assert.match(ghost.stderr, /no page, component, service, route, method or class matches "Ghost"/);
+});
