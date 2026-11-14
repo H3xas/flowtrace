@@ -569,6 +569,17 @@ const FIXTURES = {
     '});',
     '',
   ].join('\n'),
+  'e2e/auto.pw.ts': [
+    "import { test as base } from '@playwright/test';",
+    'const test = base.extend({',
+    '  answered: [async ({ page }, use) => {',
+    "    await page.route('**/api/auto', (route) => route.fulfill({ json: {} }));",
+    '    await use();',
+    '  }, { auto: true }],',
+    '});',
+    "test('auto stub', async ({ page }) => {});",
+    '',
+  ].join('\n'),
   'e2e/cycle.pw.ts': [
     "import { test } from '../support/loop-a';",
     "test('cycle', async ({ page }) => {});",
@@ -612,6 +623,8 @@ test('Playwright reader AC-9: a stub in a counted fixture region decides the cla
   assert.equal(cls['unread value'], 'unknown:unread-fixture');
   assert.equal(cls['not defined'], 'unknown:unread-fixture');
   assert.equal(cls['local extend'], 'patched');
+  assert.equal(cls['auto stub'], 'patched', 'an auto fixture counts for a test that does not name it');
+  assert.deepEqual(backendOf(facts, 'auto stub').sites.map((s) => [s.where, s.kind, s.fixture]), [['fixture', 'fulfill', 'answered']]);
   assert.deepEqual(backendOf(facts, 'local extend').sites.map((s) => [s.line, s.kind, s.at]), [[4, 'fetch-fulfill', undefined]]);
   assert.equal(cls.cycle, 'real');
   assert.equal(cls['outside root'], 'real');
@@ -758,6 +771,9 @@ test('Playwright reader AC-14: an inline type marker in an export list exports n
       'export { type InlineClient };',
       'export { type constBase };',
       'export { mixedValue as mv, type MixedClient };',
+      'export type { InlineClient as Plain };',
+      'export { type MixedClient as Renamed };',
+      'export { type InlineClient as default };',
       '',
     ].join('\n'),
     'tests/types.spec.ts': [
@@ -849,6 +865,8 @@ const ROOMS = {
     '  async envJoin(id) { return this.ctx.post(`${process.env.BASE}/join/${id}`); }',
     '  async callJoin(id) { return this.ctx.post(`${baseOf()}/join/${id}`); }',
     '  async bare(id) { return this.ctx.post(`${id}`); }',
+  "  private readonly fieldBase = 'lobby/v1/rooms';",
+  '  async fieldJoin(id) { return this.ctx.post(`${this.fieldBase}/join/${id}`); }',
     '}',
     '',
   ].join('\n'),
@@ -857,7 +875,7 @@ const ROOMS = {
     "import { RoomsClient } from '../clients/rooms-client';",
     ...[
       'join', 'typedJoin', 'nestedJoin', 'localJoin', 'hiddenJoin', 'leave', 'loop',
-      'dynamicJoin', 'envJoin', 'callJoin', 'bare',
+      'dynamicJoin', 'envJoin', 'callJoin', 'bare', 'fieldJoin',
     ].flatMap((method) => [
       `test('${method}', async ({ request }) => {`,
       '  const rooms = new RoomsClient(request);',
@@ -906,7 +924,7 @@ test('Playwright reader AC-15: a const URL base folds in every written form', (t
 
 test('Playwright reader AC-16: a request with an unknown base gives no evidence and is counted', (t) => {
   const { dir, facts } = roomsRun(t);
-  for (const title of ['dynamicJoin', 'paramJoin', 'envJoin', 'callJoin', 'loop']) {
+  for (const title of ['dynamicJoin', 'paramJoin', 'envJoin', 'callJoin', 'loop', 'fieldJoin']) {
     const [fact] = ofType(facts, 'pw_request', title);
     assert.equal(fact.resolved, false, title);
     assert.equal(fact.reason, 'unresolved-base', title);
@@ -921,13 +939,13 @@ test('Playwright reader AC-16: a request with an unknown base gives no evidence 
   assert.equal(other.state, 'none', JSON.stringify(other));
   const known = report.routes.find((r) => r.key === 'POST lobby/v1/rooms/join/*');
   assert.ok(known.evidence.tests.some((entry) => entry.test === 'join'), 'a literal base and a later parameter still match');
-  assert.equal(report.notes.intercepts.unresolvedBase, 5);
+  assert.equal(report.notes.intercepts.unresolvedBase, 6);
   const text = runCli(['cover', '--config', 'flowtrace.config.json', '--area', 'rooms.area.txt'], { cwd: dir });
   assert.equal(text.status, 0, text.stderr);
-  assert.match(text.stdout, /5 with an unknown base/);
+  assert.match(text.stdout, /6 with an unknown base/);
   const markdown = runCli(['cover', '--config', 'flowtrace.config.json', '--area', 'rooms.area.txt', '--md', 'cover.md'], { cwd: dir });
   assert.equal(markdown.status, 0, markdown.stderr);
-  assert.match(readFileSync(join(dir, 'cover.md'), 'utf8'), /5 with an unknown base/);
+  assert.match(readFileSync(join(dir, 'cover.md'), 'utf8'), /6 with an unknown base/);
 
   // A facts file written before the reason existed gets the same rule, because cover reads the
   // template, not the reason.
@@ -943,7 +961,7 @@ test('Playwright reader AC-16: a request with an unknown base gives no evidence 
   set.facts.push({ ...older, line: older.line + 1, template: '${id}' });
   writeFileSync(factsPath, JSON.stringify(set));
   const again = JSON.parse(runCli(['cover', '--config', 'flowtrace.config.json', '--area', 'rooms.area.txt', '--json'], { cwd: dir }).stdout);
-  assert.equal(again.notes.intercepts.unresolvedBase, 5);
+  assert.equal(again.notes.intercepts.unresolvedBase, 6);
   assert.equal(again.notes.intercepts.noPath, report.notes.intercepts.noPath + 1, 'a template with no slash is still no path');
   assert.equal(again.routes.find((r) => r.key === 'POST other/v1/*/join/*').state, 'none');
 });
