@@ -201,3 +201,86 @@ test('CSharp reading AC-4: affected never counts an unresolved route as a known 
   assert.ok(report.routes.length > 0);
   assert.doesNotMatch(JSON.stringify(report.routes), /"GET fares"/);
 });
+
+const PASSENGERS = 'src/Passengers/PassengerService.cs';
+
+/** The calls one `PassengerService` method makes, as `[line, field, calledMethod, receiverType]`. */
+function callsOf(dir, method) {
+  return facts(dir, 'api')
+    .filter((f) => f.type === 'method_call' && f.file === PASSENGERS && f.method === method)
+    .map((f) => [f.line, f.field, f.calledMethod, f.receiverType ?? null])
+    .sort((a, b) => a[0] - b[0] || a[2].localeCompare(b[2]));
+}
+
+test('CSharp reading AC-5: an expression-bodied method gets the calls a block body with the same expression gets', (t) => {
+  const { dir } = extracted(t);
+  assert.deepEqual(
+    callsOf(dir, 'Lookup').map(([, ...call]) => call),
+    callsOf(dir, 'LookupBlock').map(([, ...call]) => call),
+  );
+  assert.deepEqual(callsOf(dir, 'Lookup'), [[14, '_voyages', 'Load', null]]);
+  assert.deepEqual(callsOf(dir, 'Label'), [
+    [21, 'this', 'Format', null],
+    [21, 'this', 'Shorten', null],
+  ]);
+  assert.deepEqual(callsOf(dir, 'Price'), [
+    [23, '_provider', 'GetRequiredService', null],
+    [23, 'IFareTable', 'PriceFor', 'IFareTable'],
+  ]);
+  assert.deepEqual(callsOf(dir, 'Badge'), [
+    [25, 'Profile', 'ToBadge', 'Profile'],
+    [25, 'Passenger', 'ToProfile', 'PassengerExtensions'],
+  ]);
+});
+
+test('CSharp reading AC-6: a call inside an object or collection initializer gives its call fact', (t) => {
+  const { dir } = extracted(t);
+  assert.deepEqual(callsOf(dir, 'Receipt'), [
+    [35, '_voyages', 'Total', null],
+    [36, '_voyages', 'Line', null],
+  ]);
+  assert.deepEqual(callsOf(dir, 'Ticket'), [
+    [29, 'Passenger', 'ToHolder', 'PassengerExtensions'],
+    [30, '_voyages', 'Load', null],
+  ]);
+});
+
+test('CSharp reading AC-7: a chain link resolves only through a known receiver type and one target', (t) => {
+  const { dir } = extracted(t);
+  assert.deepEqual(callsOf(dir, 'Summarize'), [
+    [40, '_voyages', 'LoadAsync', null],
+    [40, 'Voyage', 'ToSummary', 'Voyage'],
+  ]);
+  // `thing` has no known type, so the method name `Describe`, unique in the repository, does
+  // not resolve it; `port` reaches `Moor` through two interfaces, so it has no one target.
+  assert.deepEqual(callsOf(dir, 'Board'), [
+    [44, '_voyages', 'Load', null],
+    [45, 'Voyage', 'Close', 'Voyage'],
+    [47, 'Cabin', 'Lock', 'Cabin'],
+  ]);
+  const duplicates = facts(dir, 'api')
+    .filter((f) => f.type === 'method_call')
+    .map((f) => JSON.stringify([f.file, f.line, f.class, f.method, f.calledMethod, f.receiverType ?? f.field]));
+  assert.equal(new Set(duplicates).size, duplicates.length);
+});
+
+test('CSharp reading AC-8: routes-of reaches a callee of an expression body, an initializer and a chain link', (t) => {
+  const { dir } = extracted(t);
+  assert.equal(cli(dir, 'join').status, 0);
+  const cases = [
+    ['PassengerService.Format', `${PASSENGERS}:55`, ['GET passengers/*/label']],
+    ['Profile.ToBadge', 'src/Passengers/Types.cs:60', ['GET passengers/*/badge']],
+    ['PassengerExtensions.ToHolder', 'src/Passengers/Types.cs:67', ['GET passengers/*/ticket']],
+    ['VoyageStore.Total', 'src/Passengers/Types.cs:23', ['GET passengers/*/receipt']],
+    ['Voyage.ToSummary', 'src/Passengers/Types.cs:40', ['GET passengers/*/summary']],
+    ['Cabin.Lock', 'src/Passengers/Types.cs:45', ['POST passengers/*/board']],
+    ['FareTable.PriceFor', 'src/Passengers/Types.cs:77', ['GET passengers/*/price']],
+  ];
+  for (const [symbol, site, keys] of cases) {
+    for (const args of [[symbol, '--symbol'], [site, '--repo', 'api']]) {
+      const run = cli(dir, 'routes-of', ...args, '--json');
+      assert.equal(run.status, 0, `${args[0]}: ${run.stderr}`);
+      assert.deepEqual(JSON.parse(run.stdout).routes.map((r) => r.key), keys, args[0]);
+    }
+  }
+});

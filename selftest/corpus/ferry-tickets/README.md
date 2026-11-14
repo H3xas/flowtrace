@@ -14,3 +14,9 @@ client (`web`). It holds the attribute and route-argument shapes the C# reader m
   one name in two namespaces, a method call, and a constant that only the `ops`
   repository declares, and a page whose class route names an unknown constant
   (`Harbor/Lost.cshtml.cs`).
+
+`Passengers/` holds the call shapes: calls inside expression-bodied methods, inside object
+and collection initializers, and chain links whose receiver type is known from a parameter,
+a typed local, `new T()`, an awaited `Task<T>` or the return type of the previous link. Two
+receivers have no single target: `thing`, whose type nothing states, and `port`, which
+reaches `Moor` through two interfaces.
