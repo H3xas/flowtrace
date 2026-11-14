@@ -337,3 +337,163 @@ test('Web extractor reach AC-1: a TypeScript repository reads its .js and .jsx f
   assert.ok(ofType(facts, 'method_span').some((span) => span.file === 'src/legacy/format.js' && span.method === 'formatLabel'));
   assert.ok(ofType(facts, 'branch_point').some((entry) => entry.file === 'src/legacy/format.js' && entry.kind === 'ternary'));
 });
+
+const CURRIED_SHAPES = [
+  ['connect', "connect(mapState, { loadItem })(itemCard)"],
+  ['withRouter-connect', "withRouter(connect(mapState, { loadItem })(itemCard))"],
+  ['compose', 'compose(withTheme, withStyles)(itemCard)'],
+  ['curried', 'withData(source)(options)(itemCard)'],
+];
+
+test('Web extractor reach AC-9: curried wrappers give the wrapped component in wrappers and default exports', (t) => {
+  const files = { 'flowtrace.config.json': config([WEB]) };
+  for (const [name, expression] of CURRIED_SHAPES) {
+    files[`web/src/${name}.tsx`] = [
+      "import React from 'react';",
+      "import { connect } from 'react-redux';",
+      "import { withRouter } from 'react-router-dom';",
+      "import { loadItem } from './items';",
+      '',
+      'const mapState = (state: any) => state;',
+      'const withTheme = (c: any) => c;',
+      'const withStyles = (c: any) => c;',
+      'const withData = (s: any) => (o: any) => (c: any) => c;',
+      'const compose = (...f: any[]) => (c: any) => c;',
+      'const source = 1;',
+      'const options = 2;',
+      '',
+      'function itemCard() {',
+      '  return <div>card</div>;',
+      '}',
+      '',
+      `export const Wrapped = ${expression};`,
+      '',
+    ].join('\n');
+    files[`web/src/default-${name}.tsx`] = files[`web/src/${name}.tsx`].replace(/export const Wrapped = /, 'export default ');
+  }
+  files['web/src/items.ts'] = 'export function loadItem() {\n  return 1;\n}\n';
+  files['web/src/single.tsx'] = [
+    "import React from 'react';",
+    'function plainCard() {',
+    '  return <div>card</div>;',
+    '}',
+    'export const Styled = styled(plainCard, theme);',
+    '',
+  ].join('\n');
+  const dir = buildRepo(t, files);
+  extractAndJoin(dir);
+  const facts = factsOf(dir);
+  const components = ofType(facts, 'component');
+  for (const [name] of CURRIED_SHAPES) {
+    assert.ok(components.some((entry) => entry.file === `src/${name}.tsx` && entry.name === 'itemCard'), `${name}: the wrapper names itemCard`);
+    const target = components.find((entry) => entry.file === `src/default-${name}.tsx` && entry.exports.includes('default'));
+    assert.equal(target && target.name, 'itemCard', `${name}: the default export is itemCard`);
+  }
+  for (const file of ['src/connect.tsx', 'src/withRouter-connect.tsx']) {
+    const binds = ofType(facts, 'props_bind').filter((entry) => entry.file === file);
+    assert.deepEqual(binds.map((entry) => entry.component), ['itemCard'], `${file}: the connect binding names the wrapped component`);
+  }
+  assert.ok(!components.some((entry) => entry.file === 'src/single.tsx' && entry.name === 'plainCard'), 'a one-group call keeps its reading');
+});
+
+const DEFAULT_EXPORT_SHAPES = [
+  ['bare', 'function X() {\n  return <div />;\n}\nexport default X;\n', 'X'],
+  ['connected', "import { connect } from 'react-redux';\nfunction X() {\n  return <div />;\n}\nexport default connect(mapState)(X);\nfunction mapState() {\n  return {};\n}\n", 'X'],
+  ['memo', "import { memo } from 'react';\nfunction X() {\n  return <div />;\n}\nexport default memo(X);\n", 'X'],
+  ['listed', 'function X() {\n  return <div />;\n}\nexport { X as default };\n', 'X'],
+  ['forwarded', "export { X as default } from './source';\n", null],
+  ['function', 'export default function X() {\n  return <div />;\n}\n', 'X'],
+  ['class', "import React from 'react';\nexport default class X extends React.Component {\n  render() {\n    return <div />;\n  }\n}\n", 'X'],
+  ['anonymous-class', "import React from 'react';\nexport default class extends React.Component {\n  render() {\n    return <div />;\n  }\n}\n", null],
+  ['anonymous-function', 'export default function (props: any) {\n  return <div>{props.a}</div>;\n}\n', null],
+];
+
+test('Web extractor reach AC-10: one default-export reader answers routes, lazy imports and exports alike', (t) => {
+  const files = { 'flowtrace.config.json': config([WEB]) };
+  const lazies = [];
+  const routes = [];
+  DEFAULT_EXPORT_SHAPES.forEach(([name, source], position) => {
+    files[`web/src/shapes/${name}.tsx`] = `import React from 'react';\n${source}`;
+    lazies.push(`const Lazy${position} = lazy(() => import('./shapes/${name}'));`);
+    routes.push(`import Routed${position} from './shapes/${name}';`);
+  });
+  files['web/src/shapes/source.tsx'] = "import React from 'react';\nexport function X() {\n  return <div />;\n}\n";
+  files['web/src/App.tsx'] = [
+    "import React, { lazy } from 'react';",
+    "import { Route, Routes } from 'react-router-dom';",
+    ...routes,
+    ...lazies,
+    '',
+    'export function App() {',
+    '  return (',
+    '    <Routes>',
+    ...DEFAULT_EXPORT_SHAPES.map((_, position) => `      <Route path="/routed-${position}" element={<Routed${position} />} />`),
+    '    </Routes>',
+    '  );',
+    '}',
+    '',
+  ].join('\n');
+  const dir = buildRepo(t, files);
+  extractAndJoin(dir);
+  const facts = factsOf(dir);
+  const components = ofType(facts, 'component');
+  const pageRoutes = ofType(facts, 'page_route');
+  DEFAULT_EXPORT_SHAPES.forEach(([name, , expected], position) => {
+    const file = `src/shapes/${name}.tsx`;
+    const lazy = components.find((entry) => entry.name === `Lazy${position}`);
+    const route = pageRoutes.find((entry) => entry.path === `/routed-${position}`);
+    const exported = components.find((entry) => entry.file === file && entry.exports.includes('default'));
+    assert.equal(lazy.lazyName ?? null, expected, `${name}: lazyName`);
+    assert.equal(route.elementName ?? null, expected, `${name}: page_route.elementName`);
+    assert.equal(exported ? exported.name : null, expected, `${name}: component exports`);
+  });
+});
+
+test('Web extractor reach AC-10: a listed default export gives its lazy page and keeps each page trace apart', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/App.tsx': [
+      "import React, { lazy } from 'react';",
+      "import { Route } from 'react-router-dom';",
+      "const List = lazy(() => import('./List'));",
+      "const Form = lazy(() => import('./Form'));",
+      'export default function App() {',
+      '  return (',
+      '    <>',
+      '      <Route path="/list" element={<List />} />',
+      '      <Route path="/form" element={<Form />} />',
+      '    </>',
+      '  );',
+      '}',
+      '',
+    ].join('\n'),
+    'web/src/List.tsx': [
+      "import React, { useEffect } from 'react';",
+      'function ListPage() {',
+      "  useEffect(() => { fetch('/list-load'); }, []);",
+      "  return <button onClick={() => fetch('/list-save')}>Save</button>;",
+      '}',
+      'export { ListPage as default };',
+      '',
+    ].join('\n'),
+    'web/src/Form.tsx': [
+      "import React, { useEffect } from 'react';",
+      'export default function FormPage() {',
+      "  useEffect(() => { fetch('/form-load'); }, []);",
+      '  return <div />;',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  extractAndJoin(dir);
+  const components = ofType(factsOf(dir), 'component');
+  assert.equal(components.find((entry) => entry.name === 'List').lazyName, 'ListPage');
+  assert.equal(components.find((entry) => entry.name === 'Form').lazyName, 'FormPage');
+  for (const [start, own, other] of [['/list', 'ListPage', 'FormPage'], ['/form', 'FormPage', 'ListPage']]) {
+    const run = cli(dir, ['trace', start, '--json', '--expand']);
+    assert.equal(run.status, 0, run.stderr);
+    assert.ok(run.stdout.includes(own), `${start} reaches ${own}`);
+    assert.ok(run.stdout.includes(`${own}.useEffect@`), `${start} reaches the effect of ${own}`);
+    assert.ok(!run.stdout.includes(other), `${start} does not reach ${other}`);
+  }
+});
