@@ -68,6 +68,7 @@ export const PACKAGE_FORBIDDEN = Object.freeze([
   /^\.github\//,
   /^\.claude\//,
   /^\.git/,
+  /^changes\//,
   /\/out\//,
   /^out\//,
   /^dist\//,
@@ -168,20 +169,23 @@ function git(args) {
 }
 
 /**
- * The suite is only the suite when it is the whole suite: an unlisted test file passes
- * silently, and an unskipped run is the only run whose green means anything.
+ * The suite is only the suite when it is the whole suite. `npm test` finds it with this shell
+ * glob, so a new test file needs no edit here, and any other spelling of the script could run a
+ * different set from the one this stage runs.
  */
-export function suiteProblems(listed, present) {
-  const listedSet = new Set(listed);
-  const presentSet = new Set(present);
-  return [
-    ...present
-      .filter((file) => !listedSet.has(file))
-      .map((file) => `${file} exists and the "test" script in package.json never runs it; add it there`),
-    ...listed
-      .filter((file) => !presentSet.has(file))
-      .map((file) => `package.json runs ${file}, which does not exist; restore the file or drop the entry`),
-  ];
+export const SUITE_COMMAND = 'node --test selftest/*.test.js';
+
+export function suiteScriptProblems(testScript) {
+  if (testScript === SUITE_COMMAND) return [];
+  return [`the "test" script in package.json must be exactly "${SUITE_COMMAND}"; it reads ${JSON.stringify(testScript ?? null)}`];
+}
+
+/** The names the shell glob `selftest/*.test.js` matches: top level, no leading dot. */
+export function suiteFiles(names) {
+  return names
+    .filter((name) => name.endsWith('.test.js') && !name.startsWith('.'))
+    .map((name) => `selftest/${name}`)
+    .sort();
 }
 
 /** The counts node's TAP reporter prints at the end of a run. */
@@ -210,25 +214,30 @@ export function tapNames(output, kind) {
 function suiteStage() {
   const pkg = readJsonInput(
     join(ROOT, 'package.json'),
-    'the suite is the file list in package.json; restore the file or the repository cannot state what its suite is',
+    'the suite is the "test" script in package.json; restore the file or the repository cannot state what its suite is',
   );
-  const listed = String(pkg.scripts?.test ?? '')
-    .split(/\s+/)
-    .filter((token) => token.endsWith('.test.js'));
-  const present = listDirectory(
-    join(ROOT, 'selftest'),
-    'the public suite lives in selftest/; restore the directory or the repository has no suite to run',
-  )
-    .filter((name) => name.endsWith('.test.js'))
-    .map((name) => `selftest/${name}`)
-    .sort();
-  const problems = suiteProblems(listed, present);
+  const problems = suiteScriptProblems(pkg.scripts?.test);
   if (problems.length > 0) {
     throw new StageFailure({
       command: shell('package.json', ['scripts.test']),
       status: 1,
       output: problems.join('\n'),
-      repair: 'the public suite runs from that list; fix it before trusting a green run',
+      repair: 'npm test and this stage find the suite by the same glob; restore the script before trusting a green run',
+    });
+  }
+  const listed = suiteFiles(
+    listDirectory(
+      join(ROOT, 'selftest'),
+      'the public suite lives in selftest/; restore the directory or the repository has no suite to run',
+    ),
+  );
+  // With no file, node --test would fall back to its own discovery and run some other set
+  if (listed.length === 0) {
+    throw new StageFailure({
+      command: `list ${SUITE_COMMAND.split(' ').at(-1)}`,
+      status: 1,
+      output: 'no test file matches the glob',
+      repair: 'the public suite lives in selftest/*.test.js; restore it or the repository has no suite to run',
     });
   }
 
