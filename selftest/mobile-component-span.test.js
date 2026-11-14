@@ -325,13 +325,14 @@ test('Mobile component span AC-5: a node budget cut prints walk-limit arms and s
   assert.equal(run.model.header.entries, base.header.entries, 'every entry is still listed');
 });
 
-test('Mobile component span AC-5: a handler whose service method holds only a two-line gateway call reaches no route', () => {
-  assert.ok(
-    !mobileFacts().some((fact) => fact.type === 'gateway_call' && fact.method === 'addNote'),
-    'the two-line call states no gateway_call fact',
+test('Mobile component span AC-5: a handler whose service method holds only a two-line gateway call reaches its route', () => {
+  const calls = mobileFacts().filter((fact) => fact.type === 'gateway_call' && fact.method === 'addNote');
+  assert.deepEqual(
+    calls.map((fact) => [fact.line, fact.verb, fact.template, fact.resolved]),
+    [[39, 'POST', 'nursery/v1/plots/${plotId}/notes', true]],
   );
   const note = entryNamed(base, 'onNote');
-  assert.deepEqual([note.routes, note.arms, note.unresolved], [[], 0, 0]);
+  assert.deepEqual([note.routes, note.arms, note.unresolved], [['POST nursery/v1/plots/*/notes'], 1, 0]);
   for (const arm of base.unresolved) assert.ok(BASE_REASONS.has(arm.reason), arm.reason);
 });
 

@@ -309,13 +309,13 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   ionViewWillEnter and ionViewDidEnter (mount), ngOnChanges, ngDoCheck,
   ngAfterContentChecked and ngAfterViewChecked (update), ngOnDestroy, ionViewWillLeave
   and ionViewDidLeave (unmount). The chain follows this. calls, injected service calls
-  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call on one
-  line, also inside pipe or mergeMap. A request no entry reaches, such as one a method
-  only a decorator, a subscription or an inherited hook runs, prints once as an arm
+  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call, also
+  one written over more than one line or with comments between its tokens, and also
+  inside pipe or mergeMap. A request no entry reaches, such as one a method
+  only a decorator or a subscription runs, prints once as an arm
   without entry, and a request an entry reaches is never counted again there. A method,
-  service or component node the depth or node budget cut is a walk-limit arm too. A
-  gateway call written over more than one line states no fact, so its handler shows as
-  an entry that reaches no route; assign and prop bindings are no entries. --out defaults to
+  service or component node the depth or node budget cut is a walk-limit arm too.
+  Assign and prop bindings are no entries. --out defaults to
   <out>/span/component-<slug>.html, the slug naming the component, the file that declares
   it and, under --entry, the selected entry's own site; a name longer than the
   120-character cap ends in a digest of the whole name rather than losing that site, and
