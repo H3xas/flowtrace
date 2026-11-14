@@ -1302,6 +1302,7 @@ async function runExtract(config, repoFilter) {
       caseIdCalls: config.caseId ? config.caseId.calls : [],
       backendCalls: config.backend,
       workerPatterns: config.workerPatterns,
+      entryPoints: config.entryPoints,
     });
     let count;
     try {
