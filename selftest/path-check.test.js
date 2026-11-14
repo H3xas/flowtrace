@@ -162,6 +162,18 @@ test('Repo process AC-2: the check gives no hit on its own pattern line', { skip
   assertClean(pathCheck(dir));
 });
 
+test('Repo process AC-2: a file whose name holds a newline after the path of the check is still scanned', { skip }, (t) => {
+  const name = 'path-check.sh\nnotes.md';
+  const dir = tree(t, { [`scripts/${name}`]: `${HOME}/src\n` });
+  const result = pathCheck(dir);
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  assert.equal(
+    result.stderr,
+    `path-check: absolute machine paths found\n./scripts/${name}:1:${HOME}/src\n`,
+  );
+});
+
 test('Repo process AC-2: a file whose name starts with the path of the check is still scanned', { skip }, (t) => {
   const name = ['path-check.sh', '1', 'x'].join(':');
   const dir = tree(t, { [`scripts/${name}`]: `${HOME}/src\n` });

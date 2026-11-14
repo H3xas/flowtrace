@@ -224,6 +224,42 @@ test('Repo process AC-13: the suite is every top-level selftest name the shell g
   ]);
 });
 
+/** A checkout holding the command, a package.json with the given test script and the given selftest files. */
+function suiteCheckout(t, testScript, files) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-verify-suite-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  installScript(dir);
+  writeFileSync(join(dir, 'package.json'), `${JSON.stringify({ name: 'suite-fixture', scripts: { test: testScript } }, null, 2)}\n`);
+  mkdirSync(join(dir, 'selftest'));
+  for (const [name, text] of Object.entries(files)) writeFileSync(join(dir, 'selftest', name), text);
+  return dir;
+}
+
+const PASSING_TEST = "import test from 'node:test';\ntest('a fixture test passes', () => {});\n";
+
+test('Repo process AC-13: the suite stage refuses a test script that is a file list, naming the glob command', (t) => {
+  const dir = suiteCheckout(t, 'node --test selftest/a.test.js', { 'a.test.js': PASSING_TEST });
+  const result = verifyIn(dir, ['--only', 'suite']);
+  assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
+  const output = `${result.stdout}${result.stderr}`;
+  assert.equal(output.match(/must be exactly "node --test selftest\/\*\.test\.js"/g)?.length, 1, output);
+});
+
+test('Repo process AC-13: the suite stage runs every file the glob finds, and an empty glob fails it', (t) => {
+  const found = suiteCheckout(t, SUITE_COMMAND, { 'a.test.js': PASSING_TEST, 'b.test.js': PASSING_TEST, 'helper.js': 'throw new Error("not a test");\n' });
+  // The stage runs node --test itself, which refuses to start inside this runner's context
+  const { NODE_TEST_CONTEXT: _runner, ...outside } = commandEnv();
+  const spawned = spawnSync(process.execPath, [join(found, 'scripts', 'verify.mjs'), '--only', 'suite'], { cwd: found, encoding: 'utf8', env: outside });
+  const ran = { status: spawned.status, stdout: spawned.stdout ?? '', stderr: spawned.stderr ?? '' };
+  assert.equal(ran.status, 0, `${ran.stdout}${ran.stderr}`);
+  assert.match(ran.stdout, /suite ok — 2 tests pass, 0 fail, 0 skipped \(2 files\)/);
+
+  const empty = suiteCheckout(t, SUITE_COMMAND, { 'helper.js': PASSING_TEST });
+  const refused = verifyIn(empty, ['--only', 'suite']);
+  assert.equal(refused.status, 1, `${refused.stdout}${refused.stderr}`);
+  assert.match(`${refused.stdout}${refused.stderr}`, /no test file matches the glob/);
+});
+
 test('Repo process AC-13: package.json runs the suite by the glob', () => {
   const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8'));
   assert.equal(pkg.scripts.test, SUITE_COMMAND);
