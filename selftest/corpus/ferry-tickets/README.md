@@ -31,3 +31,6 @@ decision would read dispositions from.
 `if` whose body returns on success. In `Approve`, `Pass` and `Stub` the next statement is the
 refusal the sentinel falls through to. The other actions put a statement between the two, give
 the `if` a longer body, return a shape no status rule reads, or use an `else`.
+
+`DecksController.cs` holds one-line branches whose condition names a status word other than
+the one its own `return` or `throw` answers, beside a multi-line branch.

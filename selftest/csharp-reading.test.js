@@ -422,3 +422,62 @@ test('CSharp reading AC-12: a sentinel the if sends to its false side reads the 
   };
   for (const [key, outcome] of Object.entries(expected)) assert.deepEqual(sentinelSeed(dir, key), outcome, key);
 });
+
+/** The response of each seed of `key`, in seed order, as trace states it. */
+function seedResponses(dir, key, ...config) {
+  const run = runCli(['trace', key, '--seeds', '--json', ...(config.length ? config : CONFIG)], { cwd: dir });
+  assert.equal(run.status, 0, run.stderr);
+  return JSON.parse(run.stdout).seeds.map((seed) => seed.response ?? null);
+}
+
+test('CSharp reading AC-13: a one-line branch reads its label from its return, in every reader', (t) => {
+  const { dir } = extracted(t);
+  const hold = ['404 NotFound', 'throw HoldException (500)', '400 BadRequest', null];
+  const release = ['return', null];
+  assert.deepEqual(seedResponses(dir, 'POST decks/{deck}/hold'), hold);
+  assert.deepEqual(seedResponses(dir, 'POST decks/{deck}/release'), release);
+
+  writeFileSync(join(dir, 'decks.area.txt'), 'POST decks/{deck}/hold\nPOST decks/{deck}/release\n');
+  const cover = cli(dir, 'cover', '--area', 'decks.area.txt', '--json');
+  assert.equal(cover.status, 0, cover.stderr);
+  const routes = Object.fromEntries(JSON.parse(cover.stdout).routes.map((r) => [r.key, r.seeds.map((s) => s.response ?? null)]));
+  assert.deepEqual(routes, { 'POST decks/{deck}/hold': hold, 'POST decks/{deck}/release': release });
+
+  for (const key of ['POST decks/{deck}/hold', 'POST decks/{deck}/release']) assert.equal(cli(dir, 'span', key).status, 0, key);
+  const page = (name) => readFileSync(join(dir, 'out', 'span', `post-decks-deck-${name}.html`), 'utf8');
+  assert.doesNotMatch(page('release'), /403 Forbidden/);
+  assert.equal(page('hold').match(/404 NotFound/g)?.length, 1);
+  assert.equal(page('hold').match(/400 BadRequest/g)?.length, 1);
+
+  const out = join(dir, 'cases-out');
+  assert.equal(cli(dir, 'cases', '--area', 'decks.area.txt', '--out', out).status, 0);
+  const headings = (name) => readFileSync(join(out, `post-decks-deck-${name}.md`), 'utf8').match(/^### U\d+ .*$/gm).map((h) => h.split('`')[0].trim());
+  assert.deepEqual(headings('hold'), ['### U1  404 NotFound', '### U2  throw HoldException (500)', '### U3  400 BadRequest', '### U4  no observable effect']);
+  assert.deepEqual(headings('release'), ['### U1  return', '### U2  no observable effect']);
+});
+
+test('CSharp reading AC-13: the corpus guard that names a forbidden member no longer reads 403', (t) => {
+  const dir = copyFixture(t, 'bakery-orders');
+  const config = ['--config', 'bakery.config.json'];
+  assert.equal(runCli(['extract', ...config], { cwd: dir }).status, 0);
+  for (const key of ['POST bakery/v1/proofs/quick', 'POST bakery/v1/proofs/loose']) {
+    const responses = seedResponses(dir, key, ...config);
+    assert.ok(responses.includes('return'), key);
+    assert.ok(!responses.includes('403 Forbidden'), key);
+  }
+});
+
+test('CSharp reading AC-13: a one-line branch never folds with the error return on a later line', () => {
+  const at = (line, kind, text, endLine = line) => ({ repo: 'api', fact: { type: 'branch_point', file: 'a.cs', class: 'A', method: 'M', line, kind, text, endLine } });
+  const merged = mergeBranchFacts([
+    at(10, 'if', 'if (seat.Gone) return Ok();'),
+    at(11, 'error_return', 'if (seat.Lost) return NotFound();'),
+    at(20, 'if', 'if (seat.Late)', 22),
+    at(21, 'error_return', 'return Conflict();'),
+  ]);
+  assert.deepEqual(merged.map((entry) => [entry.fact.line, entry.fact.kind, entry.fact.returnText ?? null]), [
+    [10, 'if', null],
+    [11, 'error_return', null],
+    [20, 'error_return', 'return Conflict();'],
+  ]);
+});
