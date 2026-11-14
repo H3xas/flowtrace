@@ -239,3 +239,75 @@ test('Test evidence AC-9: a tests/ spec leaves the stubs of a .pw.ts spec as the
     ],
   );
 });
+
+const TWIN_PW_SPEC = `import { test } from '@playwright/test';
+
+page.route('**/api/items/featured', (route) => route.continue());
+
+test('lists the items', async ({ page, request }) => {
+  await page.route('**/api/items', (route) => route.fulfill({ json: [] }));
+  await request.get('api/items');
+});
+
+test('lists the items', async ({ page, request }) => {
+  await page.route('**/api/items/42', (route) => route.abort());
+  await request.get('api/items/42');
+});
+`;
+
+const TWIN_CY_SPEC = `cy.intercept('GET', '**/api/items/featured');
+
+describe('items', () => {
+  it('lists the items', () => {
+    cy.intercept('GET', '**/api/items');
+  });
+
+  it('lists the items', () => {
+    cy.intercept('GET', '**/api/items/42');
+  });
+});
+`;
+
+test('Test evidence AC-13: a request, a stub and an intercept carry the line of their own test, or null outside a test', (t) => {
+  const dir = writeRepo(
+    t,
+    {
+      'backend/src/Controllers/ItemController.cs': ITEMS_CONTROLLER,
+      'suite/e2e/items.pw.ts': TWIN_PW_SPEC,
+      'web/cypress/e2e/items.cy.ts': TWIN_CY_SPEC,
+      'mobile/cypress/e2e/items.cy.ts': TWIN_CY_SPEC,
+    },
+    {
+      repos: [
+        ...PLAYWRIGHT_REPOS.repos,
+        { id: 'web', kind: 'web', root: 'web', cypressSubpath: 'cypress' },
+        { id: 'mobile', kind: 'mobile', root: 'mobile' },
+      ],
+    },
+  );
+  const owned = (repo, type, key) =>
+    extractFacts(dir, repo)
+      .filter((fact) => fact.type === type)
+      .map((fact) => [fact[key], fact.test, fact.testLine]);
+
+  assert.deepEqual(owned('suite', 'pw_stub', 'pattern'), [
+    ['**/api/items/featured', '', null],
+    ['**/api/items', 'lists the items', 5],
+    ['**/api/items/42', 'lists the items', 10],
+  ]);
+  assert.deepEqual(owned('suite', 'pw_request', 'template'), [
+    ['api/items', 'lists the items', 5],
+    ['api/items/42', 'lists the items', 10],
+  ]);
+  const intercepts = [
+    ['**/api/items/featured', '', null],
+    ['**/api/items', 'lists the items', 4],
+    ['**/api/items/42', 'lists the items', 8],
+  ];
+  assert.deepEqual(owned('web', 'cypress_intercept', 'pattern'), intercepts);
+  assert.deepEqual(owned('mobile', 'cypress_intercept', 'pattern'), intercepts);
+  for (const repo of ['web', 'mobile']) {
+    const tests = extractFacts(dir, repo).filter((fact) => fact.type === 'cypress_test').map((fact) => fact.line);
+    assert.deepEqual(tests, [4, 8], repo);
+  }
+});

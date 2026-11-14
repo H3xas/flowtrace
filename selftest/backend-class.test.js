@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { CLI, REPO_ROOT, copyFixture, runCli, withoutTestsSpecStubs, writeJsonFile } from './helpers.js';
+import { CLI, REPO_ROOT, copyFixture, runCli, asEarlierFacts, writeJsonFile } from './helpers.js';
 import { goldenFacts } from './corpus/kettle-market/golden.mjs';
 
 const CORPUS = 'kettle-market';
@@ -327,7 +327,7 @@ function joinAndCover(dir, config, area) {
 test('Backend class AC-9: pw_stub keeps its base facts, and its handler moves no edge, route state, evidence count or parity', (t) => {
   const golden = JSON.parse(readFileSync(join(REPO_ROOT, 'selftest', 'corpus', CORPUS, 'base-facts.json'), 'utf8'));
   const now = goldenFacts(CLI);
-  assert.deepEqual(Object.fromEntries(Object.entries(now).map(([key, facts]) => [key, withoutTestsSpecStubs(facts)])), golden);
+  assert.deepEqual(Object.fromEntries(Object.entries(now).map(([key, facts]) => [key, asEarlierFacts(facts)])), golden);
 
   const example = mkdtempSync(join(tmpdir(), 'flowtrace-selftest-'));
   t.after(() => rmSync(example, { recursive: true, force: true }));

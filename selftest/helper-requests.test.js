@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { REPO_ROOT, copyFixture, runCli, withoutTestsSpecStubs } from './helpers.js';
+import { REPO_ROOT, copyFixture, runCli, asEarlierFacts } from './helpers.js';
 import { captureFacts } from './corpus/lantern-depot/capture.mjs';
 import { normaliseTemplate, requestIndex } from '../lib/skeleton.js';
 
@@ -23,7 +23,7 @@ function factsOf(facts, type, spec, title) {
 }
 
 function requestsOf(facts, spec, title) {
-  return factsOf(facts, 'pw_request', spec, title);
+  return factsOf(facts, 'pw_request', spec, title).map(({ testLine, ...rest }) => rest);
 }
 
 function request(spec, title, fields) {
@@ -246,7 +246,7 @@ test('Helper request evidence AC-6: a helper that stubs a route is never entered
   const now = captureFacts(join(REPO_ROOT, 'bin', 'flowtrace.js'));
   for (const name of Object.keys(BASE_FACTS)) {
     const stubs = (set) => set.filter((candidate) => candidate.type === 'pw_stub');
-    assert.deepEqual(stubs(withoutTestsSpecStubs(now[name])), stubs(BASE_FACTS[name]), name);
+    assert.deepEqual(stubs(asEarlierFacts(now[name])), stubs(BASE_FACTS[name]), name);
   }
 });
 
@@ -348,6 +348,6 @@ test('Helper request evidence AC-9: a direct request keeps its base shape, and t
   const now = captureFacts(join(REPO_ROOT, 'bin', 'flowtrace.js'));
   assert.deepEqual(Object.keys(now), Object.keys(BASE_FACTS));
   for (const name of Object.keys(BASE_FACTS)) {
-    assert.deepEqual(withoutAdded(withoutTestsSpecStubs(now[name]), ADDED_FACTS[name]), BASE_FACTS[name], name);
+    assert.deepEqual(withoutAdded(asEarlierFacts(now[name]), ADDED_FACTS[name]), BASE_FACTS[name], name);
   }
 });

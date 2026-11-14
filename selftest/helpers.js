@@ -60,10 +60,13 @@ export function extractRepoFacts(dir, repo) {
   return JSON.parse(readFileSync(join(dir, 'out', 'facts', `${repo}.json`), 'utf8')).facts;
 }
 
-/** The facts an extractor gave before the stub pass read `tests/` specs: every fact but a
- * `pw_stub` of such a spec. A pin of that extractor compares with these. */
-export function withoutTestsSpecStubs(facts) {
-  return facts.filter((candidate) => !(candidate.type === 'pw_stub' && String(candidate.spec).startsWith('tests/')));
+/** The facts as an extractor wrote them before the stub pass read `tests/` specs and before a
+ * fact named the line of its test: no `pw_stub` of a `tests/` spec and no `testLine`. A pin
+ * of that extractor compares with these. */
+export function asEarlierFacts(facts) {
+  return facts
+    .filter((candidate) => !(candidate.type === 'pw_stub' && String(candidate.spec).startsWith('tests/')))
+    .map(({ testLine, ...rest }) => rest);
 }
 
 /** Copies the synthetic corpus into a fresh temp directory, registered for cleanup on

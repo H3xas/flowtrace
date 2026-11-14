@@ -40,8 +40,8 @@ helper classes and clients, the shapes that decide which request a test call lea
   and `direct`.
 - `base-facts.json` holds the facts of the other Playwright corpora and of
   `examples/demo-shop`, as the extractor wrote them before it followed helper calls. That
-  extractor read route stubs only in `.pw.ts` specs, so the comparison leaves out the
-  `pw_stub` facts of `tests/` specs.
+  extractor read route stubs only in `.pw.ts` specs and wrote no `testLine`, so the
+  comparison leaves out the `pw_stub` facts of `tests/` specs and the `testLine` field.
   `capture.mjs` writes it. Run it with the CLI of the commit the file pins:
 
   ```

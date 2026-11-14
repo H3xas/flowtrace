@@ -46,3 +46,7 @@
   the stub helper index when only `tests/` specs exist. `cover` counts these stubs as
   Playwright stub evidence, so a route and the parity summary can gain evidence. Extract
   again to get the new facts.
+- `pw_request`, `pw_stub` and `cypress_intercept` facts get the optional field `testLine`: the
+  declaration line of the test that holds the call, or `null` outside a test. Two tests with the
+  same title in one spec now have different owner lines. Facts extracted again have a new facts
+  digest, so the `trace` status identity and the export identities change once.
