@@ -543,3 +543,49 @@ test('Web extractor reach AC-11: an imported route target marks only the compone
     'src/other/Qux.tsx Qux component',
   ]);
 });
+
+test('Web extractor reach AC-12: join lands a render on the component its import names', (t) => {
+  const child = (name, exported = true) =>
+    `import React from 'react';\n${exported ? 'export ' : ''}function ${name}() {\n  return <span>${name}</span>;\n}\n`;
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/cards/Card.tsx': child('Card'),
+    'web/src/legacy/Card.tsx': child('Card'),
+    'web/src/rows/Row.tsx': child('Row'),
+    'web/src/empty.ts': 'export const nothing = 1;\n',
+    'web/src/elsewhere.tsx': child('Missing', false),
+    'web/src/dup.tsx': child('Thing'),
+    'web/src/dup/index.tsx': child('Thing'),
+    'web/src/App.tsx': [
+      "import React from 'react';",
+      "import { Card } from './cards/Card';",
+      "import { Row as Line } from './rows/Row';",
+      "import { Missing } from './empty';",
+      "import { Thing } from './dup';",
+      '',
+      'export function App() {',
+      '  return (',
+      '    <div>',
+      '      <Card />',
+      '      <Line />',
+      '      <Missing />',
+      '      <Thing />',
+      '    </div>',
+      '  );',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  extractAndJoin(dir);
+  const renders = flowOf(dir).edges.filter((edge) => edge.kind === 'renders' && edge.from.ref === 'App');
+  const target = (key) => {
+    const edge = renders.find((entry) => entry.key === key);
+    return `${edge.to.ref} ${edge.to.file}`;
+  };
+  assert.equal(target('App->Card'), 'Card src/cards/Card.tsx');
+  assert.equal(target('App->Line'), 'Row src/rows/Row.tsx');
+  assert.equal(target('App->Missing'), 'Missing src/elsewhere.tsx', 'an import that settles on no component keeps the selector target');
+  const things = ofType(factsOf(dir), 'component').filter((entry) => entry.name === 'Thing');
+  const fallback = things[things.length - 1];
+  assert.equal(target('App->Thing'), `Thing ${fallback.file}`, 'an import that settles on two components keeps the selector target');
+});
