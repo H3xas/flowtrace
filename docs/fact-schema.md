@@ -172,14 +172,14 @@ readable. It keeps the name-only limits, and a fresh extraction adds the provena
 
 | type | fields | stated when |
 |---|---|---|
-| `pw_test` | `spec`, `test`, `skipped` | a Playwright test is declared — not a `test.skip(condition, reason)` guard written inside a test body, and not a `test` reached through a member access (a regular expression's `.test(...)`, a matcher object's) |
+| `pw_test` | `spec`, `test`, `skipped`, `eligibility`, `guards` | a Playwright test is declared — not a `test.skip(condition, reason)` guard written inside a test body, and not a `test` reached through a member access (a regular expression's `.test(...)`, a matcher object's) |
 | `pw_request` | `spec`, `test`, `verb`, `template`, `resolved` | a test issues a request |
 | `pw_assert` | `spec`, `test`, `kind` | a test asserts something |
 | `pw_stub` | `spec`, `test`, `kind` | a test stubs a response; `handler` says what its route handler does |
 | `pw_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `pw_test`: whether the test runs on a real backend, on patched responses or on a mocked backend |
 | `cypress_test` | `spec`, `test`, `skipped` | a Cypress test is declared |
 | `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL |
-| `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal first argument of a configured case-id call, `table` for one row of a same-file data table the test iterates, `unresolved` for a configured call whose first argument none of those readers resolve; an `unresolved` fact has empty `ids` and adds `expression`, the argument text |
+| `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal first argument of a configured case-id call, `table` for one row of a same-file data table the test iterates, `evaluated` for one loop instance of a same-file value the bounded reader resolves, `unresolved` for a configured call whose first argument none of those readers resolve; an `evaluated` fact adds `instance`, and an `unresolved` fact has empty `ids` and adds `expression`, the argument text, and `instance` when one loop instance resolves no id |
 | `pw_title` | `spec`, `titles` | *(optional)* the titles a collector resolved for one `pw_test` declaration, one per parameter instance; its `line` is that declaration's *source* line |
 
 A `pw_request` can have four optional fields. `via: "helper"` marks a request that the test
@@ -259,18 +259,47 @@ holds it, else the line of the test's call into `via`.
 takes the kind that every repo-wide helper of that name agrees on, else `unresolved`. The field
 adds nothing to the set of `pw_stub` facts, and `cover` reads neither field.
 
-`case_id` resolves only three shapes: a
-`test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is
-a string literal, a literal first argument of a configured case-id call (`caseId.calls` in the
-configuration file — an entry like `tms.id` matches `tms.id(...)` sites in a test body and a
-`tms.id(…)` wrapper in title position; none are configured out of the box), or a first
-argument that is a member expression whose object is the loop binding of a same-file
-`for (const row of ROWS)` over an array of object literals. A configured call whose first
-argument is anything else (a subscript, a computed value, a template, a cross-file table)
-gives one `unresolved` record with `ids: []` and `expression`, the argument text with its
-white space collapsed and cut at 160 characters. It is never approximated, so the id a
-tester pastes into a case tool is never invented. A reader that counts ids reads the record
-as no ids; the `span` page shows the test with no case id.
+`case_id` resolves four shapes. The first is a
+`test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is a
+string literal. The second is a literal first argument of a configured case-id call
+(`caseId.calls` in the configuration file). An entry like `tms.id` matches `tms.id(...)` sites
+in a test body and a `tms.id(…)` wrapper in title position. None are configured out of the box.
+The third is a first argument that is a member expression whose object is the loop binding of a
+same-file `for (const row of ROWS)` over an array of object literals.
+
+The fourth is the bounded reader of the spec file
+([configuration.md](configuration.md#caseid)). It reads `const` values, object and array
+literals, keys, ternaries and the bindings of the `for…of` and `forEach` loops around the call.
+It gives one `evaluated` fact for each loop instance, 64 at most for a site, in loop order. Its
+`instance` is an object of the loop bindings that the argument read, each a string, a number or
+a boolean, such as `{ "g": false, "row.name": "alpha" }`. An argument with no loop gives
+`instance: {}`.
+
+A configured call whose first argument none of these read gives one `unresolved` record with
+`ids: []` and `expression`, the argument text with its white space collapsed and cut at 160
+characters. Examples are a function parameter, a call result, `process.env`, a `let` binding,
+an imported value, and a site past 64 instances. A loop instance that reads an absent key gives
+the same record with its `instance`. An id is never approximated, so the id a tester pastes
+into a case tool is never invented. A reader that counts ids reads the record as no ids. The
+`span` page shows its expression as `case id not read: <expression>`.
+
+`pw_test.eligibility` says whether the spec file says that the test runs. It is one of four
+states, and the first that applies wins:
+
+1. `static-skip`: the test is skipped with no condition. That is `test.skip(` or `test.fixme(`
+   as the declaration, a `test.describe.skip(` or `test.describe.fixme(` around it, or a bare
+   `test.skip()` in its file, describe, hook or body.
+2. `environment-skip`: a guard of the test reads true.
+3. `unknown`: a guard reads a value the extractor cannot read.
+4. `eligible`: none of these.
+
+`skipped` is `true` exactly when `eligibility` is `static-skip`. `guards` lists each conditional
+`test.skip(condition, …)` and `test.fixme(condition, …)` that applies to the test, outer scope
+first. Each entry has `line`, `scope` (`file`, `describe`, `hook` or `test`), `expression`, the
+condition text, and `value`: `true`, `false` or `"unknown"`. A guard reads `process.env` only
+from `testEnvironment` in the configuration ([configuration.md](configuration.md#testenvironment)).
+`cover` counts a `pw_test` as running only when it is `eligible`. A fact set written before these
+fields keeps the `skipped` rule.
 
 `pw_title` is written by `extract` for a `playwright` repository configured `"titles": true`
 (see [configuration.md](configuration.md#playwright-titles)): Playwright's own list mode
