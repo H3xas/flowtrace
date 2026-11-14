@@ -92,6 +92,7 @@ test('Web journeys AC-13: one thunk statement prints one chain, in the dispatch 
 
 const REGATTA = ['regatta-desk', 'regatta.config.json'];
 const BASE = JSON.parse(readFileSync(join(CORPUS, 'regatta-desk', 'base-capture.json'), 'utf8'));
+const BASE_FACTS = join(CORPUS, 'regatta-desk', 'base-facts', 'web.json');
 
 test('Web journeys AC-11: a page-load entry prints its kind word, and its ids stay', async () => {
   const { traceNodes } = await import('./corpus/regatta-desk/golden.mjs');
@@ -280,4 +281,57 @@ test('Web journeys AC-10: a page path start walks the components its route eleme
   const crews = cli(regatta, REGATTA[1], ['trace', '/crews/:crewId']);
   assert.equal(crews.status, 0, crews.stderr);
   assert.match(crews.stdout, /^Layout {2}web/m);
+});
+
+test('Web journeys AC-5: a dispatch or call inside an arrow names that arrow, and its digest moves', async () => {
+  const dir = fixture(...REGATTA);
+  const facts = JSON.parse(readFileSync(join(dir, 'out', 'facts', 'web.json'), 'utf8')).facts;
+  const at = (type, file, line) => facts.find((fact) => fact.type === type && fact.file === file && fact.line === line);
+  const handlers = facts.filter((fact) => fact.type === 'template_handler' && fact.kind === 'inline');
+  for (const handler of handlers) {
+    const held = facts.filter(
+      (fact) =>
+        (fact.type === 'action_dispatch' || fact.type === 'method_call') &&
+        fact.arrow &&
+        fact.arrow.attribute &&
+        fact.arrow.attribute.line === handler.line &&
+        fact.arrow.attribute.column === handler.column &&
+        fact.file === handler.file,
+    );
+    assert.ok(held.length > 0, `${handler.file}:${handler.line}:${handler.column} holds a dispatch or call`);
+    for (const fact of held) assert.equal(fact.arrow.attribute.name, handler.event);
+  }
+  assert.deepEqual(at('action_dispatch', 'src/boats/BoatList.tsx', 21).arrow, {
+    line: 20,
+    column: 20,
+    attribute: { name: 'onClick', line: 20, column: 11 },
+  });
+  assert.deepEqual(at('action_dispatch', 'src/crews/CrewRoster.tsx', 14).arrow, { line: 14, column: 20, name: 'onSignUp' });
+  assert.deepEqual(at('action_dispatch', 'src/crews/SignupPanel.tsx', 18).arrow, { line: 17, column: 16, name: 'action' });
+  assert.deepEqual(at('action_dispatch', 'src/results/ResultsBoard.tsx', 9).arrow, { line: 8, column: 13 }, 'an effect callback is an anonymous arrow');
+  for (const [file, line] of [
+    ['src/crews/CrewRoster.tsx', 13],
+    ['src/crews/SignupPanel.tsx', 14],
+    ['src/regatta/RegattaHeader.tsx', 13],
+    ['src/marks/DriftNotice.tsx', 10],
+  ]) {
+    assert.equal(at('action_dispatch', file, line).arrow, undefined, `${file}:${line} sits in no arrow`);
+  }
+  assert.deepEqual(
+    handlers.filter((fact) => fact.component === 'MarkBoard').map((fact) => fact.handler),
+    ['roundMark', 'skipMark'],
+    'dispatch(creator(x)) names the creator',
+  );
+  for (const [method, line, endLine] of [['loadWind', 6, 7], ['loadTide', 9, 11], ['refreshResults', 37, 40]]) {
+    const span = facts.find((fact) => fact.type === 'method_span' && fact.method === method);
+    assert.deepEqual([span.line, span.endLine], [line, endLine], `the curried creator ${method} spans its thunk`);
+  }
+  assert.ok(facts.some((fact) => fact.type === 'effect_handler' && fact.field === 'loadWind'));
+  assert.equal(at('gateway_call', 'src/actions/weather.ts', 7).method, 'loadWind');
+
+  const { factsDigest } = await import('../lib/facts.js');
+  const base = JSON.parse(readFileSync(BASE_FACTS, 'utf8')).facts;
+  assert.notEqual(factsDigest(facts), factsDigest(base));
+  const strip = (list) => list.map(({ arrow, ...rest }) => rest);
+  assert.notEqual(factsDigest(strip(facts)), factsDigest(facts), 'the arrow fields alone move the digest');
 });
