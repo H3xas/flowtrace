@@ -16,6 +16,7 @@ writes them to `out/facts/<repo>.json`; every later step reads only facts.
   "dirtyDigest": "…",
   "fileCount": 9,
   "titles": { "status": "ok", "facts": 12, "refused": 0 },
+  "controlEvidence": 1,
   "facts": [ … ]
 }
 ```
@@ -25,7 +26,10 @@ what later steps compare against to warn that a fact set has gone stale. `dirtyD
 part of that same stamp: a fingerprint of the working tree's changed paths, present whenever
 the other git fields are. `titles` is not a git field: it appears only on a `playwright`
 repository configured `"titles": true`, and states what the title collector did (`status`
-`ok` or `failed`). A non-git checkout extracts perfectly well; it simply carries no
+`ok` or `failed`). `controlEvidence` is not a git field: a `backend` or `web` fact set carries
+it, with the version of the control-evidence fields (see `method_call` below). A fact set
+without it carries no control evidence, and the source-flow view reports each of its bodies as
+unknown order. A non-git checkout extracts perfectly well; it simply carries no
 baseline, so nothing warns — that fact set's *identity* inside a `join --snapshot` or
 `join --export-edges` document still states a revision witness, as `"headSha": null`, rather
 than omitting the field.
@@ -61,7 +65,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `message_class` | `name`, `fqn` | a message type is declared |
 | `di_binding` | `iface`, `impl` | an interface is registered to an implementation |
 | `ctor_field` | `class`, `field`, `paramType` | a class holds a constructor-injected field; with `method`, a parameter the framework injects into that one handler |
-| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form |
+| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form. A fact set carrying `controlEvidence` also gives every `method_call` a `column` and a `control` (see [Control evidence](#control-evidence)) |
 | `method_span` | `class`, `method`, `endLine` | a method body's extent; optional `paramTypes` lists the signature's parameter types as written |
 | `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch` |
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
@@ -120,9 +124,9 @@ only where they apply:
 | `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself (`default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>`); on a mobile fact, optional `componentFile` is the declaration file that owns the template, while `file` and `line` stay the template source site |
 | `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler; on a mobile fact, optional `componentFile` is the declaration file that owns the template |
 | `injects` | `from`, `to` | a class is given another as a dependency; on a mobile fact, optional `source` is the written module specifier, `imported` the named value export, and `unresolved: "mobile-declaration-unresolved"` an import form the reader cannot bind |
-| `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal |
+| `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal; with `controlEvidence`, it also carries `column` and `control` |
 | `action_def` | `action` | an action type is declared |
-| `action_dispatch` | `class`, `method`, `action` | a body dispatches an action |
+| `action_dispatch` | `class`, `method`, `action` | a body dispatches an action; with `controlEvidence`, it also carries `control` |
 | `effect_handler` | `class`, `field`, `actions`, `endLine` | a body handles dispatched actions and issues HTTP |
 | `props_bind` | `component`, `prop`, `target` | a `connect` map binds a creator to a prop |
 | `component_entry` | `component`, `kind`, `trigger`, `handler`, `guards` | execution reaches a component: a class lifecycle callback, a hook effect, the cleanup an effect returns, or a trigger the extractor cannot read |
@@ -179,6 +183,50 @@ single declaration in the repository. A site the evidence cannot prove states th
 `mobile-declaration-unresolved` result, with the sorted candidate files when more than one
 declaration is possible. An older fact set that lacks these optional fields remains
 readable. It keeps the name-only limits, and a fresh extraction adds the provenance.
+
+### Control evidence
+
+A `backend` or `web` fact set with `controlEvidence: 1` states, on each call fact, where the
+call sits in its body. The `source-flow` view reads these fields and falls back to an
+unknown-order group when it cannot read them.
+
+`column` is the 1-based column of the same offset the fact's `line` comes from. Two calls on
+one line then have two columns.
+
+`control` is an object, or `null` when the extractor could not read the body.
+
+- `path` lists the frames that hold the call, outermost first. Each frame has `kind`, `form`,
+  `id` (`<form>@<line>:<column>` of the construct), `line`, `column`, `text` (the construct
+  head, at most 120 characters), and the field the form adds:
+  - `arm`: an `if`, `switch` case, `?:`, `&&`, `||`, `??`, `?.` or `switch-expression`. The
+    `arm` field is `then`, `else`, `default`, `true`, `false`, `right`, `non-null` or
+    `case <labels>`.
+  - `try`: `part` is `body`, `catch <n>` or `finally`.
+  - `loop`: a `for`, `foreach`, `while` or `do` body, which repeats with no stated count.
+  - `callback`: a `lambda`, `anonymous-method`, `local-function`, `callback` or
+    `async-effect-callback`. `host` names the call that receives it, or is `null`. A web
+    function written outside every component and member, such as a method of a module-level
+    object, is a `callback` with `host: null`, because it runs whenever something calls it.
+  - `continuation`: a web `then` or `catch` handler. `outcome` is `success` or `failure`, and
+    `of` is the `{ line, column }` site it answers: the `Promise.all` or
+    `Promise.allSettled` its chain starts with, or else the call its chain starts with. Earlier
+    `.then` and `.catch` links of the same chain answer the same site.
+  - `async-form`: `Promise.race` or `Promise.any`, whose scheduling the source does not state.
+- `await` is `true` when the call heads the chain an `await` operand is, and is absent
+  otherwise.
+- `task` marks a started task: `{ id, local, join }`. `id` is `<line>:<column>`. `local` is
+  the variable that holds it, or `null`. `join` is `{ id, form, line, column, tasks, path }` for the
+  `await`, `Task.WhenAll`, `Task.WhenAny`, `Promise.all` or `Promise.allSettled` that names
+  it, or `null` when nothing joins it. `tasks` lists only the task ids that calls of the same
+  file carry. A call that is no fact, such as `Task.Delay`, is left out. A later assignment
+  to the local replaces the task it held, unless the assignment sits in an arm, a loop or a
+  callback that may not run. A task added to a collection stays in it. A task can start outside a guard and be joined inside
+  it. So `path` lists the frames that hold the join itself, in the same form as the call's
+  own `path`. The projection places the join inside those frames, not at the body's root.
+
+A call in the condition of an `if` or `switch`, or in the collection of a `foreach`, is
+outside that construct. A call in the condition or the step of a `for`, `while` or `do` is
+inside the loop.
 
 ### Test evidence
 
