@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "view": "dependency",
   "root": {
     "id": "n24",
     "repo": "mobile",

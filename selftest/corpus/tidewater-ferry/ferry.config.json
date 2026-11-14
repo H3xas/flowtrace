@@ -1,0 +1,8 @@
+{
+  "out": "out",
+  "repos": [
+    { "id": "backend", "kind": "backend", "root": "backend", "role": ["api"] },
+    { "id": "backend-mirrored", "kind": "backend", "root": "backend-mirrored", "role": ["api"] },
+    { "id": "web", "kind": "web", "root": "web" }
+  ]
+}
