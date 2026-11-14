@@ -357,10 +357,19 @@ those calls. Both lists default to none, so no call name is built in.
 
 An entry is a callee as written: an identifier, or a dotted chain of identifiers. A bare entry
 matches a bare call and a member call (`seedCart` matches `seedCart(page)` and
-`fixtures.seedCart(page)`). A dotted entry matches that callee (`fixtures.priceList` matches
-`fixtures.priceList(page)` and not `catalog.priceList(page)`). The extractor does not read
-the body of a function with a configured name, because the entry decides the call. A name in
-a comment or in a string never matches.
+`fixtures.seedCart(page)`). A dotted entry matches only that callee as written, after the
+extractor removes white space and changes each `?.` to `.`. So `fixtures.priceList` matches
+`fixtures.priceList(page)`, `fixtures?.priceList(page)` and `fixtures . priceList(page)`. It
+does not match `catalog.priceList(page)`, `other.fixtures.priceList(page)` or
+`this.fixtures.priceList(page)`. To match the last one, write the entry
+`this.fixtures.priceList`. The extractor does not read the body of a function with a
+configured name, because the entry decides the call. A name in a comment or in a string
+never matches.
+
+A configured call also counts when a Playwright fixture that the test uses makes it, before
+the fixture calls `use(`. A call under `if (<option>)` in a fixture counts only when the
+option value that `test.use` or the option default gives makes the branch run
+([fact-schema.md](fact-schema.md#test-evidence)).
 
 The loader refuses, with one message that names `backend`, a value that is not an object, a
 key other than `mockCalls` and `patchCalls`, a list that is not an array of call names, and a
