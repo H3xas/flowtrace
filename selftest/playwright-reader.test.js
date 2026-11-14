@@ -543,6 +543,30 @@ const FIXTURES = {
     '  test.use({ mockFlag: process.env.MOCK });',
     "  test('unread option', async ({ stubbed }) => {});",
     '});',
+    "test.describe('spread', () => {",
+    '  test.use({ ...shared });',
+    "  test('spread value', async ({ stubbed }) => {});",
+    '});',
+    "test.describe('spread then pair', () => {",
+    '  test.use({ ...shared, mockFlag: true });',
+    "  test('pair after a spread', async ({ stubbed }) => {});",
+    '});',
+    "test.describe('pair then spread', () => {",
+    '  test.use({ mockFlag: false, ...shared });',
+    "  test('spread after a pair', async ({ stubbed }) => {});",
+    '});',
+    "test.describe('shorthand', () => {",
+    '  test.use({ mockFlag });',
+    "  test('shorthand value', async ({ stubbed }) => {});",
+    '});',
+    "test.describe('whole object', () => {",
+    '  test.use(sharedOptions);',
+    "  test('object by name', async ({ stubbed }) => {});",
+    '});',
+    "test.describe('other option', () => {",
+    "  test.use({ mockMode: 'on' });",
+    "  test('another option only', async ({ stubbed }) => {});",
+    '});',
     '',
   ].join('\n'),
   'e2e/cycle.pw.ts': [
@@ -607,6 +631,12 @@ test('Playwright reader AC-10: test.use sets the option value that gates a fixtu
   assert.equal(cls['string value'], 'mocked');
   assert.equal(cls['zero value'], 'real');
   assert.equal(cls['unread option'], 'unknown:unread-option');
+  assert.equal(cls['spread value'], 'unknown:unread-option');
+  assert.equal(cls['pair after a spread'], 'mocked');
+  assert.equal(cls['spread after a pair'], 'unknown:unread-option');
+  assert.equal(cls['shorthand value'], 'unknown:unread-option');
+  assert.equal(cls['object by name'], 'unknown:unread-option');
+  assert.equal(cls['another option only'], 'mocked', 'a use that sets another option keeps the file scope value');
 });
 
 test('Playwright reader AC-11: a fixture type types the receiver of a helper call', async (t) => {
