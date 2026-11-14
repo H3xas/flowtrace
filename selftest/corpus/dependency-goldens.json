@@ -564,7 +564,7 @@
         "api.json": "sha1:5c1a41c2bb76e1fea8d294fb5195c07752ceb991",
         "e2e.json": "sha1:ef5c6f27722d72941e7457d160dd506abd8d5d10",
         "mobile.json": "sha1:a588da1bac1a66bc6aa08b4a8b2649fed4b3607b",
-        "shopfront.json": "sha1:8f53ed45fcc4a812e67be956f223e612d35f483e",
+        "shopfront.json": "sha1:3d01e3cdd8494d3c58faba11ca8b3db86c9ea7d7",
         "stock.json": "sha1:b7fd58bcc964ce02d21e011c0eec62bdd3baa1c5"
       },
       "starts": [
@@ -589,7 +589,7 @@
             },
             "graph": {
               "status": 0,
-              "stdout": "sha256:984fb8795c6acf3007e65ad522e8e14eaff53f437b67bd1c51e1fdc6cd54e14a",
+              "stdout": "sha256:b2390563fe925f3281298e2ddbbeeade9de4ca047304fd5bcacd0df568cfa754",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "mermaid": {
@@ -599,7 +599,7 @@
             },
             "json": {
               "status": 0,
-              "stdout": "sha256:051b33024f056c52ba7d937fdaff151728b0801d27c365fb6ec85796f1d41751",
+              "stdout": "sha256:738bc49af8bd6e44a63bc27315eeb643689f552179e89c1caf4811a0aeef9448",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "span": {
@@ -630,7 +630,7 @@
             },
             "graph": {
               "status": 0,
-              "stdout": "sha256:15e22f1fb1b38998aa02fd9f58bbcb2c44128ba376738927318207f16f66a279",
+              "stdout": "sha256:8613052fb8f92b0f672a8a424a4ac788b5e96dfeaeecb2773da4d508dd94bcda",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "mermaid": {
@@ -640,7 +640,7 @@
             },
             "json": {
               "status": 0,
-              "stdout": "sha256:5f6e1a5dd27d0c7338577b01c7db9b6ab23382e7b35b5a65ff7aab66c31b4430",
+              "stdout": "sha256:9b18f3089b242358b5c23127e9616be1fb6c6604a756b3d930592a465ceb8c0d",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "span": {
@@ -671,7 +671,7 @@
             },
             "graph": {
               "status": 0,
-              "stdout": "sha256:2c138ed699f7cf969edc66d04b512274c4499f4aad37be68efa926739fda630c",
+              "stdout": "sha256:23b38002edd8edd2fbbd9916ca092801e2f27e2f4e30a146f4058a6d9e144668",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "mermaid": {
@@ -681,7 +681,7 @@
             },
             "json": {
               "status": 0,
-              "stdout": "sha256:f186e5caa6312c07977bea4157a5c965482188bda15c96bf9782413220a2b39b",
+              "stdout": "sha256:e65697e1fb0392df79107e5360a7307413b600c2312b0f0b798ce0b2cef2089f",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "span": {
@@ -712,7 +712,7 @@
             },
             "graph": {
               "status": 0,
-              "stdout": "sha256:f9accafb663747fa81a30af8d6d07cae98a5a9e053ac77539f57b1c616a5a49b",
+              "stdout": "sha256:4aac6b747f74678550b0346ebd7a076ad3e214b4c4187ffddf922591fed6fdbb",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "mermaid": {
@@ -722,7 +722,7 @@
             },
             "json": {
               "status": 0,
-              "stdout": "sha256:813df53ac3d2bddc2f49a471734714eec18d14ae5feff1c23953c3d1d709b6fa",
+              "stdout": "sha256:f42c92cbb0ae49d52f2b0d7d6ed83b4df3ecb15ba0098205ea7e1d187cf8c239",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "span": {
@@ -753,7 +753,7 @@
             },
             "graph": {
               "status": 0,
-              "stdout": "sha256:3a0341a3da6e242cfde8f4b51eac13cd70602214de1dc11c1d14c5da501a5de4",
+              "stdout": "sha256:4892e8ccc487aa58e2883873d5612f7b09e9002abb5c1f9fc7f7c4ac43516182",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "mermaid": {
@@ -763,7 +763,7 @@
             },
             "json": {
               "status": 0,
-              "stdout": "sha256:efafc42e940281ee06bbf1ea479e4beaf802c525253ce03e86a55da92901424f",
+              "stdout": "sha256:c234a96e4b3b18678fdc3ac301762fa0dcbdf5afb5245c1c89ff67fac963670c",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "span": {
@@ -794,7 +794,7 @@
             },
             "graph": {
               "status": 0,
-              "stdout": "sha256:1b9915c241f47c7c4584b1b8b0a2b07a8c06e87de8945dbafb0700d12a7589c0",
+              "stdout": "sha256:97cdb3a7316ac87ac4708fff407dc6a18fd510777df0a94f5b6cbf857b7bce11",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "mermaid": {
@@ -804,7 +804,7 @@
             },
             "json": {
               "status": 0,
-              "stdout": "sha256:a96a8aa20ef2445d46825a5ccb75f566637db8605ba7a2c90c5fe082dc1b71e2",
+              "stdout": "sha256:53e8fa8b213f583f76a62db6887c2c37e4924b4f5a95a3765692b3bbe4e78fc4",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "span": {
@@ -835,7 +835,7 @@
             },
             "graph": {
               "status": 0,
-              "stdout": "sha256:184be24a2bc7e3057745504c4b61d81c6e1eb4977049ef58ae33816cd5ed3fd7",
+              "stdout": "sha256:480d7c7996709ef9ab936afc0f219bc347c2b00aa0637218a4e26adc93caa981",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "mermaid": {
@@ -845,7 +845,7 @@
             },
             "json": {
               "status": 0,
-              "stdout": "sha256:85929ad880fa90549513194d0323e8cdd1c5e5c535b3d44e29c5ede4b0e1f7d9",
+              "stdout": "sha256:49d615aefbc0c66f4ff1f6cef8127cc79a2e0390e3bd9b59e287fbfa2937a31a",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "span": {
@@ -876,7 +876,7 @@
             },
             "graph": {
               "status": 0,
-              "stdout": "sha256:fd31f0676c64dbb318e5c7c6ca7d5d30275d5126d953f8c1e48a569b6a0e7677",
+              "stdout": "sha256:715137670bc777b9e819ec919582889ae55e4ed218a8b3613f3c862dc78aedbc",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             },
             "mermaid": {
@@ -886,7 +886,7 @@
             },
             "json": {
               "status": 0,
-              "stdout": "sha256:15e904b7ebf58dc700b34f80df3410cbc3262a5e73a43120a382b130b2e99df9",
+              "stdout": "sha256:cd889ebd24a2c83695c790824c6c9c3f52430e1ea83f8c39a59f798ca93260bb",
               "stderr": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
             }
           }

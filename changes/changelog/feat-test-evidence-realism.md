@@ -57,3 +57,11 @@
   `abort` for `req.destroy(` or `forceNetworkError`; `unresolved` for a handler the file does not
   define or a request handed to other code. The two readers give the same word for the same
   source.
+- Both Cypress readers give each `cypress_test` one `cypress_backend` fact in the shape of
+  `pw_backend`: `real`, `patched`, `mocked` or `unknown`, with the sites that decided it. The
+  reader follows the test body, the `before` and `beforeEach` hooks of the file and of each
+  enclosing `describe` or `context`, the functions of the same file and the custom commands that
+  `Cypress.Commands.add(` defines in the suite. A `backend.mockCalls` or `backend.patchCalls`
+  name matches `cy.<name>(`, and a `cy.intercept(` counts by its handler. `validateFacts`
+  refuses a `cypress_backend` without `backend` or `sites`. The Playwright and Cypress readers
+  share one region engine.

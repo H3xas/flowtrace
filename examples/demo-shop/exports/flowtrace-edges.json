@@ -6,7 +6,7 @@
     "version": "0.5.1"
   },
   "provenance": {
-    "id": "708f0a6efa3fa649",
+    "id": "04a65e237e72c843",
     "producer": "flowtrace-cli 0.5.1",
     "formatVersion": 1,
     "config": {
@@ -96,7 +96,7 @@
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
-        "digest": "8f53ed45fcc4a812e67be956f223e612d35f483e"
+        "digest": "3d01e3cdd8494d3c58faba11ca8b3db86c9ea7d7"
       },
       {
         "repo": "stock",
@@ -127,7 +127,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "calls",
@@ -144,7 +144,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "consumes",
@@ -161,7 +161,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "consumes",
@@ -178,7 +178,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "consumes",
@@ -195,7 +195,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "consumes",
@@ -212,7 +212,7 @@
         "line": 7
       },
       "key": "StockReservedEvent",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "publishes",
@@ -229,7 +229,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "publishes",
@@ -246,7 +246,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "publishes",
@@ -263,7 +263,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "publishes",
@@ -280,7 +280,7 @@
         "line": null
       },
       "key": "StockReservedEvent",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "tests",
@@ -297,7 +297,7 @@
         "line": 17
       },
       "key": "GET catalog/v1/products",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "tests",
@@ -314,7 +314,7 @@
         "line": 17
       },
       "key": "GET catalog/v1/products",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "tests",
@@ -331,7 +331,7 @@
         "line": 17
       },
       "key": "GET catalog/v1/products",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "tests",
@@ -348,7 +348,7 @@
         "line": 17
       },
       "key": "GET orders/v1/cart",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "tests",
@@ -365,7 +365,7 @@
         "line": 24
       },
       "key": "POST orders/v1/cart/items",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "tests",
@@ -382,7 +382,7 @@
         "line": 36
       },
       "key": "POST orders/v1/checkout",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "tests",
@@ -399,7 +399,7 @@
         "line": 36
       },
       "key": "POST orders/v1/checkout",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     },
     {
       "kind": "tests",
@@ -416,7 +416,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "708f0a6efa3fa649"
+      "provenance": "04a65e237e72c843"
     }
   ]
 }

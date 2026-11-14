@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractRepoFacts as extractFacts, runCli, writeRepo } from './helpers.js';
+import { validateFacts } from '../lib/facts.js';
 
 const ITEMS_CONTROLLER = `using Microsoft.AspNetCore.Mvc;
 
@@ -406,4 +407,143 @@ test('Test evidence AC-10: both Cypress readers give each intercept handler form
   ];
   assert.deepEqual(handlers('web'), expected);
   assert.deepEqual(handlers('mobile'), expected);
+});
+
+const CLASS_SUPPORT = `Cypress.Commands.add('stubPrices', () => {
+  cy.intercept('GET', '**/api/items/prices', { fixture: 'prices.json' });
+});
+Cypress.Commands.add('watchItems', () => {
+  cy.intercept('GET', '**/api/items');
+});
+export function stubFromOtherFile() {
+  cy.intercept('GET', '**/api/items', { body: [] });
+}
+`;
+
+const CLASS_SPEC = `function stubLocally() {
+  cy.intercept('GET', '**/api/items', { body: [] });
+}
+
+beforeEach(() => {
+  cy.watchItems();
+});
+
+describe('mocked', () => {
+  before(() => {
+    cy.mockEverything();
+  });
+  it('mocks through a describe hook', () => {
+    cy.patchPrices();
+  });
+});
+
+context('patched', () => {
+  it('patches through a patch call', () => {
+    cy.patchPrices();
+  });
+  it('patches through a custom command', () => {
+    cy.stubPrices();
+  });
+  it('patches through a same-file function', () => {
+    stubLocally();
+  });
+});
+
+describe('real', () => {
+  it('stays real with a spy, a comment and a string', () => {
+    // cy.mockEverything();
+    cy.log('cy.mockEverything()');
+    stubFromOtherFile();
+    mockEverything();
+  });
+  it('is unknown with a handler it cannot read', () => {
+    cy.intercept('GET', '**/api/items', importedHandler);
+  });
+  it('is unknown with a body by reference', runElsewhere);
+});
+`;
+
+test('Test evidence AC-11: each Cypress test of both readers has one backend class from its regions', (t) => {
+  const dir = writeRepo(
+    t,
+    {
+      'backend/src/Controllers/ItemController.cs': ITEMS_CONTROLLER,
+      'web/cypress/support/commands.ts': CLASS_SUPPORT,
+      'web/cypress/e2e/classes.cy.ts': CLASS_SPEC,
+      'mobile/cypress/support/commands.ts': CLASS_SUPPORT,
+      'mobile/cypress/e2e/classes.cy.ts': CLASS_SPEC,
+    },
+    {
+      backend: { mockCalls: ['mockEverything'], patchCalls: ['patchPrices'] },
+      repos: [
+        PLAYWRIGHT_REPOS.repos[0],
+        { id: 'web', kind: 'web', root: 'web', cypressSubpath: 'cypress' },
+        { id: 'mobile', kind: 'mobile', root: 'mobile' },
+      ],
+    },
+  );
+  const expected = (prefix) => [
+    ['mocks through a describe hook', 13, 'mocked', undefined, [
+      [6, 'helper', 'spy', 'cy.intercept', ['cy.watchItems']],
+      [11, 'hook', 'mock', 'cy.mockEverything', undefined],
+      [14, 'test', 'patch', 'cy.patchPrices', undefined],
+    ]],
+    ['patches through a patch call', 19, 'patched', undefined, [
+      [6, 'helper', 'spy', 'cy.intercept', ['cy.watchItems']],
+      [20, 'test', 'patch', 'cy.patchPrices', undefined],
+    ]],
+    ['patches through a custom command', 22, 'patched', undefined, [
+      [6, 'helper', 'spy', 'cy.intercept', ['cy.watchItems']],
+      [23, 'helper', 'fulfill', 'cy.intercept', ['cy.stubPrices']],
+    ]],
+    ['patches through a same-file function', 25, 'patched', undefined, [
+      [2, 'helper', 'fulfill', 'cy.intercept', ['stubLocally']],
+      [6, 'helper', 'spy', 'cy.intercept', ['cy.watchItems']],
+    ]],
+    ['stays real with a spy, a comment and a string', 31, 'real', undefined, [
+      [6, 'helper', 'spy', 'cy.intercept', ['cy.watchItems']],
+    ]],
+    ['is unknown with a handler it cannot read', 37, 'unknown', 'unread-handler', [
+      [6, 'helper', 'spy', 'cy.intercept', ['cy.watchItems']],
+      [38, 'test', 'unresolved', 'cy.intercept', undefined],
+    ]],
+    ['is unknown with a body by reference', 40, 'unknown', 'body-by-reference', [
+      [6, 'helper', 'spy', 'cy.intercept', ['cy.watchItems']],
+    ]],
+  ].map(([title, line, backend, reason, sites]) => ({
+    spec: `${prefix}e2e/classes.cy.ts`,
+    title,
+    line,
+    backend,
+    reason,
+    sites: sites.map(([siteLine, where, kind, call, via]) => [siteLine, where, kind, call, via]),
+  }));
+  const classes = (repo) => {
+    const facts = extractFacts(dir, repo);
+    const tests = facts.filter((fact) => fact.type === 'cypress_test');
+    const backends = facts.filter((fact) => fact.type === 'cypress_backend');
+    assert.deepEqual(
+      backends.map((fact) => [fact.spec, fact.test, fact.line, fact.skipped]),
+      tests.map((fact) => [fact.spec, fact.test, fact.line, fact.skipped]),
+      `${repo}: one class per test`,
+    );
+    return backends.map((fact) => ({
+      spec: fact.spec,
+      title: fact.test,
+      line: fact.line,
+      backend: fact.backend,
+      reason: fact.reason,
+      sites: fact.sites.map((site) => [site.line, site.where, site.kind, site.call, site.via]),
+    }));
+  };
+  assert.deepEqual(classes('web'), expected(''));
+  assert.deepEqual(classes('mobile'), expected('cypress/'));
+
+  const complete = { type: 'cypress_backend', file: 'e2e/x.cy.ts', line: 3, spec: 'e2e/x.cy.ts', test: 't', skipped: false, backend: 'real', sites: [] };
+  assert.equal(validateFacts([complete]), 1);
+  for (const field of ['backend', 'sites']) {
+    const { [field]: removed, ...partial } = complete;
+    assert.throws(() => validateFacts([partial]), new RegExp(`Fact #0 \\(cypress_backend\\): missing required field "${field}"`));
+  }
+  assert.throws(() => validateFacts([{ ...complete, backend: 'stubbed' }]), /field "backend" must be one of/);
 });
