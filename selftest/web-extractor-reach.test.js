@@ -1028,3 +1028,109 @@ test('Web extractor reach AC-4: a bad httpClients value or the key off a web rep
     assert.equal(loaded.status, 0, loaded.stderr);
   }
 });
+
+const FUNCTION_STARTS = {
+  'flowtrace.config.json': config([BACKEND, WEB]),
+  'web/src/http/httpClient.ts': GATEWAY_CLIENT,
+  'web/src/api/itemsApi.ts': [
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'export const fetchItem = async (id: string) =>',
+    '  httpClient.getGatewayClient().get(`/api/v1/items/${id}`);',
+    '',
+    'export function sharedName() {',
+    "  return httpClient.getGatewayClient().get('/api/v1/shared');",
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/api/otherApi.ts': [
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'export function sharedName() {',
+    "  return httpClient.getGatewayClient().get('/api/v1/shared');",
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/pages/DetailPage.tsx': [
+    "import React from 'react';",
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'function loadDetail(id: string) {',
+    '  return httpClient.getGatewayClient().get(`/api/v1/details/${id}`);',
+    '}',
+    '',
+    'export class DetailPage extends React.Component {',
+    '  render() {',
+    '    return <div>detail</div>;',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/components/ListPanel.tsx': [
+    "import React from 'react';",
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'export function ListPanel() {',
+    '  const onPick = () => {',
+    "    httpClient.getGatewayClient().get('/api/v1/shared');",
+    '  };',
+    '  return <button onClick={onPick}>pick</button>;',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/components/Badge.tsx': "import React from 'react';\n\nexport function Badge() {\n  return <span>badge</span>;\n}\n",
+  'web/src/util/badge.ts': [
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'export function Badge() {',
+    "  return httpClient.getGatewayClient().get('/api/v1/shared');",
+    '}',
+    '',
+  ].join('\n'),
+  'backend/src/ItemsController.cs': controller('ItemsController', 'api/v1', [
+    ['Get', 'items/{id}', 'GetItem'],
+    ['Get', 'details/{id}', 'GetDetail'],
+    ['Get', 'shared', 'GetShared'],
+  ]),
+};
+
+function traceJson(dir, start) {
+  const result = cli(dir, ['trace', start, '--repo', 'web', '--json']);
+  return { status: result.status, stderr: result.stderr, json: result.status === 0 ? JSON.parse(result.stdout) : null };
+}
+
+test('Web extractor reach AC-14: a web module-level function a span names is a trace start', (t) => {
+  const dir = buildRepo(t, FUNCTION_STARTS);
+  extractAndJoin(dir);
+  const reach = (json) => json.nodes.map((node) => `${node.repo} ${node.kind} ${node.ref}`);
+  const shape = (node) => `${node.repo} ${node.kind} ${node.class}.${node.method} ${node.file}`;
+
+  const bare = traceJson(dir, 'fetchItem');
+  assert.equal(bare.status, 0, bare.stderr);
+  assert.equal(shape(bare.json.root), 'web method ItemsApi.fetchItem src/api/itemsApi.ts');
+  assert.ok(reach(bare.json).includes('backend route GET api/v1/items/*'), JSON.stringify(reach(bare.json)));
+  assert.ok(reach(bare.json).includes('backend action ItemsController.GetItem'), JSON.stringify(reach(bare.json)));
+
+  const dotted = traceJson(dir, 'ItemsApi.fetchItem');
+  assert.equal(dotted.status, 0, dotted.stderr);
+  assert.equal(shape(dotted.json.root), shape(bare.json.root));
+  assert.ok(reach(dotted.json).includes('backend action ItemsController.GetItem'));
+
+  const inComponentFile = traceJson(dir, 'loadDetail');
+  assert.equal(inComponentFile.status, 0, inComponentFile.stderr);
+  assert.equal(shape(inComponentFile.json.root), 'web method DetailPage.loadDetail src/pages/DetailPage.tsx', 'a helper of a class component file takes the component as its class');
+  assert.ok(reach(inComponentFile.json).includes('backend action ItemsController.GetDetail'));
+
+  const twice = cli(dir, ['trace', 'sharedName', '--repo', 'web']);
+  assert.notEqual(twice.status, 0);
+  assert.match(twice.stderr, /src\/api\/itemsApi\.ts/);
+  assert.match(twice.stderr, /src\/api\/otherApi\.ts/);
+
+  const component = traceJson(dir, 'Badge');
+  assert.equal(component.status, 0, component.stderr);
+  assert.equal(`${component.json.root.kind} ${component.json.root.file}`, 'component src/components/Badge.tsx', 'a component of the same name keeps its precedence');
+
+  const nested = cli(dir, ['trace', 'onPick', '--repo', 'web']);
+  assert.notEqual(nested.status, 0);
+  assert.match(nested.stderr, /no page, component, service, route, method or class matches "onPick"/);
+});
