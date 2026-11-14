@@ -65,3 +65,10 @@
   name matches `cy.<name>(`, and a `cy.intercept(` counts by its handler. `validateFacts`
   refuses a `cypress_backend` without `backend` or `sites`. The Playwright and Cypress readers
   share one region engine.
+- `cover` shows the backend realism of named evidence. Each entry is joined to the class fact of
+  its test by repository, spec and `testLine`, and gets `backend` (the class, or `none`),
+  `handler` and `reach`: `stubbed`, `backend`, `blocked` or `unknown`. A spy beside a fulfilled
+  stub of the same route in the same test takes the reach of that stub. Each route gets
+  `realism`, with counts for executing and skipped entries apart and the entries themselves, and
+  `--json` gets a `realism` total. The text and Markdown reports show a realism line for each
+  route with named evidence. The route state, levels, evidence counts and parity do not change.
