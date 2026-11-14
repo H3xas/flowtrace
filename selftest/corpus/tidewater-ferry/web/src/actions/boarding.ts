@@ -119,3 +119,9 @@ export function loadRouteThenCatch(routeId: string) {
     .then(() => noticeShown('route-loaded'))
     .catch(() => noticeShown('route-failed'));
 }
+
+export function loadTypedThen(routeId: string) {
+  httpClient.getGatewayClient().get(`/tidewater/v1/ferries/${routeId}/identity`);
+  return httpClient.getGatewayClient().get<unknown>(`/tidewater/v1/routes/${routeId}`)
+    .then(() => noticeShown('typed-loaded'));
+}

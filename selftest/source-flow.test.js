@@ -634,6 +634,14 @@ test('Source flow AC-8: the web control forms keep their shape and name the asyn
   assert.equal(base.declaration.ref, 'Boarding.loadRoute');
   assert.deepEqual(base.continuations.map((entry) => entry.outcome), ['success', 'failure']);
 
+  // A call written with type arguments is still the call its chain starts with.
+  const typed = json(env, 'Boarding.loadTypedThen', ['--view', 'source-flow']).sourceFlow;
+  const typedCalls = typed.root.body.steps.filter((step) => step.kind === 'invocation');
+  assert.equal(typedCalls.length, 2);
+  assert.equal(typedCalls[0].continuations, undefined);
+  assert.deepEqual(typedCalls[1].continuations.map((entry) => entry.outcome), ['success']);
+  assert.equal(typed.root.body.steps.some((step) => step.kind === 'unordered'), false);
+
   const race = forms('Boarding.loadFirst').find((step) => step.kind === 'unordered');
   assert.equal(race.reason, 'async-form');
   assert.equal(race.form, 'Promise.race');
