@@ -119,6 +119,11 @@ npm test
   AC-n:` test for each acceptance rule. One case imports `callersOf` of `lib/span.js`,
   because no command prints the callers of a route as data. The corpus README lists each
   shape and the chain it gives.
+- `corpus/lantern-console/`: an invented settings console with an ASP.NET Core backend, a
+  React service, an Ionic service, and Cypress suites for both clients. One app request and
+  five Cypress requests name the same route, so `cypress-evidence.test.js` can count the
+  `calls` edges and the `tests` edges apart. A second route is intercepted only by a page
+  model. The corpus README lists its files.
 - `dependency-goldens.js` and `corpus/dependency-goldens.json`: the dependency answer of each
   corpus, as the release before the source-flow work wrote it. The record holds the exit
   status and the sha256 of stdout and stderr for six outputs of every start. `--write` captures
