@@ -112,6 +112,11 @@ npm test
   AC-n:` test for each acceptance rule. One case imports `callersOf` of `lib/span.js`,
   because no command prints the callers of a route as data. The corpus README lists each
   shape and the chain it gives.
+- `corpus/reef-ledger/`: an invented dive log service, with an ASP.NET Core backend and a
+  React client. Its routes hold a literal segment beside a `{param}` segment, and a client
+  call names a literal value where a route has a parameter. The `test-evidence-*.test.js`
+  files run it through the CLI, with one `Test evidence AC-n:` test for each acceptance rule.
+  The matcher cases build their route index in memory. The corpus README lists each file.
 - `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
   output of each corpus with backend routes, written by `node selftest/seed-goldens.js
   --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure

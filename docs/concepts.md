@@ -35,6 +35,8 @@ have a caller, which callers name a route nothing declares, which routes nobody 
 Templates on either side are normalised before comparison — a `{productId}` on the server
 and a `${id}` on the caller are the same segment. `aliases` in the configuration file
 rewrite a route prefix when a gateway serves one path under another name.
+A literal caller segment such as `users/42` also matches a `{param}` route segment, as the
+weaker match kind `parameter` ([fact-schema.md](fact-schema.md#route-match-kinds)).
 
 ## The walk
 

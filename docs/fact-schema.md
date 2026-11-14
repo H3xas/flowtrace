@@ -341,6 +341,30 @@ read from another checkout must keep the same identity, and an identity is publi
 `regex-only-with-diff`, where none of the provider's facts enter the array. Extracted facts keep their
 order and come first; the provider's follow in the order it gave them.
 
+## Route match kinds
+
+`join`, `cover`, `trace` and `span` match a caller template to a `route` fact with one
+matcher. Each match carries its kind, so a weaker match never reads as a direct one. The
+matcher tries the kinds in this order and stops at the first that finds a route:
+
+| kind | the caller |
+|---|---|
+| `exact` | normalizes to the route template |
+| `prefix` | ends in `*`, and the route template starts with the part before it |
+| `alias` | matches after a caller-side `aliases` rewrite |
+| `suffix` | names the tail of a longer route, on a segment boundary |
+| `parameter` | has a literal segment where the route has a `{param}` segment, and every other segment is equal |
+
+A parameter match is tried only after the other four find nothing. It also applies after an
+alias rewrite (kind `alias`) and in a tail match (kind `suffix`). Two candidates of a
+parameter match are compared at the first segment where they differ. The candidate whose
+segment equals the caller segment comes first, and a `{param}` segment equals a caller
+segment that is a whole `*`. So `users/me/orders` matches `users/me/{x}` before
+`users/{id}/orders`. If two candidates have equal rank, the caller matches no route.
+
+A caller segment that stands for an unread value (`${…}` in a template) never matches a
+literal route segment.
+
 ## Validation
 
 `fact(type, fields)` throws on an unknown type, a missing required field, a `file` that is

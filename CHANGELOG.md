@@ -34,6 +34,17 @@ The walk:
 - `trace` and every reader of its index read backend decisions only, so caller decisions do
   not change a walk.
 
+Route matching:
+
+- A literal caller segment matches a `{param}` route segment, with the new match kind
+  `parameter`. So a gateway call or a test request to `users/42` reaches the route
+  `users/{id}`. The kind is tried only after `exact`, `prefix`, `alias` and `suffix` find
+  nothing, so a caller that matched a route before matches the same route. A parameter match
+  also applies after an alias rewrite (kind `alias`) and in a tail match (kind `suffix`). If
+  two candidates have equal rank, the caller matches no route. `join` `calls` edges, `trace`,
+  `span`, `span --from-component` and `cover` can reach routes they did not reach before.
+- A `span` caller row names its match kind when the match is not `exact`.
+
 ## 0.5.1
 
 Release pipeline only. The CLI and the npm package do not change.
