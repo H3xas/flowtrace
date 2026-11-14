@@ -18,3 +18,10 @@
   and holds a `/` is now matched, as `cover` matches it.
 - The pinned worked-example export carries the `e2e` suite's `tests` edges, so its
   `provenance.factSetsWithoutEdges` is empty. The record shape does not change.
+
+### Extraction
+
+- A Playwright `pw_stub` pattern keeps a part of its URL that the reader cannot read as one
+  `${…}` span with the source text of the part, as a `cypress_intercept` pattern does. Before,
+  such a part became `*`, which read as a glob that the test author wrote. A `pw_request`
+  template keeps its text. Extract again to get the new pattern text.
