@@ -25,3 +25,7 @@
   `${…}` span with the source text of the part, as a `cypress_intercept` pattern does. Before,
   such a part became `*`, which read as a glob that the test author wrote. A `pw_request`
   template keeps its text. Extract again to get the new pattern text.
+- A route stub whose pattern keeps a call, an index, an operator or a longer member chain
+  as a `${…}` span now has `resolved: false`. A bare name or a `name.prop` span keeps
+  `resolved: true`, as a path parameter. A stub that the endpoint registry names and a
+  `pw_request` keep their `resolved` value. Extract again to get the new value.

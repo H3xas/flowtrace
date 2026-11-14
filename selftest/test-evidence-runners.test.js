@@ -95,9 +95,83 @@ test('reads an item', async ({ request }) => {
     ],
   );
   assert.deepEqual(
-    [stubs[1], stubs[3], stubs[4], stubs[5]].map((fact) => fact.resolved),
-    [false, true, false, false],
+    stubs.map((fact) => fact.resolved),
+    [false, false, false, true, false, false],
   );
   const requests = facts.filter((fact) => fact.type === 'pw_request').map((fact) => fact.template);
   assert.deepEqual(requests, ['api/items/*']);
+});
+
+test('Test evidence AC-29: a stub keeps its resolved value only for a bare name or a name.prop span', (t) => {
+  const dir = writeRepo(
+    t,
+    {
+      'backend/src/Controllers/ItemController.cs': ITEMS_CONTROLLER,
+      'suite/support/paths.ts': `export const ITEMS = '**/api/items';
+export const TWICE = '**/api/items';
+export default {
+  catalogue: {
+    listItems: { route: '**/api/items\${query()}', method: 'GET' },
+  },
+};
+`,
+      'suite/support/other-paths.ts': `export const TWICE = '**/api/other';
+`,
+      'suite/support/stubs.ts': `export async function stubItems(url) {
+  await page.route(url, (route) => route.fulfill({ json: [] }));
+}
+export async function stubEndpoint(endpoint) {
+  await page.route(endpoint.route, (route) => route.fulfill({ json: [] }));
+}
+`,
+      'suite/e2e/items.pw.ts': `import { test } from '@playwright/test';
+
+test('stubs the items', async ({ page }) => {
+  await page.route(\`**/api/items\${query()}\`, (route) => route.fulfill({ json: [] }));
+  await page.route(\`**/api/items/\${itemId}\`, (route) => route.fulfill({ json: {} }));
+  await page.route(\`**/api/items/\${ itemId }\`, (route) => route.fulfill({ json: {} }));
+  await page.route(\`**/api/items/\${cfg.id}\`, (route) => route.fulfill({ json: {} }));
+  await page.route(\`**/api/items/\${cfg.ids[0]}\`, (route) => route.fulfill({ json: {} }));
+  await page.route(\`\${ITEMS}/\${a + b}\`, (route) => route.fulfill({ json: {} }));
+  await page.route(\`\${ITEMS}\`, (route) => route.fulfill({ json: [] }));
+  await page.route(\`\${TWICE}/\${itemId}\`, (route) => route.fulfill({ json: {} }));
+  await stubItems(\`**/api/items\${query()}\`);
+  await stubItems(\`**/api/items/\${itemId}\`);
+  await stubEndpoint(endpoints.catalogue.listItems);
+});
+`,
+      'suite/tests/items.spec.ts': `import { test } from '@playwright/test';
+
+test('reads the items', async ({ request }) => {
+  await request.get(\`api/items\${query()}\`);
+  await request.get(\`api/items/\${itemId}\`);
+  await request.get(\`api/items/\${cfg.ids[0]}\`);
+  await request.get(\`api/items/\${a + b}\`);
+});
+`,
+    },
+    PLAYWRIGHT_REPOS,
+  );
+  const facts = extractFacts(dir, 'suite');
+  const stubs = facts.filter((fact) => fact.type === 'pw_stub').map((fact) => [fact.pattern, fact.resolved]);
+  assert.deepEqual(stubs, [
+    ['**/api/items${query()}', false],
+    ['**/api/items/${itemId}', true],
+    ['**/api/items/${ itemId }', true],
+    ['**/api/items/${cfg.id}', true],
+    ['**/api/items/${cfg.ids[0]}', false],
+    ['**/api/items/${a + b}', false],
+    ['**/api/items', true],
+    ['**/api/other/${itemId}', true],
+    ['**/api/items${query()}', false],
+    ['**/api/items/${itemId}', true],
+    ['**/api/items${query()}', true],
+  ]);
+  const requests = facts.filter((fact) => fact.type === 'pw_request').map((fact) => [fact.template, fact.resolved]);
+  assert.deepEqual(requests, [
+    ['api/items${query()}', true],
+    ['api/items/${itemId}', true],
+    ['api/items/${cfg.ids[0]}', true],
+    ['api/items/${a + b}', true],
+  ]);
 });
