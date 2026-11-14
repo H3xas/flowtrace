@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join as joinPath } from 'node:path';
 import test from 'node:test';
-import { copyFixture, REPO_ROOT, runCli } from './helpers.js';
+import { copyFixture, REPO_ROOT, runCli, writeRepo } from './helpers.js';
 
 function extractAndJoin(t) {
   const dir = copyFixture(t, 'reef-ledger');
@@ -98,4 +98,144 @@ test('Test evidence AC-2: the pinned export carries the Playwright edges and kee
   assert.match(readme, /Playwright API request/);
   assert.match(readme, /Playwright route stub/);
   assert.doesNotMatch(readme, /Here that is `e2e`/);
+});
+
+const TIDES_CONTROLLER = `using Microsoft.AspNetCore.Mvc;
+
+namespace Harbour.Api.Controllers
+{
+    [ApiController]
+    [Route("api/tides")]
+    public class TideController : ControllerBase
+    {
+        [HttpGet]
+        public IActionResult List() { return Ok(); }
+
+        [HttpGet("{tideId}")]
+        public IActionResult Get(string tideId) { return Ok(); }
+
+        [HttpGet("{tideId}/readings")]
+        public IActionResult Readings(string tideId) { return Ok(); }
+    }
+}
+`;
+
+const BUOYS_CONTROLLER = `using Microsoft.AspNetCore.Mvc;
+
+namespace Harbour.Api.Controllers
+{
+    [ApiController]
+    [Route("api/buoys")]
+    public class BuoyController : ControllerBase
+    {
+        [HttpGet("north")]
+        public IActionResult North() { return Ok(); }
+    }
+}
+`;
+
+function globCorpus(t) {
+  const dir = writeRepo(
+    t,
+    {
+      'backend/src/Controllers/TideController.cs': TIDES_CONTROLLER,
+      'backend/src/Controllers/BuoyController.cs': BUOYS_CONTROLLER,
+      'web/cypress/e2e/tides.cy.ts': `describe('tides', () => {
+  it('lists the tides', () => {
+    cy.intercept('GET', '**/api/tides*').as('tides');
+    cy.visit('/tides');
+  });
+  it('opens a buoy', () => {
+    cy.intercept('GET', \`**/api/buoys/\${buoyId}\`).as('buoy');
+    cy.visit('/buoys');
+  });
+});
+`,
+      'suite/ui/tides.pw.ts': `import { test } from '@playwright/test';
+
+test('shows the tide detail', async ({ page }) => {
+  await page.route('**/api/tides/**', (route) => route.fulfill({ json: {} }));
+  await page.route(\`**/api/tides\${query()}\`, (route) => route.fulfill({ json: [] }));
+  await page.route('**/api/tides/42/readings', (route) => route.fulfill({ json: [] }));
+  await page.goto('/tides');
+});
+`,
+      'harbour.area.txt': 'GET api/tides\nGET api/tides/*\nGET api/tides/*/readings\nGET api/buoys/north\n',
+    },
+    {
+      repos: [
+        { id: 'api', kind: 'backend', root: 'backend', role: ['api'] },
+        { id: 'suite', kind: 'playwright', root: 'suite' },
+        { id: 'web', kind: 'web', root: 'web', cypressSubpath: 'cypress' },
+      ],
+    },
+  );
+  const config = ['--config', 'evidence.config.json'];
+  assert.equal(runCli(['extract', ...config], { cwd: dir }).status, 0);
+  return { dir, config };
+}
+
+test('Test evidence AC-5: join reads an intercept or stub glob by path segment, and a request template as before', (t) => {
+  const { dir, config } = globCorpus(t);
+  const joined = runCli(['join', ...config], { cwd: dir });
+  assert.equal(joined.status, 0, joined.stderr);
+  const flow = JSON.parse(readFileSync(joinPath(dir, 'out', 'flow.json'), 'utf8'));
+  const edges = flow.edges
+    .filter((edge) => edge.kind === 'tests')
+    .map((edge) => [edge.source, edge.callerKey, edge.key, edge.match]);
+  assert.deepEqual(edges, [
+    ['cypress', 'GET api/tides*', 'GET api/tides', 'prefix'],
+    ['playwright-stub', 'ANY api/tides/42/readings', 'GET api/tides/*/readings', 'parameter'],
+  ]);
+});
+
+test('Test evidence AC-6: join names the candidates of a glob or value pattern that two routes fit equally', (t) => {
+  const { dir, config } = globCorpus(t);
+  assert.equal(runCli(['join', ...config], { cwd: dir }).status, 0);
+  const flow = JSON.parse(readFileSync(joinPath(dir, 'out', 'flow.json'), 'utf8'));
+  const entries = flow.unjoined.intercepts_without_route.map((entry) => ({
+    key: entry.key,
+    pattern: entry.fact.pattern,
+    source: entry.source,
+    reason: entry.reason ?? null,
+    candidates: entry.candidates ?? null,
+  }));
+  assert.deepEqual(entries, [
+    { key: 'ANY api/tides*', pattern: '**/api/tides${query()}', source: 'playwright-stub', reason: 'ambiguous', candidates: ['GET api/tides', 'GET api/tides/*', 'GET api/tides/*/readings'] },
+    { key: 'ANY api/tides/*', pattern: '**/api/tides/**', source: 'playwright-stub', reason: 'ambiguous', candidates: ['GET api/tides/*', 'GET api/tides/*/readings'] },
+    { key: 'GET api/buoys/*', pattern: '**/api/buoys/${buoyId}', source: 'cypress', reason: null, candidates: null },
+  ]);
+});
+
+test('Test evidence AC-29: cover counts a value pattern that fits no route parameter as unmatched and a tail value as ambiguous', (t) => {
+  const { dir, config } = globCorpus(t);
+  const covered = runCli(['cover', '--area', 'harbour.area.txt', '--json', ...config], { cwd: dir });
+  assert.equal(covered.status, 0, covered.stderr);
+  const report = JSON.parse(covered.stdout);
+  assert.deepEqual(report.notes.intercepts, { noPath: 0, unmatched: 1, ambiguous: 2 });
+  assert.deepEqual(
+    report.routes.map((route) => [route.key, route.evidence.intercepts, route.evidence.match]),
+    [
+      ['GET api/tides', 1, ['prefix']],
+      ['GET api/tides/*', 0, []],
+      ['GET api/tides/*/readings', 1, ['parameter']],
+      ['GET api/buoys/north', 0, []],
+    ],
+  );
+  const text = runCli(['cover', '--area', 'harbour.area.txt', '--md', 'cover.md', ...config], { cwd: dir });
+  assert.equal(text.status, 0, text.stderr);
+  assert.match(text.stdout, /intercepts skipped as evidence: 0 with no path · 1 matching no route · 2 ambiguous/);
+  const markdown = readFileSync(joinPath(dir, 'cover.md'), 'utf8');
+  assert.match(markdown, /Intercepts skipped as evidence: 0 with no path, 1 matching no route, 2 ambiguous\./);
+});
+
+test('Test evidence AC-7: cover places a route stub with a literal segment on its parameter route', (t) => {
+  const { dir, config } = globCorpus(t);
+  const covered = runCli(['cover', '--area', 'harbour.area.txt', '--json', ...config], { cwd: dir });
+  assert.equal(covered.status, 0, covered.stderr);
+  const route = JSON.parse(covered.stdout).routes.find((entry) => entry.key === 'GET api/tides/*/readings');
+  assert.equal(route.state, 'route');
+  assert.deepEqual(route.evidence.playwrightSpecs, ['ui/tides.pw.ts']);
+  assert.deepEqual(route.evidence.match, ['parameter']);
+  assert.deepEqual(route.parity, { cypress: 'none', playwright: 'route' });
 });

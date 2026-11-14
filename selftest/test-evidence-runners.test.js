@@ -3,11 +3,8 @@
  * invented repository into a temporary directory, runs `extract` over it and reads the facts.
  */
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { runCli } from './helpers.js';
+import { extractRepoFacts as extractFacts, writeRepo } from './helpers.js';
 
 const ITEMS_CONTROLLER = `using Microsoft.AspNetCore.Mvc;
 
@@ -28,24 +25,6 @@ namespace Tidepool.Api.Controllers
     }
 }
 `;
-
-/** Writes `files` (path to text) and a configuration with `repos` into a new directory. */
-export function writeRepo(t, files, config) {
-  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-evidence-'));
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
-  for (const [path, text] of Object.entries(files)) {
-    mkdirSync(dirname(join(dir, path)), { recursive: true });
-    writeFileSync(join(dir, path), text);
-  }
-  writeFileSync(join(dir, 'evidence.config.json'), JSON.stringify({ out: 'out', ...config }, null, 2));
-  return dir;
-}
-
-export function extractFacts(dir, repo) {
-  const result = runCli(['extract', '--config', 'evidence.config.json'], { cwd: dir });
-  assert.equal(result.status, 0, result.stderr);
-  return JSON.parse(readFileSync(join(dir, 'out', 'facts', `${repo}.json`), 'utf8')).facts;
-}
 
 const PLAYWRIGHT_REPOS = {
   repos: [

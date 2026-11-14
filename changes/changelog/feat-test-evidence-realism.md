@@ -8,6 +8,18 @@
   two candidates have equal rank, the caller matches no route. `join` `calls` edges, `trace`,
   `span`, `span --from-component` and `cover` can reach routes they did not reach before.
 - A `span` caller row names its match kind when the match is not `exact`.
+- `join` and `cover` read a Cypress intercept pattern and a Playwright route stub pattern as
+  a glob, segment by segment. A trailing `*` stays inside its segment, so `api/users*` no
+  longer matches `api/users/42`. A trailing `**` takes one or more segments. A `${…}` span
+  is a value, not a glob: alone in its segment it meets only a route parameter, so an
+  intercept of `` `api/items/${id}` `` no longer reaches the literal route `api/items/featured`.
+  A span at the end of literal text, as in `` `api/items${query}` ``, stands for the route
+  `api/items` and for a longer one. A Playwright request template is read as before.
+- A glob or value pattern that two routes fit with equal rank names neither route. `join`
+  lists it in `intercepts_without_route` with `reason: "ambiguous"` and its `candidates`.
+  `cover` counts it in `notes.intercepts.ambiguous`, and the text and Markdown intercepts
+  line names the count. So a `**` pattern that reached the first sorted route before can now
+  leave that route.
 
 ### Join
 
