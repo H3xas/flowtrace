@@ -589,3 +589,80 @@ test('Web extractor reach AC-12: join lands a render on the component its import
   const fallback = things[things.length - 1];
   assert.equal(target('App->Thing'), `Thing ${fallback.file}`, 'an import that settles on two components keeps the selector target');
 });
+
+const OBJECT_SERVICE = [
+  "import { httpClient } from './httpClient';",
+  "import { base } from './base';",
+  '',
+  "const key = 'dynamic';",
+  '',
+  'const itemsApi = {',
+  '  // the shorthand form',
+  '  load(id: string) {',
+  '    if (!id) {',
+  '      return null;',
+  '    }',
+  '    return httpClient.getGatewayClient().get(`items/v1/items/${id}`);',
+  '  },',
+  "  save: async (item: unknown) => httpClient.getGatewayClient().post('items/v1/items', item),",
+  '  remove: function (id: string) {',
+  '    return httpClient.getGatewayClient().delete(`items/v1/items/${id}`);',
+  '  },',
+  '  ...base,',
+  '  [key]() {',
+  '    return 1;',
+  '  },',
+  '  nested: {',
+  '    inner() {',
+  '      return 2;',
+  '    },',
+  '  },',
+  "  label: 'items',",
+  '};',
+  '',
+  'export const pingApi: Record<string, () => number> = {',
+  '  ping: () => 1,',
+  '};',
+  '',
+  'export function wrap() {',
+  '  const local = { hidden: () => 3 };',
+  '  return local;',
+  '}',
+  '',
+  'export default itemsApi;',
+  '',
+].join('\n');
+
+test('Web extractor reach AC-13: the methods of a module-level object literal are spans of its const', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB, BACKEND]),
+    'web/src/httpClient.ts': 'export class HttpClient {\n  getGatewayClient() {\n    return null;\n  }\n}\nexport const httpClient = new HttpClient();\n',
+    'web/src/base.ts': 'export const base = {};\n',
+    'web/src/itemsApi.ts': OBJECT_SERVICE,
+    'backend/src/Controllers/ItemsController.cs': controller('ItemsController', 'items/v1/items', [
+      ['Get', '{id}', 'Load'],
+      ['Post', '', 'Save'],
+      ['Delete', '{id}', 'Remove'],
+    ]),
+  });
+  extractAndJoin(dir);
+  const facts = factsOf(dir).filter((entry) => entry.file === 'src/itemsApi.ts');
+  assert.deepEqual(
+    ofType(facts, 'method_span').map((entry) => `${entry.class}.${entry.method} ${entry.line}-${entry.endLine}`),
+    ['itemsApi.load 8-13', 'itemsApi.save 14-14', 'itemsApi.remove 15-17', 'pingApi.ping 31-31', 'ItemsApi.wrap 34-37'],
+  );
+  assert.deepEqual(
+    ofType(facts, 'gateway_call').map((entry) => `${entry.method} ${entry.verb} ${entry.template}`),
+    ['load GET items/v1/items/${id}', 'save POST items/v1/items', 'remove DELETE items/v1/items/${id}'],
+  );
+  assert.deepEqual(
+    ofType(facts, 'branch_point').map((entry) => `${entry.class}.${entry.method} ${entry.line}`),
+    ['itemsApi.load 9'],
+  );
+  const calls = flowOf(dir).edges.filter((edge) => edge.kind === 'calls').map((edge) => `${edge.from.ref} -> ${edge.to.ref}`).sort();
+  assert.deepEqual(calls, [
+    'httpClient.load -> ItemsController.Load',
+    'httpClient.remove -> ItemsController.Remove',
+    'httpClient.save -> ItemsController.Save',
+  ]);
+});

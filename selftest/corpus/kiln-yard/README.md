@@ -8,7 +8,7 @@ Every name is invented. `selftest/caller-decisions.test.js` copies this director
 
 | File | What it holds |
 |---|---|
-| `web/src/forms/DecisionForms.ts` | Each decision form inside a class method, and in `quiet()` the text that must give no decision: strings, a template literal, comments, a regex literal, optional chaining, logical assignments and type syntax. A field initializer, a module constant and an object literal method sit outside every method body. |
+| `web/src/forms/DecisionForms.ts` | Each decision form inside a class method, and in `quiet()` the text that must give no decision: strings, a template literal, comments, a regex literal, optional chaining, logical assignments and type syntax. A field initializer and a module constant sit outside every method body. The method of the module-level `helpers` object literal is a span of `helpers`. |
 | `mobile/src/app/features/forms/decision-forms.service.ts` | The same class body as the web file, on the same lines, in an `@Injectable` class. |
 | `web/src/forms/FormsPanel.tsx` | JSX text with `?`, `&&`, `\|\|` and `??`, beside JSX expression containers that hold real decisions. |
 | `web/src/ledger/LedgerService.ts`, `mobile/src/app/features/tally/tally.service.ts` | A class whose `pick()` holds a decision and makes no call, so a class start that read caller decisions would list it. |
