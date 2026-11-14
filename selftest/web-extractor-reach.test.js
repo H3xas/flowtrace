@@ -1,0 +1,226 @@
+/**
+ * How far the web extractor reaches into a front end: plain JavaScript sources, gateway calls
+ * made through `axios` or a declared client wrapper, URLs built from constants and helpers,
+ * curried wrappers, default exports, imported route and render targets, object literal
+ * methods and module-level functions as trace starts. Each test writes its own small
+ * repository into a temporary directory and runs the CLI on it as a user would.
+ */
+import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+import test from 'node:test';
+import { runCli } from './helpers.js';
+
+const TEMP = realpathSync(tmpdir());
+
+/** Writes `files` (path -> text) into a fresh directory removed after the test. */
+function buildRepo(t, files) {
+  const dir = mkdtempSync(join(TEMP, 'flowtrace-reach-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  for (const [path, text] of Object.entries(files)) {
+    const target = join(dir, ...path.split('/'));
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, typeof text === 'string' ? text : `${JSON.stringify(text, null, 2)}\n`);
+  }
+  return dir;
+}
+
+function config(repos, extra = {}) {
+  return { out: 'out', repos, ...extra };
+}
+
+const WEB = { id: 'web', kind: 'web', root: 'web' };
+const BACKEND = { id: 'backend', kind: 'backend', root: 'backend', role: ['api'] };
+
+function cli(dir, args) {
+  return runCli([...args, '--config', 'flowtrace.config.json'], { cwd: dir });
+}
+
+function extractAndJoin(dir) {
+  const extracted = cli(dir, ['extract']);
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const joined = cli(dir, ['join']);
+  assert.equal(joined.status, 0, joined.stderr);
+}
+
+function factsOf(dir, repo = 'web') {
+  return JSON.parse(readFileSync(join(dir, 'out', 'facts', `${repo}.json`), 'utf8')).facts;
+}
+
+function flowOf(dir) {
+  return JSON.parse(readFileSync(join(dir, 'out', 'flow.json'), 'utf8'));
+}
+
+function ofType(facts, type) {
+  return facts.filter((entry) => entry.type === type);
+}
+
+function sortedLines(values) {
+  return values.map((value) => JSON.stringify(value)).sort();
+}
+
+function controller(name, prefix, actions) {
+  const body = actions
+    .map(([verb, path, action]) => `        [Http${verb}("${path}")]\n        public IActionResult ${action}(string id)\n        {\n            return Ok();\n        }\n`)
+    .join('\n');
+  return [
+    'using Microsoft.AspNetCore.Mvc;',
+    '',
+    'namespace Sample.Api.Controllers',
+    '{',
+    '    [ApiController]',
+    `    [Route("${prefix}")]`,
+    `    public class ${name} : ControllerBase`,
+    '    {',
+    body,
+    '    }',
+    '}',
+    '',
+  ].join('\n');
+}
+
+const EXISTING_SHAPES = {
+  'flowtrace.config.json': config([BACKEND, WEB]),
+  'backend/src/ItemsController.cs': controller('ItemsController', 'api/v1/items', [
+    ['Get', '{id}', 'GetItem'],
+    ['Post', '{id}', 'SaveItem'],
+  ]),
+  'web/src/http/httpClient.ts': [
+    'export class HttpClient {',
+    '  getGatewayClient() {',
+    '    return (window as any).gateway;',
+    '  }',
+    '}',
+    '',
+    'export const httpClient = new HttpClient();',
+    '',
+  ].join('\n'),
+  'web/src/actions/items.ts': [
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'export function loadItem(id: string) {',
+    '  return httpClient.getGatewayClient().get(`/api/v1/items/${id}`);',
+    '}',
+    '',
+    'export const saveItem = (id: string, body: unknown) =>',
+    '  httpClient.getGatewayClient().post(`/api/v1/items/${id}`, body);',
+    '',
+  ].join('\n'),
+  'web/src/components/ItemRow.tsx': [
+    "import React from 'react';",
+    '',
+    'export function ItemRow(props: { label: string }) {',
+    '  return <li>{props.label}</li>;',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/pages/ItemsPage.tsx': [
+    "import React from 'react';",
+    "import { loadItem } from '../actions/items';",
+    '',
+    'function ItemBadge() {',
+    '  return <span>badge</span>;',
+    '}',
+    '',
+    'export class ItemsPage extends React.Component {',
+    '  componentDidMount() {',
+    "    loadItem('first');",
+    '  }',
+    '',
+    '  handleClick = () => {',
+    "    if (this.props) loadItem('again');",
+    '  };',
+    '',
+    '  render() {',
+    '    return (',
+    '      <div onClick={this.handleClick}>',
+    '        <ItemBadge />',
+    '      </div>',
+    '    );',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/app/AppRoutes.tsx': [
+    "import React from 'react';",
+    "import { Route, Routes } from 'react-router-dom';",
+    '',
+    'function HomePage() {',
+    '  return <main>home</main>;',
+    '}',
+    '',
+    'export function AppRoutes() {',
+    '  return (',
+    '    <Routes>',
+    '      <Route path="/home" element={<HomePage />} />',
+    '    </Routes>',
+    '  );',
+    '}',
+    '',
+  ].join('\n'),
+};
+
+/** The facts and `join` edges the existing shapes gave before the web reader was widened. */
+const EXISTING_SHAPES_GOLDEN = {
+  facts: [
+    "{\"type\":\"action_def\",\"file\":\"src/actions/items.ts\",\"line\":3,\"action\":\"loadItem\"}",
+    "{\"type\":\"action_def\",\"file\":\"src/actions/items.ts\",\"line\":7,\"action\":\"saveItem\"}",
+    "{\"type\":\"branch_point\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":14,\"class\":\"ItemsPage\",\"method\":\"handleClick\",\"kind\":\"if\",\"text\":\"if (this.props)\",\"endLine\":14}",
+    "{\"type\":\"component\",\"file\":\"src/app/AppRoutes.tsx\",\"line\":4,\"name\":\"HomePage\",\"selector\":\"HomePage\",\"role\":\"page\",\"exports\":[],\"path\":\"/home\"}",
+    "{\"type\":\"component\",\"file\":\"src/app/AppRoutes.tsx\",\"line\":8,\"name\":\"AppRoutes\",\"selector\":\"AppRoutes\",\"role\":\"component\",\"exports\":[\"AppRoutes\"]}",
+    "{\"type\":\"component\",\"file\":\"src/components/ItemRow.tsx\",\"line\":3,\"name\":\"ItemRow\",\"selector\":\"ItemRow\",\"role\":\"component\",\"exports\":[\"ItemRow\"]}",
+    "{\"type\":\"component\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":4,\"name\":\"ItemBadge\",\"selector\":\"ItemBadge\",\"role\":\"component\",\"exports\":[]}",
+    "{\"type\":\"component\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":8,\"name\":\"ItemsPage\",\"selector\":\"ItemsPage\",\"role\":\"component\",\"exports\":[\"ItemsPage\"]}",
+    "{\"type\":\"component_entry\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":9,\"column\":3,\"endLine\":11,\"component\":\"ItemsPage\",\"kind\":\"mount\",\"trigger\":\"componentDidMount\",\"handler\":null,\"guards\":[],\"method\":\"componentDidMount\"}",
+    "{\"type\":\"effect_handler\",\"file\":\"src/actions/items.ts\",\"line\":3,\"endLine\":5,\"class\":\"Items\",\"field\":\"loadItem\",\"actions\":[\"loadItem\"]}",
+    "{\"type\":\"effect_handler\",\"file\":\"src/actions/items.ts\",\"line\":7,\"endLine\":8,\"class\":\"Items\",\"field\":\"saveItem\",\"actions\":[\"saveItem\"]}",
+    "{\"type\":\"gateway_call\",\"file\":\"src/actions/items.ts\",\"line\":4,\"service\":\"httpClient\",\"method\":\"loadItem\",\"verb\":\"GET\",\"template\":\"/api/v1/items/${id}\",\"resolved\":true}",
+    "{\"type\":\"gateway_call\",\"file\":\"src/actions/items.ts\",\"line\":8,\"service\":\"httpClient\",\"method\":\"saveItem\",\"verb\":\"POST\",\"template\":\"/api/v1/items/${id}\",\"resolved\":true}",
+    "{\"type\":\"method_call\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":10,\"class\":\"ItemsPage\",\"method\":\"componentDidMount\",\"field\":\"import\",\"calledMethod\":\"loadItem\"}",
+    "{\"type\":\"method_call\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":14,\"class\":\"ItemsPage\",\"method\":\"handleClick\",\"field\":\"import\",\"calledMethod\":\"loadItem\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/actions/items.ts\",\"line\":3,\"endLine\":5,\"class\":\"Items\",\"method\":\"loadItem\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/actions/items.ts\",\"line\":7,\"endLine\":8,\"class\":\"Items\",\"method\":\"saveItem\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/app/AppRoutes.tsx\",\"line\":4,\"endLine\":6,\"class\":\"HomePage\",\"method\":\"HomePage\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/app/AppRoutes.tsx\",\"line\":8,\"endLine\":14,\"class\":\"AppRoutes\",\"method\":\"AppRoutes\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/components/ItemRow.tsx\",\"line\":3,\"endLine\":5,\"class\":\"ItemRow\",\"method\":\"ItemRow\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/http/httpClient.ts\",\"line\":2,\"endLine\":4,\"class\":\"HttpClient\",\"method\":\"getGatewayClient\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":13,\"endLine\":15,\"class\":\"ItemsPage\",\"method\":\"handleClick\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":17,\"endLine\":23,\"class\":\"ItemsPage\",\"method\":\"render\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":4,\"endLine\":6,\"class\":\"ItemBadge\",\"method\":\"ItemBadge\"}",
+    "{\"type\":\"method_span\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":9,\"endLine\":11,\"class\":\"ItemsPage\",\"method\":\"componentDidMount\"}",
+    "{\"type\":\"page_route\",\"file\":\"src/app/AppRoutes.tsx\",\"line\":11,\"column\":7,\"endLine\":11,\"owner\":\"AppRoutes\",\"path\":\"/home\",\"element\":\"HomePage\",\"elementLine\":11,\"elementFile\":\"src/app/AppRoutes.tsx\",\"elementName\":\"HomePage\"}",
+    "{\"type\":\"renders\",\"file\":\"src/app/AppRoutes.tsx\",\"line\":11,\"from\":\"AppRoutes\",\"to\":\"HomePage\",\"resolved\":true}",
+    "{\"type\":\"renders\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":20,\"from\":\"ItemsPage\",\"to\":\"ItemBadge\",\"resolved\":true}",
+    "{\"type\":\"template_handler\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":19,\"column\":12,\"component\":\"ItemsPage\",\"event\":\"onClick\",\"handler\":\"handleClick\",\"kind\":\"ref\"}",
+  ],
+  edges: [
+    "{\"kind\":\"calls\",\"from\":{\"repo\":\"web\",\"ref\":\"httpClient.loadItem\",\"file\":\"src/actions/items.ts\",\"line\":4,\"class\":\"httpClient\"},\"to\":{\"repo\":\"backend\",\"ref\":\"ItemsController.GetItem\",\"file\":\"src/ItemsController.cs\",\"line\":9},\"key\":\"GET api/v1/items/*\",\"callerKey\":\"GET api/v1/items/*\",\"match\":\"exact\"}",
+    "{\"kind\":\"calls\",\"from\":{\"repo\":\"web\",\"ref\":\"httpClient.saveItem\",\"file\":\"src/actions/items.ts\",\"line\":8,\"class\":\"httpClient\"},\"to\":{\"repo\":\"backend\",\"ref\":\"ItemsController.SaveItem\",\"file\":\"src/ItemsController.cs\",\"line\":15},\"key\":\"POST api/v1/items/*\",\"callerKey\":\"POST api/v1/items/*\",\"match\":\"exact\"}",
+    "{\"kind\":\"renders\",\"from\":{\"repo\":\"web\",\"ref\":\"AppRoutes\",\"file\":\"src/app/AppRoutes.tsx\",\"line\":11,\"role\":\"component\"},\"to\":{\"repo\":\"web\",\"ref\":\"HomePage\",\"file\":\"src/app/AppRoutes.tsx\",\"line\":4,\"role\":\"page\"},\"key\":\"AppRoutes->HomePage\"}",
+    "{\"kind\":\"renders\",\"from\":{\"repo\":\"web\",\"ref\":\"ItemsPage\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":20,\"role\":\"component\"},\"to\":{\"repo\":\"web\",\"ref\":\"ItemBadge\",\"file\":\"src/pages/ItemsPage.tsx\",\"line\":4,\"role\":\"component\"},\"key\":\"ItemsPage->ItemBadge\"}",
+  ],
+  unjoined: {
+    mobile_calls_without_route: [],
+    routes_without_caller: [],
+    publish_without_consumer: [],
+    consume_without_publisher: [],
+    intercepts_without_route: [],
+    messages_without_contract: [],
+    publish_unresolved: [],
+  },
+};
+
+test('Web extractor reach AC-18: the existing shapes keep their facts and join edges', (t) => {
+  const dir = buildRepo(t, EXISTING_SHAPES);
+  extractAndJoin(dir);
+  const flow = flowOf(dir);
+  const observed = {
+    facts: sortedLines(factsOf(dir)),
+    edges: sortedLines(flow.edges),
+    unjoined: Object.fromEntries(Object.entries(flow.unjoined).map(([bucket, items]) => [bucket, sortedLines(items)])),
+  };
+  assert.deepEqual(observed, EXISTING_SHAPES_GOLDEN);
+  const spans = ofType(factsOf(dir), 'method_span').filter((span) => span.class === 'ItemsPage');
+  assert.deepEqual(spans.map((span) => span.method).sort(), ['componentDidMount', 'handleClick', 'render']);
+});
