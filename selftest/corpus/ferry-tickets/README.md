@@ -20,3 +20,9 @@ and collection initializers, and chain links whose receiver type is known from a
 a typed local, `new T()`, an awaited `Task<T>` or the return type of the previous link. Two
 receivers have no single target: `thing`, whose type nothing states, and `port`, which
 reaches `Moor` through two interfaces.
+
+`Gates/` and `GatesController.cs` hold the decisions an expression makes: conditional
+operators (one nested in another), `??` choices beside a `?? throw` and a `??=`, lambdas passed
+to `Where`, `Any` and `All` beside a method group, and the nullable marks and `?.` that are no
+decision. `GatesController.Status` compares with a named value, the text a statement-level
+decision would read dispositions from.

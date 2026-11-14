@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { mergeBranchFacts } from '../lib/trace.js';
 import { captureBranchPoints, pinnedFacts, readBaseline } from './branch-point-baseline.js';
 import { copyFixture, runCli } from './helpers.js';
 
@@ -22,6 +23,19 @@ test('CSharp reading AC-10: the facts of the existing decision kinds stay as the
       assert.deepEqual(pinnedFacts(now[repo]), pinned.facts, `${entry.corpus} ${entry.config} ${repo}`);
     }
   }
+});
+
+test('CSharp reading AC-10: an expression decision between an if and its error return keeps them one branch', () => {
+  const at = (line, kind, text) => ({ repo: 'api', fact: { type: 'branch_point', file: 'a.cs', class: 'A', method: 'M', line, kind, text, endLine: line } });
+  const merged = mergeBranchFacts([
+    at(10, 'if', 'if (seat == null)'),
+    at(11, 'ternary', 'late'),
+    at(12, 'error_return', 'throw new SeatException();'),
+  ]);
+  assert.deepEqual(merged.map((entry) => [entry.fact.line, entry.fact.kind, entry.fact.returnLine ?? null]), [
+    [10, 'error_return', 12],
+    [11, 'ternary', null],
+  ]);
 });
 
 const FERRY = 'ferry-tickets';
@@ -48,15 +62,28 @@ function cli(dir, ...args) {
   return runCli([...args, ...CONFIG], { cwd: dir });
 }
 
-/** Makes `dir` a Git checkout with one commit, `out/` ignored, so a diff can be read. */
+/** Makes `dir` a Git checkout with one commit, `out/` ignored, so a diff can be read. Returns
+ * a function that commits the working tree and gives the new revision. */
 function gitCheckout(dir) {
   writeFileSync(join(dir, '.gitignore'), 'out/\n');
-  const git = (...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+  const git = (...args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' }).stdout.trim();
   git('init', '-q');
   git('config', 'user.email', 'selftest@example.invalid');
   git('config', 'user.name', 'flowtrace selftest');
-  git('add', '-A');
-  git('commit', '-q', '-m', 'initial');
+  const commit = (message) => {
+    git('add', '-A');
+    git('commit', '-q', '-m', message);
+    return git('rev-parse', 'HEAD');
+  };
+  commit('initial');
+  return commit;
+}
+
+/** The 1-based line of `file` (under `dir`) that holds `needle`. */
+function lineOf(dir, file, needle) {
+  const index = readFileSync(join(dir, file), 'utf8').split('\n').findIndex((line) => line.includes(needle));
+  assert.notEqual(index, -1, needle);
+  return index + 1;
 }
 
 test('CSharp reading AC-1: an attribute over several lines is read as one attribute and keeps the verb before it', (t) => {
@@ -283,4 +310,79 @@ test('CSharp reading AC-8: routes-of reaches a callee of an expression body, an 
       assert.deepEqual(JSON.parse(run.stdout).routes.map((r) => r.key), keys, args[0]);
     }
   }
+});
+
+const GATES = 'src/Gates/GateRules.cs';
+const GATES_CONTROLLER = 'src/Controllers/GatesController.cs';
+
+/** The `branch_point` facts of one file, as `[line, method, kind, text]`. */
+function decisionsIn(dir, file) {
+  return facts(dir, 'api')
+    .filter((f) => f.type === 'branch_point' && f.file === file)
+    .map((f) => [f.line, f.method, f.kind, f.text])
+    .sort((a, b) => a[0] - b[0] || a[2].localeCompare(b[2]) || a[3].localeCompare(b[3]));
+}
+
+test('CSharp reading AC-9: conditional operators, coalesce choices and predicate lambdas are decisions', (t) => {
+  const { dir } = extracted(t);
+  const at = (needle) => lineOf(join(dir, 'api'), GATES, needle);
+  assert.deepEqual(decisionsIn(dir, GATES), [
+    [at('tickets.Where('), 'Boardable', 'predicate', 'late || t.Priority'],
+    [at('ticket.Name ?? fallback'), 'Holder', 'coalesce', 'ticket.Name ?? fallback'],
+    [at('ticket.Seat ?? throw'), 'Holder', 'error_return', 'var seat = ticket.Seat ?? throw new ArgumentException("seat");'],
+    [at('ticket.Gate ?? throw'), 'Holder', 'guard', 'var gate = ticket.Gate ?? throw ticket.Missing;'],
+    [at('return count > 0'), 'Holder', 'ternary', 'count > 0'],
+    [at('public int Rank'), 'Rank', 'ternary', 'x > 2'],
+    [at('public int Rank'), 'Rank', 'ternary', 'x > 3'],
+    [at('tickets.Any('), 'Checks', 'predicate', 't.Late'],
+    [at('tickets.Any('), 'Checks', 'predicate', 't.Paid'],
+  ]);
+  const controller = decisionsIn(dir, GATES_CONTROLLER);
+  assert.deepEqual(controller, [
+    [lineOf(join(dir, 'api'), GATES_CONTROLLER, 'return allowed ?'), 'Open', 'ternary', 'allowed'],
+    [lineOf(join(dir, 'api'), GATES_CONTROLLER, 'return status =='), 'Status', 'ternary', 'status == GateStatus.Open'],
+  ]);
+});
+
+test('CSharp reading AC-11: the new decisions are listed by decisions and cover and multiply no seed', (t) => {
+  const { dir } = extracted(t);
+  for (const key of ['GET gates/{id}/open', 'GET gates/{id}/status']) {
+    const run = cli(dir, 'trace', key, '--seeds', '--json');
+    assert.equal(run.status, 0, run.stderr);
+    const walk = JSON.parse(run.stdout);
+    assert.equal(walk.seeds.length, 1, key);
+    const branches = walk.nodes.filter((node) => node.kind === 'branch' && node.file === GATES_CONTROLLER);
+    assert.deepEqual(branches.map((node) => [node.branchKind, node.dispositions ?? null]), [['ternary', null]], key);
+  }
+  writeFileSync(join(dir, 'gates.area.txt'), 'GET gates/{id}/open\nGET gates/{id}/status\n');
+  const cover = cli(dir, 'cover', '--area', 'gates.area.txt', '--json');
+  assert.equal(cover.status, 0, cover.stderr);
+  for (const route of JSON.parse(cover.stdout).routes) {
+    assert.equal(route.seeds.length, 1, route.key);
+    assert.equal(route.seeds[0].branchWeight, 0, route.key);
+    assert.equal(route.seeds[0].dispositions, 'happy path', route.key);
+  }
+
+  const commit = gitCheckout(dir);
+  const file = join(dir, 'api', GATES);
+  writeFileSync(
+    file,
+    readFileSync(file, 'utf8')
+      .replace('x > 3 ? 1', 'x > 4 ? 1')
+      .replace('ticket.Name ?? fallback', 'ticket.Title ?? fallback')
+      .replace('tickets.Any(t => t.Late)', 'tickets.Any(t => t.Early)'),
+  );
+  const revision = commit('change the gate rules');
+  assert.equal(cli(dir, 'extract', '--repo', 'api').status, 0);
+  const run = cli(dir, 'decisions', '--revs', revision, '--json');
+  assert.equal(run.status, 0, run.stderr);
+  const listed = JSON.parse(run.stdout).units.flatMap((unit) => unit.decisions.map((d) => [unit.method, d.id, d.kind]));
+  const id = (needle, kind) => `api:${GATES}:${lineOf(join(dir, 'api'), GATES, needle)}:${kind}`;
+  assert.deepEqual(listed, [
+    ['Holder', id('ticket.Title ?? fallback', 'coalesce'), 'coalesce'],
+    ['Rank', id('public int Rank', 'ternary'), 'ternary'],
+    ['Rank', `${id('public int Rank', 'ternary')}#2`, 'ternary'],
+    ['Checks', id('tickets.Any(', 'predicate'), 'predicate'],
+    ['Checks', `${id('tickets.Any(', 'predicate')}#2`, 'predicate'],
+  ]);
 });
