@@ -154,3 +154,137 @@ test('an email fact states a null with a reason, and two facts of one type have 
     assert.notEqual(factIdentity(one), factIdentity(other), one.type);
   }
 });
+
+const READ_SPEC = `import { test } from '@playwright/test';
+
+const TITLE = 'a title held in a const';
+
+async function checkWelcome() {
+  await readMail({ subject: 'Welcome to the club' });
+}
+
+test('a literal subject', async () => {
+  await readMail({ subject: 'Welcome to the club', inbox: 'members' });
+});
+
+test('a template subject', async () => {
+  await readMail({ subject: \`Code \${code} for \${member.name}\` });
+});
+
+test('a const subject', async () => {
+  const subject = 'Your invite';
+  await readMail({ subject });
+  const reset = \`Reset \${count}\`;
+  await this.inbox.latest(box, reset);
+});
+
+test('an unreadable subject', async () => {
+  await readMail({ subject: makeSubject() });
+  await readMail('no object');
+});
+
+test(TITLE, async () => {
+  await readMail({ subject: 'Hello' });
+});
+
+test.describe('hooks', () => {
+  test.beforeEach(async () => {
+    await checkWelcome();
+  });
+  test('a read through a hook and a helper', async () => {
+    await readMessage({ subject: 'not configured' });
+  });
+});
+
+test.skip('a skipped read', async () => {
+  await readMail({ subject: 'Skipped' });
+});
+`;
+
+const READ_CY = `describe('reads', () => {
+  it('a cypress read', () => {
+    cy.readMail({ subject: 'Welcome to the club' });
+    readMail({ subject: 'a plain call is not a command' });
+  });
+  it(\`a title with \${name}\`, () => {
+    cy.checkWelcome();
+  });
+});
+`;
+
+const READ_COMMANDS = `Cypress.Commands.add('checkWelcome', () => {
+  const subject = \`Welcome \${Cypress.env('member')}\`;
+  cy.readMail({ subject });
+});
+`;
+
+const READS = [
+  { call: 'readMail', subject: '0.subject' },
+  { call: 'inbox.latest', subject: 1 },
+];
+
+function readCorpus(t, email = { reads: READS }) {
+  const dir = copyFixture(t, 'kite-club');
+  const files = {
+    'suite/e2e/reads.pw.ts': READ_SPEC,
+    'web/cypress/e2e/reads.cy.ts': READ_CY,
+    'web/cypress/support/commands.ts': READ_COMMANDS,
+  };
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), text);
+  }
+  const config = JSON.parse(readFileSync(join(dir, 'kite.config.json'), 'utf8'));
+  writeFileSync(join(dir, 'reads.config.json'), JSON.stringify({ ...config, ...(email ? { email } : {}) }, null, 2));
+  const extracted = runCli(['extract', '--config', 'reads.config.json'], { cwd: dir });
+  assert.equal(extracted.status, 0, extracted.stderr);
+  return dir;
+}
+
+const factsIn = (dir, repo) => JSON.parse(readFileSync(join(dir, 'out', 'facts', `${repo}.json`), 'utf8')).facts;
+
+test('Test evidence AC-18: a configured read call gives one email read for each test that reaches it', (t) => {
+  const dir = readCorpus(t);
+  const suite = factsIn(dir, 'suite');
+  const row = (fact) => [fact.test, fact.call, fact.subject, fact.reason ?? null, fact.where, fact.skipped];
+  const reads = suite.filter((fact) => fact.type === 'email_read');
+  assert.deepEqual(reads.map(row), [
+    ['a literal subject', 'readMail', 'Welcome to the club', null, 'test', false],
+    ['a template subject', 'readMail', 'Code * for *', null, 'test', false],
+    ['a const subject', 'readMail', 'Your invite', null, 'test', false],
+    ['a const subject', 'inbox.latest', 'Reset *', null, 'test', false],
+    ['an unreadable subject', 'readMail', null, 'unreadable-subject', 'test', false],
+    ['an unreadable subject', 'readMail', null, 'unreadable-subject', 'test', false],
+    [null, 'readMail', 'Hello', null, 'test', false],
+    ['a read through a hook and a helper', 'readMail', 'Welcome to the club', null, 'helper', false],
+    ['a skipped read', 'readMail', 'Skipped', null, 'test', true],
+  ]);
+  const declared = new Map(suite.filter((fact) => fact.type === 'pw_test').map((fact) => [fact.line, fact]));
+  for (const read of reads) {
+    assert.ok(declared.has(read.testLine), `${read.test}: testLine names a test`);
+    assert.equal(read.spec, 'e2e/reads.pw.ts');
+  }
+  assert.equal(declared.get(reads[6].testLine).test, 'TITLE', 'the test of a title that is not a literal');
+  assert.deepEqual([reads[7].file, reads[7].line], ['e2e/reads.pw.ts', 6], 'the file and line of the call itself');
+
+  const web = factsIn(dir, 'web').filter((fact) => fact.type === 'email_read');
+  assert.deepEqual(
+    web.map((fact) => [fact.spec, fact.test, fact.file, fact.subject, fact.where]),
+    [
+      ['e2e/reads.cy.ts', 'a cypress read', 'e2e/reads.cy.ts', 'Welcome to the club', 'test'],
+      ['e2e/reads.cy.ts', null, 'support/commands.ts', 'Welcome *', 'helper'],
+    ],
+  );
+  const cypressTests = factsIn(dir, 'web').filter((fact) => fact.type === 'cypress_test' && fact.spec === 'e2e/reads.cy.ts');
+  assert.equal(web[0].testLine, cypressTests.find((fact) => fact.test === 'a cypress read').line);
+  assert.equal(web[1].testLine, 6);
+});
+
+test('Test evidence AC-18: the email key changes no fact but the email reads', (t) => {
+  const withReads = readCorpus(t);
+  const without = readCorpus(t, null);
+  for (const repo of ['suite', 'web']) {
+    const others = factsIn(withReads, repo).filter((fact) => fact.type !== 'email_read');
+    assert.deepEqual(others, factsIn(without, repo), repo);
+  }
+});

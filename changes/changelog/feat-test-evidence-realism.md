@@ -94,3 +94,11 @@
   and `id` and `subject` selectors. A selector is dotted keys, and a key can carry a
   `[field=value]` filter that picks one array element. A malformed value is one refusal that
   names `templates`.
+- `extract` reads email reads. With `email.reads`, a call to a configured name gives one
+  `email_read` fact for each Playwright or Cypress test that reaches it through its body, its
+  hooks, its helpers or a Cypress command (a Cypress read is the command `cy.<call>(`). The fact
+  has `spec`, `test`, `testLine`, `call`, `subject`, `skipped` and `where`, and the `file` and
+  `line` of the call. A string literal subject gives its text, a template literal gives its text
+  with each `${…}` as `*`, and a `const` of the same function bound to one of these gives its
+  value. Another expression gives `subject: null` and `reason: "unreadable-subject"`. A test
+  whose title is not a literal gives `test: null`.
