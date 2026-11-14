@@ -549,8 +549,7 @@ test('Merge sign-off AC-2: an unsigned commit a merge brings in, or an unsigned 
   // Git keeps one copy of a parent named twice, so this commit has one parent and is no merge
   const twice = commit('fix: an unsigned commit that names its parent twice', base, base);
   assert.equal(gitIn(dir, ['rev-list', '--parents', '-n', '1', twice]), `${twice} ${base}`);
-  // A message can carry the record separator but never the NUL field separator, so text after it
-  // that is shaped like a parent list can never read as one
+  // Text in a message shaped like a parent list must never read as one
   const shaped = commit(`fix: an unsigned commit\x02${'a'.repeat(40)} ${'b'.repeat(40)}`, base);
   for (const unsignedTip of [twice, shaped]) {
     const result = requireSignoffIn(dir, `${base}..${unsignedTip}`);
@@ -601,6 +600,108 @@ test('Merge sign-off AC-4: the range CI exports for a push whose tip is an unsig
     result.stdout,
     new RegExp(`^verify: commit-signoff ok — 1 non-merge commit in ${range} signed off, 1 merge commit skipped$`, 'm'),
   );
+});
+
+/** The scanner's commit-message mode, run inside a fixture checkout. */
+function scanCommitsIn(dir, range) {
+  const result = spawnSync('python3', [join('.claude', 'hooks', 'comment-hygiene.py'), '--scan-commits', range], {
+    cwd: dir,
+    encoding: 'utf8',
+  });
+  if (result.error) throw result.error;
+  return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
+}
+
+/** A commit whose message is the given bytes, for a message `-m` cannot carry. */
+function commitBytes(dir, message, ...parents) {
+  const tree = gitIn(dir, ['write-tree']);
+  const result = spawnSync('git', ['commit-tree', tree, ...parents.flatMap((parent) => ['-p', parent]), '-F', '-'], {
+    cwd: dir,
+    input: message,
+    env: { ...process.env, ...IDENTITY },
+  });
+  if (result.status !== 0) throw new Error(`git commit-tree failed: ${result.stderr}`);
+  return result.stdout.toString().trim();
+}
+
+test('Repo process AC-3: the sign-off scan reads the stored commit, not its replacement', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const base = commit(signed('chore: start the history'));
+  const stored = commit('fix: an unsigned change', base);
+  const replacement = commit(signed('fix: an unsigned change'), base);
+  gitIn(dir, ['replace', stored, replacement]);
+
+  const result = requireSignoffIn(dir, `${base}..${stored}`);
+  assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
+  assert.equal(result.stdout, `${stored.slice(0, 12)}: missing Signed-off-by trailer\n`);
+});
+
+test('Repo process AC-3: the message scan reads the stored message, not its replacement', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const trailer = [['Generated', 'with'].join(' '), 'a helper'].join(' ');
+  const base = commit(signed('chore: start the history'));
+  const stored = commit(signed(`fix: a change\n\n${trailer}`), base);
+  const replacement = commit(signed('fix: a change'), base);
+  gitIn(dir, ['replace', stored, replacement]);
+
+  const result = scanCommitsIn(dir, `${base}..${stored}`);
+  assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
+  assert.match(result.stdout, new RegExp(`^commit-log:\\d+: attribution trailer: ${trailer}$`, 'm'));
+});
+
+test('Repo process AC-3: a graft that gives a stored commit two parents does not make it a merge', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const base = commit(signed('chore: start the history'));
+  const other = commit(signed('feat: a change on another line'), base);
+  const stored = commit('fix: an unsigned change with one parent', base);
+  gitIn(dir, ['replace', '--graft', stored, base, other]);
+
+  const result = requireSignoffIn(dir, `${base}..${stored}`);
+  assert.equal(result.status, 1, `${result.stdout}${result.stderr}`);
+  assert.equal(result.stdout, `${stored.slice(0, 12)}: missing Signed-off-by trailer\n`);
+});
+
+test('Repo process AC-4: a range of merges whose messages hold the old record separator passes', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const base = commit(signed('chore: start the history'));
+  const side = commit(signed('fix: a change on a side branch'), base);
+  const merge = commit('Merge side\x02extra text', base, side);
+  const second = commit(signed('docs: a change on a second branch'), base);
+  const again = commit('Merge second\x02more text\x1e\x1f', merge, second);
+
+  for (const range of [`${side}..${merge}`, `${side}..${again}`]) {
+    const result = requireSignoffIn(dir, range);
+    assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr, '');
+  }
+});
+
+test('Repo process AC-4: control characters in a commit message do not move its record', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const base = commit(signed('chore: start the history'));
+  const message = 'fix: a change\x02 with \x1e and \x1f inside';
+  const signedTip = commit(signed(message), base);
+  const unsignedTip = commit(message, base);
+
+  const clean = requireSignoffIn(dir, `${base}..${signedTip}`);
+  assert.equal(clean.status, 0, `${clean.stdout}${clean.stderr}`);
+  assert.equal(clean.stdout, '');
+
+  const missing = requireSignoffIn(dir, `${base}..${unsignedTip}`);
+  assert.equal(missing.status, 1, `${missing.stdout}${missing.stderr}`);
+  assert.equal(missing.stdout, `${unsignedTip.slice(0, 12)}: missing Signed-off-by trailer\n`);
+});
+
+test('Repo process AC-4: a signed message with bytes that are not UTF-8 gives no hit', (t) => {
+  const { dir, commit } = signoffCheckout(t);
+  const base = commit(signed('chore: start the history'));
+  const message = Buffer.concat([Buffer.from('fix: a change in '), Buffer.from([0xff, 0xfe]), Buffer.from(`\n\n${SIGNOFF}\n`)]);
+  const tip = commitBytes(dir, message, base);
+
+  const result = requireSignoffIn(dir, `${base}..${tip}`);
+  assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
+  assert.equal(result.stdout, '');
 });
 
 test('a range the caller exports is the one the command reads when no flag names one', () => {
