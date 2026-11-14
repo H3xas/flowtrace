@@ -673,3 +673,53 @@ test('Web journeys AC-15: the help, the command reference, the fact schema and t
     assert.ok(unreleased.includes(topic), `changelog: ${topic}`);
   }
 });
+
+test('Web journeys AC-5: a fact set with no arrow field, or with a damaged one, walks the older way and fails nothing', () => {
+  const headFacts = JSON.parse(readFileSync(join(fixture(...REGATTA), 'out', 'facts', 'web.json'), 'utf8'));
+  const withFacts = (facts) => {
+    const dir = fixture(...REGATTA, () => {});
+    writeFileSync(join(dir, 'out', 'facts', 'web.json'), JSON.stringify({ ...headFacts, facts }));
+    return dir;
+  };
+  // Each damage keeps the other fields of a real arrow, so a reader that let it through
+  // would still join the fact to its handler or name.
+  const damagedSets = [];
+  const damages = [
+    (arrow) => ({ ...arrow, line: String(arrow.line) }),
+    (arrow) => ({ ...arrow, column: undefined }),
+    (arrow) => ({ ...arrow, name: arrow.name === undefined ? undefined : 5, ...(arrow.attribute ? { attribute: { ...arrow.attribute, column: '1' } } : {}) }),
+    (arrow) => `${arrow.line}:${arrow.column}`,
+  ];
+  const stripped = headFacts.facts.map(({ arrow, ...rest }) => rest);
+  for (const damage of damages) {
+    const damaged = headFacts.facts.map((fact) => (fact.arrow ? { ...fact, arrow: damage(fact.arrow) } : fact));
+    assert.ok(damaged.some((fact) => fact.arrow), 'the head facts state arrows');
+    damagedSets.push(damaged);
+  }
+  const older = JSON.parse(readFileSync(BASE_FACTS, 'utf8')).facts;
+
+  const walk = (dir) => {
+    const run = (args) => {
+      const result = cli(dir, REGATTA[1], [...args, '--json']);
+      assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}`);
+      assert.equal(result.stderr, '', args.join(' '));
+      return JSON.parse(result.stdout);
+    };
+    const trace = ['CrewRoster', 'BoatList', 'SignupPanel'].map((start) =>
+      run(['trace', start]).nodes.map((node) => `${node.kind} ${node.ref} ${node.file}:${node.line}:${node.column ?? ''} ${node.holder ?? ''}${node.inline ? ' inline' : ''}`),
+    );
+    const chains = ['GET crews/v1/signups', 'GET weather/v1/wind'].map((route) =>
+      run(['chains', route]).chains.map((chain) => chain.hops.map((hop) => `${hop.kind} ${hop.fact ?? ''} ${hop.file}:${hop.line}`).join(' > ')),
+    );
+    const span = run(['span', '--from-component', 'CrewRoster']).routes.map(({ status, ...route }) => route);
+    return { trace, chains, span };
+  };
+
+  const plain = walk(withFacts(stripped));
+  for (const damaged of damagedSets) assert.deepEqual(walk(withFacts(damaged)), plain, 'a damaged arrow field reads as no field');
+  assert.notDeepEqual(walk(fixture(...REGATTA)), plain, 'the arrow fields change the walk');
+  for (const rows of plain.trace) {
+    assert.ok(!rows.some((row) => row.endsWith(' inline') || row.includes(' arrow')), 'no inline or arrow holder joins without arrow fields');
+  }
+  walk(withFacts(older));
+});
