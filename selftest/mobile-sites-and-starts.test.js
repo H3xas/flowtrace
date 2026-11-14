@@ -710,3 +710,65 @@ test('Mobile sites and starts AC-2: the trace help and the CLI doc name the site
     assert.match(text, /One handler bound at two or more sites is one node for each site, and each such node names its site\./);
   }
 });
+
+/**
+ * A second page with the same class name, another selector and another feature folder that
+ * sorts after the first, so the last same-named declaration in the facts is the wrong page.
+ */
+const ARCHIVE_FILES = {
+  'mobile/src/app/features/yard/plot-detail.page.ts': [
+    "import { Component } from '@angular/core';",
+    '',
+    '@Component({',
+    "  selector: 'app-plot-archive',",
+    "  templateUrl: './plot-detail.page.html',",
+    '})',
+    'export class PlotDetailPage {',
+    '  onArchive() {',
+    '    return 1;',
+    '  }',
+    '}',
+    '',
+  ].join('\n'),
+  'mobile/src/app/features/yard/plot-detail.page.html': '<ion-button (click)="onArchive()">Archive</ion-button>\n',
+};
+
+const chainPages = (model) =>
+  model.chains
+    .map((chain) => [chain.entry ? `${chain.entry.component}.${chain.entry.handler || chain.entry.trigger}` : null, chain.page ? chain.page.file : null, chain.gaps])
+    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+
+test('Mobile sites and starts AC-8: with a same-named page elsewhere, a page event and its rendered chip each reach their own page with no gap, in either fact order', () => {
+  const archive = nursery(ARCHIVE_FILES);
+  const own = 'src/app/features/plots/plot-detail.page.ts';
+  const water = archive.json(['chains', 'POST nursery/v1/plots/{plotId}/water']);
+  const health = archive.json(['chains', 'POST nursery/v1/plots/{plotId}/health']);
+  const waterPages = chainPages(water);
+  const healthPages = chainPages(health);
+  assert.ok(waterPages.length > 0 && healthPages.length > 0);
+  for (const [, page, gaps] of [...waterPages, ...healthPages]) {
+    assert.equal(page, own);
+    assert.deepEqual(gaps, []);
+  }
+  assert.ok(healthPages.some(([entry]) => entry === 'SeedlingBadgeComponent.onMark'), 'the chip climbs through its render to the page');
+  reverseFacts(archive.dir, 'mobile');
+  assert.deepEqual(chainPages(archive.json(['chains', 'POST nursery/v1/plots/{plotId}/water'])), waterPages);
+  assert.deepEqual(chainPages(archive.json(['chains', 'POST nursery/v1/plots/{plotId}/health'])), healthPages);
+});
+
+test('Mobile sites and starts AC-8: a template owner the facts do not prove is a component-ambiguous gap naming both files, and enters no page', () => {
+  const archive = nursery(ARCHIVE_FILES);
+  const file = join(archive.dir, 'out', 'facts', 'mobile.json');
+  const set = JSON.parse(readFileSync(file, 'utf8'));
+  for (const fact of set.facts) if (fact.type === 'template_handler' || fact.type === 'renders') delete fact.componentFile;
+  writeFileSync(file, `${JSON.stringify(set, null, 2)}\n`);
+  const candidates = ['src/app/features/plots/plot-detail.page.ts', 'src/app/features/yard/plot-detail.page.ts'];
+  for (const route of ['POST nursery/v1/plots/{plotId}/water', 'POST nursery/v1/plots/{plotId}/health']) {
+    const model = archive.json(['chains', route]);
+    assert.ok(model.chains.length > 0, route);
+    for (const chain of model.chains) {
+      assert.deepEqual([chain.page, chain.gaps], [null, ['component-ambiguous']], route);
+      assert.deepEqual(chain.hops.find((hop) => hop.kind === 'gap').candidates, candidates);
+    }
+  }
+});
