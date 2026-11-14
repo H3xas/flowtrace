@@ -106,7 +106,7 @@ only where they apply:
 |---|---|---|
 | `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; `exports` lists each name its module exports it under: on a web component `default` is included, and on a mobile component only named value exports are listed, with `[]` for a declaration the module does not export; a render's `source` binds only a component whose `exports` holds the imported name, and a component without `exports` binds no import |
 | `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself (`default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>`); on a mobile fact, optional `componentFile` is the declaration file that owns the template, while `file` and `line` stay the template source site |
-| `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler; on a mobile fact, optional `componentFile` is the declaration file that owns the template |
+| `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler; on a mobile fact, optional `componentFile` is the declaration file that owns the template; a web inline arrow that dispatches a creator call, `dispatch(c(x))`, names the creator `c` as its handler |
 | `injects` | `from`, `to` | a class is given another as a dependency; on a mobile fact, optional `source` is the written module specifier, `imported` the named value export, and `unresolved: "mobile-declaration-unresolved"` an import form the reader cannot bind |
 | `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal |
 | `action_def` | `action` | an action type is declared |
@@ -155,6 +155,15 @@ whose response handler this dispatch is written inside, and `outcome` is `succes
 `failure` for which of that call's handlers it is. The field is stated only where the
 source states the relation — a `.then` or `.catch` callback — never inferred from two
 statements sharing a body. Optional on `template_handler`: the `column` of the binding.
+
+Optional on web `action_dispatch` and `method_call`: `arrow` names the innermost arrow
+function or function expression that holds the fact. It is `{ line, column }` of the arrow
+start, with `name` when a local `const`, `let` or assignment binds the arrow to a name. It
+has `attribute: { name, line, column }` when the arrow is the value of a JSX `on*`
+attribute. That attribute site is the site of the `template_handler` fact of the binding.
+A fact outside every arrow has no `arrow`. A reader of a fact set that has no `arrow` on
+any web fact keeps the walk of the older fact sets. A fact set extracted again has a new
+facts digest.
 
 Mobile declaration identity works from these facts alone. A mobile `injects` or
 injected-receiver `method_call` fact can carry `source` and `imported`. The reader follows

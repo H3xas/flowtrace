@@ -621,3 +621,55 @@ test('Web journeys AC-12: plain trace lists each mobile hook as an entry and eve
   const handler = json(dir, REGATTA[1], ['trace', 'RaceDayPage', '--from-handler', 'onProtest']);
   assert.ok(!handler.nodes.some((node) => node.kind === 'entry'), 'a handler walk lists no hook');
 });
+
+test('Web journeys AC-15: the help, the command reference, the fact schema and the changelog name each change', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const help = runCli(['--help'], { cwd: REPO_ROOT });
+  assert.equal(help.status, 0, help.stderr);
+  const section = (start, end) => {
+    const from = help.stdout.indexOf(`\n${start}`);
+    const to = help.stdout.indexOf(`\n${end}`, from + 1);
+    assert.ok(from >= 0 && to > from, start);
+    return help.stdout.slice(from, to).replace(/\s+/g, ' ');
+  };
+  const traceHelp = section('trace <start>', 'span "<route key>"');
+  for (const topic of [
+    'Pages of a component',
+    '"no-page"',
+    '"page-ambiguous"',
+    'root.pages',
+    'Route trees',
+    'exits 2 with reason ambiguous',
+    'holds as a child',
+    '"body" hop',
+    '"arrow <name>" hop',
+    'arrow site, file:line:column',
+    '"dispatch(c(x))"',
+    'Each nested dispatch spends one level of --depth',
+    'starts with its kind word',
+    'lifecycle hook that sends a request',
+  ]) {
+    assert.ok(traceHelp.includes(topic), `trace help: ${topic}`);
+  }
+  const spanHelp = section('span --from-component', 'chains "<route key>"');
+  assert.ok(spanHelp.includes('"holder" on the arm'), 'span help: the holder');
+  const chainsHelp = section('chains "<route key>"', 'surface "<route key>"');
+  for (const topic of ['inline handler arrow is the entry', 'names that arrow', 'with no effect hop', 'print as one chain in the dispatch form']) {
+    assert.ok(chainsHelp.includes(topic), `chains help: ${topic}`);
+  }
+
+  const reference = readFileSync(join(REPO_ROOT, 'docs', 'cli.md'), 'utf8');
+  assert.ok(reference.includes(help.stdout.trimEnd()), 'docs/cli.md is the help text');
+  execFileSync(process.execPath, [join(REPO_ROOT, 'scripts', 'docs-check.mjs')], { cwd: REPO_ROOT, stdio: 'pipe' });
+
+  const schema = readFileSync(join(REPO_ROOT, 'docs', 'fact-schema.md'), 'utf8').replace(/\s+/g, ' ');
+  for (const topic of ['Optional on web `action_dispatch` and `method_call`: `arrow`', '`attribute: { name, line, column }`', '`dispatch(c(x))`, names the creator `c`']) {
+    assert.ok(schema.includes(topic), `fact schema: ${topic}`);
+  }
+
+  const changelog = readFileSync(join(REPO_ROOT, 'CHANGELOG.md'), 'utf8');
+  const unreleased = changelog.slice(changelog.indexOf('## Unreleased'), changelog.indexOf('\n## ', changelog.indexOf('## Unreleased') + 1)).replace(/\s+/g, ' ');
+  for (const topic of ['Web journeys:', '`root.pages`', 'reason `ambiguous`', 'route element holds', 'inline handler arrow', '`arrow`', 'kind word', 'lifecycle hook', 'dispatch form']) {
+    assert.ok(unreleased.includes(topic), `changelog: ${topic}`);
+  }
+});

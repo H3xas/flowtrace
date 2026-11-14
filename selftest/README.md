@@ -112,6 +112,13 @@ npm test
   AC-n:` test for each acceptance rule. One case imports `callersOf` of `lib/span.js`,
   because no command prints the callers of a route as data. The corpus README lists each
   shape and the chain it gives.
+- `corpus/regatta-desk/`: an invented race office, with an ASP.NET Core backend, a React and
+  Redux client and an Ionic app with NgRx. It holds the component shapes of the web
+  journeys: body and `render` dispatches, inline and named arrows, nested thunks, pages of a
+  component, two route trees and Ionic lifecycle hooks. `web-journeys.test.js` runs it
+  through the CLI, one `Web journeys AC-n:` test for each acceptance rule. `base-facts/` and
+  `base-capture.json` hold what the base code wrote and printed for it. The corpus README
+  lists each shape and the rule that reads it.
 - `seed-goldens.js` and `corpus/seed-goldens/`: the `trace --seeds --json` and `cover --json`
   output of each corpus with backend routes, written by `node selftest/seed-goldens.js
   --write` with the engine before the pipeline outcomes. `pipeline-rejects.test.js` makes sure
