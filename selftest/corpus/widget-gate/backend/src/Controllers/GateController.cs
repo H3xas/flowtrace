@@ -20,5 +20,11 @@ namespace WidgetGate.Api.Controllers
 
         [HttpGet("folded")]
         public IActionResult Folded() => Ok();
+
+        [HttpGet("grouped")]
+        public IActionResult Grouped() => Ok();
+
+        [HttpGet("wrapped")]
+        public IActionResult Wrapped() => Ok();
     }
 }

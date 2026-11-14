@@ -80,6 +80,18 @@ test('Test eligibility AC-27: a function-expression or expression-body describe 
   }
 });
 
+test('Test eligibility AC-27: a describe body inside grouping parentheses keeps its skip', (t) => {
+  const { facts } = extractGate(t);
+  const spec = 'tests/grouped-callbacks.spec.ts';
+  for (const [line, label] of [
+    [4, "a test inside test.describe.skip(..., (() => { ... }))"],
+    [31, "a test that is the grouped expression body of test.describe.fixme("],
+  ]) {
+    assert.equal(stateAt(facts, spec, line).eligibility, 'static-skip', label);
+    assert.equal(stateAt(facts, spec, line).skipped, true, label);
+  }
+});
+
 test('Test eligibility AC-28: a function-expression hook, describe and test body keep their guards', (t) => {
   const dev = extractGate(t, 'gate-dev.config.json').facts;
   const stage = extractGate(t, 'gate-stage.config.json').facts;
@@ -103,10 +115,26 @@ test('Test eligibility AC-28: a function-expression hook, describe and test body
   ]);
 });
 
+test('Test eligibility AC-28: a describe, hook and test body inside grouping parentheses keep their guards', (t) => {
+  const dev = extractGate(t, 'gate-dev.config.json').facts;
+  const stage = extractGate(t, 'gate-stage.config.json').facts;
+  const spec = 'tests/grouped-callbacks.spec.ts';
+  for (const [line, scope, at, devValue, devState, stageState] of [
+    [12, 'describe', 10, false, 'eligible', 'environment-skip'],
+    [20, 'hook', 17, false, 'eligible', 'environment-skip'],
+    [25, 'test', 26, true, 'environment-skip', 'eligible'],
+  ]) {
+    assert.deepEqual(guardsAt(dev, spec, line), [[at, scope, devValue]], `a grouped ${scope} body, dev`);
+    assert.equal(stateAt(dev, spec, line).eligibility, devState, `a grouped ${scope} body, dev`);
+    assert.deepEqual(guardsAt(stage, spec, line), [[at, scope, !devValue]], `a grouped ${scope} body, stage`);
+    assert.equal(stateAt(stage, spec, line).eligibility, stageState, `a grouped ${scope} body, stage`);
+  }
+});
+
 test('Test eligibility AC-28: a callback body is the one after its own parameter list', () => {
   const bodyOf = (source) => {
     const found = inlineFunctionBody(source, 0, source.length);
-    return found && { text: source.slice(found.open, found.close + 1), expression: found.expression };
+    return found && { text: source.slice(found.open, found.expression ? found.close : found.close + 1), expression: found.expression };
   };
   const brace = (text) => ({ text, expression: false });
   assert.deepEqual(bodyOf('function () { run(() => { inner(); }); }'), brace('{ run(() => { inner(); }); }'));
@@ -118,7 +146,22 @@ test('Test eligibility AC-28: a callback body is the one after its own parameter
   assert.deepEqual(bodyOf('async => { go(); }'), brace('{ go(); }'));
   assert.deepEqual(bodyOf('row => { go(); }'), brace('{ go(); }'));
   assert.deepEqual(bodyOf('() => test("x", () => {})'), { text: ' test("x", () => {})', expression: true });
-  for (const source of ['handler', 'make(() => {})', 'function () {', '() =>', '{ a: 1 }']) {
+  assert.deepEqual(bodyOf('(() => { go(); })'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('((async function () { go(); }))'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('( /* ( */ async ({ page }) => { go(); } )'), brace('{ go(); }'));
+  assert.deepEqual(bodyOf('(() => test("x", () => {}))'), { text: ' test("x", () => {})', expression: true });
+  for (const source of [
+    'handler',
+    'make(() => {})',
+    'function () {',
+    '() =>',
+    '{ a: 1 }',
+    '(handler)',
+    '(make(() => {}))',
+    '(() => { go(); }).bind(this)',
+    '(() => { go(); }) as Callback',
+    '(() => { go(); }',
+  ]) {
     assert.equal(bodyOf(source), null, source);
   }
 });
@@ -221,6 +264,8 @@ test('Test eligibility AC-31: cover counts only an eligible test as one that run
     'GET gate/v1/unread': 'skipped',
     'GET gate/v1/parked': 'skipped',
     'GET gate/v1/folded': 'skipped',
+    'GET gate/v1/grouped': 'skipped',
+    'GET gate/v1/wrapped': 'skipped',
   });
   assert.deepEqual(stateFor('gate-stage.config.json'), {
     'GET gate/v1/open': 'route',
@@ -228,6 +273,8 @@ test('Test eligibility AC-31: cover counts only an eligible test as one that run
     'GET gate/v1/unread': 'skipped',
     'GET gate/v1/parked': 'skipped',
     'GET gate/v1/folded': 'skipped',
+    'GET gate/v1/grouped': 'skipped',
+    'GET gate/v1/wrapped': 'route',
   });
 
   const route = { type: 'route', file: 'A.cs', line: 1, verb: 'GET', template: 'gate/v1/open' };
