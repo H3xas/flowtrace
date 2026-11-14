@@ -3,7 +3,7 @@
  * `span --from-component` and `chains`, over the regatta-desk corpus and kite-club.
  */
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
@@ -124,5 +124,65 @@ test('Web journeys AC-11: a page-load entry prints its kind word, and its ids st
       const span = json(dir, REGATTA[1], ['span', '--from-component', start, '--entry', identity.id]);
       assert.deepEqual(span.entries.map((entry) => entry.identity), [identity], identity.id);
     }
+  }
+});
+
+const GROUP = '/groups/:groupId';
+const CANDIDATES = [
+  '  GlanceCard (page /groups/:groupId) web src/groups/GlanceCard.tsx:3 mounted at src/groups/GroupGlance.tsx:8',
+  '  GroupShell (page /groups/:groupId/*) web src/groups/GroupShell.tsx:5 mounted at src/app.tsx:23',
+];
+
+/** The corpus without its root render, so no source line mounts `App`. */
+function unmounted(mounts) {
+  return fixture('regatta-desk', 'regatta-mounted.config.json', (dir) => {
+    unlinkSync(join(dir, 'web', 'src', 'index.tsx'));
+    const file = join(dir, 'regatta-mounted.config.json');
+    const config = JSON.parse(readFileSync(file, 'utf8'));
+    config.repos.find((repo) => repo.id === 'web').mounts = mounts;
+    writeFileSync(file, JSON.stringify(config));
+  });
+}
+
+test('Web journeys AC-6: a declared mount beats a guessed one between route trees', () => {
+  const dir = fixture(...REGATTA);
+  const text = cli(dir, REGATTA[1], ['trace', GROUP]);
+  assert.equal(text.status, 0, text.stderr);
+  assert.match(text.stdout, /^start: GroupShell \(page, web src\/groups\/GroupShell\.tsx:5\)$/m);
+  assert.match(text.stdout, /─ mounted at \/ {2}web {2}src\/index\.tsx:8 {2}\[mount\] {2}declared$/m);
+  assert.match(text.stdout, /─ route groups\/:groupId\/\* → GroupShell {2}web {2}src\/app\.tsx:23 {2}\[mount\] {2}declared$/m);
+  assert.equal(text.stdout.includes('imported from'), false);
+  assert.match(text.stdout, /GET groups\/v1\/\*/);
+  const model = json(dir, REGATTA[1], ['trace', GROUP]);
+  assert.equal(model.root.ref, 'GroupShell');
+  assert.equal(model.root.mount.host.source, 'declared');
+  assert.deepEqual(
+    model.root.mount.chain.map((segment) => `${segment.kind} ${segment.path} ${segment.file}:${segment.line}`),
+    ['route groups/:groupId/* src/app.tsx:23'],
+  );
+
+  const configured = unmounted({ App: '/' });
+  const byConfig = cli(configured, 'regatta-mounted.config.json', ['trace', GROUP]);
+  assert.equal(byConfig.status, 0, byConfig.stderr);
+  assert.match(byConfig.stdout, /^GroupShell {2}web {2}src\/groups\/GroupShell\.tsx:5 {2}\[start\] {2}configured mount \/$/m);
+  assert.match(byConfig.stdout, /─ route groups\/:groupId\/\* → GroupShell {2}web {2}src\/app\.tsx:23 {2}\[mount\] {2}declared$/m);
+
+  const inTree = json(dir, REGATTA[1], ['trace', '/regattas/:regattaId']);
+  assert.equal(inTree.root.ref, 'RegattaPage');
+});
+
+test('Web journeys AC-7: tied candidates of two route trees exit 2 with both candidates', () => {
+  for (const mounts of [{}, { App: '/', GroupGlance: '/' }]) {
+    const dir = unmounted(mounts);
+    const text = cli(dir, 'regatta-mounted.config.json', ['trace', GROUP]);
+    assert.equal(text.status, 2, JSON.stringify(mounts));
+    assert.equal(text.stdout, '');
+    assert.deepEqual(text.stderr.trimEnd().split('\n'), [`flowtrace: "${GROUP}" matches 2 starts:`, ...CANDIDATES, 'reason: ambiguous']);
+    const envelope = cli(dir, 'regatta-mounted.config.json', ['trace', GROUP, '--json']);
+    assert.equal(envelope.status, 2);
+    const document = JSON.parse(envelope.stdout);
+    assert.equal(document.status, 'ambiguous');
+    assert.equal(document.reason, 'ambiguous');
+    assert.deepEqual(document.candidates, CANDIDATES.map((line) => line.trim()));
   }
 });
