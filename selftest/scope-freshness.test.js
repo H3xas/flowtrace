@@ -9,13 +9,14 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 
 import { factState } from '../lib/facts.js';
 import { scope } from '../lib/scope.js';
+import { suiteFiles, suiteScriptProblems } from '../scripts/verify.mjs';
 import { copyCorpus, copyGitCorpus, extract, REPO_ROOT, runCli } from './helpers.js';
 
 const CONFIG = 'gizmo.config.json';
@@ -295,9 +296,17 @@ test('Scope freshness AC-7: help, generated CLI docs, the package inventory and 
   assert.equal(docs.status, 0, docs.stderr);
 
   const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'package.json'), 'utf8'));
-  assert.ok(pkg.scripts.test.split(' ').includes('selftest/scope-freshness.test.js'));
+  assert.deepEqual(suiteScriptProblems(pkg.scripts.test), []);
+  assert.ok(suiteFiles(readdirSync(join(REPO_ROOT, 'selftest'))).includes('selftest/scope-freshness.test.js'));
 
-  const changelog = readFileSync(join(REPO_ROOT, 'CHANGELOG.md'), 'utf8');
-  assert.match(changelog, /^## Unreleased$/m);
-  assert.match(changelog, /`scope --area` reads a fact snapshot/);
+  // The entry lives in this branch's fragment until release preparation folds it into
+  // CHANGELOG.md and deletes the fragment, so either place must carry it.
+  const fragments = join(REPO_ROOT, 'changes', 'changelog');
+  const sources = [readFileSync(join(REPO_ROOT, 'CHANGELOG.md'), 'utf8')];
+  if (existsSync(fragments)) {
+    for (const name of readdirSync(fragments).filter((n) => n.endsWith('.md') && n !== 'README.md')) {
+      sources.push(readFileSync(join(fragments, name), 'utf8'));
+    }
+  }
+  assert.equal(sources.filter((text) => /`scope --area` reads a fact snapshot/.test(text)).length, 1);
 });
