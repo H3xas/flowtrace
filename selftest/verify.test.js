@@ -256,6 +256,13 @@ test('a package missing what it must carry, or carrying what it must not, is nam
   for (const problem of leaked) assert.match(problem, /must not ship; exclude it in the "files" list/);
 });
 
+test('Repo process AC-14: a changelog fragment in the package is named', () => {
+  const present = [...PACKAGE_REQUIRED_FILES, 'lib/trace.js', 'docs/cli.md', 'areas/checkout.txt', 'examples/demo-shop/flowtrace.config.json'];
+  const problems = packageProblems([...present, 'changes/changelog/a-change.md']);
+  assert.equal(problems.length, 1, problems.join('\n'));
+  assert.match(problems[0], /^changes\/changelog\/a-change\.md is in the package and must not ship; exclude it in the "files" list/);
+});
+
 function packet(name, route, body = { packetHash: 'b8e5e6885cc8' }) {
   return { name, bytes: Buffer.from(`${JSON.stringify({ route, ...body }, null, 2)}\n`) };
 }

@@ -68,6 +68,7 @@ export const PACKAGE_FORBIDDEN = Object.freeze([
   /^\.github\//,
   /^\.claude\//,
   /^\.git/,
+  /^changes\//,
   /\/out\//,
   /^out\//,
   /^dist\//,
