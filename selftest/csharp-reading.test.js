@@ -291,6 +291,14 @@ test('CSharp reading AC-7: a chain link resolves only through a known receiver t
     .filter((f) => f.type === 'method_call')
     .map((f) => JSON.stringify([f.file, f.line, f.class, f.method, f.calledMethod, f.receiverType ?? f.field]));
   assert.equal(new Set(duplicates).size, duplicates.length);
+  // A chain link is a call site like any other, so the source-flow view needs its column and
+  // its control evidence to place it.
+  const links = facts(dir, 'api').filter((f) => f.type === 'method_call' && f.receiverType);
+  assert.ok(links.length > 0);
+  for (const link of links) {
+    assert.ok(Number.isInteger(link.column) && link.column > 0, `${link.file}:${link.line} ${link.calledMethod} has a column`);
+    assert.ok('control' in link, `${link.file}:${link.line} ${link.calledMethod} has its control evidence`);
+  }
 });
 
 test('CSharp reading AC-8: routes-of reaches a callee of an expression body, an initializer and a chain link', (t) => {
