@@ -1,0 +1,3 @@
+# lantern-console: the routes the console and its Cypress suites name.
+GET lanterns/v1/settings
+GET lanterns/v1/audit

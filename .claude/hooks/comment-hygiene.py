@@ -65,11 +65,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-HYGIENE_VERSION = "1.2.1"
+HYGIENE_VERSION = "1.2.2"
 # Frozen by hashing this file with this value normalized to 64 zeros first;
 # --selfcheck redoes that normalization, so editing the body without
 # refreshing this constant is exactly the drift --selfcheck exists to catch.
-HYGIENE_SHA256 = "aacc21d5f54be2a7740267690880e65796c19c48c66ca91ce5394a1ac07184c9"
+HYGIENE_SHA256 = "527c5d3d16c9ceb6bb4141739bb6d399791b4aded68dabe666d46811e20d8833"
 
 # `--scan` with no explicit paths now walks every git-tracked file (see
 # should_ignore_for_scan for what still gets skipped). Kept as a name, not a
@@ -431,21 +431,28 @@ def scan_mode(paths):
     return 1 if hits else 0
 
 
+# A replace ref can stand a signed or clean commit in for the stored one, or
+# graft a second parent onto it, so every history read names the stored objects.
+GIT_STORED = ["git", "--no-replace-objects"]
+
+
+def git_history(args):
+    """Run one history read and decode it, so a message byte that is not UTF-8
+    still gives a result instead of a failed read."""
+    out = subprocess.run(GIT_STORED + args, check=True, capture_output=True)
+    return out.stdout.decode("utf-8", errors="replace")
+
+
 def scan_commits_mode(commit_range):
     allowlist = effective_allowlist(find_repo_root())
     try:
-        out = subprocess.run(
-            ["git", "log", "--format=%B", commit_range],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        log = git_history(["log", "--format=%B", commit_range])
     except Exception as exc:
         print(f"comment-hygiene: git log failed: {exc}", file=sys.stderr)
         return 1
 
     hits = []
-    for line_no, line in enumerate(out.stdout.splitlines(), start=1):
+    for line_no, line in enumerate(log.splitlines(), start=1):
         cls = classify_commit_line(line, allowlist)
         if cls:
             hits.append(f"commit-log:{line_no}: {cls}: {line.strip()}")
@@ -455,40 +462,56 @@ def scan_commits_mode(commit_range):
     return 1 if hits else 0
 
 
+def read_messages(shas):
+    """The message of each commit, read from the stored object. cat-file frames
+    each object by its size, so the parse never looks for a separator."""
+    if not shas:
+        return {}
+    request = "".join(f"{sha}\n" for sha in shas).encode("ascii")
+    out = subprocess.run(
+        GIT_STORED + ["cat-file", "--batch"], input=request, check=True, capture_output=True
+    ).stdout
+    messages = {}
+    at = 0
+    for sha in shas:
+        header_end = out.index(b"\n", at)
+        name, kind, size = out[at:header_end].decode("ascii").split(" ")
+        if name != sha or kind != "commit":
+            raise ValueError(f"cat-file answered {name} {kind} for {sha}")
+        body_start = header_end + 1
+        raw = out[body_start : body_start + int(size)]
+        _, _, message = raw.partition(b"\n\n")
+        messages[sha] = message.decode("utf-8", errors="replace")
+        at = body_start + int(size) + 1
+    return messages
+
+
 def require_signoff_mode(commit_range):
     """Check every non-merge commit in `commit_range` carries a Signed-off-by
     trailer. Unlike scan_commits_mode this needs commit boundaries, not just
-    lines, so it walks one NUL/STX-delimited record per commit rather than
-    the raw line stream.
+    lines. The boundaries and parents come from a read that holds no message
+    text, and each message is then read by its object id with its size in
+    front, so no byte of a message can move a boundary.
 
     A merge commit is skipped: the host that merges a pull request writes
     that commit itself, with no trailer, and every commit it brings in is a
     record of its own here or was read in the range that first added it."""
     try:
-        out = subprocess.run(
-            ["git", "log", "--format=%H%x00%P%x00%B%x02", commit_range],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        commits = []
+        for line in git_history(["log", "--format=%H %P", commit_range]).splitlines():
+            sha, _, parents = line.partition(" ")
+            commits.append((sha, parents))
+        messages = read_messages([sha for sha, _ in commits])
     except Exception as exc:
         print(f"comment-hygiene: git log failed: {exc}", file=sys.stderr)
         return 1
 
     hits = []
-    for record in out.stdout.split("\x02"):
-        record = record.strip("\n")
-        if not record:
-            continue
-        sha, _, rest = record.partition("\x00")
-        parents, separated, body = rest.partition("\x00")
-        if not separated:
-            parents, body = "", rest
+    for sha, parents in commits:
         if MERGE_PARENTS_RE.fullmatch(parents):
             continue
-        if not SIGNOFF_TRAILER_RE.search(body):
-            short_sha = sha[:12] if sha else "?"
-            hits.append(f"{short_sha}: missing Signed-off-by trailer")
+        if not SIGNOFF_TRAILER_RE.search(messages[sha]):
+            hits.append(f"{sha[:12]}: missing Signed-off-by trailer")
 
     for hit in hits:
         print(hit)
