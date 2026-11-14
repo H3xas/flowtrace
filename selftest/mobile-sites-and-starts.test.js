@@ -772,3 +772,37 @@ test('Mobile sites and starts AC-8: a template owner the facts do not prove is a
     }
   }
 });
+
+test('Mobile sites and starts AC-7: a walk-limit arm names the kind of the cut node in the page text and tag title, and its JSON reason stays walk-limit', () => {
+  const { json, cli, dir } = nursery({});
+  const model = json(['span', '--from-component', 'PlotDetailPage', '--depth', '2']);
+  const limited = model.unresolved.filter((arm) => arm.reason === 'walk-limit');
+  assert.ok(limited.length > 0);
+  const kinds = new Set(limited.map((arm) => arm.breadcrumb[arm.breadcrumb.length - 1].kind));
+  assert.ok(kinds.has('method') || kinds.has('service'), [...kinds].join(','));
+  const out = join(dir, 'limit.html');
+  assert.equal(cli(['span', '--from-component', 'PlotDetailPage', '--depth', '2', '--out', out]).status, 0);
+  const html = readFileSync(out, 'utf8');
+  for (const kind of kinds) {
+    const word = { store_action: 'action' }[kind] || kind;
+    const tail = `depth or node budget was spent before this ${word} could be explored further`;
+    assert.ok(new RegExp(`title="the walk[^"]{1,8}s own ${tail}"`).test(html), `tag title names ${word}`);
+    assert.ok(new RegExp(`<div class="plain">the walk[^<]{1,8}s own ${tail}`).test(html), `row text names ${word}`);
+  }
+  if (!kinds.has('store_action')) assert.ok(!html.includes('before this action could'), 'no cut method reads as an action');
+});
+
+test('Mobile sites and starts AC-7: each cut kind has its own word, an action keeps the present text, and the help names the rule', async () => {
+  const { reasonText } = await import('../lib/component-span.js');
+  const at = (kind) => reasonText('walk-limit', { breadcrumb: [{ kind: 'page' }, { kind }] });
+  const text = (word) => `the walk's own depth or node budget was spent before this ${word} could be explored further`;
+  assert.equal(at('store_action'), text('action'));
+  assert.equal(reasonText('walk-limit'), text('action'));
+  for (const kind of ['method', 'service', 'component', 'page', 'entry']) assert.equal(at(kind), text(kind));
+  assert.equal(reasonText('no-effect', { breadcrumb: [{ kind: 'method' }] }), 'no effect_handler answers this action');
+  const help = runCli(['span', '--help']).stdout.replace(/\s+/g, ' ');
+  const doc = readFileSync(join(REPO_ROOT, 'docs', 'cli.md'), 'utf8').replace(/\s+/g, ' ');
+  for (const page of [help, doc]) {
+    assert.match(page, /The text of a walk-limit arm names the kind of node that was cut: action, method, service, component, page or entry\. Its JSON reason stays walk-limit\./);
+  }
+});
