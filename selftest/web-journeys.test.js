@@ -115,7 +115,8 @@ test('Web journeys AC-11: a page-load entry prints its kind word, and its ids st
     assert.ok(line, `${key}: an entry line at ${site}`);
     assert.ok(line.endsWith(`  kind ${kind}`), line);
     const model = json(dir, REGATTA[1], ['chains', key]);
-    const entries = (chains) => [...new Set(chains.filter((chain) => chain.entry).map((chain) => JSON.stringify(chain.entry)))].sort();
+    const entries = (chains) =>
+      [...new Set(chains.filter((chain) => chain.entry && chain.entry.kind !== 'event').map((chain) => JSON.stringify(chain.entry)))].sort();
     assert.deepEqual(entries(model.chains), entries(BASE.chains[key]), key);
   }
 
@@ -463,4 +464,137 @@ test('Web journeys AC-4: a creator with no effect walks the creators it dispatch
     .filter((node) => node.kind !== 'mount')
     .map((node) => ({ ...node, keys: node.keys.filter((key) => key !== 'pages') }));
   assert.deepEqual(header, BASE.trace.RegattaHeader.filter((node) => node.kind !== 'mount'), 'a creator with an effect walks as at the base');
+});
+
+/** Each hop of a chain as `kind fact file:line ref`. */
+function hopRows(chain) {
+  return chain.hops.map((hop) => `${hop.kind} ${hop.fact ?? hop.reason} ${hop.file}:${hop.line} ${hop.ref}`);
+}
+
+function componentNames(dir) {
+  return [...new Set(webFacts(dir).filter((fact) => fact.type === 'component' && fact.role !== 'service').map((fact) => fact.name))].sort();
+}
+
+test('Web journeys AC-1: span lists a body arm without entry, and chains and span agree', () => {
+  const dir = fixture(...REGATTA);
+  const panel = json(dir, REGATTA[1], ['span', '--from-component', 'SignupPanel']);
+  const signups = panel.routes.find((route) => route.key === 'GET crews/v1/signups').arms;
+  assert.deepEqual(
+    signups.map((arm) => [arm.entry, arm.holder, `${arm.file}:${arm.line}`]),
+    [[null, { kind: 'body', name: 'SignupPanel.render', file: 'src/crews/SignupPanel.tsx', line: 13 }, 'src/actions/crews.ts:13']],
+  );
+  const chain = json(dir, REGATTA[1], ['chains', 'GET crews/v1/signups']).chains;
+  assert.deepEqual(chain.map(hopRows), [[
+    'page page_route src/app.tsx:19 crews/:crewId',
+    'render renders src/app.tsx:19 App -> SignupPanel',
+    'gap no-entry src/crews/SignupPanel.tsx:13 SignupPanel.render',
+    'dispatch action_dispatch src/crews/SignupPanel.tsx:14 SignupPanel.render -> loadSignups',
+    'bind props_bind src/crews/SignupPanel.tsx:25 SignupPanel.props.loadSignups -> loadSignups',
+    'effect effect_handler src/actions/crews.ts:12 Crews.loadSignups',
+    'request gateway_call src/actions/crews.ts:13 GET /crews/v1/signups',
+  ]]);
+  const wind = json(dir, REGATTA[1], ['chains', 'GET weather/v1/wind']).chains;
+  assert.deepEqual(wind.map(hopRows), [[
+    'page page_route src/app.tsx:22 weather',
+    'gap no-entry src/weather/WindBox.tsx:5 WindBox.WindBox',
+    'dispatch action_dispatch src/weather/WindBox.tsx:7 WindBox.WindBox -> loadWind',
+    'effect effect_handler src/actions/weather.ts:6 Weather.loadWind',
+    'request gateway_call src/actions/weather.ts:7 GET /weather/v1/wind',
+  ]]);
+
+  // A chain with an entry climbed the whole way from its request; only a page reason can sit
+  // above that entry, so its pair is the pair of a span arm.
+  const forward = new Map();
+  const add = (key, pair) => forward.set(key, [...(forward.get(key) || []), pair]);
+  for (const name of componentNames(dir)) {
+    const page = json(dir, REGATTA[1], ['span', '--from-component', name]);
+    const own = new Set(page.entries.filter((view) => view.identity.component === name).map((view) => view.identity.id));
+    for (const route of page.routes) {
+      for (const arm of route.arms) {
+        if (arm.entry && own.has(arm.entry)) add(route.key, `${arm.entry}|${arm.file}:${arm.line}`);
+        if (!arm.entry && arm.holder) add(route.key, `${arm.holder.name}@${arm.holder.file}:${arm.holder.line}|${arm.file}:${arm.line}`);
+      }
+    }
+  }
+  assert.ok(forward.size >= 12, [...forward.keys()].join('\n'));
+  for (const [key, pairs] of forward) {
+    const model = json(dir, REGATTA[1], ['chains', key]);
+    const backward = model.chains.map((item) => {
+      const gap = item.hops.find((hop) => hop.reason === 'no-entry');
+      const top = item.entry ? item.entry.id : gap ? `${gap.ref}@${gap.file}:${gap.line}` : null;
+      return top && `${top}|${item.request.file}:${item.request.line}`;
+    });
+    assert.deepEqual([...new Set(backward.filter(Boolean))].sort(), [...new Set(pairs)].sort(), key);
+  }
+});
+
+test('Web journeys AC-2: span and chains put the request under the inline handler entry', () => {
+  const dir = fixture(...REGATTA);
+  for (const [component, key, entry, held] of [
+    ['BoatList', 'DELETE boats/v1/*', 'BoatList:event:onClick:removeBoat:@src/boats/BoatList.tsx:20:11', 'dispatch action_dispatch src/boats/BoatList.tsx:21 BoatList.render -> removeBoat'],
+    ['BoatList', 'POST boats/v1/*/pick', 'BoatList:event:onClick:pickBoat:@src/boats/BoatList.tsx:15:31', 'dispatch action_dispatch src/boats/BoatList.tsx:15 BoatList.render -> pickBoat'],
+    ['MarkBoard', 'POST marks/v1/*/skip', 'MarkBoard:event:onClick:skipMark:@src/marks/MarkBoard.tsx:14:9', 'dispatch action_dispatch src/marks/MarkBoard.tsx:15 MarkBoard.MarkBoard -> skipMark'],
+    ['WindBox', 'GET weather/v1/tide', 'WindBox:event:onClick:loadTide:@src/weather/WindBox.tsx:10:29', 'dispatch action_dispatch src/weather/WindBox.tsx:10 WindBox.WindBox -> loadTide'],
+  ]) {
+    const span = json(dir, REGATTA[1], ['span', '--from-component', component]);
+    assert.deepEqual(span.routes.find((route) => route.key === key).arms.map((arm) => arm.entry), [entry], key);
+    const model = json(dir, REGATTA[1], ['chains', key]);
+    assert.equal(model.chains.length, 1, `${key}: one chain, and no extra no-entry chain`);
+    const [chain] = model.chains;
+    assert.equal(chain.entry.id, entry);
+    const rows = hopRows(chain);
+    const at = rows.findIndex((row) => row.startsWith('entry template_handler'));
+    assert.equal(rows[at + 1], held, key);
+    assert.ok(!chain.hops.some((hop) => hop.reason === 'no-entry' || hop.reason === 'entry-unresolved'), key);
+  }
+});
+
+test('Web journeys AC-3: span and chains name the arrow that holds a request no event reaches', () => {
+  const dir = fixture(...REGATTA);
+  for (const [component, key, holder, gap] of [
+    ['CrewRoster', 'POST crews/v1/*/signup', { kind: 'arrow', name: 'CrewRoster.onSignUp', file: 'src/crews/CrewRoster.tsx', line: 14, column: 20 }, 'gap no-entry src/crews/CrewRoster.tsx:14 CrewRoster.onSignUp'],
+    ['SignupPanel', 'POST crews/v1/*/release', { kind: 'arrow', name: 'SignupPanel.action', file: 'src/crews/SignupPanel.tsx', line: 17, column: 16 }, 'gap no-entry src/crews/SignupPanel.tsx:17 SignupPanel.action'],
+  ]) {
+    const span = json(dir, REGATTA[1], ['span', '--from-component', component]);
+    assert.deepEqual(span.routes.find((route) => route.key === key).arms.map((arm) => [arm.entry, arm.holder]), [[null, holder]]);
+    const page = cli(dir, REGATTA[1], ['span', '--from-component', component]);
+    assert.equal(page.status, 0, page.stderr);
+    const html = readFileSync(join(dir, 'out', 'span', `component-${component.toLowerCase()}-src-crews-${component.toLowerCase()}-tsx.html`), 'utf8');
+    assert.ok(html.includes(`held by arrow ${holder.name} at ${holder.file}:${holder.line}:${holder.column}`), component);
+    const model = json(dir, REGATTA[1], ['chains', key]);
+    assert.deepEqual(model.chains.map((chain) => hopRows(chain).find((row) => row.startsWith('gap no-entry'))), [gap]);
+  }
+});
+
+test('Web journeys AC-4: span and chains walk each nested dispatch as one hop', () => {
+  const dir = fixture(...REGATTA);
+  const key = 'GET regattas/v1/*/entries';
+  const handler = 'RegattaPage:event:onClick:handleRefresh:@src/regatta/RegattaPage.tsx:20:31';
+  const nested = [
+    'dispatch action_dispatch src/regatta/RegattaPage.tsx:13 RegattaPage.handleRefresh -> refreshAll',
+    'bind props_bind src/regatta/RegattaPage.tsx:28 RegattaPage.props.refreshAll -> refreshAll',
+    'dispatch action_dispatch src/actions/regattas.ts:44 Regattas.refreshAll -> refreshDesk',
+    'dispatch action_dispatch src/actions/regattas.ts:33 Regattas.refreshDesk -> loadEntries',
+    'effect effect_handler src/actions/regattas.ts:12 Regattas.loadEntries',
+    'request gateway_call src/actions/regattas.ts:14 GET /regattas/v1/${regattaId}/entries',
+  ];
+  const model = json(dir, REGATTA[1], ['chains', key]);
+  const chain = model.chains.find((item) => item.entry && item.entry.id === handler);
+  assert.deepEqual(hopRows(chain).slice(-nested.length), nested);
+  assert.ok(!model.chains.some((item) => item.hops.some((hop) => hop.reason === 'no-caller')), 'the creator is not a dead end');
+
+  const shallow = json(dir, REGATTA[1], ['chains', key, '--depth', '2']).chains;
+  assert.ok(!shallow.some((item) => item.entry && item.entry.id === handler), 'two levels do not reach the handler');
+  assert.ok(shallow.some((item) => item.hops[0].reason === 'walk-limit'), JSON.stringify(shallow.map(hopRows)));
+
+  const span = json(dir, REGATTA[1], ['span', '--from-component', 'RegattaPage']);
+  const arm = span.routes.find((route) => route.key === key).arms.find((item) => item.entry === handler);
+  assert.deepEqual(arm.breadcrumb.map((step) => `${step.via} ${step.ref}`).slice(-5), [
+    'dispatch refreshAll',
+    'dispatch refreshDesk',
+    'dispatch loadEntries',
+    'effect Regattas.loadEntries',
+    'literal GET regattas/v1/*/entries',
+  ]);
+  assert.ok(!span.unresolved.some((item) => item.reason === 'no-effect' && ['refreshAll', 'refreshDesk'].includes(item.attempted)), 'a creator with its own work is not a no-effect arm');
 });
