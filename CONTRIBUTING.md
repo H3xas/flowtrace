@@ -147,6 +147,13 @@ New prose belongs in one of those documents or in `--help`; a new measurement be
 `docs/benchmarks/` with its method and environment, as
 [docs/benchmarks/README.md](docs/benchmarks/README.md) requires.
 
+A change does not edit `CHANGELOG.md`. It adds its entry as its own file,
+`changes/changelog/<branch name>.md`, with each `/` of the branch name written as `-`. The file
+holds only `### <Label>` blocks, such as `### Extraction` with its list items, and each label is
+a group of `## Unreleased`. Two changes then never edit the same lines. The release folds every
+file under its heading in `## Unreleased` and deletes it; see [RELEASING.md](RELEASING.md). The
+package never carries `changes/`.
+
 ## Extending an extractor
 
 The recognised idioms are regular expressions grouped at the top of each file under
