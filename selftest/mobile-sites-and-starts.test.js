@@ -940,3 +940,26 @@ test('Mobile sites and starts AC-1: a handler each same-named page binds once pr
     assert.ok(!('site' in handlers[0]), file);
   }
 });
+
+test('Mobile sites and starts AC-4: class and static call text inside a string or template literal states no fact', () => {
+  const quoted = nursery({
+    [`${PLOTS}/plot-notes.ts`]: [
+      'export class PlotNotes {',
+      '  render() {',
+      '    const sample = `',
+      'class GhostHelper {',
+      '  run() {}',
+      '}',
+      '`;',
+      "    const call = 'PlotNotes.render()';",
+      '    const other = "PlotNotes.render(";',
+      '    return `${sample} PlotNotes.render() ${call}${other}`;',
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  const facts = quoted.facts('mobile').filter((fact) => fact.file === 'src/app/features/plots/plot-notes.ts');
+  assert.deepEqual(facts.filter((fact) => fact.type === 'component').map((fact) => fact.name), ['PlotNotes']);
+  assert.deepEqual(facts.filter((fact) => fact.static === true), []);
+});
