@@ -1,3 +1,4 @@
+using Ferry.Api.Boarding;
 using Ferry.Api.Passengers;
 
 namespace Ferry.Api;
@@ -8,5 +9,6 @@ public class Startup
     {
         services.AddScoped<IVoyageStore, VoyageStore>();
         services.AddScoped<IFareTable, FareTable>();
+        services.AddScoped<IBoardingService, BoardingService>();
     }
 }

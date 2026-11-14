@@ -386,3 +386,39 @@ test('CSharp reading AC-11: the new decisions are listed by decisions and cover 
     ['Checks', `${id('tickets.Any(', 'predicate')}#2`, 'predicate'],
   ]);
 });
+
+const BOARDING = 'src/Controllers/BoardingController.cs';
+
+/** The response of the seed that a sentinel reject in the called service decides. */
+function sentinelSeed(dir, key) {
+  const run = cli(dir, 'trace', key, '--seeds', '--json');
+  assert.equal(run.status, 0, run.stderr);
+  const seeds = JSON.parse(run.stdout).seeds.filter((seed) =>
+    seed.dispositions.some((d) => d.kind === 'reject' && d.disposition === 'taken'),
+  );
+  assert.equal(seeds.length, 1, key);
+  return [seeds[0].response ?? null, seeds[0].statusReason ?? null];
+}
+
+test('CSharp reading AC-12: a sentinel the if sends to its false side reads the status of the return after it', (t) => {
+  const { dir } = extracted(t);
+  const at = (needle) => lineOf(join(dir, 'api'), BOARDING, needle);
+  const maps = facts(dir, 'api')
+    .filter((f) => f.type === 'sentinel_map' && f.file === BOARDING)
+    .map((f) => [f.method, f.line, f.sentinel, f.status]);
+  assert.deepEqual(maps, [
+    ['Approve', at('ApproveAsync(ticket);') + 2, 'false', 403],
+    ['Pass', at('return NotFound();'), 'null', 404],
+    ['Stub', at('return StatusCode(410);'), 'null', 410],
+  ]);
+  const expected = {
+    'POST boarding/{ticket}/approve': ['403 Forbidden', null],
+    'GET boarding/{ticket}/pass': ['404 NotFound', null],
+    'GET boarding/{ticket}/stub': ['410', null],
+    'POST boarding/{ticket}/late': [null, 'status-unmapped'],
+    'POST boarding/{ticket}/logged': [null, 'status-unmapped'],
+    'POST boarding/{ticket}/shaped': [null, 'status-unmapped'],
+    'POST boarding/{ticket}/either': [null, 'status-unmapped'],
+  };
+  for (const [key, outcome] of Object.entries(expected)) assert.deepEqual(sentinelSeed(dir, key), outcome, key);
+});

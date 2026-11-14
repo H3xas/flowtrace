@@ -26,3 +26,8 @@ operators (one nested in another), `??` choices beside a `?? throw` and a `??=`,
 to `Where`, `Any` and `All` beside a method group, and the nullable marks and `?.` that are no
 decision. `GatesController.Status` compares with a named value, the text a statement-level
 decision would read dispositions from.
+
+`Boarding/` and `BoardingController.cs` hold a service result that each action tests with an
+`if` whose body returns on success. In `Approve`, `Pass` and `Stub` the next statement is the
+refusal the sentinel falls through to. The other actions put a statement between the two, give
+the `if` a longer body, return a shape no status rule reads, or use an `else`.
