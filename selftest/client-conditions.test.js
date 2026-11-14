@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { validateFacts } from '../lib/facts.js';
+import { copyFixture, extract } from './helpers.js';
 import {
   HOP_LIMIT,
   REGION_FAILURES,
@@ -172,4 +175,252 @@ test('Client conditions AC-8: the closed lists are frozen and the reader keeps t
       assert.ok(trace.end.origin === 'literal' || TRACE_REASONS.includes(trace.end.unresolved));
     }
   }
+});
+
+const CLIENT_TYPES = new Set(['display_condition', 'client_transfer', 'client_assignment', 'client_read', 'client_scan']);
+
+function corpusFacts(t, name, repo, prepare = () => {}) {
+  const dir = copyFixture(t, name);
+  prepare(dir);
+  extract(dir, `${name}.config.json`);
+  return JSON.parse(readFileSync(join(dir, 'out', 'facts', `${repo}.json`), 'utf8')).facts;
+}
+
+const mobileFacts = (t, prepare) => corpusFacts(t, 'tidepool-mobile', 'mobile', prepare);
+const webFacts = (t, prepare) => corpusFacts(t, 'tidepool-web', 'web', prepare);
+
+function of(facts, type, fields) {
+  return facts.filter((entry) => entry.type === type && Object.entries(fields).every(([key, value]) => entry[key] === value));
+}
+
+function one(facts, type, fields) {
+  const found = of(facts, type, fields);
+  assert.equal(found.length, 1, `one ${type} ${JSON.stringify(fields)}`);
+  return found[0];
+}
+
+const steps = (trace) => trace.hops.map((hop) => hop.step);
+const ends = (read) => read.traces.map((trace) => trace.end.unresolved || 'literal');
+
+test('Client conditions AC-1: Angular display conditions and their reads', (t) => {
+  const facts = mobileFacts(t);
+  const harbor = of(facts, 'display_condition', { component: 'HarborPanelComponent' });
+  assert.deepEqual(harbor.map((entry) => [entry.form, entry.shows, entry.text, entry.line]), [
+    ['ngIf', true, 'showDock', 2],
+    ['ngIf', true, '!quiet', 3],
+    ['ngIf', true, 'ready && (open || !locked); else waiting', 4],
+    ['ngIf', true, '(tide$ | async) as tide', 6],
+    ['hidden', false, '!ready', 7],
+  ]);
+  for (const entry of harbor) {
+    assert.equal(entry.file, 'src/app/features/harbor/harbor-panel.component.html');
+    assert.equal(entry.componentFile, 'src/app/features/harbor/harbor-panel.component.ts');
+  }
+  const conditionReads = of(facts, 'client_read', { component: 'HarborPanelComponent', context: 'condition' });
+  assert.deepEqual(conditionReads.map((entry) => [entry.path, entry.negated, entry.site.line]), [
+    ['showDock', false, 2],
+    ['quiet', true, 3],
+    ['ready', false, 4],
+    ['open', false, 4],
+    ['locked', true, 4],
+    ['tide$', false, 6],
+    ['ready', true, 7],
+  ]);
+  const tide = one(facts, 'client_read', { component: 'HarborPanelComponent', path: 'tide.level' });
+  assert.deepEqual(steps(tide.traces[0]), ['alias', 'async', 'member']);
+  const inline = of(facts, 'display_condition', { component: 'BuoyComponent' });
+  assert.equal(inline.length, 3);
+  for (const entry of inline) {
+    assert.equal(entry.file, 'src/app/features/harbor/buoy.component.ts');
+    assert.equal(entry.line, 5);
+    assert.equal(entry.componentFile, undefined);
+  }
+  assert.deepEqual(inline.map((entry) => entry.column), [20, 51, 77]);
+});
+
+test('Client conditions AC-2: JSX display conditions and their reads', (t) => {
+  const facts = webFacts(t);
+  const forms = of(facts, 'display_condition', {}).map((entry) => [entry.component, entry.form, entry.shows, entry.text]);
+  assert.deepEqual(forms, [
+    ['Deck', 'early-return', false, 'loading'],
+    ['Deck', 'early-return', false, '!ready || m'],
+    ['Deck', 'and', true, 'flags.flagA'],
+    ['Deck', 'and', true, 'ready'],
+    ['Deck', 'ternary', 'both', 'm'],
+    ['Deck', 'ternary', 'both', 'inner'],
+    ['Pier', 'early-return', false, '!spare'],
+    ['Pier', 'return-and', true, 'childFlag'],
+    ['Skiff', 'return-and', true, 'sail'],
+    ['Jetty', 'early-return', false, 'open'],
+    ['Jetty', 'return-and', true, 'props.visible'],
+    ['Mooring', 'and', true, 'this.props.showRope'],
+    ['Mooring', 'and', true, 'this.state.coiled'],
+    ['Quay', 'and', true, 'latch'],
+    ['Quay', 'ternary', 'both', 'level'],
+    ['Shoal', 'and', true, 'picked'],
+    ['Shoal', 'and', true, 'captured'],
+    ['Shoal', 'and', true, 'twin'],
+  ]);
+  const compound = of(facts, 'client_read', { component: 'Deck', context: 'condition' }).filter((entry) => entry.site.line === 7);
+  assert.deepEqual(compound.map((entry) => [entry.path, entry.negated]), [['ready', true], ['m', false]]);
+});
+
+test('Client conditions AC-3: aliases, assignments and destructuring give one trace per branch', (t) => {
+  const mobile = mobileFacts(t);
+  const dock = one(mobile, 'client_read', { component: 'HarborPanelComponent', path: 'showDock', context: 'condition' });
+  assert.equal(dock.traces.length, 2);
+  assert.deepEqual(steps(dock.traces[0]), ['member']);
+  assert.deepEqual(dock.traces[0].end, { origin: 'literal', text: 'false' });
+  assert.deepEqual(steps(dock.traces[1]), ['assignment', 'input']);
+  assert.equal(dock.traces[1].hops[1].path, 'config.dock.open');
+  for (const hop of dock.traces.flatMap((trace) => trace.hops)) {
+    assert.equal(hop.file, 'src/app/features/harbor/harbor-panel.component.ts');
+    assert.ok(Number.isInteger(hop.line) && Number.isInteger(hop.column));
+  }
+  assert.deepEqual(of(mobile, 'client_assignment', { component: 'HarborPanelComponent', target: 'showDock' }).map((entry) => [entry.step, entry.text, entry.line]), [
+    ['member', 'false', 12],
+    ['assignment', 'this.config?.dock.open', 22],
+  ]);
+  const quiet = one(mobile, 'client_read', { component: 'HarborPanelComponent', path: 'quiet' });
+  assert.deepEqual(steps(quiet.traces[0]), ['getter', 'member']);
+  one(mobile, 'client_assignment', { component: 'HarborPanelComponent', target: 'quiet', step: 'getter' });
+
+  const web = webFacts(t);
+  const pathsOf = (component, path) => one(web, 'client_read', { component, path, context: 'condition' }).traces.map((trace) => [steps(trace), trace.hops.at(-1).path]);
+  assert.deepEqual(pathsOf('Jetty', 'open'), [[['alias', 'prop'], 'props.harbor.open']]);
+  assert.deepEqual(pathsOf('Quay', 'latch'), [[['destructure', 'prop'], 'props.gate.latch']]);
+  assert.deepEqual(pathsOf('Quay', 'level'), [[['destructure', 'prop'], 'props.tide']]);
+  assert.deepEqual(pathsOf('Deck', 'inner'), [[['destructure', 'prop'], 'props.nested.inner']]);
+  assert.deepEqual(pathsOf('Mooring', 'props.showRope'), [[['prop'], 'props.showRope']]);
+  one(web, 'client_assignment', { component: 'Jetty', target: 'open', step: 'alias', text: 'props.harbor.open' });
+  one(web, 'client_assignment', { component: 'Quay', target: 'latch', step: 'destructure' });
+});
+
+test('Client conditions AC-4: transfers cross to each parent site', (t) => {
+  const mobile = mobileFacts(t);
+  const transfer = one(mobile, 'client_transfer', { component: 'HarborPanelComponent', name: 'childFlag' });
+  assert.deepEqual([transfer.target, transfer.text, transfer.form, transfer.targetComponent], ['tp-buoy', 'item.flags.flagA', 'property', 'BuoyComponent']);
+  one(mobile, 'client_read', { component: 'HarborPanelComponent', path: 'item.flags.flagA', context: 'transfer' });
+  const child = one(mobile, 'client_read', { component: 'BuoyComponent', path: 'childFlag' });
+  assert.equal(child.traces.length, 2);
+  assert.deepEqual(steps(child.traces[0]), ['input', 'transfer', 'iteration', 'member']);
+  assert.equal(child.traces[0].hops[1].path, 'item.flags.flagA');
+  assert.equal(child.traces[0].hops[3].path, 'items[].flags.flagA');
+  assert.equal(child.traces[1].hops[1].path, 'flags.flagB');
+  assert.deepEqual(ends(one(mobile, 'client_read', { component: 'BuoyComponent', path: 'drift' })), ['no-binding', 'no-binding']);
+  assert.deepEqual(ends(one(mobile, 'client_read', { component: 'BuoyComponent', path: 'spare' })), ['no-binding', 'unsupported-form']);
+
+  const web = webFacts(t);
+  assert.equal(of(web, 'client_transfer', { component: 'Deck', name: 'childFlag', targetComponent: 'Pier' }).length, 5);
+  const pier = one(web, 'client_read', { component: 'Pier', path: 'childFlag' });
+  assert.deepEqual(pier.traces[0].hops.slice(2, 3).map((hop) => [hop.step, hop.path]), [['transfer', 'flags.flagA']]);
+  const mapped = pier.traces.find((trace) => trace.hops.some((hop) => hop.step === 'iteration'));
+  assert.equal(mapped.hops.find((hop) => hop.step === 'transfer').path, 'boat.flags.flagA');
+  assert.deepEqual(ends(pier).slice(-2), ['unsupported-form', 'unsupported-form']);
+  assert.deepEqual(ends(one(web, 'client_read', { component: 'Skiff', path: 'sail' })), ['spread-props']);
+});
+
+test('Client conditions AC-5: each stop names its reason', (t) => {
+  const mobile = mobileFacts(t);
+  const reef = Object.fromEntries(of(mobile, 'client_read', { component: 'ReefBoardComponent', context: 'condition' }).map((entry) => [entry.path, entry.unresolved || null]));
+  assert.deepEqual(reef, {
+    flags: 'dynamic-key',
+    key: null,
+    'flags.flagA': null,
+    'pick$': 'store-selector',
+    isOpen: 'call',
+    'session.active': 'external-root',
+    depth: 'external-root',
+    'probe.value': 'unsupported-local',
+    'row.on': 'unsupported-local',
+    i: 'unsupported-local',
+    first: 'cycle',
+    orphan: 'unsupported-syntax',
+    mirror: 'unsupported-syntax',
+  });
+  const loop = one(mobile, 'client_read', { component: 'ReefBoardComponent', path: 'first', context: 'condition' });
+  assert.deepEqual(steps(loop.traces[0]), ['member', 'member']);
+  const tide = one(mobile, 'client_read', { component: 'HarborPanelComponent', path: 'tide$' });
+  assert.equal(tide.unresolved, 'store-selector');
+  for (const component of ['TwinAComponent', 'TwinBComponent']) {
+    assert.equal(one(mobile, 'client_read', { component, path: 'shown' }).unresolved, 'ambiguous');
+  }
+  const web = webFacts(t);
+  const shoal = Object.fromEntries(of(web, 'client_read', { component: 'Shoal', context: 'condition' }).map((entry) => [entry.path, ends(entry)]));
+  assert.deepEqual(shoal, { picked: ['store-selector'], captured: ['literal', 'unsupported-syntax'], twin: ['ambiguous'] });
+  assert.equal(one(web, 'client_read', { component: 'Mooring', path: 'state.coiled' }).unresolved, 'unsupported-syntax');
+  for (const entry of [...mobile, ...web].filter((fact) => fact.type === 'client_read')) {
+    assert.equal(entry.unresolved, entry.traces.find((trace) => trace.end.unresolved)?.end.unresolved);
+    for (const trace of entry.traces) assert.ok(trace.end.origin === 'literal' || TRACE_REASONS.includes(trace.end.unresolved));
+  }
+});
+
+test('Client conditions AC-6: each region states whether the reader read all of it', (t) => {
+  const mobile = mobileFacts(t);
+  const web = webFacts(t);
+  const scans = Object.fromEntries([...mobile, ...web].filter((entry) => entry.type === 'client_scan').map((entry) => [entry.component, entry]));
+  for (const name of ['CalmNoteComponent', 'Calm']) {
+    assert.equal(scans[name].status, 'complete');
+    assert.equal(scans[name].counts.reads, 0);
+  }
+  assert.equal(scans.HarborPanelComponent.status, 'complete');
+  assert.equal(scans.HarborPanelComponent.line, 1);
+  assert.equal(scans.BuoyComponent.line, 5);
+  assert.equal(scans.Deck.line, 5);
+  assert.equal(scans.ReefBoardComponent.status, 'partial');
+  assert.deepEqual(scans.ReefBoardComponent.unsupported.map((row) => [row.line, row.reason]), [
+    [15, 'unsupported-syntax'],
+    [16, 'unsupported-form'],
+    [17, 'unsupported-form'],
+  ]);
+  assert.deepEqual(scans.Shoal.unsupported.map((row) => [row.reason, row.text]), [['unsupported-form', 'mode || <span>fallback</span>']]);
+  assert.deepEqual(['DriftNoteComponent', 'EddyNoteComponent', 'SwellNoteComponent'].map((name) => [scans[name].status, scans[name].reason, scans[name].line]), [
+    ['failed', 'template-url-unresolved', 5],
+    ['failed', 'template-url-non-literal', 7],
+    ['failed', 'inline-template-substitution', 7],
+  ]);
+  for (const scan of Object.values(scans)) {
+    assert.ok(REGION_STATES.includes(scan.status));
+    for (const row of scan.unsupported || []) {
+      assert.ok(REGION_ROW_REASONS.includes(row.reason));
+      assert.equal(row.internal, undefined);
+    }
+    if (scan.reason) assert.ok(REGION_FAILURES.includes(scan.reason));
+  }
+});
+
+// Each name keeps its length, so a renamed corpus keeps every line and column.
+const RENAMED = [
+  'showDock', 'locked', 'flagA', 'flagB', 'childFlag', 'spare', 'dock', 'quiet', 'orphan', 'mirror',
+  'cells', 'cell', 'shown', 'inner', 'boats', 'boat', 'sail', 'latch', 'showRope', 'coiled', 'captured',
+  'picked', 'visible', 'loading', 'flags', 'ready', 'mode', 'items', 'item', 'open', 'first', 'second',
+  'depth', 'count', 'active', 'gate', 'rest',
+];
+const rot13 = (name) => name.replace(/[a-z]/gi, (ch) => {
+  const base = ch <= 'Z' ? 65 : 97;
+  return String.fromCharCode(((ch.charCodeAt(0) - base + 13) % 26) + base);
+});
+const renameText = (text) => text.replace(new RegExp(`\\b(${RENAMED.join('|')})\\b`, 'g'), (name) => rot13(name));
+
+function renameTree(dir) {
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) renameTree(path);
+    else writeFileSync(path, renameText(readFileSync(path, 'utf8')));
+  }
+}
+
+test('Client conditions AC-7: the facts do not depend on field names', (t) => {
+  for (const [read, root] of [[mobileFacts, 'mobile'], [webFacts, 'web']]) {
+    const plain = read(t).filter((entry) => CLIENT_TYPES.has(entry.type));
+    const renamed = read(t, (dir) => renameTree(join(dir, root))).filter((entry) => CLIENT_TYPES.has(entry.type));
+    assert.ok(plain.length > 20);
+    assert.notDeepEqual(renamed, plain);
+    assert.deepEqual(renamed, JSON.parse(renameText(JSON.stringify(plain))));
+  }
+});
+
+test('Client conditions AC-8: two extractions give the same facts in the same order', (t) => {
+  assert.deepEqual(mobileFacts(t), mobileFacts(t));
+  assert.deepEqual(webFacts(t), webFacts(t));
 });
