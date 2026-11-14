@@ -497,3 +497,49 @@ test('Web extractor reach AC-10: a listed default export gives its lazy page and
     assert.ok(!run.stdout.includes(other), `${start} does not reach ${other}`);
   }
 });
+
+test('Web extractor reach AC-11: an imported route target marks only the component its module exports', (t) => {
+  const page = (name) => `import React from 'react';\nexport function ${name}() {\n  return <div>${name}</div>;\n}\n`;
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/foo.tsx': page('Foo'),
+    'web/src/baz.tsx': page('Baz'),
+    'web/src/other/Bar.tsx': page('Bar'),
+    'web/src/other/Foo.tsx': page('Foo'),
+    'web/src/other/Qux.tsx': page('Qux'),
+    'web/src/App.tsx': [
+      "import React from 'react';",
+      "import { Route, Routes } from 'react-router-dom';",
+      "import { Foo as Bar } from './foo';",
+      "import { Baz as Qux } from './baz';",
+      '',
+      'function Local() {',
+      '  return <div>local</div>;',
+      '}',
+      '',
+      'export function App() {',
+      '  return (',
+      '    <Routes>',
+      '      <Route path="/aliased" element={<Bar />} />',
+      '      <Route path="/legacy" component={Qux} />',
+      '      <Route path="/local" element={<Local />} />',
+      '    </Routes>',
+      '  );',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  extractAndJoin(dir);
+  const roles = ofType(factsOf(dir), 'component')
+    .map((entry) => `${entry.file} ${entry.name} ${entry.role}${entry.path ? ` ${entry.path}` : ''}`)
+    .sort();
+  assert.deepEqual(roles, [
+    'src/App.tsx App component',
+    'src/App.tsx Local page /local',
+    'src/baz.tsx Baz page /legacy',
+    'src/foo.tsx Foo page /aliased',
+    'src/other/Bar.tsx Bar component',
+    'src/other/Foo.tsx Foo component',
+    'src/other/Qux.tsx Qux component',
+  ]);
+});
