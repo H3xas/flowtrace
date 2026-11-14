@@ -690,6 +690,23 @@
       ]
     },
     {
+      "id": "replace-watchers-source-flow",
+      "start": "ZoneWatchersController.ReplaceWatchers",
+      "args": [
+        "--depth",
+        "6",
+        "--max-nodes",
+        "400",
+        "--view",
+        "source-flow"
+      ],
+      "asserts": "sinks",
+      "reach": [
+        "lookup-zone",
+        "write-watchers"
+      ]
+    },
+    {
       "id": "harvest-plan-small-budget",
       "start": "HarvestPlanController.CommitPlan",
       "args": [
@@ -997,7 +1014,7 @@
       "covers": [
         "repeated-call"
       ],
-      "run": "replace-watchers-walk",
+      "run": "replace-watchers-source-flow",
       "question": "Are both audit records shown at their own call sites, the request before the completion?",
       "expect": [
         "audit-requested",

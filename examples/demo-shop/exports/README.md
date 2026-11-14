@@ -53,8 +53,10 @@ to the repository root: the `shopfront` spec here is `e2e/reservations.cy.ts`, w
 - **`provenance.factSets`**: one identity per fact set, in repository order: `repo`, `kind`,
   `generatedFrom`, the revision witness (`headSha`, `dirty`, `dirtyDigest`, `fileCount`),
   `titles` whenever the repository is configured `"titles": true` — carrying `status` `ok`
-  or `failed`, present whether or not the collector actually ran — `provider` when a facts
-  provider contributed, and `digest`, a sha1 of the facts themselves.
+  or `failed`, present whether or not the collector actually ran — `controlEvidence` when a
+  `backend` or `web` extractor wrote the call-site fields, so a set of calls that cannot be
+  placed in its body is distinguishable from one that never carried them, `provider` when a
+  facts provider contributed, and `digest`, a sha1 of the facts themselves.
   - `headSha` is always present. `null` means the facts were extracted from a root that is
     not a git checkout and carry no revision witness; it is never equal to a commit.
   - `provider` names the second producer by `producer`, `version`, `merge`, `supplied`,
