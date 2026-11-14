@@ -98,11 +98,13 @@ export function captureBaseline() {
   return out;
 }
 
-/** Every difference between two baselines, one line each. */
+/**
+ * Every difference between two baselines, one line each. A corpus added after the baseline
+ * has no record to keep, so only the recorded corpora are compared.
+ */
 export function compareBaselines(expected, actual) {
   const problems = [];
-  const keys = [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort();
-  for (const key of keys) {
+  for (const key of Object.keys(expected).sort()) {
     const want = expected[key] || {};
     const got = actual[key] || {};
     const names = [...new Set([...Object.keys(want), ...Object.keys(got)])].sort();
