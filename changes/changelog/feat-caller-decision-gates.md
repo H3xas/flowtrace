@@ -3,7 +3,8 @@
 - The web and the mobile extractor write one `caller_gate` record for each call site that a
   caller decision gates. A record holds the site fields of its call fact, an ordinal, and the
   gates of the call. The extractor finds the site by the source offset of the call, so two
-  calls on one line keep their own gates. See `docs/fact-schema.md`.
+  calls on one line keep their own gates. The `join --against` of an older flowtrace refuses a
+  snapshot that holds these records. See `docs/fact-schema.md`.
 - The caller decision scanner reads four more forms correctly. A regex literal after the `)`
   of an `if`, `while`, `for` or `with` head gives no decision. An unparenthesized JSX element
   over lines is one operand. The bracket around a `?` tells an optional method type from a

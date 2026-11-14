@@ -159,6 +159,9 @@ parse, and two records of one site, give that call one `unknown` gate with the r
 `gate-record-unreadable`. The walk, the seeds and every other reader skip the records. A
 fact set from an older extraction has no records, so its walks show no gates until the next
 `extract`.
+An older flowtrace skips the records when it reads `out/facts`. Its `join --against` refuses a
+snapshot that holds them, with `unknown fact type "caller_gate"`. Write the snapshot again with
+that version before you compare with it.
 
 A `component_entry` names one way execution reaches a component, on the site it was
 written at. `kind` is `mount`, `update`, `unmount`, `effect`, `cleanup`, `event` or
