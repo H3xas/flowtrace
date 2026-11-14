@@ -1628,9 +1628,13 @@ function traceNodeFields(node) {
     'statusVia',
     'pages',
     'pageGap',
+    'holder',
+    'inline',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }
+  // Only an arrow site carries a column, the one place where two handlers share a line.
+  if ((node.inline || node.holder === 'arrow') && Number.isInteger(node.column)) record.column = node.column;
   return record;
 }
 

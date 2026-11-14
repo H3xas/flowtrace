@@ -335,3 +335,132 @@ test('Web journeys AC-5: a dispatch or call inside an arrow names that arrow, an
   const strip = (list) => list.map(({ arrow, ...rest }) => rest);
   assert.notEqual(factsDigest(strip(facts)), factsDigest(facts), 'the arrow fields alone move the digest');
 });
+
+/** Each edge of a `trace --json` document, with the node it reaches and its evidence sites. */
+function traceHops(document) {
+  const byId = new Map(document.nodes.map((node) => [node.id, node]));
+  return document.edges.map((edge) => ({
+    from: byId.get(edge.from),
+    to: byId.get(edge.to),
+    via: edge.via,
+    evidence: (edge.evidence || []).map((item) => `${item.type} ${item.file}:${item.line}`),
+  }));
+}
+
+/** The routes below the node `ref` names, through every edge out of it. */
+function routesBelow(document, predicate) {
+  const children = new Map();
+  for (const edge of document.edges) children.set(edge.from, [...(children.get(edge.from) || []), edge.to]);
+  const byId = new Map(document.nodes.map((node) => [node.id, node]));
+  const out = new Set();
+  const visit = (id) => {
+    const node = byId.get(id);
+    if (node && node.kind === 'route') out.add(node.ref);
+    for (const next of children.get(id) || []) visit(next);
+  };
+  for (const node of document.nodes.filter(predicate)) visit(node.id);
+  return [...out].sort();
+}
+
+function webFacts(dir) {
+  return JSON.parse(readFileSync(join(dir, 'out', 'facts', 'web.json'), 'utf8')).facts;
+}
+
+test('Web journeys AC-1: a dispatch in a component body or in render reaches its route', () => {
+  const dir = fixture(...REGATTA);
+  const facts = webFacts(dir);
+  const effectSite = (field) => {
+    const fact = facts.find((item) => item.type === 'effect_handler' && item.field === field);
+    return `${fact.file}:${fact.line}`;
+  };
+  for (const [component, line, hop, route, evidence, creator, gateway] of [
+    ['SignupPanel', '─ body SignupPanel.render  web  src/crews/SignupPanel.tsx:13  [body]', 'props', 'GET crews/v1/signups', ['action_dispatch src/crews/SignupPanel.tsx:14', 'props_bind src/crews/SignupPanel.tsx:25'], 'loadSignups', 'gateway_call src/actions/crews.ts:13'],
+    ['WindBox', '─ body WindBox.WindBox  web  src/weather/WindBox.tsx:5  [body]', 'dispatch', 'GET weather/v1/wind', ['action_dispatch src/weather/WindBox.tsx:7'], 'loadWind', 'gateway_call src/actions/weather.ts:7'],
+    ['CrewRoster', '─ body CrewRoster.CrewRoster  web  src/crews/CrewRoster.tsx:12  [body]', 'props', 'GET crews/v1/*', ['action_dispatch src/crews/CrewRoster.tsx:13', 'props_bind src/crews/CrewRoster.tsx:22'], 'loadCrew', 'gateway_call src/actions/crews.ts:5'],
+  ]) {
+    const text = cli(dir, REGATTA[1], ['trace', component]);
+    assert.equal(text.status, 0, text.stderr);
+    assert.ok(text.stdout.includes(`${line}\n`), `${component}:\n${text.stdout}`);
+    const document = json(dir, REGATTA[1], ['trace', component]);
+    const hops = traceHops(document);
+    const arm = hops.find((item) => item.to.holder === 'body');
+    const bound = hops.find((item) => item.from === arm.to && item.via === hop);
+    assert.deepEqual(bound.evidence, evidence, component);
+    const effect = hops.find((item) => item.from === bound.to && item.via === 'effect');
+    assert.equal(`${effect.to.file}:${effect.to.line}`, effectSite(creator), `${component}: the effect_handler site`);
+    const request = hops.find((item) => item.from === effect.to && item.to.kind === 'route');
+    assert.equal(request.to.ref, route);
+    assert.deepEqual(request.evidence, [gateway]);
+  }
+});
+
+test('Web journeys AC-2: an inline arrow handler joins the dispatch it holds, at the arrow site', () => {
+  const dir = fixture(...REGATTA);
+  for (const [component, handlers] of [
+    ['BoatList', [['pickBoat', 'src/boats/BoatList.tsx:15:40', 'POST boats/v1/*/pick'], ['removeBoat', 'src/boats/BoatList.tsx:20:20', 'DELETE boats/v1/*']]],
+    ['BoatRow', [['inspectBoat', 'src/boats/BoatRow.tsx:14:38', 'POST boats/v1/*/inspect'], ['loadBoats', 'src/boats/BoatRow.tsx:19:18', 'GET boats/v1/all']]],
+    ['MarkBoard', [['roundMark', 'src/marks/MarkBoard.tsx:9:38', 'POST marks/v1/*/round'], ['skipMark', 'src/marks/MarkBoard.tsx:14:18', 'POST marks/v1/*/skip']]],
+  ]) {
+    const text = cli(dir, REGATTA[1], ['trace', component]);
+    assert.equal(text.status, 0, text.stderr);
+    const document = json(dir, REGATTA[1], ['trace', component]);
+    for (const [handler, site, route] of handlers) {
+      assert.match(text.stdout, new RegExp(`─ \\(onClick\\) ${handler}\\(\\)  web  ${site.replace(/[.]/g, '\\.')}  \\[handler\\]\\n`), `${component}:\n${text.stdout}`);
+      const node = document.nodes.find((item) => item.via === 'handler' && item.method === handler);
+      assert.equal(node.inline, true);
+      assert.equal(`${node.file}:${node.line}:${node.column}`, site);
+      assert.equal(node.unresolved, undefined);
+      assert.deepEqual(routesBelow(document, (item) => item.id === node.id), [route], `${component}.${handler}`);
+    }
+    assert.ok(!document.nodes.some((item) => item.holder === 'body'), `${component}: an inline handler leaves no body arm`);
+    assert.ok(!document.nodes.some((item) => item.ref === 'dispatch' || item.method === 'dispatch'));
+  }
+});
+
+test('Web journeys AC-3: an arrow that no event links is named at its own site', () => {
+  const dir = fixture(...REGATTA);
+  for (const [component, line, route] of [
+    ['CrewRoster', '─ arrow onSignUp  web  src/crews/CrewRoster.tsx:14:20  [body]', 'POST crews/v1/*/signup'],
+    ['SignupPanel', '─ arrow action  web  src/crews/SignupPanel.tsx:17:16  [body]', 'POST crews/v1/*/release'],
+  ]) {
+    const text = cli(dir, REGATTA[1], ['trace', component]);
+    assert.ok(text.stdout.includes(`${line}\n`), `${component}:\n${text.stdout}`);
+    const document = json(dir, REGATTA[1], ['trace', component]);
+    const arm = document.nodes.find((node) => node.holder === 'arrow');
+    assert.deepEqual(routesBelow(document, (node) => node.id === arm.id), [route]);
+  }
+});
+
+test('Web journeys AC-4: a creator with no effect walks the creators it dispatches, one hop each', async () => {
+  const { traceNodes } = await import('./corpus/regatta-desk/golden.mjs');
+  const dir = fixture(...REGATTA);
+  const page = json(dir, REGATTA[1], ['trace', 'RegattaPage', '--no-fold']);
+  const hops = traceHops(page);
+  const handler = hops.find((item) => item.via === 'handler').to;
+  const all = hops.find((item) => item.from === handler && item.to.ref === 'refreshAll');
+  assert.equal(all.via, 'dispatch');
+  assert.deepEqual(all.evidence, ['action_dispatch src/regatta/RegattaPage.tsx:13']);
+  const desk = hops.find((item) => item.from === all.to && item.to.ref === 'refreshDesk');
+  assert.deepEqual([desk.via, desk.to.hops, all.to.hops], ['dispatch', handler.hops + 2, handler.hops + 1]);
+  assert.deepEqual(desk.evidence, ['action_dispatch src/actions/regattas.ts:44']);
+  assert.deepEqual(
+    hops.filter((item) => item.from === desk.to).map((item) => `${item.via} ${item.evidence.join(', ')}`),
+    ['dispatch action_dispatch src/actions/regattas.ts:32', 'dispatch action_dispatch src/actions/regattas.ts:33'],
+    'one hop for each nested dispatch, and none for the call inside it',
+  );
+  assert.deepEqual(routesBelow(page, (node) => node.id === handler.id), ['GET regattas/v1/*', 'GET regattas/v1/*/entries']);
+
+  const bounded = json(dir, REGATTA[1], ['trace', 'RegattaPage', '--depth', String(desk.to.hops)]);
+  assert.ok(bounded.status.frontier.some((stop) => stop.target === 'refreshDesk' && stop.reason === 'depth' && stop.via === 'dispatch'), JSON.stringify(bounded.status.frontier));
+
+  const results = json(dir, REGATTA[1], ['trace', 'ResultsBoard']);
+  const inline = results.nodes.find((node) => node.inline);
+  assert.deepEqual(routesBelow(results, (node) => node.id === inline.id), ['GET regattas/v1/*/standings', 'GET regattas/v1/results']);
+  const wind = json(dir, REGATTA[1], ['trace', 'WindBox']);
+  assert.deepEqual(routesBelow(wind, (node) => node.inline === true), ['GET weather/v1/tide'], 'a curried creator with its own request');
+
+  const header = traceNodes(json(dir, REGATTA[1], ['trace', 'RegattaHeader']))
+    .filter((node) => node.kind !== 'mount')
+    .map((node) => ({ ...node, keys: node.keys.filter((key) => key !== 'pages') }));
+  assert.deepEqual(header, BASE.trace.RegattaHeader.filter((node) => node.kind !== 'mount'), 'a creator with an effect walks as at the base');
+});
