@@ -192,16 +192,23 @@ one line then have two columns.
   - `try`: `part` is `body`, `catch <n>` or `finally`.
   - `loop`: a `for`, `foreach`, `while` or `do` body, which repeats with no stated count.
   - `callback`: a `lambda`, `anonymous-method`, `local-function`, `callback` or
-    `async-effect-callback`. `host` names the call that receives it, or is `null`.
+    `async-effect-callback`. `host` names the call that receives it, or is `null`. A web
+    function written outside every component and member, such as a method of a module-level
+    object, is a `callback` with `host: null`, because it runs whenever something calls it.
   - `continuation`: a web `then` or `catch` handler. `outcome` is `success` or `failure`, and
-    `of` is the site of the gateway call it answers.
+    `of` is the `{ line, column }` site it answers: the `Promise.all` or
+    `Promise.allSettled` its chain starts with, or else the call its chain starts with. Earlier
+    `.then` and `.catch` links of the same chain answer the same site.
   - `async-form`: `Promise.race` or `Promise.any`, whose scheduling the source does not state.
 - `await` is `true` when the call heads the chain an `await` operand is, and is absent
   otherwise.
 - `task` marks a started task: `{ id, local, join }`. `id` is `<line>:<column>`. `local` is
   the variable that holds it, or `null`. `join` is `{ id, form, line, column, tasks, path }` for the
   `await`, `Task.WhenAll`, `Task.WhenAny`, `Promise.all` or `Promise.allSettled` that names
-  it, or `null` when nothing joins it. A task can start outside a guard and be joined inside
+  it, or `null` when nothing joins it. `tasks` lists only the task ids that calls of the same
+  file carry. A call that is no fact, such as `Task.Delay`, is left out. A later assignment
+  to the local replaces the task it held, unless the assignment sits in an arm, a loop or a
+  callback that may not run. A task added to a collection stays in it. A task can start outside a guard and be joined inside
   it. So `path` lists the frames that hold the join itself, in the same form as the call's
   own `path`. The projection places the join inside those frames, not at the body's root.
 

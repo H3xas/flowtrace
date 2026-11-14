@@ -87,11 +87,12 @@ A group names one reason from a closed list:
 | `no-control-evidence` | the fact set declares no control-evidence version, so run `extract` again |
 | `provider-facts` | an external provider supplied the call |
 | `mobile-body` | the body belongs to a mobile repository |
-| `control-evidence-unreadable` | a field the projection cannot read, or two calls that state one join differently. All calls of the body go into the group, and the detail names the field |
+| `control-evidence-unreadable` | a field the projection cannot read, two calls that state one frame or one join differently, or a join that names a task no call of the body carries. All calls of the body go into the group, and the detail names the field |
 | `code-index` | a hop the code index made, whose order it does not state |
 | `publish`, `bus-consumer`, `worker`, `push`, `http-out` | a message or network hop |
 | `independent-entries` | entries the source states separately |
-| `interface-fanout`, `unscoped` | a call that fans out to known implementations |
+| `interface-fanout` | a call that fans out to known implementations |
+| `unscoped` | under `--unscoped`, the calls the class makes in its other bodies. Each is an `unscoped-hop` stop |
 | `async-form` | `Promise.race`, `Promise.any` and other async forms |
 | `unclassified-hop` | a hop kind the projection has no rule for |
 
