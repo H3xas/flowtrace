@@ -527,3 +527,65 @@ test('Mobile sites and starts AC-5: the lifecycle comment, the span help and the
     assert.doesNotMatch(text, /each lifecycle hook the class itself declares/);
   }
 });
+
+const twin = (folder, extra = []) => [
+  `export class BedHelper {`,
+  '  tidy() {',
+  '    this.sweep();',
+  '  }',
+  '',
+  '  sweep() {',
+  '    return 1;',
+  '  }',
+  ...extra,
+  '}',
+  '',
+].join('\n');
+
+/** One mobile class name that two files declare, each with the same method. */
+const TWIN_FILES = {
+  [`${BEDS}/east/bed-helper.ts`]: twin('east'),
+  [`${BEDS}/west/bed-helper.ts`]: twin('west', ['', '  rake() {', '    this.sweep();', '  }']),
+};
+
+function reverseFacts(dir, repo) {
+  const file = join(dir, 'out', 'facts', `${repo}.json`);
+  const set = JSON.parse(readFileSync(file, 'utf8'));
+  set.facts.reverse();
+  writeFileSync(file, `${JSON.stringify(set, null, 2)}\n`);
+}
+
+test('Mobile sites and starts AC-9: a method start on a class name two files declare exits 2 and lists each file, in either fact order', () => {
+  const twins = nursery(TWIN_FILES);
+  const expected = [
+    'BedHelper.tidy mobile src/app/features/beds/east/bed-helper.ts:3',
+    'BedHelper.tidy mobile src/app/features/beds/west/bed-helper.ts:3',
+  ];
+  const listed = (result) => result.stderr.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('BedHelper.'));
+  const normal = twins.cli(['trace', 'BedHelper.tidy']);
+  assert.equal(normal.status, 2, normal.stderr);
+  assert.deepEqual(listed(normal), expected);
+  const classOnly = twins.cli(['trace', 'BedHelper']);
+  assert.equal(classOnly.status, 2, classOnly.stderr);
+  assert.match(classOnly.stderr, /east\/bed-helper\.ts/);
+  assert.match(classOnly.stderr, /west\/bed-helper\.ts/);
+  reverseFacts(twins.dir, 'mobile');
+  const reversed = twins.cli(['trace', 'BedHelper.tidy']);
+  assert.equal(reversed.status, 2, reversed.stderr);
+  assert.deepEqual(listed(reversed), expected);
+});
+
+test('Mobile sites and starts AC-9: a method only one of the two files writes, a unique declaration and a route-backed start resolve as before', () => {
+  const twins = nursery(TWIN_FILES);
+  const rake = twins.json(['trace', 'BedHelper.rake']);
+  assert.deepEqual([rake.root.kind, rake.root.file, rake.root.line], ['method', 'src/app/features/beds/west/bed-helper.ts', 11]);
+  const unique = twins.json(['trace', 'SeedlingBadgeComponent.onMark']);
+  assert.deepEqual([unique.root.kind, unique.root.repo, unique.root.file, unique.root.line], [
+    'method',
+    'mobile',
+    'src/app/features/plots/seedling-badge.component.ts',
+    12,
+  ]);
+  const routed = twins.json(['trace', 'PlotsController.Water']);
+  assert.deepEqual([routed.root.kind, routed.root.repo], ['action', 'backend']);
+});
