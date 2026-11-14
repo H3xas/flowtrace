@@ -34,3 +34,8 @@ the `if` a longer body, return a shape no status rule reads, or use an `else`.
 
 `DecksController.cs` holds one-line branches whose condition names a status word other than
 the one its own `return` or `throw` answers, beside a multi-line branch.
+
+`Checkin/` holds a pipeline whose steps throw two calls below the step. The `api` table in
+`ferry.config.json` maps some of those types, `GateFaultFilter` maps one globally, and
+`CheckinController.Caught` catches one in the action. `PierDownException` maps to a 5xx,
+`ManifestException` maps nowhere, and only the `ops` table names `TicketLostException`.

@@ -9,6 +9,7 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { validateConfig } from '../lib/config.js';
 import { mergeBranchFacts } from '../lib/trace.js';
 import { captureBranchPoints, pinnedFacts, readBaseline } from './branch-point-baseline.js';
 import { copyFixture, runCli } from './helpers.js';
@@ -480,4 +481,93 @@ test('CSharp reading AC-13: a one-line branch never folds with the error return 
     [11, 'error_return', null],
     [20, 'error_return', 'return Conflict();'],
   ]);
+});
+
+const CHECKIN = 'POST checkin/{ticket}';
+const CAUGHT = 'POST checkin/{ticket}/caught';
+
+/** Each span outcome row of `key` as `[status, phrase]`, from the page `span` writes. */
+function spanRows(dir, key) {
+  const run = cli(dir, 'span', key);
+  assert.equal(run.status, 0, run.stderr);
+  const page = readFileSync(join(dir, run.stdout.slice(run.stdout.lastIndexOf(' -> ') + 4).trim()), 'utf8');
+  const rows = [...page.matchAll(/<div class="row-head"><span class="status[^"]*">([^<]*)<\/span><span class="what">([^<]*)/g)].map((m) => [m[1], m[2]]);
+  return { summary: run.stdout, rows };
+}
+
+/** The throw branches of `key` that the walk demotes by depth, by the type each throws. */
+function demotedThrows(dir, key) {
+  const run = cli(dir, 'trace', key, '--seeds', '--json');
+  assert.equal(run.status, 0, run.stderr);
+  const walk = JSON.parse(run.stdout);
+  return walk.nodes
+    .filter((node) => node.kind === 'branch' && node.responseKind === 'fault' && node.primary === false)
+    .map((node) => /throw new (\w+)/.exec(node.text)[1])
+    .sort();
+}
+
+test('CSharp reading AC-14: a configured exception status reads in span after the action catch and the global filter', (t) => {
+  const { dir } = extracted(t);
+  const checkin = spanRows(dir, CHECKIN);
+  assert.match(checkin.summary, /4 outcomes .*reconciles with cover: 4\/4 seeds/);
+  assert.deepEqual(checkin.rows.filter(([status]) => /^\d{3}$/.test(status)).map(([status, what]) => [status, what.split(',')[0]]), [
+    ['400', 'answers 400'],
+    ['401', 'answers 401'],
+    ['423', 'answers 423'],
+  ]);
+  assert.ok(checkin.rows.some(([, what]) => what.includes('the api exceptionStatuses configuration maps TicketBadRequestException')));
+  assert.ok(checkin.rows.some(([, what]) => what.includes('GateFaultFilter catches GateClosedException')), 'the global filter wins over the table');
+
+  const caught = spanRows(dir, CAUGHT);
+  assert.match(caught.summary, /reconciles with cover: 4\/4 seeds/);
+  assert.ok(caught.rows.some(([status, what]) => status === '409' && what.includes('CheckinController.Caught catches TicketBadRequestException')), 'the action catch wins over the table');
+  assert.ok(!caught.rows.some(([status]) => status === '400'));
+
+  assert.deepEqual(demotedThrows(dir, CHECKIN), ['ManifestException', 'PierDownException', 'TicketLostException']);
+});
+
+test('CSharp reading AC-14: every malformed exceptionStatuses shape refuses with the one message', () => {
+  const message = (index, id) =>
+    `config ferry.config.json: repos[${index}] (${id}): exceptionStatuses must map a simple exception type name to an integer status from 400 to 599 on a backend repository`;
+  const config = (repo) => ({ out: 'out', repos: [{ id: 'api', kind: 'backend', root: 'api' }, repo] });
+  const backend = (exceptionStatuses) => ({ id: 'ops', kind: 'backend', root: 'ops', exceptionStatuses });
+  const shapes = [
+    backend([]),
+    backend('TicketLostException'),
+    backend(null),
+    backend({ '': 404 }),
+    backend({ 'Ferry.TicketLostException': 404 }),
+    backend({ 'TicketLostException<T>': 404 }),
+    backend({ TicketLostException: '404' }),
+    backend({ TicketLostException: 404.5 }),
+    backend({ TicketLostException: 399 }),
+    backend({ TicketLostException: 600 }),
+    { id: 'ops', kind: 'web', root: 'ops', exceptionStatuses: { TicketLostException: 404 } },
+  ];
+  for (const repo of shapes) {
+    assert.throws(() => validateConfig(config(repo), { file: 'ferry.config.json' }), { message: message(1, 'ops') }, JSON.stringify(repo));
+  }
+  const accepted = validateConfig(config(backend({ TicketLostException: 404, PierDownException: 599 })), { file: 'ferry.config.json' });
+  assert.deepEqual(accepted.repos[1].exceptionStatuses, { TicketLostException: 404, PierDownException: 599 });
+  assert.equal('exceptionStatuses' in accepted.repos[0], false);
+});
+
+test('CSharp reading AC-15: a deep throw a catch, a filter or the table maps to 4xx becomes its own outcome', (t) => {
+  const { dir } = extracted(t);
+  for (const [key, expected] of [
+    [CHECKIN, [['GateClosedException', 423, 'global'], ['SeatUnauthorizedException', 401, 'table'], ['TicketBadRequestException', 400, 'table']]],
+    [CAUGHT, [['GateClosedException', 423, 'global'], ['SeatUnauthorizedException', 401, 'table'], ['TicketBadRequestException', 409, 'action']]],
+  ]) {
+    const run = cli(dir, 'trace', key, '--seeds', '--json');
+    assert.equal(run.status, 0, run.stderr);
+    const faults = JSON.parse(run.stdout)
+      .seeds.filter((seed) => seed.kind === 'fault')
+      .map((seed) => {
+        const deciding = seed.dispositions.find((d) => d.disposition === 'taken' && d.responseKind === 'fault');
+        return [/^throw (\w+)/.exec(seed.response)[1], deciding.mappedStatus.status, deciding.mappedStatus.scope];
+      })
+      .sort((a, b) => a[0].localeCompare(b[0]));
+    assert.deepEqual(faults, expected, key);
+    assert.deepEqual(demotedThrows(dir, key), ['ManifestException', 'PierDownException', 'TicketLostException'], key);
+  }
 });
