@@ -48,7 +48,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 
 | type | fields | stated when |
 |---|---|---|
-| `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route; a minimal-API registration adds `handler` (`lambda`, or `method` for a method group naming a method the repository declares), and a lambda's `action` is `<registering method>(<VERBS> <template>)` |
+| `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route; a minimal-API registration adds `handler` (`lambda`, or `method` for a method group naming a method the repository declares), and a lambda's `action` is `<registering method>(<VERBS> <template>)`. The route argument is a constant string expression: a literal, a `const` string field, a concatenation or interpolation of constants, or `nameof`. When the argument has no single value, optional `unresolvedArgument` gives its `text` and `line`, and the route matches and joins no request |
 | `http_out` | `configKey`, `template` | the service calls out over HTTP to another service |
 | `publish` | `message`, `verb` | a message is published to the bus; `message` is `null` and `unresolved` names why when the argument's type could not be read; `verb` is the matched call name lower-cased (`publish`, `send`, `defer`, `submitjob`, `reply`, an `Async` suffix dropped either way) |
 | `consume` | `message`, `consumer` | a class consumes a message type |
@@ -61,15 +61,15 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `message_class` | `name`, `fqn` | a message type is declared |
 | `di_binding` | `iface`, `impl` | an interface is registered to an implementation |
 | `ctor_field` | `class`, `field`, `paramType` | a class holds a constructor-injected field; with `method`, a parameter the framework injects into that one handler |
-| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form |
+| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field. A link of a member-access chain such as `_store.Find(id).Close()` gives one fact with `receiverType` when the static type of its receiver is known and the repository declares exactly one target; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form |
 | `method_span` | `class`, `method`, `endLine` | a method body's extent; optional `paramTypes` lists the signature's parameter types as written |
-| `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch` |
+| `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch`. Three kinds are decisions inside an expression: `ternary` for a `?:` conditional, `coalesce` for a `??` choice, and `predicate` for a lambda that a `Where`, `Any`, `All`, `First` or `FirstOrDefault` call tests. These three never multiply seeds |
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
 | `exception_map` | `scope`, `class`, `exception`, `status` | an exception type is converted to a status — `scope` is `global` for a registered exception filter, `action` for a `catch` inside one controller action |
 
 | `step_composition` | `class`, `field`, `source`, `steps` | the source names the ordered steps of one pipeline's collection field: `source` is `factory` (registration calls on the instance a DI factory lambda builds and returns), `typeof-list` (a literal `typeof(...)` list resolved through the container) or `enumerable` (an injected `IEnumerable<T>` and its `Add*<T, X>()` registrations); `steps` is `[{ type, file, line }]` in run order, or `null` with a `reason` (`step-expression`, `registration-order`, `no-registration`, `factory-count`) when the list cannot be read |
-| `loop_stop` | `class`, `method`, `field`, `form`, `step` | a `foreach` over a collection field calls `step` on each element; `form` is `flag-return` (with `flag`, `negated`, `position` `before` or `after` the call, and `returns`), `flag-break` (with `flag`, `negated` and `after`, the line after the loop that tests the flag), `bool-return` (with `returns`), `none`, or `unresolved` with `reason: "stop-rule"`; `endLine`, `stepLine`, `arg` and `argType` describe the loop and its argument |
-| `flag_write` | `class`, `method`, `member`, `value` | a body writes `param.member = value;` for a member that a loop's stop rule reads; `value` is `true`, `false` or `expression`, and `param` names the receiver |
+| `loop_stop` | `class`, `method`, `field`, `form`, `step` | a `foreach` over a collection field calls `step` on each element; `form` is `flag-return` (with `flag`, `negated`, `position` `before` or `after` the call, and `returns`), `flag-break` (with `flag`, `negated` and `after`, the line after the loop that tests the flag), `bool-return` (with `returns`), `none`, or `unresolved` with `reason: "stop-rule"`; `endLine`, `stepLine`, `arg` and `argType` describe the loop and its argument. Optional `gate` `{ method, line, text }` names the test the loop makes of each step before it runs it, `if (!step.G(x)) continue;` or `if (step.G(x)) { … }` |
+| `flag_write` | `class`, `method`, `member`, `value` | a body writes `param.member = value;` for a member that a loop's stop rule reads; `value` is `true`, `false` or `expression`, and `param` names the receiver. When the value is a call, optional `call` `{ field, calledMethod }` names it |
 | `sentinel_return` | `class`, `method`, `value` | a body returns `false` or `null`; `ifLine` names the `if` it answers, when it has one |
 | `return_flow` | `class`, `method`, `field`, `calledMethod` | a method returns a call's value unchanged, so a sentinel passes through it to its caller |
 | `sentinel_map` | `class`, `method`, `field`, `calledMethod`, `sentinel`, `status` | an action answers `status` when the call it names returns `sentinel` (`null` or `false`), read from a `?:` conditional or an `if` on the value; `local` names the variable that holds the value |
@@ -97,6 +97,8 @@ only where they apply:
 - A seed that a filter decides carries `gate: { filter, scope, stage, shared }`. The value of
   `shared` is `true` for a global filter. A seed with no readable status carries
   `statusReason`.
+- A fault decision that an `exception_map` or the `exceptionStatuses` configuration maps carries
+  `mappedStatus: { status, scope, via }`. The value of `scope` is `action`, `global` or `table`.
 - `stats.pipelines` gives the resolved count and the unresolved pipelines with their reasons.
   `stats.gates` gives the filters that the route ran.
 
@@ -346,7 +348,9 @@ order and come first; the provider's follow in the order it gave them.
 `fact(type, fields)` throws on an unknown type, a missing required field, a `file` that is
 not repository-relative with forward slashes, or a `line` that is not a positive integer.
 `validateFacts(array)` checks a whole set and reports the first bad entry by index and type.
-Both live in `lib/facts.js`; an extractor cannot emit a malformed fact by accident.
+Both live in `lib/facts.js`; an extractor cannot emit a malformed fact by accident. An
+optional object field (`route.unresolvedArgument`, `loop_stop.gate`, `flag_write.call`) is
+refused when it is present and its shape is wrong.
 `parseProviderDocument(document)` applies the same checks to an external provider's document
 and additionally refuses a fact that already carries `provenance`, so the stamp is always
 this tool's own statement.

@@ -54,6 +54,9 @@ extract [--repo <id>]
   schema, stamps each one provenance: { producer, version }, and merges it with the
   extraction under the configured merge mode; the header records both producers and
   how they compared. An invalid record refuses the whole run and names the record.
+  A C# route attribute whose argument has no single constant value keeps its route
+  fact with unresolvedArgument, and extract prints one stderr warning per route with
+  its file, line and argument text. Such a route never matches or joins a request.
 
 join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json]
             [--fail-on <kinds>] [--allow-skipped]
@@ -250,7 +253,10 @@ span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
   seed cover lists appears exactly once and the three counts sum to that route's seed
   count, shared-gate seeds included: a row from a global filter carries a shared-gate
   mark, and the honesty strip names each pipeline the walk could not resolve, with its
-  reason. A tested row names the test
+  reason. A fault or reject row also lists the run-time conditions that decide it and
+  that a static read cannot evaluate: a feature toggle, the gate test a pipeline makes
+  of the step before it runs it, and a flag the step stores from a call, each with its
+  kind, file:line and source text. A tested row names the test
   by its resolved title, and by the case ids case_id facts resolve for
   it when a case-id annotation, a configured call or a same-file table row carries
   one — never by an id the tool invented.
@@ -453,6 +459,9 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   Seeds from a globally registered filter count in their route's seeds and again, apart,
   as "shared-gate" in totals and the headline; a route whose pipeline the walk could not
   resolve names it with its reason, and totals count those pipelines.
+  A seed that a run-time condition decides (a feature toggle, a pipeline step gate
+  test, or a flag stored from a call) prints one "condition <kind> <file>:<line>
+  <text>" line per condition under it, and --json gives them as its conditions.
 
   --runtime <file> joins per-spec runtime line hits against the branch spans facts
   already carry: a cobertura or lcov artifact, or a JSON manifest naming one report

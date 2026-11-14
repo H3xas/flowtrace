@@ -707,3 +707,21 @@ test('CSharp reading AC-17: a branch the request drives keeps its reachability b
   const toggleOnly = { reachability: 'reachable', reason: null };
   assert.deepEqual(conditionedReachability(toggleOnly, [], [{ kind: 'toggle', file: 'a.cs', line: 3, text: 'if (on)' }]), toggleOnly);
 });
+
+test('CSharp reading AC-19: the fact schema, the configuration and the command reference describe the new reading', () => {
+  const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+  const schema = read('docs/fact-schema.md');
+  for (const word of ['`ternary`', '`coalesce`', '`predicate`', '`unresolvedArgument`', 'member-access chain', '`gate`', '`call`']) {
+    assert.ok(schema.includes(word), `fact-schema names ${word}`);
+  }
+  const configuration = read('docs/configuration.md');
+  assert.ok(configuration.includes('### Exception statuses'));
+  assert.ok(configuration.includes('exceptionStatuses must map a simple\nexception type name to an integer status from 400 to 599 on a backend repository'), 'the refusal message');
+  assert.match(configuration, /1\. a `catch` of the type in the action[^]*2\. a registered global exception filter[^]*3\. the `exceptionStatuses` table/);
+  const cli = read('docs/cli.md');
+  assert.ok(cli.includes('fact with unresolvedArgument, and extract prints one stderr warning per route'));
+  assert.ok(cli.includes('A fault or reject row also lists the run-time conditions'));
+  assert.ok(cli.includes('prints one "condition <kind> <file>:<line>'));
+  const fragment = read('changes/changelog/feat-csharp-extractor-reading.md');
+  assert.ok(fragment.split('\n').filter((line) => line.startsWith('#')).every((line) => line.startsWith('### ')));
+});

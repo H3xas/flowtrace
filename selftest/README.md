@@ -83,6 +83,12 @@ npm test
   `runtimeSummary` of `lib/runtime-cover.js`, because a corpus with more than 200 decisions
   would be too large to read. `decisions-verb.test.js` builds its own git working trees in a
   temporary directory, one `Decisions verb AC-n:` test for each acceptance rule.
+- `corpus/ferry-tickets/`: an invented ferry ticket office, with two backend repositories and
+  one web client. Each file group holds one C# form the backend extractor reads: attribute
+  sections, constant route arguments, expression bodies and chain links, expression
+  decisions, sentinel fallthroughs, one-line branch labels, configured exception statuses
+  and a gated pipeline. `csharp-reading.test.js` runs it through the CLI, one `CSharp
+  reading AC-n:` test for each acceptance rule. The corpus README lists its file groups.
 - `corpus/bakery-orders/` and `corpus/bakery-gates/`: an invented bakery backend. Its
   pipelines take their steps from a DI factory, a `typeof(...)` list or an injected
   `IEnumerable<T>`. Their steps write a stop flag, return `false` or `null`, or throw. The
