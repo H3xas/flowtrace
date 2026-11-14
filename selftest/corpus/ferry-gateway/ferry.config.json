@@ -1,0 +1,11 @@
+{
+  "out": "out",
+  "repos": [
+    {
+      "id": "ferry",
+      "kind": "backend",
+      "root": "backend",
+      "role": ["api"]
+    }
+  ]
+}

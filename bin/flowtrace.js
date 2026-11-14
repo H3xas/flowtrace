@@ -1626,6 +1626,11 @@ function traceNodeFields(node) {
     'rejectForm',
     'statusReason',
     'statusVia',
+    'conditional',
+    'keyed',
+    'queueRule',
+    'upstream',
+    'downstream',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }

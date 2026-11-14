@@ -424,3 +424,63 @@ test('Backend entries AC-15: an unreadable stop rule walks the steps in registra
   assert.deepEqual(stepRejects, []);
   assert.match(traceText(env, 'POST seals/v1/twin'), /pipeline unresolved: stop-rule/);
 });
+
+const FERRY = ['ferry-gateway', 'ferry.config.json'];
+
+test('Backend entries AC-16: gateway tables, handlers and middleware become facts', (t) => {
+  const env = corpus(t, ...FERRY).extract();
+  const all = facts(env, 'ferry');
+  const routes = all.filter((item) => item.type === 'gateway_route');
+  assert.deepEqual(
+    routes.map((item) => [item.verb, item.template, item.downstreamVerb, item.downstreamTemplate, item.hosts, item.handlers, item.file]),
+    [
+      ['GET', '/boats/{id}', 'GET', '/api/boats/{id}', ['boats-api:8080'], ['TicketHandler'], 'src/ocelot.json'],
+      ['POST', '/Cargo', 'POST', '/api/cargo', ['cargo-api:80'], ['GhostHandler'], 'src/ocelot.json'],
+      ['PUT', '/Cargo', 'POST', '/api/cargo', ['cargo-api:80'], ['GhostHandler'], 'src/ocelot.json'],
+      ['GET', '/harbor', 'GET', '/api/harbor', ['harbor-api'], [], 'src/ocelot.json'],
+    ],
+  );
+  const source = readFileSync(join(env.dir, 'backend', 'src', 'ocelot.json'), 'utf8').split('\n');
+  for (const route of routes) assert.match(source[route.line - 1], /"UpstreamPathTemplate"/);
+  const tables = all.filter((item) => item.type === 'gateway_table');
+  assert.deepEqual(tables.map((item) => [item.file, item.state]), [['src/ocelot.staging.json', 'unreadable']]);
+  assert.ok(tables[0].reason.length > 0);
+  assert.ok(!all.some((item) => item.file === 'src/appsettings.json'));
+  assert.deepEqual(
+    all.filter((item) => item.type === 'gateway_handler').map((item) => [item.handler, item.global]),
+    [['TicketHandler', false], ['AuditHandler', true]],
+  );
+  assert.deepEqual(
+    all.filter((item) => item.type === 'gateway_middleware').map((item) => [item.middleware, item.position]),
+    [['TraceMiddleware', 1], ['ClockMiddleware', 2]],
+  );
+});
+
+test('Backend entries AC-17: a stub route walks the gateway stages in order to the downstream call', (t) => {
+  const env = corpus(t, ...FERRY).extract();
+  const report = traceJson(env, 'GET boats/{boatId}');
+  const [hop] = report.nodes.filter((node) => node.kind === 'gateway');
+  assert.equal(hop.upstream, '/boats/{id}');
+  assert.equal(hop.downstream, '/api/boats/{id}');
+  const stages = report.edges.filter((edge) => edge.from === hop.id).map((edge) => report.nodes.find((node) => node.id === edge.to));
+  assert.deepEqual(stages.map((node) => node.ref), [
+    'TraceMiddleware.InvokeAsync',
+    'ClockMiddleware.Invoke',
+    'AuditHandler.SendAsync',
+    'TicketHandler.SendAsync',
+    'GET boats-api:8080/api/boats/*',
+  ]);
+  assert.equal(stages.at(-1).kind, 'http_out');
+  assert.ok(report.seeds[0].outcomes.some((item) => item.kind === 'http_out'));
+  assert.doesNotMatch(traceText(env, 'GET boats/{boatId}'), /no observable effect/);
+
+  const cargo = traceJson(env, 'POST cargo');
+  assert.ok(cargo.nodes.some((node) => node.ref === 'GhostHandler' && node.unresolved));
+  assert.ok(cargo.status.frontier.some((entry) => entry.reason === 'unresolved-target' && entry.target === 'GhostHandler'));
+  assert.notEqual(cargo.status.traversal, 'complete');
+
+  const ping = traceJson(env, 'GET ping');
+  assert.ok(!ping.nodes.some((node) => node.kind === 'gateway'));
+  const harbor = env.cli(['trace', 'GET harbor', '--json']);
+  assert.notEqual(harbor.status, 0);
+});
