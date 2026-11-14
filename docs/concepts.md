@@ -45,8 +45,9 @@ weaker match kind `parameter` ([fact-schema.md](fact-schema.md#route-match-kinds
 
 Only a `calls` edge, built from a `gateway_call` fact, is an app caller. A `tests` edge
 comes from a `cypress_intercept` written in a Cypress spec, a support file or a page model.
-It is test evidence that `cover` counts, and no caller list reads it. A route that only a
-test requests stays in `routes_without_caller`.
+It is test evidence that `cover` counts, and no caller list reads it. A Playwright API
+request and a Playwright route stub also give a `tests` edge, as test evidence and not as a
+caller. A route that only a test requests stays in `routes_without_caller`.
 
 ## The walk
 
