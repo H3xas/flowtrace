@@ -40,6 +40,7 @@ checkouts named as siblings of the file.
 | `caseId` | no | call shapes whose literal arguments are test-management case ids, below |
 | `backend` | no | the calls that mock or patch the backend of a browser test, below |
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
+| `entryPoints` | no | the base classes whose methods start backend work with no route in front of them, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
 | `scope` | no | the node-ref patterns `scope` reads as a server-side authorization point, below |
@@ -377,7 +378,7 @@ worker-queue framework registers processors, binds queues and publishes through 
 flowtrace cannot know about, names its saga-initiator interface differently, and may keep its
 contracts elsewhere under other names. `workerPatterns` teaches the extractor those shapes,
 and teaches the walk which verb enters a consumer. Every field is an array of regex-source
-strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and a
+strings (JSON-escaped) — `consumerEntryMethods` and `backgroundCalls` hold plain method names, and a
 `publishCalls` entry may carry a `/N` suffix (see below) — and every field defaults to empty.
 
 ```json
@@ -392,7 +393,8 @@ strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and 
   "configReads": ["ReadSetting"],
   "messagePaths": ["Bus/Types"],
   "messageSuffixes": ["Notice"],
-  "sagaInterfaces": ["IAmTriggeredBy"]
+  "sagaInterfaces": ["IAmTriggeredBy"],
+  "backgroundCalls": ["Schedule"]
 }
 ```
 
@@ -446,6 +448,36 @@ strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and 
   that way lists them here. A contract carries the same `fqn` onto every `publish` and
   `consume` of it, which is what lets `join` tell two same-named messages apart across
   repositories and keeps them out of `messages_without_contract`.
+- `backgroundCalls` — method names whose call hands its delegate argument to a background
+  queue; plain names, not regexes. The extractor already finds a queue by its shape: a
+  receiver type that declares a method whose delegate parameter takes a `CancellationToken`.
+  This field names the queue calls whose receiver the repository does not declare. Each call
+  gives a `queue_call` fact with `rule: "config"`, and the walk shows one queue node with the
+  delegate's calls under it (via `queued`).
+
+## `entryPoints`
+
+A backend method can start work with no route in front of it. The extractor finds two such
+entries by itself: each public method of a SignalR `Hub` class, and each message handler that
+an actor class registers. `entryPoints` names more of them. Each entry is an object with
+three fields:
+
+```json
+"entryPoints": [
+  { "kind": "timer", "bases": ["TimedJob"], "methods": ["Tick"] }
+]
+```
+
+- `kind` — a lowercase name of letters, digits and hyphens. It cannot be `route`, `hub` or
+  `actor`.
+- `bases` — base class names. A class that has one of them in its base chain is an entry
+  class. An abstract class is not.
+- `methods` — method names. Each method of that name that the class declares or inherits
+  gives one `entry` fact with that `kind`.
+
+`routes-of` walks each entry the same way it walks a route, and it lists the entries that
+reach the point. A malformed `entryPoints` value stops the run with one message that states
+the full shape.
 
 ## `scope`
 

@@ -484,3 +484,30 @@ test('Backend entries AC-17: a stub route walks the gateway stages in order to t
   const harbor = env.cli(['trace', 'GET harbor', '--json']);
   assert.notEqual(harbor.status, 0);
 });
+
+const NEW_FACT_TYPES = new Set([
+  'entry', 'mapper_map', 'mapper_call', 'queue_call', 'keyed_collection', 'keyed_call', 'key_property',
+  'gateway_route', 'gateway_table', 'gateway_handler', 'gateway_middleware',
+]);
+const NEW_VIAS = new Set(['entry', 'mapper', 'queued', 'keyed_dispatch', 'gateway', 'gate']);
+
+test('Backend entries AC-18: a corpus with none of the new shapes keeps its walk and answers under schema version 2', (t) => {
+  const env = corpus(t, 'kiln-yard', 'kiln.config.json').extract();
+  const backend = facts(env, 'backend');
+  assert.ok(backend.length > 0);
+  assert.deepEqual(backend.filter((item) => NEW_FACT_TYPES.has(item.type) || item.rejectFrom !== undefined), []);
+  const report = traceJson(env, 'GET kiln/v1/kilns/{kilnId}/firings');
+  assert.deepEqual(report.edges.filter((edge) => NEW_VIAS.has(edge.via) || edge.conditional || edge.inferred), []);
+  assert.ok(!report.nodes.some((node) => node.kind === 'queue' || node.kind === 'gateway'));
+
+  const answered = routesOf(env, 'FiringService.List');
+  assert.equal(answered.status, 0);
+  assert.equal(answered.report.schemaVersion, 2);
+  assert.equal(answered.report.verdict, 'routes');
+  assert.deepEqual(answered.report.routes.map((route) => route.key), ['GET kiln/v1/kilns/*/firings']);
+  assert.deepEqual(answered.report.entries, []);
+  assert.equal(answered.report.entryCount, 0);
+  const empty = routesOf(env, 'Startup.AddKilnYard');
+  assert.equal(empty.report.verdict, 'empty');
+  assert.deepEqual(empty.report.entries, []);
+});
