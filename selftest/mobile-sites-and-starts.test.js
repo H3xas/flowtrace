@@ -589,3 +589,124 @@ test('Mobile sites and starts AC-9: a method only one of the two files writes, a
   const routed = twins.json(['trace', 'PlotsController.Water']);
   assert.deepEqual([routed.root.kind, routed.root.repo], ['action', 'backend']);
 });
+
+const PAGE_HTML_FILE = 'src/app/features/plots/plot-detail.page.html';
+
+/** The nursery page with `onSync` bound at a second template site. */
+function twoSitePack() {
+  return nursery({
+    [PAGE_HTML]: (text) =>
+      text.replace(
+        '  <ion-button (click)="onPin()">Pin</ion-button>',
+        '  <ion-button (click)="onPin()">Pin</ion-button>\n  <ion-button (click)="onSync()">Sync again</ion-button>',
+      ),
+  });
+}
+
+let twoSiteCache = null;
+const twoSites = () => (twoSiteCache ||= twoSitePack());
+
+test('Mobile sites and starts AC-1: one handler bound at two sites gives two handler nodes, each naming its site, each with its own subtree', () => {
+  const walk = twoSites().json(['trace', 'PlotDetailPage']);
+  const handlers = walk.nodes.filter((node) => node.ref === 'PlotDetailPage.onSync' && node.via === 'handler');
+  assert.deepEqual(handlers.map((node) => node.site), [
+    { file: PAGE_HTML_FILE, line: 12 },
+    { file: PAGE_HTML_FILE, line: 14 },
+  ]);
+  const kids = (node) => walk.edges.filter((edge) => edge.from === node.id).map((edge) => edge.to);
+  assert.ok(kids(handlers[0]).length > 0 && kids(handlers[1]).length > 0, 'both sites keep a subtree');
+  assert.deepEqual(new Set([...kids(handlers[0]), ...kids(handlers[1])]).size, kids(handlers[0]).length + kids(handlers[1]).length);
+  assert.ok(
+    walk.nodes.filter((node) => node.via === 'handler' && node.ref !== 'PlotDetailPage.onSync').every((node) => !('site' in node)),
+    'a handler bound at one site prints no site',
+  );
+  const text = twoSites().cli(['trace', 'PlotDetailPage']).stdout;
+  assert.match(text, /\(click\) onSync\(\) @src\/app\/features\/plots\/plot-detail\.page\.html:12/);
+  assert.match(text, /\(click\) onSync\(\) @src\/app\/features\/plots\/plot-detail\.page\.html:14/);
+  assert.doesNotMatch(text, /\(click\) onMark\(\) @/);
+});
+
+test('Mobile sites and starts AC-1: a handler bound at one site gives the same trace as the committed corpus', () => {
+  const plain = nursery({});
+  const golden = JSON.parse(readFileSync(join(CORPUS, 'nursery-mobile', 'trace-plot-detail.golden.json'), 'utf8'));
+  const now = plain.json(['trace', 'PlotDetailPage']);
+  assert.deepEqual(now.nodes, golden.nodes);
+  assert.deepEqual(now.edges, golden.edges);
+});
+
+test('Mobile sites and starts AC-2: a mobile selector that matches two sites exits 2 with one candidate per site, and a site suffix selects one', () => {
+  const { cli, json } = twoSites();
+  const ambiguous = cli(['trace', 'PlotDetailPage', '--from-handler', 'onSync']);
+  assert.equal(ambiguous.status, 2, ambiguous.stderr);
+  assert.equal(
+    ambiguous.stderr,
+    [
+      'flowtrace: "onSync" matches 2 handlers:',
+      `  (click) onSync() PlotDetailPage.onSync mobile ${PAGE_HTML_FILE}:12`,
+      `  (click) onSync() PlotDetailPage.onSync mobile ${PAGE_HTML_FILE}:14`,
+      '',
+    ].join('\n'),
+  );
+  for (const selector of ['onSync@14', 'click:onSync@14', '(click) onSync()@14', '(click) onSync() @ 14']) {
+    const narrowed = json(['trace', 'PlotDetailPage', '--from-handler', selector]);
+    assert.deepEqual([narrowed.root.ref, narrowed.root.site], ['PlotDetailPage.onSync', { file: PAGE_HTML_FILE, line: 14 }], selector);
+  }
+  const column = cli(['trace', 'PlotDetailPage', '--from-handler', 'onSync@14:3']);
+  assert.equal(column.status, 2);
+  assert.match(column.stderr, /no template handler matches "onSync@14:3"/);
+});
+
+test('Mobile sites and starts AC-2: a selector that matches one site gives the same output with or without its suffix', () => {
+  const { json } = twoSites();
+  const strip = (model) => ({ nodes: model.nodes, edges: model.edges, sinks: model.sinks, stats: model.stats });
+  const bare = json(['trace', 'PlotDetailPage', '--from-handler', 'onMark']);
+  const sited = json(['trace', 'PlotDetailPage', '--from-handler', 'onMark@1']);
+  assert.deepEqual(strip(sited), strip(bare));
+});
+
+test('Mobile sites and starts AC-2: a web selector that matches two sites exits 2, and line or line:column selects one', () => {
+  const kiln = pack('kiln-yard', 'kiln.config.json', {
+    'web/src/kiln/KilnPanel.tsx': (text) =>
+      text.replace('      <button onClick={refresh}>Load?</button>', '      <button onClick={refresh}>Load?</button>\n      <button onClick={refresh}>Again</button>'),
+  });
+  const ambiguous = kiln.cli(['trace', 'KilnPanel', '--from-handler', 'refresh']);
+  assert.equal(ambiguous.status, 2, ambiguous.stderr);
+  assert.equal(
+    ambiguous.stderr,
+    [
+      'flowtrace: "refresh" matches 2 handlers:',
+      '  (onClick) refresh() KilnPanel.refresh web src/kiln/KilnPanel.tsx:11:15',
+      '  (onClick) refresh() KilnPanel.refresh web src/kiln/KilnPanel.tsx:12:15',
+      '',
+    ].join('\n'),
+  );
+  for (const [selector, line] of [['refresh@12', 12], ['onClick:refresh@11:15', 11], ['(onClick) refresh()@12:15', 12]]) {
+    const narrowed = kiln.json(['trace', 'KilnPanel', '--from-handler', selector]);
+    assert.deepEqual([narrowed.root.ref, narrowed.root.entry.line], ['KilnPanel.refresh', line], selector);
+  }
+  const miss = kiln.cli(['trace', 'KilnPanel', '--from-handler', 'refresh@11:3']);
+  assert.equal(miss.status, 2);
+  assert.match(miss.stderr, /no template handler matches/);
+});
+
+test('Mobile sites and starts AC-2: a malformed site suffix is one usage refusal, from the CLI and from the library', async () => {
+  const { cli, dir } = twoSites();
+  for (const selector of ['onSync@', 'onSync@x', 'onSync@0', 'onSync@12:', 'onSync@12:0', 'onSync@-3', 'onSync@12@13']) {
+    const result = cli(['trace', 'PlotDetailPage', '--from-handler', selector]);
+    assert.equal(result.status, 2, selector);
+    assert.match(result.stderr, /^flowtrace: --from-handler site must be @<line> or @<line>:<column>\n/, selector);
+  }
+  const { trace, parseHandlerSelector } = await import('../lib/trace.js');
+  assert.deepEqual(parseHandlerSelector('(click) onSync()@12:4'), { event: 'click', method: 'onSync', site: { line: 12, column: 4 } });
+  const factSets = ['backend', 'mobile'].map((repo) => JSON.parse(readFileSync(join(dir, 'out', 'facts', `${repo}.json`), 'utf8')));
+  assert.equal(trace(factSets, 'PlotDetailPage', { fromHandler: 'onSync@x' }).fromHandlerError, '--from-handler site must be @<line> or @<line>:<column>');
+});
+
+test('Mobile sites and starts AC-2: the trace help and the CLI doc name the site suffix', () => {
+  const help = runCli(['trace', '--help']).stdout.replace(/\s+/g, ' ');
+  const doc = readFileSync(join(REPO_ROOT, 'docs', 'cli.md'), 'utf8').replace(/\s+/g, ' ');
+  for (const text of [help, doc]) {
+    assert.match(text, /Each form takes an optional "@<line>" or "@<line>:<column>" suffix \("onLike@14"\)/);
+    assert.match(text, /One handler bound at two or more sites is one node for each site, and each such node names its site\./);
+  }
+});

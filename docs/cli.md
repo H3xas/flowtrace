@@ -155,9 +155,13 @@ trace --area <file> [--require-complete]
 
   --from-handler <selector> restricts a mobile walk to the subtree rooted at one
   `template_handler` hop, matched by its display form ("(click) onLike()"), the
-  compact "click:onLike", or the bare method name "onLike". Several handlers matching
-  the selector, or none, is exit 2 — the first case lists what matched, the second
-  lists every handler the walk found. Seeds, folding, --graph, --mermaid and --html all
+  compact "click:onLike", or the bare method name "onLike". Each form takes an optional
+  "@<line>" or "@<line>:<column>" suffix ("onLike@14") that keeps only the binding written
+  at that template site; a mobile binding has no column. Any other suffix is a usage
+  error. Several handlers matching the selector, or none, is exit 2 — the first case
+  lists what matched, one line for each binding site, the second lists every handler the
+  walk found. One handler bound at two or more sites is one node for each site, and each
+  such node names its site. Seeds, folding, --graph, --mermaid and --html all
   run on the narrowed walk unchanged; the default walk is untouched without the flag.
 
   Folding: the first time a node (same repo, file, line, kind and ref) appears, it
