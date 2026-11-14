@@ -681,9 +681,19 @@ test('Web journeys AC-15: the help, the command reference, the fact schema and t
     assert.ok(schema.includes(topic), `fact schema: ${topic}`);
   }
 
+  // The entry lives in a fragment file until the release folds it into `## Unreleased`,
+  // so both places count as the changelog.
   const changelog = readFileSync(join(REPO_ROOT, 'CHANGELOG.md'), 'utf8');
-  const unreleased = changelog.slice(changelog.indexOf('## Unreleased'), changelog.indexOf('\n## ', changelog.indexOf('## Unreleased') + 1)).replace(/\s+/g, ' ');
-  for (const topic of ['Web journeys:', '`root.pages`', 'reason `ambiguous`', 'route element holds', 'inline handler arrow', '`arrow`', 'kind word', 'lifecycle hook', 'dispatch form']) {
+  const fragmentDir = join(REPO_ROOT, 'changes', 'changelog');
+  let fragments = '';
+  try {
+    fragments = readdirSync(fragmentDir).filter((name) => name.endsWith('.md')).sort()
+      .map((name) => readFileSync(join(fragmentDir, name), 'utf8')).join('\n');
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  const unreleased = (changelog.slice(changelog.indexOf('## Unreleased'), changelog.indexOf('\n## ', changelog.indexOf('## Unreleased') + 1)) + '\n' + fragments).replace(/\s+/g, ' ');
+  for (const topic of ['### Web journeys','`root.pages`', 'reason `ambiguous`', 'route element holds', 'inline handler arrow', '`arrow`', 'kind word', 'lifecycle hook', 'dispatch form']) {
     assert.ok(unreleased.includes(topic), `changelog: ${topic}`);
   }
 });
