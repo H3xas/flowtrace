@@ -2,6 +2,7 @@
   "out": "out",
   "repos": [
     { "id": "backend", "kind": "backend", "root": "backend", "role": ["api"] },
-    { "id": "web", "kind": "web", "root": "web" }
+    { "id": "suite", "kind": "playwright", "root": "suite" },
+    { "id": "web", "kind": "web", "root": "web", "cypressSubpath": "cypress" }
   ]
 }

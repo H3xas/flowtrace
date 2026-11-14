@@ -306,15 +306,25 @@ function joinAndCover(dir, config, area) {
     assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}`);
     return result.stdout;
   };
+  run(['join']);
+  const flow = JSON.parse(readFileSync(join(dir, 'out', 'flow.json'), 'utf8'));
+  const report = JSON.parse(run(['cover', '--area', area, '--json']));
   return {
-    join: run(['join']),
-    flow: readFileSync(join(dir, 'out', 'flow.json'), 'utf8'),
-    cover: run(['cover', '--area', area]),
-    coverJson: run(['cover', '--area', area, '--json']),
+    edges: flow.edges,
+    unjoined: Object.fromEntries(Object.entries(flow.unjoined).map(([bucket, list]) => [bucket, list.map((entry) => entry.key)])),
+    totals: report.totals,
+    routes: report.routes.map((route) => ({
+      key: route.key,
+      state: route.state,
+      levels: route.levels,
+      evidence: route.evidence,
+      parity: route.parity,
+      seeds: route.seeds.map((seed) => [seed.id, seed.state, seed.level]),
+    })),
   };
 }
 
-test('Backend class AC-9: pw_stub keeps its base facts, and join and cover read the same input the same way', (t) => {
+test('Backend class AC-9: pw_stub keeps its base facts, and its handler moves no edge, route state, evidence count or parity', (t) => {
   const golden = JSON.parse(readFileSync(join(REPO_ROOT, 'selftest', 'corpus', CORPUS, 'base-facts.json'), 'utf8'));
   assert.deepEqual(goldenFacts(CLI), golden);
 

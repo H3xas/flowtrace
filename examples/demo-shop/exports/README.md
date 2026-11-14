@@ -8,7 +8,8 @@ suite) and a Playwright suite (`e2e`). Between them the export carries every edg
 example can join:
 
 - `calls`: the client's gateway service calling a `stock` route.
-- `tests`: the client's Cypress spec intercepting that same `stock` route.
+- `tests`: the client's Cypress spec intercepting that same `stock` route, and the Playwright
+  suite's API requests and route stubs that name an `api` route.
 - `publishes` and `consumes`: messages published and consumed inside `api`, and one
   published in `stock` and consumed in `api`.
 
@@ -24,11 +25,18 @@ example can join:
 ## What a `tests` edge claims
 
 A `tests` record's `from` end is a spec, not code: `ref` is the test's title and `file` the
-spec that declares the intercept, where a `calls` record's `from` is a service method and the
-file it is written in. It states that the spec's intercept pattern matches that route action.
-It never states that the route's interior ran: an intercept can stub the response entirely,
-and nothing in a static export observed an execution. Read it as "a spec names this route",
-not as coverage of what the route does.
+spec that holds the evidence, where a `calls` record's `from` is a service method and the
+file it is written in. A `tests` edge comes from one of three sources:
+
+- a Cypress intercept (`cy.intercept`) whose pattern matches the route action;
+- a Playwright API request (`request.get` and the other verbs) whose URL matches it;
+- a Playwright route stub (`page.route`) whose pattern matches it.
+
+The record does not name its source; the spec's file and its repository's kind tell them
+apart. A route stub outside any test, such as one in a `beforeEach` hook, has an empty
+`ref`. No `tests` edge states that the route's interior ran: an intercept or a stub can
+answer the request itself, and nothing in a static export observed an execution. Read it as
+"a spec names this route", not as coverage of what the route does.
 
 For a `web` repository the spec's `file` is relative to its configured `cypressSubpath`, not
 to the repository root: the `shopfront` spec here is `e2e/reservations.cy.ts`, which sits at
@@ -54,10 +62,9 @@ to the repository root: the `shopfront` spec here is `e2e/reservations.cy.ts`, w
     never carries the file or command the facts were read from, so the same facts give the
     same id wherever the checkout sits and no filesystem path is published.
 - **`provenance.factSetsWithoutEdges`**: the repositories whose fact set is in `factSets`
-  but that no record names at either end. Here that is `e2e`: `join` builds a `tests` edge
-  from a Cypress intercept, not from a Playwright request, so the Playwright suite
-  contributes no edge and the export says so rather than leaving it to read as a witness for
-  edges it never produced.
+  but that no record names at either end, so that no fact set reads as a witness for edges it
+  never produced. Here the list is empty: the `mobile` client calls a route, and the `e2e`
+  suite's requests and stubs give `tests` edges.
 
 ## The two checks CI runs
 
