@@ -968,4 +968,28 @@ test('Source flow AC-12: the site comes first and the limits stay visible', (t) 
   const shallow = json(env, 'BoardingService.CheckInAsync', ['--view', 'source-flow', '--depth', '1']);
   assert.ok(shallow.sourceFlow.frontier.some((stop) => stop.reason === 'depth'));
 
+  // Under --unscoped the walk also opens what the class calls elsewhere. Those calls are
+  // not written in this body: they are walk stops, and they keep out of its order.
+  const scopedSteps = answer.sourceFlow.root.body.steps;
+  const unscoped = json(env, 'BoardingService.CheckInAsync', ['--view', 'source-flow', '--unscoped']).sourceFlow;
+  const unscopedStops = unscoped.frontier.filter((stop) => stop.reason === 'unscoped-hop');
+  assert.ok(unscopedStops.length > 0, 'an unscoped hop is a frontier entry');
+  const ordered = unscoped.root.body.steps.filter((step) => step.kind !== 'unordered');
+  assert.deepEqual(
+    ordered.map((step) => JSON.stringify(step.site)),
+    scopedSteps.map((step) => JSON.stringify(step.site)),
+    'the body keeps only its own calls in order',
+  );
+  const outside = unscoped.root.body.steps.find((step) => step.kind === 'unordered' && step.reason === 'unscoped');
+  assert.ok(outside, 'the calls the class makes elsewhere are one unscoped group');
+  assert.ok(outside.sites.every((site) => site.line < 19 || site.line > 35), 'every grouped site is outside the body');
+  assert.deepEqual(
+    outside.steps.map((step) => step.target),
+    outside.steps.map(() => ({ stop: 'unscoped-hop' })),
+  );
+  assert.deepEqual(
+    unscopedStops.map((stop) => stop.invocation).sort(),
+    outside.steps.map((step) => step.id).sort(),
+    'the frontier lists each unscoped stop',
+  );
 });
