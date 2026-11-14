@@ -441,7 +441,7 @@ test('Backend entries AC-16: gateway tables, handlers and middleware become fact
     ],
   );
   const source = readFileSync(join(env.dir, 'backend', 'src', 'ocelot.json'), 'utf8').split('\n');
-  for (const route of routes) assert.match(source[route.line - 1], /"UpstreamPathTemplate"/);
+  for (const route of routes) assert.match(source[route.line - 1], /^\s*"UpstreamPathTemplate"\s*:\s*"\/[A-Za-z]/);
   const tables = all.filter((item) => item.type === 'gateway_table');
   assert.deepEqual(tables.map((item) => [item.file, item.state]), [['src/ocelot.staging.json', 'unreadable']]);
   assert.ok(tables[0].reason.length > 0);

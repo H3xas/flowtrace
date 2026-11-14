@@ -1,4 +1,5 @@
 {
+  "Aggregates": [ { "UpstreamPathTemplate": "/fleet", "RouteKeys": [ "boats" ] } ],
   // Routes the gateway forwards; the stubs in Controllers document them.
   "Routes": [
     {
@@ -9,7 +10,7 @@
       "DownstreamHostAndPorts": [ { "Host": "boats-api", "Port": 8080 } ],
       "DelegatingHandlers": [ "TicketHandler" ],
     },
-    /* Cargo writes go to one downstream verb. */
+    /* Cargo writes go to one downstream verb, and "UpstreamPathTemplate" stays one entry. */
     {
       "UpstreamPathTemplate": "/Cargo",
       "UpstreamHttpMethod": [ "Post", "Put" ],
