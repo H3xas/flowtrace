@@ -261,3 +261,23 @@ test('Web journeys AC-9: a component with no page or with tied pages says so, an
   const chains = json(dir, REGATTA[1], ['chains', 'GET marks/v1/{id}']);
   assert.ok(chains.chains.some((chain) => chain.gaps.includes('no-page') && chain.hops[0].component === 'DriftNotice'));
 });
+
+test('Web journeys AC-10: a page path start walks the components its route element holds as props', () => {
+  const kite = fixture(...KITE);
+  const byUrl = json(kite, KITE[1], ['trace', '/kites/clubs/:clubId']);
+  const byName = json(kite, KITE[1], ['trace', 'ClubFeed']);
+  assert.ok(routeRefs(byName.nodes).length > 0);
+  for (const route of routeRefs(byName.nodes)) assert.ok(routeRefs(byUrl.nodes).includes(route), route);
+  const held = byUrl.edges.filter((edge) => edge.from === byUrl.root.id && edge.via === 'template');
+  const heldRefs = held.map((edge) => byUrl.nodes.find((node) => node.id === edge.to).ref);
+  assert.ok(heldRefs.includes('ClubFeed'), heldRefs.join(', '));
+  assert.ok(!heldRefs.includes('Shell'), 'the element is the start, not a child it holds');
+
+  const regatta = fixture(...REGATTA);
+  const boats = json(regatta, REGATTA[1], ['trace', '/boats']);
+  assert.equal(boats.root.ref, 'BoatList');
+  assert.ok(!boats.nodes.some((node) => node.ref === 'Frame'), 'a wrapper stays a guard, not a held child');
+  const crews = cli(regatta, REGATTA[1], ['trace', '/crews/:crewId']);
+  assert.equal(crews.status, 0, crews.stderr);
+  assert.match(crews.stdout, /^Layout {2}web/m);
+});
