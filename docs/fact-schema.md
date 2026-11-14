@@ -62,7 +62,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `di_binding` | `iface`, `impl` | an interface is registered to an implementation |
 | `ctor_field` | `class`, `field`, `paramType` | a class holds a constructor-injected field; with `method`, a parameter the framework injects into that one handler |
 | `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form |
-| `method_span` | `class`, `method`, `endLine` | a method body's extent; optional `paramTypes` lists the signature's parameter types as written |
+| `method_span` | `class`, `method`, `endLine` | a method body's extent; optional `paramTypes` lists the signature's parameter types as written. In a web module, a method of a module-level object literal is a span whose `class` is the const name |
 | `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch` |
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
 | `exception_map` | `scope`, `class`, `exception`, `status` | an exception type is converted to a status — `scope` is `global` for a registered exception filter, `action` for a `catch` inside one controller action |
@@ -108,7 +108,7 @@ only where they apply:
 | `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself (`default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>`); on a mobile fact, optional `componentFile` is the declaration file that owns the template, while `file` and `line` stay the template source site |
 | `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler; on a mobile fact, optional `componentFile` is the declaration file that owns the template |
 | `injects` | `from`, `to` | a class is given another as a dependency; on a mobile fact, optional `source` is the written module specifier, `imported` the named value export, and `unresolved: "mobile-declaration-unresolved"` an import form the reader cannot bind |
-| `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal |
+| `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal. In a web repository, `service` is `httpClient` for the gateway client, else the receiver name: the `axios` local name, the instance or field name, or the name `repos[].httpClients` lists. A URL built from a literal const, or returned by a helper function of the same file, reads as its literal text |
 | `action_def` | `action` | an action type is declared |
 | `action_dispatch` | `class`, `method`, `action` | a body dispatches an action |
 | `effect_handler` | `class`, `field`, `actions`, `endLine` | a body handles dispatched actions and issues HTTP |

@@ -116,7 +116,8 @@ trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand
             [--require-complete]
 trace --area <file> [--require-complete]
   <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),
-  a backend Class.Method, a backend class, a web component name, or a web page path
+  a backend Class.Method, a backend class, a web component name, a web module-level
+  function (name or Owner.name, when nothing else matches), or a web page path
   ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page
   path is composed from the <Route> declarations the facts record: JSX-nested routes, a
   component's own <Routes> under the route that renders it, a route array that component

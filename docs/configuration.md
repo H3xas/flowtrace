@@ -60,6 +60,7 @@ checkouts named as siblings of the file.
 | `cypressSubpath` | no | `web` only: sibling Cypress suite, relative to `root` |
 | `mounts` | no | `web` only: the browser path a routed component is mounted at when its host is outside this repository; see [Web page mounts and assumptions](#web-page-mounts-and-assumptions) |
 | `routeAssumptions` | no | `web` only: the value of a condition a `<Route>` sits under; see [Web page mounts and assumptions](#web-page-mounts-and-assumptions) |
+| `httpClients` | no | `web` only: more receiver names whose HTTP calls are gateway calls; see [Web HTTP clients](#web-http-clients) |
 | `featureRoots` | no | `mobile` only: source roots to walk instead of the single default |
 | `cypress` | no | `mobile` only: allowlisted Cypress discovery roots, below |
 
@@ -109,6 +110,29 @@ alternatives, and a start that reaches them is ambiguous. `routeAssumptions` map
 condition's source text — whitespace collapsed, as the candidates print it — to `true` or
 `false`; the arm that disagrees is dropped and every value used appears under
 `mount.assumptions` in the answer. A leading `!` is honoured; nothing else is evaluated.
+
+### Web HTTP clients
+
+A `web` repository gives a `gateway_call` fact for each call that the extractor knows as an
+HTTP call. It knows these receivers without configuration:
+
+- `httpClient.getGatewayClient()`.
+- The local name of the default import from `axios`.
+- A const, a class field or a `this.<field> =` assignment that holds `<axios>.create(...)`.
+- A constructor parameter property typed `AxiosInstance`.
+
+A receiver that arrives as an untyped parameter or field is not known. `httpClients` lists
+those names. A listed name counts as a bare receiver (`apiClient.get(...)`) and as a field
+(`this.apiClient.get(...)`). The verb is one of `get`, `post`, `put`, `patch`, `delete`, `head`,
+`options` or `request`, with optional type arguments. A name that is the property of another object does not count.
+
+```json
+"httpClients": ["apiClient"]
+```
+
+The value must be an array of JavaScript identifier names. An empty array is valid. The key
+on a repository that is not `web`, or any other value, stops the command with exit 2 and
+one error that names `repos[<n>].httpClients`.
 
 ### Mobile Cypress roots
 
