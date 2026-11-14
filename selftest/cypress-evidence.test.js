@@ -1,12 +1,3 @@
-/**
- * Cypress evidence stays test evidence. A request written in a Cypress spec, a support
- * command file or a page model is a `cypress_intercept` fact. Join keeps it as a `tests`
- * edge, cover counts it, and no caller list reads it. Only a `gateway_call` fact from app
- * code becomes a `calls` edge.
- *
- * The corpus puts one app request and five Cypress requests on one route, so the two kinds
- * of edge can be counted apart on the same key.
- */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
