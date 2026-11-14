@@ -143,7 +143,7 @@ rules that keep the tool's honesty intact in the agent's answer.
 | `join --against` | what changed on the joined boundary since a saved snapshot — paths, seeds, effects, evidence levels? |
 | `join --export-edges` | hand the joined cross-repo edges to a code index, in one versioned, provenance-tagged file — format documented in [examples/demo-shop/exports/README.md](examples/demo-shop/exports/README.md). |
 | `render` | write the joined route report and one flow page per called route. |
-| `trace` | what actually runs when this route is called — branches, services, database writes, published messages, consumers? |
+| `trace` | what actually runs when this route is called — branches, services, database writes, published messages, consumers? From a web or mobile start, which caller decisions gate each call (caller gates), and which caller cases skip it? |
 | `routes-of` | I hold a grep hit, a stack frame or a message name — which entry routes run through it? |
 | `cover` | which distinguishable ways through this feature's routes does a test actually pin down? |
 | `scope` | before I touch this area: its whole route universe, which routes already have automated evidence, and which reach a server-side authorization check. |
