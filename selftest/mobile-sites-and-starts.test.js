@@ -920,6 +920,30 @@ test('Mobile sites and starts AC-11: the committed mobile corpora extract no cla
   assert.match(readme, /Both goldens were captured again for that one cause\. Only `status\.identity` changed/);
 });
 
+test('Mobile sites and starts AC-11: the orchard archive chain names the same-named page whose declaration owns its entry template, in text and JSON', () => {
+  const orchard = pack('orchard-mobile', 'orchard.config.json');
+  const route = 'GET orchard/v1/weather/legacy/{plotId}/archive';
+  const owner = 'src/app/features/forecast/archive-forecast.page.ts';
+  const entryTemplate = 'src/app/features/forecast/archive-forecast.page.html';
+  const other = 'src/app/features/forecast/live-forecast.page.ts';
+
+  const model = orchard.json(['chains', route]);
+  assert.equal(model.chains.length, 1);
+  const [chain] = model.chains;
+  assert.deepEqual(chain.gaps, []);
+  assert.deepEqual([chain.page.component, chain.page.file], ['ForecastPage', owner]);
+  assert.deepEqual([chain.hops[0].kind, chain.hops[0].file], ['page', owner]);
+  assert.deepEqual([chain.entry.id, chain.entry.file], [`ForecastPage:event:click:onArchive:@${entryTemplate}:2`, entryTemplate]);
+  assert.equal(JSON.stringify(chain).includes(other), false, 'no hop names the other ForecastPage declaration');
+
+  const text = orchard.cli(['chains', route]);
+  assert.equal(text.status, 0, text.stderr);
+  assert.match(text.stdout, new RegExp(`chain 1 of 1: mobile page ForecastPage ${owner}:4\\n`));
+  assert.match(text.stdout, new RegExp(`\\n  page +component +mobile +${owner}:4 +ForecastPage\\n`));
+  assert.match(text.stdout, new RegExp(`\\n  entry +template_handler +mobile +${entryTemplate}:2 +ForecastPage\\.click@2\\n`));
+  assert.equal(text.stdout.includes(other), false);
+});
+
 test('Mobile sites and starts AC-1: a handler each same-named page binds once prints no site on either page', async () => {
   const yard = nursery({
     ...ARCHIVE_FILES,
