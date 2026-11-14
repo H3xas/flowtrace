@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { validateFacts } from '../lib/facts.js';
-import { copyFixture, extract } from './helpers.js';
+import { REPO_ROOT, copyFixture, extract } from './helpers.js';
 import {
   HOP_LIMIT,
   REGION_FAILURES,
@@ -417,6 +417,39 @@ test('Client conditions AC-7: the facts do not depend on field names', (t) => {
     assert.ok(plain.length > 20);
     assert.notDeepEqual(renamed, plain);
     assert.deepEqual(renamed, JSON.parse(renameText(JSON.stringify(plain))));
+  }
+});
+
+function tableNames(doc, heading) {
+  const at = doc.indexOf(heading);
+  assert.ok(at >= 0, heading);
+  const rows = [];
+  for (const line of doc.slice(at + heading.length).split('\n').slice(1)) {
+    if (rows.length > 0 && !line.startsWith('|')) break;
+    const name = /^\| `([^`]+)` \|/.exec(line);
+    if (name) rows.push(name[1]);
+  }
+  return rows;
+}
+
+test('Client conditions AC-8: the schema doc and the changelog fragment state the contract', () => {
+  const doc = readFileSync(join(REPO_ROOT, 'docs', 'fact-schema.md'), 'utf8');
+  const section = doc.slice(doc.indexOf('### Client display conditions'), doc.indexOf('### Control evidence'));
+  assert.deepEqual(tableNames(section, '| type | fields | stated when |'), [...CLIENT_TYPES]);
+  assert.deepEqual(tableNames(section, '| step | the hop goes to |'), [...TRACE_STEPS]);
+  assert.deepEqual(tableNames(section, '| reason | the trace stops at |'), [...TRACE_REASONS]);
+  assert.deepEqual(tableNames(section, '| reason | the template |'), [...REGION_FAILURES]);
+  for (const word of [...REGION_STATES, ...REGION_ROW_REASONS, 'ngIf', 'hidden', 'early-return', 'return-and', 'ternary', 'property', 'two-way', 'spread']) {
+    assert.ok(section.includes(`\`${word}\``), word);
+  }
+  const fragment = readFileSync(join(REPO_ROOT, 'changes', 'changelog', 'feat-client-display-conditions.md'), 'utf8');
+  assert.match(fragment, /^### Extraction$/m);
+  for (const text of [section, fragment].map((raw) => raw.replace(/\s+/g, ' '))) {
+    assert.match(text, /a new facts `?digest/);
+    assert.match(text, /status\.identity/);
+    assert.match(text, /provenance\.id/);
+    assert.match(text, /fact count of a set changes with its facts/);
+    assert.match(text, /only facts are new facts is a file that the extractor read/);
   }
 });
 

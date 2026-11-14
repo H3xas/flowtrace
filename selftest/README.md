@@ -83,6 +83,14 @@ npm test
   `runtimeSummary` of `lib/runtime-cover.js`, because a corpus with more than 200 decisions
   would be too large to read. `decisions-verb.test.js` builds its own git working trees in a
   temporary directory, one `Decisions verb AC-n:` test for each acceptance rule.
+- `corpus/tidepool-mobile/` and `corpus/tidepool-web/`: an invented Angular app and an
+  invented React app. Their templates hold each display condition form, transfer form and
+  trace step that the client condition reader reads, each trace reason, and each region
+  state. `client-conditions.test.js` runs both through the extractors, one `Client conditions
+  AC-n:` test for each acceptance rule. It also imports `lib/extract/client-conditions.js`
+  for the hop limit and the trace limit, because a corpus that reaches those limits is too
+  large to read. `client-conditions-outputs.test.js` runs the query verbs on each corpus
+  and on the worked example, with and without the new facts, and compares the outputs.
 - `corpus/bakery-orders/` and `corpus/bakery-gates/`: an invented bakery backend. Its
   pipelines take their steps from a DI factory, a `typeof(...)` list or an injected
   `IEnumerable<T>`. Their steps write a stop flag, return `false` or `null`, or throw. The

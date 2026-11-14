@@ -172,6 +172,110 @@ single declaration in the repository. A site the evidence cannot prove states th
 declaration is possible. An older fact set that lacks these optional fields remains
 readable. It keeps the name-only limits, and a fresh extraction adds the provenance.
 
+### Client display conditions
+
+The mobile and web extractors record the conditions that show or hide a part of a component
+template. They also record the values that a parent passes to a child component. Each read of a field in
+one of these expressions has a trace. A trace is the list of hops from the read back to the
+place that gives the value. The reader holds no list of field names, so each field name is
+data.
+
+| type | fields | stated when |
+|---|---|---|
+| `display_condition` | `component`, `form`, `shows`, `text` | a condition shows or hides a part of the template, and `text` is the condition as written |
+| `client_transfer` | `component`, `target`, `name`, `text` | a template passes a value to a child: `target` is the child tag, `name` the bound input or prop, and `text` the value expression |
+| `client_assignment` | `component`, `target`, `text` | a trace passes through an assignment: `target` is the assigned name, `text` the assigned value, and `step` the trace step |
+| `client_read` | `component`, `path`, `context` | a condition, a transfer or an assignment reads a field: `path` is the read as `a.b.c`, and `context` is `condition`, `transfer` or `assignment` |
+| `client_scan` | `component`, `region`, `status` | the reader scans one template region: `region` is `template` (Angular) or `jsx` (React), and `status` is `complete`, `partial` or `failed` |
+
+Each fact also has `column`. If the template is a separate file, a mobile fact has
+`componentFile`, as other mobile facts do. That is the file that declares the component.
+Two sites on one line give two facts.
+
+The forms of a `display_condition` are these:
+
+- `ngIf`, from `*ngIf`, with `; else`, `then`, `let` and `as` parts. `shows` is `true`.
+- `hidden`, from `[hidden]`. `shows` is `false`.
+- `and`, from `{c && <X/>}`, and `return-and`, from `return c && (<X/>)`. `shows` is `true`.
+- `ternary`, from `{c ? <X/> : <Y/>}`. `shows` is `"both"`, because each branch shows a part.
+- `early-return`, from `if (c) return …` before the last `return` of a component.
+  `shows` is `false`.
+
+A `client_transfer` has `form`. The template forms are `property` for `[x]`, `two-way` for
+`[(x)]`, and `attr`, `class` or `style` for `[attr.x]`, `[class.x]` and `[style.x]`. The JSX
+forms are `jsx` for `x={…}` and `spread` for `{...x}`. If one component declares the child tag or the imported name, the fact has
+`targetComponent` and `targetFile`. A JSX attribute whose value is an element gives a
+transfer with no read.
+
+A `client_read` has `negated` and `traces`. If an odd number of `!` holds the read, `negated`
+is `true`. With Angular pipes, it has `pipes`, the pipe names from the read outward. Its
+`site` is `{ kind, file, line, column }`, the site that holds the read. A trace is
+`{ hops, end }`. Each hop is `{ step, file, line, column, path }`, where `path` is the path
+that the step looks up. If the trace reaches a literal value, `end` is
+`{ origin: "literal", text }`. If the trace stops, `end` is `{ unresolved: <reason> }`. A stopped trace keeps the hops
+before the stop. A read with a stopped trace has `unresolved`, the reason of its first
+stopped trace.
+
+The trace steps are these:
+
+| step | the hop goes to |
+|---|---|
+| `alias` | a `const` or `let` that holds the read |
+| `destructure` | a destructuring pattern that names the read |
+| `member` | a class member initializer |
+| `assignment` | a `this.x = …` assignment in a class body |
+| `getter` | the single `return` of a getter |
+| `input` | an `@Input()` member |
+| `prop` | a prop of a function or class component |
+| `transfer` | the parent site that binds the input or prop |
+| `iteration` | the list of an `*ngFor` or a `.map` callback, with `[]` added to the path |
+| `async` | the value under an `async` pipe |
+
+A trace reason names why a trace stops. The list is closed:
+
+| reason | the trace stops at |
+|---|---|
+| `dynamic-key` | a key that is not a literal, as in `flags[key]` |
+| `store-selector` | a store `select` or a `useSelector` read |
+| `call` | the result of a helper or method call |
+| `external-root` | an import, a global or an injected service member |
+| `unsupported-local` | a `#ref`, `let-x` or `index as i` template local |
+| `no-binding` | an input or prop that no parent site binds |
+| `spread-props` | a prop that only a `{...x}` spread can give |
+| `ambiguous` | a name with two declarations in scope, or a selector that two components declare |
+| `cycle` | a member that the trace already passed through |
+| `depth-limit` | the hop limit, 16 hops |
+| `trace-limit` | the trace limit, 64 traces for one read, and the branches after it give no trace |
+| `unsupported-syntax` | an expression outside the grammar, or a hop with no supported source |
+| `unsupported-form` | a form that the reader knows and does not read, such as a static attribute at a child tag |
+
+A `client_scan` fact is at line 1 of a separate template file. An inline template has its
+fact at its `template:` line, and a JSX region at its component declaration. The fact has
+`counts`, the number of conditions, transfers, assignments and reads of the region. The
+status is one of these:
+
+- `complete` means that the reader parsed each condition and each transfer site.
+- `partial` means that some sites are outside the reader. Each one is an `unsupported` row
+  `{ file, line, column, reason, text }`, with the reason `unsupported-syntax` or
+  `unsupported-form`. A `[ngSwitch]`, an `@if (…) {` block, and a JSX `{c || <X/>}` are
+  `unsupported-form`. An error in the reader gives a row with `internal: true`, and the
+  other facts of the file stay.
+- `failed` means that the reader cannot read the template. The fact has a `reason`.
+
+| reason | the template |
+|---|---|
+| `template-url-unresolved` | the `templateUrl` names no readable file |
+| `template-url-non-literal` | the `templateUrl` is not a plain string |
+| `inline-template-substitution` | the inline `template` is not a plain string, for example a template literal with `${}` |
+
+The five types join the one `facts` array. So a fact set extracted again has a new facts
+`digest`, and each identity that hashes the digest changes with it: the `status.identity` of
+`trace`, `span` and `chains`, and the `provenance.id` of an edge export. A snapshot taken
+before reports drift for that set. The fact count of a set changes with its facts, in the
+`extract` line and in the "Fact producers" table of the `render` report. A file whose only
+facts are new facts is a file that the extractor read. So `decisions` reads it with blame,
+and a member-scoped `affected` widening keeps an edge to it.
+
 ### Control evidence
 
 A `backend` or `web` fact set with `controlEvidence: 1` states, on each call fact, where the
