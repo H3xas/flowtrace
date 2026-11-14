@@ -6,7 +6,7 @@
   their calls, and gateway route tables, delegating handlers and middleware. The new
   `workerPatterns.backgroundCalls` key names queue calls that the extractor cannot find by
   their shape. A `loop_stop` whose stop is a block that ends in its jump carries
-  `rejectFrom` and `rejectTo`. See [docs/fact-schema.md](docs/fact-schema.md#backend).
+  `rejectFrom` and `rejectTo`. The Backend section of `docs/fact-schema.md` lists the fields.
 
 ### The walk
 
