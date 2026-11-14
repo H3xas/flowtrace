@@ -17,15 +17,19 @@ cd "$root"
 pattern='/Users/[a-zA-Z0-9._-]+|/home/[a-zA-Z0-9._-]+|[A-Za-z]:\\Users\\|file:///'
 
 # In a linked worktree .git is a pointer file naming a home path, which --exclude-dir cannot match.
+# The pattern line above is itself a hit, so this file is exempt by its exact path: an exemption by
+# base name would also skip every other file called path-check.sh. File names come NUL-terminated
+# because a name may hold the ':' that separates it from the line.
+raw="$(mktemp)" || { echo "path-check: no temporary file for the scan" >&2; exit 2; }
+trap 'rm -f "$raw"' EXIT
 set +e
-hits="$(grep -rInE "$pattern" . \
+grep -rInE --null "$pattern" . \
   --exclude-dir=.git \
   --exclude=.git \
   --exclude-dir=node_modules \
   --exclude-dir=dist \
   --exclude-dir=out \
-  --exclude-dir=corpora \
-  --exclude=path-check.sh)"
+  --exclude-dir=corpora >"$raw"
 status=$?
 set -e
 
@@ -36,9 +40,18 @@ if [ "$status" -gt 1 ]; then
   exit 2
 fi
 
+hits=""
+while IFS= read -r -d '' name && IFS= read -r rest; do
+  if [ "$name" = "./scripts/path-check.sh" ]; then
+    continue
+  fi
+  hits="$hits$name:$rest
+"
+done <"$raw"
+
 if [ -n "$hits" ]; then
   echo "path-check: absolute machine paths found" >&2
-  echo "$hits" >&2
+  printf '%s' "$hits" >&2
   exit 1
 fi
 

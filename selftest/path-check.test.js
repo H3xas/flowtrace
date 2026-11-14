@@ -135,3 +135,41 @@ test('every machine-path shape is still reported beside the pointer', { skip }, 
   });
   assertNames(pathCheck(dir), ['./linux.txt', './mac.txt', './url.txt', './windows.txt']);
 });
+
+test('Repo process AC-1: another file named path-check.sh is scanned at any depth', { skip }, (t) => {
+  const dir = tree(t, {
+    'docs/path-check.sh': `echo ${HOME}/src/project\n`,
+    'examples/a/b/path-check.sh': `cd ${LINUX_HOME}/work\n`,
+  });
+  assertNames(pathCheck(dir), ['./docs/path-check.sh', './examples/a/b/path-check.sh']);
+});
+
+test('Repo process AC-1: a path-check.sh under a nested scripts directory is not the check itself', { skip }, (t) => {
+  const dir = tree(t, { 'nested/scripts/path-check.sh': `echo ${HOME}/src\n` });
+  assertNames(pathCheck(dir), ['./nested/scripts/path-check.sh']);
+});
+
+test('Repo process AC-1: an ordinary file beside a named one still fails the check', { skip }, (t) => {
+  const dir = tree(t, {
+    'docs/path-check.sh': `echo ${HOME}/src/project\n`,
+    'notes.md': `built in ${HOME}/src/project\n`,
+  });
+  assertNames(pathCheck(dir), ['./docs/path-check.sh', './notes.md']);
+});
+
+test('Repo process AC-2: the check gives no hit on its own pattern line', { skip }, (t) => {
+  const dir = tree(t, {});
+  assertClean(pathCheck(dir));
+});
+
+test('Repo process AC-2: a file whose name starts with the path of the check is still scanned', { skip }, (t) => {
+  const name = ['path-check.sh', '1', 'x'].join(':');
+  const dir = tree(t, { [`scripts/${name}`]: `${HOME}/src\n` });
+  const result = pathCheck(dir);
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, '');
+  assert.equal(
+    result.stderr,
+    `path-check: absolute machine paths found\n./scripts/${name}:1:${HOME}/src\n`,
+  );
+});
