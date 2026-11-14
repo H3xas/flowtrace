@@ -112,6 +112,12 @@ npm test
   the web extractor cannot resolve. `partial-result.test.js` runs it through the CLI with one
   `Partial result AC-n:` test for each acceptance rule, and calls `trace()` in process for the
   code-index case the public corpus cannot supply.
+- `corpus/willow-lending/`: an invented lending backend whose service calls classes from
+  packages that no file of the corpus declares, and one interface with no implementation.
+  `stopped-walk.test.js` runs it with a stand-in code index binary, so one route stops only
+  at the edge of the configured repositories and the other also stops at an unresolved
+  target. The same file runs `quarry-dispatch` and `kiln-yard` through each reading verb, one
+  `Stopped walk AC-n:` test for each acceptance rule.
 - `corpus/kite-club/`: an invented kite club, with an ASP.NET Core backend, a React client
   with its Cypress suite, an Ionic app and a Playwright suite. It holds one route that a
   thunk, a function nothing calls and an Ionic service post to, and a screen shape for each

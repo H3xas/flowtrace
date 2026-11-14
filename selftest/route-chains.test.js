@@ -477,7 +477,7 @@ test('Route chains AC-10: the help, the CLI reference and the corpus list name t
   assert.match(section, /Exit 0/);
   assert.match(section, /exits 2/);
   assert.match(section, /exits 4/);
-  assert.match(help, /--require-complete \(trace, trace --area, span, span --from-component and chains\)/);
+  assert.match(help, /--require-complete \(trace, trace --area, span, span --from-component, chains, check,/);
 
   const docs = spawnSync(process.execPath, [join(REPO_ROOT, 'scripts', 'docs-check.mjs')], { cwd: REPO_ROOT, encoding: 'utf8' });
   assert.equal(docs.status, 0, docs.stdout + docs.stderr);

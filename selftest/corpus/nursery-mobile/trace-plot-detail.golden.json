@@ -96,7 +96,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 1
+      "methodDepth": 1,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n24",
@@ -157,7 +163,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 0
+      "methodDepth": 0,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     }
   ],
   "edges": [
