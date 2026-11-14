@@ -63,3 +63,12 @@ The declaration-identity change added optional fields to the extracted facts. Th
 `status.identity` field digests the fact sets, so both goldens changed there. Their `root`,
 `nodes`, `edges` and `stats` are unchanged. The walk reaches the same declarations and
 requests.
+
+Plain `trace` now lists the lifecycle hooks of a mobile start as `mount`, `update` or
+`unmount` entries, and it walks each template handler in a scope of its own. So
+`trace-plot-detail.golden.json` changed by added nodes only: the hook entries, the handlers
+that the shared walk folded before, and the routes they reach. A diff of the two files over
+kind, ref, via, file:line and parent path removes no node. The node ids, `stats`, the
+status evidence and the fold stubs changed with the added nodes. The traversal state is now
+`unknown`, because the `onExport` arm walks to its unresolved request. The from-handler
+golden did not change.

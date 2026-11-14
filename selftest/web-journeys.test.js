@@ -598,3 +598,26 @@ test('Web journeys AC-4: span and chains walk each nested dispatch as one hop', 
   ]);
   assert.ok(!span.unresolved.some((item) => item.reason === 'no-effect' && ['refreshAll', 'refreshDesk'].includes(item.attempted)), 'a creator with its own work is not a no-effect arm');
 });
+
+test('Web journeys AC-12: plain trace lists each mobile hook as an entry and every route the span lists', () => {
+  const dir = fixture(...REGATTA);
+  const text = cli(dir, REGATTA[1], ['trace', 'RaceDayPage']);
+  assert.equal(text.status, 0, text.stderr);
+  for (const line of [
+    '─ mount RaceDayPage.ngOnInit@13  mobile  src/app/features/race/race-day.page.ts:13  [entry]',
+    '─ mount RaceDayPage.ionViewWillEnter@17  mobile  src/app/features/race/race-day.page.ts:17  [entry]',
+    '─ mount RaceDayPage.ionViewDidEnter@21  mobile  src/app/features/race/race-day.page.ts:21  [entry]',
+    '─ mount ProtestChipComponent.ngOnInit@11  mobile  src/app/features/race/protest-chip.component.ts:11  [entry]',
+  ]) {
+    assert.ok(text.stdout.includes(`${line}\n`), `${line}\n${text.stdout}`);
+  }
+  const document = json(dir, REGATTA[1], ['trace', 'RaceDayPage']);
+  const routes = [...new Set(document.nodes.filter((node) => node.kind === 'route').map((node) => node.ref))].sort();
+  const span = json(dir, REGATTA[1], ['span', '--from-component', 'RaceDayPage']);
+  assert.deepEqual(routes, span.routes.map((route) => route.key).sort());
+  assert.ok(routes.includes('GET race/v1/briefing'), 'the hook that dispatches through the store reaches its route');
+  assert.equal(document.status.scope.entries, false, 'the scope of plain trace stays');
+
+  const handler = json(dir, REGATTA[1], ['trace', 'RaceDayPage', '--from-handler', 'onProtest']);
+  assert.ok(!handler.nodes.some((node) => node.kind === 'entry'), 'a handler walk lists no hook');
+});

@@ -1775,6 +1775,7 @@ async function runTrace(config, options) {
     seeds: options.seeds,
     inventory,
     fromHandler: options.fromHandler,
+    mobileEntries: !options.fromHandler,
     pages,
   });
   markProviderHops(result, factSets);
