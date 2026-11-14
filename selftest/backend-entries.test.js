@@ -311,6 +311,45 @@ test('Backend entries AC-9: work handed to a queue by its delegate shape hangs u
   assert.ok(report.routes[0].witness.hops.some((hop) => hop.via === 'queued'));
 });
 
+test('Backend entries AC-9: a method whose only call is queued is still a trace start', (t) => {
+  const env = corpus(t, ...QUILL);
+  writeFileSync(
+    join(env.dir, 'backend/src/Queue/KilnRelay.cs'),
+    [
+      'using System.Threading.Tasks;',
+      'namespace Quill.Works.Queue',
+      '{',
+      '    public class KilnRelay',
+      '    {',
+      '        private readonly IKilnQueue _queue;',
+      '        private readonly IGlazeStore _store;',
+      '',
+      '        public KilnRelay(IKilnQueue queue, IGlazeStore store)',
+      '        {',
+      '            _queue = queue;',
+      '            _store = store;',
+      '        }',
+      '',
+      '        public async Task Handoff()',
+      '        {',
+      '            await _queue.QueueWork(token => _store.Fire(token));',
+      '        }',
+      '    }',
+      '}',
+      '',
+    ].join('\n'),
+  );
+  env.extract();
+  const report = traceJson(env, 'KilnRelay.Handoff');
+  assert.equal(report.root.ref, 'KilnRelay.Handoff');
+  assert.deepEqual(report.nodes.filter((node) => node.kind === 'queue').map((node) => node.ref), ['IKilnQueue.QueueWork']);
+  assert.ok(viaEdges(report, 'queued').length > 0);
+  assert.ok(report.nodes.some((node) => node.ref === 'GlazeStore.Fire'));
+  const byClass = traceJson(env, 'KilnRelay');
+  assert.ok(byClass.nodes.some((node) => node.ref === 'KilnRelay.Handoff'));
+  assert.ok(byClass.nodes.some((node) => node.kind === 'queue'));
+});
+
 test('Backend entries AC-10: a configured background call is a queue call, and without the key an ordinary call', (t) => {
   const configured = corpus(t, ...QUILL_QUEUE).extract();
   const report = traceJson(configured, 'POST glazes/v1/polish');
@@ -341,6 +380,14 @@ test('Backend entries AC-11: each keyed collection read form reaches every imple
   const { status, report } = routesOf(env, 'GlossFinisher.Apply');
   assert.equal(status, 0);
   assert.deepEqual(report.routes.map((route) => route.key), ['POST finishes/v1/*', 'POST finishes/v1/maybe/*']);
+});
+
+test('Backend entries AC-11: a member that every object has is no keyed dispatch', (t) => {
+  const env = corpus(t, ...QUILL);
+  editFile(env, 'backend/src/Finishes/Finishes.cs', 'finisher.Apply(item);', 'var label = finisher.GetType().Name;\n            finisher.Apply(item);');
+  env.extract();
+  const keyed = viaEdges(traceJson(env, 'POST finishes/v1/{kind}'), 'keyed_dispatch');
+  assert.deepEqual(keyed.map((hop) => hop.to.ref), ['GlossFinisher.Apply', 'MatteFinisher.Apply', 'TunedFinisher.Apply']);
 });
 
 test('Backend entries AC-12: a constant key keeps only the matching and the unreadable implementations', (t) => {
