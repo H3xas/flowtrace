@@ -16,6 +16,7 @@ import test from 'node:test';
 import { copyFixture, runCli } from './helpers.js';
 import { BASELINE_FILE, captureBaseline, compareBaselines } from './caller-gate-baseline.js';
 import { withoutGateFields, withoutGateLines } from './gate-output.js';
+import { buildCallerCases } from '../lib/trace.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CONFIG = 'lock.config.json';
@@ -319,6 +320,29 @@ test('Caller gates AC-12: one caller case per distinct gate, with its prerequisi
   assert.equal(cases[1].gate.line, fresh);
   assert.equal(cases[2].reason, 'mixed-operators');
   assert.deepEqual(cases[2].skipped.map((site) => site.routes), [[LOAD_REACHED]]);
+});
+
+test('Caller gates AC-12: a case lists at most 32 paths and counts the rest', () => {
+  const gate = (name) => ({
+    decision: `web:src/Fork.ts:${name}:if`, kind: 'if', text: `if (${name})`, file: 'src/Fork.ts',
+    line: 1, arm: 'then', status: 'known', outcomes: { true: 'sends', false: 'skips' },
+  });
+  const site = (name) => ({ file: 'src/Fork.ts', line: 1, column: name.length, gates: [gate(name)] });
+  // Six hops of two gated sites each give 2^6 distinct paths to the last gate.
+  const callerGates = new Map();
+  let top = { id: 'last', kind: 'route', ref: 'POST fork/v1/end', children: [] };
+  callerGates.set('last', [site('end')]);
+  for (let level = 6; level >= 1; level -= 1) {
+    const id = `h${level}`;
+    callerGates.set(id, [site(`a${level}`), site(`bb${level}`)]);
+    top = { id, kind: 'method', children: [top] };
+  }
+  const cases = buildCallerCases({ id: 'root', kind: 'component', children: [top] }, callerGates);
+  const last = cases.find((item) => item.gate.text === 'if (end)');
+  assert.equal(last.prerequisites.length, 32);
+  assert.equal(last.pathsTruncated, 32);
+  assert.deepEqual(last.skipped.map((item) => item.routes), [['POST fork/v1/end']]);
+  assert.equal(cases.find((item) => item.gate.text === 'if (a1)').pathsTruncated, undefined);
 });
 
 test('Caller gates AC-14: each call site keeps its own gates, and an unreadable record stays on its hop', (t) => {
