@@ -1309,6 +1309,16 @@ async function runExtract(config, repoFilter) {
     } catch (error) {
       throw new Error(`repo "${repo.id}": ${error.message}`);
     }
+    // A route kept with an argument the extractor could not read matches no request, so its
+    // site is said once here rather than discovered later as a route nothing reaches.
+    const unresolved = new Set();
+    for (const item of facts) {
+      if (item.type !== 'route' || !item.unresolvedArgument) continue;
+      const site = `${item.file}:${item.unresolvedArgument.line}: unresolved route argument ${item.unresolvedArgument.text}`;
+      if (unresolved.has(site)) continue;
+      unresolved.add(site);
+      warn(`flowtrace: extract ${repo.id}: ${site}`);
+    }
     // Title enrichment is opt-in per playwright repository and never fatal: a collector
     // that cannot run leaves the facts as they are, says why on stderr, and records the
     // reason in the header so a `raw` title can be explained later.
