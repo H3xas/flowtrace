@@ -3,7 +3,7 @@
  * `span --from-component` and `chains`, over the regatta-desk corpus and kite-club.
  */
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
@@ -262,6 +262,20 @@ test('Web journeys AC-9: a component with no page or with tied pages says so, an
   }
   const chains = json(dir, REGATTA[1], ['chains', 'GET marks/v1/{id}']);
   assert.ok(chains.chains.some((chain) => chain.gaps.includes('no-page') && chain.hops[0].component === 'DriftNotice'));
+});
+
+test('Web journeys AC-9: a component in a render cycle that no route reaches says no-page', () => {
+  const dir = fixture(...REGATTA, (root) => {
+    mkdirSync(join(root, 'web', 'src', 'loop'), { recursive: true });
+    writeFileSync(join(root, 'web', 'src', 'loop', 'Ping.tsx'), ['import { Pong } from "./Pong";', '', 'export function Ping() {', '  return <Pong />;', '}', ''].join('\n'));
+    writeFileSync(join(root, 'web', 'src', 'loop', 'Pong.tsx'), ['import { Ping } from "./Ping";', '', 'export function Pong() {', '  return <Ping />;', '}', ''].join('\n'));
+  });
+  for (const [component, file] of [['Ping', 'src/loop/Ping.tsx'], ['Pong', 'src/loop/Pong.tsx']]) {
+    const model = json(dir, REGATTA[1], ['trace', component]);
+    assert.deepEqual(model.root.pages, { pages: [], reasons: [{ reason: 'no-page', repo: 'web', file, line: 3, ref: component }] }, component);
+    const text = cli(dir, REGATTA[1], ['trace', component]);
+    assert.ok(text.stdout.includes(`─ no-page ${component}  web  ${file}:3  [mount]\n`), text.stdout);
+  }
 });
 
 test('Web journeys AC-10: a page path start walks the components its route element holds as props', () => {
