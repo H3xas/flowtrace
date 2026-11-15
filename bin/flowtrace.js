@@ -164,10 +164,17 @@ const USAGE = [
   '  Resolves <point> as repository-relative file:line, then exact method symbol, then',
   '  an exact allowlisted literal. --symbol and --literal force one mode and never fall',
   '  back. --repo scopes point resolution only; originating routes remain cross-repository.',
+  '  A route that reaches the point only through a global filter has a witness whose',
+  '  second hop is that filter, with via "gate". The walk also starts at each backend',
+  '  entry with no route in front of it: a SignalR hub method, an actor message handler and',
+  '  each entryPoints kind of the configuration. Entries that reach the point are listed',
+  '  beside the routes, each with its kind, class, method, site and witness. The verdict',
+  '  is routes when a route reaches the point, entries when only entries do, else empty.',
   '  A resolved point with no routes exits 0. Unresolved or ambiguous input exits 2 and',
-  '  returns no route set. An incomplete forward walk exits 4 and returns no partial set.',
-  '  JSON output is deterministic and carries schemaVersion 1; neither renderer claims',
-  '  that route-level test evidence proves execution of the resolved point.',
+  '  returns no route set. An incomplete forward walk, of a route, a gate or an entry,',
+  '  exits 4 and returns no partial set. JSON output is deterministic and carries',
+  '  schemaVersion 2, with entries, entryCount and completeness.entriesWalked; neither',
+  '  renderer claims that route-level test evidence proves execution of the resolved point.',
   '',
   'trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]',
   '            [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]',
@@ -219,7 +226,21 @@ const USAGE = [
   '  a base controller, adds one outcome per context.Result it assigns, and a global',
   '  filter\'s seeds carry gate.shared: true. A loop whose step list, order, stop rule or',
   '  step overload the walk cannot read prints "pipeline unresolved: <reason>", adds no step',
-  '  outcome and keeps the name-sorted fan-out; the trailer counts both kinds.',
+  '  outcome and keeps the name-sorted fan-out; the trailer counts both kinds. When only the',
+  '  stop rule is unreadable, the steps are still walked in registration order. A stop can',
+  '  be a block that ends in its jump: the statements before the jump run under each step\'s',
+  '  reject, and a reject seed prints them as "before the reject". Each step after the',
+  '  first of a loop that can stop is marked conditional.',
+  '',
+  '  More hops: a Map call on an IMapper field reaches the converters, resolvers and actions',
+  '  of the matching Profile maps (via mapper). Work handed to a background queue is one',
+  '  queue node whose children are the delegate\'s calls (via queued); the queue is found',
+  '  by its cancellation-token delegate parameter or by workerPatterns.backgroundCalls. A',
+  '  call through a dictionary built from an injected IEnumerable<I> reaches the method of',
+  '  each implementation (via keyed_dispatch, inferred, marked "keyed <key> (inferred)"); a',
+  '  constant key keeps the implementations whose key property returns it. A route that a',
+  '  gateway route table forwards has one gateway hop after its action: the middleware, the',
+  '  global and the named delegating handlers, then the downstream call as an http_out sink.',
   '',
   '  --from-handler <selector> restricts a mobile walk to the subtree rooted at one',
   '  `template_handler` hop, matched by its display form ("(click) onLike()"), the',
@@ -543,6 +564,9 @@ const USAGE = [
   '  Seeds from a globally registered filter count in their route\'s seeds and again, apart,',
   '  as "shared-gate" in totals and the headline; a route whose pipeline the walk could not',
   '  resolve names it with its reason, and totals count those pipelines.',
+  '  A pw_request whose first path segment is an interpolation the extractor could not fold',
+  '  gives no evidence: notes.intercepts.unresolvedBase counts it, and the intercepts line',
+  '  names that count next to the requests with no path and those matching no route.',
   '',
   '  --runtime <file> joins per-spec runtime line hits against the branch spans facts',
   '  already carry: a cobertura or lcov artifact, or a JSON manifest naming one report',
@@ -564,11 +588,14 @@ const USAGE = [
   '  the route\'s own cover-depth walk whose ref matches "scope.gatePatterns"',
   '  (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,',
   '  Entitlement and Claims and both misses an unnamed check and over-reports a name that',
-  '  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:',
-  '  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no',
-  '  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts',
-  '  behind the repository HEAD — facts that only predate an uncommitted edit at the same',
-  '  commit are noted on stderr and never gate this verb, since it reads no diff of its own.',
+  '  merely contains one of these words. The rows describe the fact snapshot, not the',
+  '  source as it stands now, so stale facts warn on stderr in both modes and never change',
+  '  the exit code. --json emits { schemaVersion: 1, area, freshness: { value, sets },',
+  '  routes: [{key, repo, file, line, automation, serverGate}] }, deterministic and with',
+  '  no timestamp. Freshness reuses the extraction witnesses: value is matching, mismatched',
+  '  or unknown, and each set names its repo with matching, head-stale, worktree-stale,',
+  '  no-witness or not-observed. Exit 0 the area resolved, 2 a missing or unresolvable',
+  '  --area.',
   '',
   'affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]',
   '            [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]',
@@ -1344,6 +1371,7 @@ async function runExtract(config, repoFilter) {
       caseIdCalls: config.caseId ? config.caseId.calls : [],
       backendCalls: config.backend,
       workerPatterns: config.workerPatterns,
+      entryPoints: config.entryPoints,
     });
     let count;
     try {
@@ -1670,6 +1698,11 @@ function traceNodeFields(node) {
     'rejectForm',
     'statusReason',
     'statusVia',
+    'conditional',
+    'keyed',
+    'queueRule',
+    'upstream',
+    'downstream',
   ]) {
     if (node[field] !== undefined) record[field] = node[field];
   }
@@ -2472,6 +2505,10 @@ async function runCover(config, options) {
  * the generic run-time refusal (exit 1) every other area-reading verb falls back to,
  * because the ticket's own contract states it that way — the area is the argument here
  * even more literally than it is for `cover` or `affected`.
+ *
+ * It reads a snapshot, so a stale one is reported, never refused: the shared warnings
+ * reach stderr and the report carries the freshness state, which leaves exit 0 free to
+ * mean that the area resolved. A caller that needs to gate on freshness reads that field.
  */
 async function runScope(config, options) {
   let area;
@@ -2482,6 +2519,8 @@ async function runScope(config, options) {
     return 2;
   }
   const factSets = loadFactSets(config);
+  const facts = factState(factSets, config.repos);
+  for (const warning of facts.warnings) warn(warning.message);
   const { scope, renderScope } = scopeModule;
   const { readAreaKeys } = coverModule;
   const { createScout } = scoutModule;
@@ -2512,18 +2551,14 @@ async function runScope(config, options) {
     traceOptions,
     repos: config.repos,
     gatePatterns: config.scope.gatePatterns,
+    freshness: { value: facts.value, sets: facts.sets },
   });
-  const exitCode = report.verdict === 'stale' ? 4 : 0;
   if (options.json) {
     log(JSON.stringify(report, null, 2));
-    return finish(exitCode);
+    return finish(0);
   }
-  if (exitCode === 0) {
-    log(renderScope(report));
-  } else {
-    process.stderr.write(`flowtrace: ${renderScope(report)}\n`);
-  }
-  return finish(exitCode);
+  log(renderScope(report));
+  return finish(0);
 }
 
 /**
