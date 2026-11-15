@@ -289,7 +289,69 @@
       "methodDepth": 1
     },
     {
+      "id": "n22",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "PlotDetailPage.onNote",
+      "file": "src/app/features/plots/plot-detail.page.ts",
+      "line": 48,
+      "via": "handler",
+      "hops": 1,
+      "class": "PlotDetailPage",
+      "method": "onNote",
+      "homeRepo": "mobile",
+      "event": "click",
+      "methodDepth": 0
+    },
+    {
+      "id": "n23",
+      "repo": "mobile",
+      "kind": "service",
+      "ref": "PlotService",
+      "file": "src/app/features/plots/plot.service.ts",
+      "line": 6,
+      "via": "di",
+      "hops": 1,
+      "class": "PlotService",
+      "homeRepo": "mobile",
+      "methodDepth": 0
+    },
+    {
+      "id": "n24",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "PlotService.addNote",
+      "file": "src/app/features/plots/plot.service.ts",
+      "line": 38,
+      "via": "body",
+      "hops": 2,
+      "class": "PlotService",
+      "method": "addNote",
+      "homeRepo": "mobile",
+      "methodDepth": 1
+    },
+    {
       "id": "n25",
+      "repo": "backend",
+      "kind": "route",
+      "ref": "POST nursery/v1/plots/*/notes",
+      "file": "src/Controllers/PlotsController.cs",
+      "line": 51,
+      "via": "literal",
+      "hops": 0,
+      "caller": "PlotService.addNote",
+      "crossRepo": {
+        "from": "mobile",
+        "to": "backend",
+        "role": [
+          "api"
+        ]
+      },
+      "homeRepo": "backend",
+      "methodDepth": 1
+    },
+    {
+      "id": "n26",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotDetailPage.onExport",
@@ -304,7 +366,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n26",
+      "id": "n27",
       "repo": "mobile",
       "kind": "service",
       "ref": "PlotService",
@@ -317,7 +379,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n27",
+      "id": "n28",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotService.exportPlot",
@@ -331,7 +393,7 @@
       "methodDepth": 1
     },
     {
-      "id": "n28",
+      "id": "n29",
       "repo": "mobile",
       "kind": "route",
       "ref": "GET nursery/v1/plots/*/export",
@@ -345,7 +407,7 @@
       "methodDepth": 1
     },
     {
-      "id": "n29",
+      "id": "n30",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotDetailPage.onShareWatchers",
@@ -360,7 +422,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n30",
+      "id": "n31",
       "repo": "mobile",
       "kind": "service",
       "ref": "PlotService",
@@ -373,7 +435,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n31",
+      "id": "n32",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotService.replaceWatchers",
@@ -387,11 +449,11 @@
       "methodDepth": 1
     },
     {
-      "id": "n33",
+      "id": "n34",
       "ref": "n21"
     },
     {
-      "id": "n34",
+      "id": "n35",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotDetailPage.onTend",
@@ -406,7 +468,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n35",
+      "id": "n36",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotDetailPage.prepareTend",
@@ -421,15 +483,15 @@
       "methodDepth": 0
     },
     {
-      "id": "n36",
+      "id": "n37",
       "ref": "n19"
     },
     {
-      "id": "n39",
+      "id": "n40",
       "ref": "n15"
     },
     {
-      "id": "n42",
+      "id": "n43",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotDetailPage.onSync",
@@ -444,7 +506,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n43",
+      "id": "n44",
       "repo": "mobile",
       "kind": "store_action",
       "ref": "syncPlot",
@@ -456,7 +518,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n44",
+      "id": "n45",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotEffects.sync$",
@@ -470,7 +532,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n45",
+      "id": "n46",
       "repo": "backend",
       "kind": "route",
       "ref": "GET nursery/v1/plots/*/sensors",
@@ -490,7 +552,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n48",
+      "id": "n49",
       "repo": "mobile",
       "kind": "entry",
       "ref": "PlotDetailPage.ngOnInit@16",
@@ -515,7 +577,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n49",
+      "id": "n50",
       "repo": "mobile",
       "kind": "service",
       "ref": "PlotService",
@@ -528,7 +590,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n50",
+      "id": "n51",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotService.loadSummary",
@@ -542,7 +604,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n51",
+      "id": "n52",
       "repo": "backend",
       "kind": "route",
       "ref": "GET nursery/v1/plots/*/summary",
@@ -562,7 +624,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n52",
+      "id": "n53",
       "repo": "mobile",
       "kind": "entry",
       "ref": "PlotDetailPage.ngOnChanges@20",
@@ -587,7 +649,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n53",
+      "id": "n54",
       "repo": "mobile",
       "kind": "service",
       "ref": "PlotService",
@@ -600,7 +662,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n54",
+      "id": "n55",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotService.loadForecast",
@@ -614,7 +676,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n55",
+      "id": "n56",
       "repo": "backend",
       "kind": "route",
       "ref": "GET nursery/v1/plots/*/forecast",
@@ -634,7 +696,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n56",
+      "id": "n57",
       "repo": "mobile",
       "kind": "entry",
       "ref": "PlotDetailPage.ngOnDestroy@24",
@@ -659,7 +721,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n57",
+      "id": "n58",
       "repo": "mobile",
       "kind": "service",
       "ref": "PlotService",
@@ -672,7 +734,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n58",
+      "id": "n59",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotService.releaseLock",
@@ -686,7 +748,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n59",
+      "id": "n60",
       "repo": "backend",
       "kind": "route",
       "ref": "DELETE nursery/v1/plots/*/lock",
@@ -706,7 +768,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n60",
+      "id": "n61",
       "repo": "mobile",
       "kind": "service",
       "ref": "PlotService",
@@ -719,19 +781,19 @@
       "methodDepth": 0
     },
     {
-      "id": "n61",
-      "ref": "n50"
+      "id": "n62",
+      "ref": "n51"
     },
     {
-      "id": "n63",
-      "ref": "n54"
+      "id": "n64",
+      "ref": "n55"
     },
     {
-      "id": "n65",
-      "ref": "n58"
+      "id": "n66",
+      "ref": "n59"
     },
     {
-      "id": "n67",
+      "id": "n68",
       "repo": "mobile",
       "kind": "method",
       "ref": "PlotService.loadHistory",
@@ -745,7 +807,7 @@
       "methodDepth": 0
     },
     {
-      "id": "n68",
+      "id": "n69",
       "repo": "backend",
       "kind": "route",
       "ref": "GET nursery/v1/plots/*/history",
@@ -765,24 +827,28 @@
       "methodDepth": 0
     },
     {
-      "id": "n69",
+      "id": "n70",
       "ref": "n12"
     },
     {
-      "id": "n71",
+      "id": "n72",
       "ref": "n16"
     },
     {
-      "id": "n73",
+      "id": "n74",
       "ref": "n20"
     },
     {
       "id": "n76",
-      "ref": "n27"
+      "ref": "n24"
     },
     {
       "id": "n78",
-      "ref": "n31"
+      "ref": "n28"
+    },
+    {
+      "id": "n80",
+      "ref": "n32"
     }
   ],
   "edges": [
@@ -999,21 +1065,68 @@
     },
     {
       "from": "n1",
-      "to": "n25",
+      "to": "n22",
       "via": "handler",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n25",
-      "to": "n26",
+      "from": "n22",
+      "to": "n23",
       "via": "di",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n23",
+      "to": "n24",
+      "via": "body",
+      "fromRepo": "mobile",
+      "toRepo": "mobile",
+      "evidence": [
+        {
+          "key": "[\"mobile\",\"method_call\",\"src/app/features/plots/plot-detail.page.ts\",49,\"PlotDetailPage\",\"onNote\",\"PlotService\",\"addNote\"]",
+          "repo": "mobile",
+          "type": "method_call",
+          "file": "src/app/features/plots/plot-detail.page.ts",
+          "line": 49
+        }
+      ]
+    },
+    {
+      "from": "n24",
+      "to": "n25",
+      "via": "literal",
+      "fromRepo": "mobile",
+      "toRepo": "backend",
+      "evidence": [
+        {
+          "key": "[\"mobile\",\"gateway_call\",\"src/app/features/plots/plot.service.ts\",39,\"PlotService\",\"addNote\",\"POST\",\"nursery/v1/plots/${plotId}/notes\"]",
+          "repo": "mobile",
+          "type": "gateway_call",
+          "file": "src/app/features/plots/plot.service.ts",
+          "line": 39
+        }
+      ],
+      "caller": "PlotService.addNote"
+    },
+    {
+      "from": "n1",
+      "to": "n26",
+      "via": "handler",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
       "from": "n26",
       "to": "n27",
+      "via": "di",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n27",
+      "to": "n28",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1028,8 +1141,8 @@
       ]
     },
     {
-      "from": "n27",
-      "to": "n28",
+      "from": "n28",
+      "to": "n29",
       "via": "literal",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1046,21 +1159,21 @@
     },
     {
       "from": "n1",
-      "to": "n29",
-      "via": "handler",
-      "fromRepo": "mobile",
-      "toRepo": "mobile"
-    },
-    {
-      "from": "n29",
       "to": "n30",
-      "via": "di",
+      "via": "handler",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
       "from": "n30",
       "to": "n31",
+      "via": "di",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n31",
+      "to": "n32",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1075,8 +1188,8 @@
       ]
     },
     {
-      "from": "n31",
-      "to": "n33",
+      "from": "n32",
+      "to": "n34",
       "via": "prefix",
       "fromRepo": "mobile",
       "toRepo": "backend",
@@ -1093,14 +1206,14 @@
     },
     {
       "from": "n1",
-      "to": "n34",
+      "to": "n35",
       "via": "handler",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n34",
-      "to": "n35",
+      "from": "n35",
+      "to": "n36",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1115,29 +1228,29 @@
       ]
     },
     {
-      "from": "n35",
-      "to": "n36",
+      "from": "n36",
+      "to": "n37",
       "via": "di",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n34",
-      "to": "n39",
+      "from": "n35",
+      "to": "n40",
       "via": "di",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
       "from": "n1",
-      "to": "n42",
+      "to": "n43",
       "via": "handler",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n42",
-      "to": "n43",
+      "from": "n43",
+      "to": "n44",
       "via": "dispatch",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1152,15 +1265,15 @@
       ]
     },
     {
-      "from": "n43",
-      "to": "n44",
+      "from": "n44",
+      "to": "n45",
       "via": "effect",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n44",
-      "to": "n45",
+      "from": "n45",
+      "to": "n46",
       "via": "literal",
       "fromRepo": "mobile",
       "toRepo": "backend",
@@ -1177,21 +1290,21 @@
     },
     {
       "from": "n1",
-      "to": "n48",
-      "via": "entry",
-      "fromRepo": "mobile",
-      "toRepo": "mobile"
-    },
-    {
-      "from": "n48",
       "to": "n49",
-      "via": "di",
+      "via": "entry",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
       "from": "n49",
       "to": "n50",
+      "via": "di",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n50",
+      "to": "n51",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1206,8 +1319,8 @@
       ]
     },
     {
-      "from": "n50",
-      "to": "n51",
+      "from": "n51",
+      "to": "n52",
       "via": "literal",
       "fromRepo": "mobile",
       "toRepo": "backend",
@@ -1224,21 +1337,21 @@
     },
     {
       "from": "n1",
-      "to": "n52",
-      "via": "entry",
-      "fromRepo": "mobile",
-      "toRepo": "mobile"
-    },
-    {
-      "from": "n52",
       "to": "n53",
-      "via": "di",
+      "via": "entry",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
       "from": "n53",
       "to": "n54",
+      "via": "di",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n54",
+      "to": "n55",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1253,8 +1366,8 @@
       ]
     },
     {
-      "from": "n54",
-      "to": "n55",
+      "from": "n55",
+      "to": "n56",
       "via": "literal",
       "fromRepo": "mobile",
       "toRepo": "backend",
@@ -1271,21 +1384,21 @@
     },
     {
       "from": "n1",
-      "to": "n56",
-      "via": "entry",
-      "fromRepo": "mobile",
-      "toRepo": "mobile"
-    },
-    {
-      "from": "n56",
       "to": "n57",
-      "via": "di",
+      "via": "entry",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
       "from": "n57",
       "to": "n58",
+      "via": "di",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n58",
+      "to": "n59",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1300,8 +1413,8 @@
       ]
     },
     {
-      "from": "n58",
-      "to": "n59",
+      "from": "n59",
+      "to": "n60",
       "via": "literal",
       "fromRepo": "mobile",
       "toRepo": "backend",
@@ -1318,7 +1431,7 @@
     },
     {
       "from": "n1",
-      "to": "n60",
+      "to": "n61",
       "via": "ctor",
       "fromRepo": "mobile",
       "toRepo": "mobile",
@@ -1333,36 +1446,36 @@
       ]
     },
     {
-      "from": "n60",
-      "to": "n61",
+      "from": "n61",
+      "to": "n62",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n60",
-      "to": "n63",
+      "from": "n61",
+      "to": "n64",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n60",
-      "to": "n65",
+      "from": "n61",
+      "to": "n66",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n60",
-      "to": "n67",
-      "via": "body",
-      "fromRepo": "mobile",
-      "toRepo": "mobile"
-    },
-    {
-      "from": "n67",
+      "from": "n61",
       "to": "n68",
+      "via": "body",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n68",
+      "to": "n69",
       "via": "literal",
       "fromRepo": "mobile",
       "toRepo": "backend",
@@ -1378,36 +1491,43 @@
       "caller": "PlotService.loadHistory"
     },
     {
-      "from": "n60",
-      "to": "n69",
+      "from": "n61",
+      "to": "n70",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n60",
-      "to": "n71",
+      "from": "n61",
+      "to": "n72",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n60",
-      "to": "n73",
+      "from": "n61",
+      "to": "n74",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n60",
+      "from": "n61",
       "to": "n76",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile"
     },
     {
-      "from": "n60",
+      "from": "n61",
       "to": "n78",
+      "via": "body",
+      "fromRepo": "mobile",
+      "toRepo": "mobile"
+    },
+    {
+      "from": "n61",
+      "to": "n80",
       "via": "body",
       "fromRepo": "mobile",
       "toRepo": "mobile"
@@ -1418,13 +1538,13 @@
   "seeds": [],
   "seedsTruncated": 0,
   "stats": {
-    "nodes": 72,
-    "edges": 71,
+    "nodes": 78,
+    "edges": 77,
     "sinks": 0,
     "branches": 0,
     "primaryBranches": 0,
     "seedCount": 0,
-    "routes": 22,
+    "routes": 24,
     "inventory": true,
     "repos": [
       "backend",
@@ -1432,10 +1552,10 @@
     ],
     "via": {
       "template": 1,
-      "handler": 8,
-      "di": 11,
-      "body": 22,
-      "literal": 20,
+      "handler": 9,
+      "di": 12,
+      "body": 24,
+      "literal": 22,
       "ctor": 2,
       "prefix": 2,
       "dispatch": 1,
@@ -1443,7 +1563,7 @@
       "entry": 3
     },
     "depth": 6,
-    "crossings": 20,
+    "crossings": 22,
     "budgetHit": false,
     "graphUnavailable": 0,
     "graphUnknownKinds": []
@@ -1463,7 +1583,7 @@
       }
     ],
     "evidence": {
-      "source-supported": 71,
+      "source-supported": 77,
       "inferred": 0,
       "runtime": "not supplied"
     },
@@ -1531,11 +1651,11 @@
         "raisedBy": null
       }
     ],
-    "identity": "sha256:33ecd99d481010a042882079382e4f14517b003f3beb60c249e241c7cf82e5e6"
+    "identity": "sha256:47e04f513d481cacf8fc66e818c6b9045b02b7c35d0028530680372f5e5e5c88"
   },
   "display": {
     "fold": {
-      "stubs": 12
+      "stubs": 13
     }
   }
 }

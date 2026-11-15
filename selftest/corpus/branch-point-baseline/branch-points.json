@@ -1,0 +1,1752 @@
+{
+  "corpora": [
+    {
+      "corpus": "selftest/corpus/bakery-gates",
+      "config": "bakery.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": [
+            {
+              "file": "src/Filters/CrustCheckAttribute.cs",
+              "line": 10,
+              "kind": "if",
+              "class": "CrustCheckAttribute",
+              "method": "OnActionExecuting",
+              "text": "if (!context.ModelState.IsValid)",
+              "endLine": 13
+            },
+            {
+              "file": "src/Filters/KitchenAccessFilter.cs",
+              "line": 22,
+              "kind": "if",
+              "class": "KitchenAccessFilter",
+              "method": "OnAuthorizationAsync",
+              "text": "if (open) return;",
+              "endLine": 22
+            },
+            {
+              "file": "src/Filters/KitchenAccessFilter.cs",
+              "line": 24,
+              "kind": "if",
+              "class": "KitchenAccessFilter",
+              "method": "OnAuthorizationAsync",
+              "text": "if (!context.HttpContext.User.Identity.IsAuthenticated)",
+              "endLine": 28
+            },
+            {
+              "file": "src/Filters/KitchenAccessFilter.cs",
+              "line": 30,
+              "kind": "toggle",
+              "class": "KitchenAccessFilter",
+              "method": "OnAuthorizationAsync",
+              "text": "if (_toggles.IsToggleEnabled(Toggles.StrictKitchen))",
+              "endLine": 36
+            },
+            {
+              "file": "src/Filters/KitchenAccessFilter.cs",
+              "line": 32,
+              "kind": "if",
+              "class": "KitchenAccessFilter",
+              "method": "OnAuthorizationAsync",
+              "text": "if (!context.HttpContext.User.IsInRole(\"baker\"))",
+              "endLine": 35
+            },
+            {
+              "file": "src/Filters/OvenFaultFilter.cs",
+              "line": 12,
+              "kind": "if",
+              "class": "OvenFaultFilter",
+              "method": "OnException",
+              "text": "if (context.Exception is OvenFaultException)",
+              "endLine": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/bakery-orders",
+      "config": "bakery.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": [
+            {
+              "file": "src/Pipelines/GlazePipelines.cs",
+              "line": 31,
+              "kind": "if",
+              "class": "GlazePipeline",
+              "method": "ProcessAsync",
+              "text": "if (!glaze.Valid) return null;",
+              "endLine": 31
+            },
+            {
+              "file": "src/Pipelines/GlazePipelines.cs",
+              "line": 57,
+              "kind": "if",
+              "class": "SprinklePipeline",
+              "method": "ProcessAsync",
+              "text": "if (!glaze.Valid) return null;",
+              "endLine": 57
+            },
+            {
+              "file": "src/Pipelines/GlazePipelines.cs",
+              "line": 83,
+              "kind": "if",
+              "class": "CrumbPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!glaze.Valid) return null;",
+              "endLine": 83
+            },
+            {
+              "file": "src/Pipelines/GlazePipelines.cs",
+              "line": 109,
+              "kind": "if",
+              "class": "FrostingPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!glaze.Valid) return null;",
+              "endLine": 109
+            },
+            {
+              "file": "src/Pipelines/GlazePipelines.cs",
+              "line": 136,
+              "kind": "if",
+              "class": "FillPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!fill.Valid) return null;",
+              "endLine": 136
+            },
+            {
+              "file": "src/Pipelines/GlazePipelines.cs",
+              "line": 163,
+              "kind": "if",
+              "class": "TopPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!top.Valid) return null;",
+              "endLine": 163
+            },
+            {
+              "file": "src/Pipelines/OrderPipelines.cs",
+              "line": 28,
+              "kind": "if",
+              "class": "PlacementPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!order.Valid)",
+              "endLine": 31
+            },
+            {
+              "file": "src/Pipelines/OrderPipelines.cs",
+              "line": 58,
+              "kind": "if",
+              "class": "DraftPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!order.Valid)",
+              "endLine": 61
+            },
+            {
+              "file": "src/Pipelines/OrderPipelines.cs",
+              "line": 86,
+              "kind": "if",
+              "class": "PrecheckPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!order.Valid) return null;",
+              "endLine": 86
+            },
+            {
+              "file": "src/Pipelines/OrderPipelines.cs",
+              "line": 112,
+              "kind": "if",
+              "class": "CheckPipeline",
+              "method": "Process",
+              "text": "if (!check.Passes(order)) return false;",
+              "endLine": 112
+            },
+            {
+              "file": "src/Pipelines/OrderPipelines.cs",
+              "line": 138,
+              "kind": "if",
+              "class": "GrantPipeline",
+              "method": "ProcessAsync",
+              "text": "if (context.Granted)",
+              "endLine": 141
+            },
+            {
+              "file": "src/Pipelines/OrderPipelines.cs",
+              "line": 144,
+              "kind": "if",
+              "class": "GrantPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!context.Granted)",
+              "endLine": 147
+            },
+            {
+              "file": "src/Pipelines/OrderPipelines.cs",
+              "line": 172,
+              "kind": "if",
+              "class": "LayerPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!order.Valid) return null;",
+              "endLine": 172
+            },
+            {
+              "file": "src/Pipelines/ProofPipelines.cs",
+              "line": 27,
+              "kind": "if",
+              "class": "ProofPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!dough.Valid) return null;",
+              "endLine": 27
+            },
+            {
+              "file": "src/Pipelines/ProofPipelines.cs",
+              "line": 53,
+              "kind": "if",
+              "class": "LooseProofPipeline",
+              "method": "ProcessAsync",
+              "text": "if (!dough.Valid) return null;",
+              "endLine": 53
+            },
+            {
+              "file": "src/Services/TastingService.cs",
+              "line": 28,
+              "kind": "if",
+              "class": "TastingService",
+              "method": "ApproveAsync",
+              "text": "if (!request.Certified) return false;",
+              "endLine": 28
+            },
+            {
+              "file": "src/Services/TastingService.cs",
+              "line": 35,
+              "kind": "if",
+              "class": "TastingService",
+              "method": "PreviewAsync",
+              "text": "if (!request.Certified) return false;",
+              "endLine": 35
+            },
+            {
+              "file": "src/Steps/CakeLayers.cs",
+              "line": 159,
+              "kind": "if",
+              "class": "CakeLayer17Step",
+              "method": "ProcessAsync",
+              "text": "if (order.Sugar > order.Flour) order.Valid = false;",
+              "endLine": 159
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 15,
+              "kind": "if",
+              "class": "ZestStep",
+              "method": "ProcessAsync",
+              "text": "if (glaze.Flavour == \"bitter\") glaze.Valid = false;",
+              "endLine": 15
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 24,
+              "kind": "if",
+              "class": "AlmondStep",
+              "method": "ProcessAsync",
+              "text": "if (glaze.Flavour == \"nut-free\") glaze.Valid = false;",
+              "endLine": 24
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 38,
+              "kind": "if",
+              "class": "WalnutStep",
+              "method": "ProcessAsync",
+              "text": "if (glaze.Flavour == \"plain\") glaze.Valid = false;",
+              "endLine": 38
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 47,
+              "kind": "if",
+              "class": "CocoaStep",
+              "method": "ProcessAsync",
+              "text": "if (glaze.Flavour == \"vanilla\") glaze.Valid = false;",
+              "endLine": 47
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 61,
+              "kind": "if",
+              "class": "ButterCrumbStep",
+              "method": "ProcessAsync",
+              "text": "if (glaze.Flavour == \"vegan\") glaze.Valid = false;",
+              "endLine": 61
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 70,
+              "kind": "if",
+              "class": "OatCrumbStep",
+              "method": "ProcessAsync",
+              "text": "if (glaze.Flavour == \"gluten-free\") glaze.Valid = false;",
+              "endLine": 70
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 84,
+              "kind": "if",
+              "class": "VanillaFrostingStep",
+              "method": "ProcessAsync",
+              "text": "if (glaze.Flavour == \"sour\") glaze.Valid = false;",
+              "endLine": 84
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 103,
+              "kind": "if",
+              "class": "GlazeAndFillStep",
+              "method": "ProcessAsync",
+              "text": "if (order.Flavour == \"empty\") order.Valid = false;",
+              "endLine": 103
+            },
+            {
+              "file": "src/Steps/GlazeSteps.cs",
+              "line": 109,
+              "kind": "error_return",
+              "class": "GlazeAndFillStep",
+              "method": "ProcessAsync",
+              "text": "if (order.Flavour == \"cracked\") throw new CrustCrackedException();",
+              "endLine": 109
+            },
+            {
+              "file": "src/Steps/OrderSteps.cs",
+              "line": 16,
+              "kind": "if",
+              "class": "CheckFlourStep",
+              "method": "ProcessAsync",
+              "text": "if (order.Flour < order.Loaves)",
+              "endLine": 19
+            },
+            {
+              "file": "src/Steps/OrderSteps.cs",
+              "line": 31,
+              "kind": "error_return",
+              "class": "ReserveOvenStep",
+              "method": "ProcessAsync",
+              "text": "if (order.Loaves > MaxLoaves) throw new OvenBusyException();",
+              "endLine": 31
+            },
+            {
+              "file": "src/Steps/OrderSteps.cs",
+              "line": 54,
+              "kind": "if",
+              "class": "FlourCheck",
+              "method": "Passes",
+              "text": "if (order.Flour <= 0) return false;",
+              "endLine": 54
+            },
+            {
+              "file": "src/Steps/OrderSteps.cs",
+              "line": 63,
+              "kind": "if",
+              "class": "SugarCheck",
+              "method": "Passes",
+              "text": "if (order.Sugar <= 0)",
+              "endLine": 66
+            },
+            {
+              "file": "src/Steps/OrderSteps.cs",
+              "line": 89,
+              "kind": "if",
+              "class": "OwnerRule",
+              "method": "CheckAsync",
+              "text": "if (context.Caller == \"owner\")",
+              "endLine": 92
+            },
+            {
+              "file": "src/Steps/OrderSteps.cs",
+              "line": 102,
+              "kind": "if",
+              "class": "ManagerRule",
+              "method": "CheckAsync",
+              "text": "if (context.Caller == \"manager\")",
+              "endLine": 105
+            },
+            {
+              "file": "src/Steps/ProofSteps.cs",
+              "line": 26,
+              "kind": "guard",
+              "class": "ProofDoughStep",
+              "method": "ProcessAsync",
+              "text": "if (dough.Notes == null) return Task.CompletedTask;",
+              "endLine": 26
+            },
+            {
+              "file": "src/Steps/ProofSteps.cs",
+              "line": 27,
+              "kind": "guard",
+              "class": "ProofDoughStep",
+              "method": "ProcessAsync",
+              "text": "if (dough.ForbiddenTopping == null) return Task.CompletedTask;",
+              "endLine": 27
+            },
+            {
+              "file": "src/Steps/ProofSteps.cs",
+              "line": 29,
+              "kind": "if",
+              "class": "ProofDoughStep",
+              "method": "ProcessAsync",
+              "text": "if (dough.Style == DoughStyle.Sourdough)",
+              "endLine": 32
+            },
+            {
+              "file": "src/Steps/ProofSteps.cs",
+              "line": 34,
+              "kind": "toggle",
+              "class": "ProofDoughStep",
+              "method": "ProcessAsync",
+              "text": "if (_toggles.IsToggleEnabled(\"LongProof\"))",
+              "endLine": 37
+            },
+            {
+              "file": "src/Steps/ProofSteps.cs",
+              "line": 39,
+              "kind": "error_return",
+              "class": "ProofDoughStep",
+              "method": "ProcessAsync",
+              "text": "if (dough.Hours > MaxHours) throw new OverProofedException();",
+              "endLine": 39
+            },
+            {
+              "file": "src/Steps/ProofSteps.cs",
+              "line": 41,
+              "kind": "if",
+              "class": "ProofDoughStep",
+              "method": "ProcessAsync",
+              "text": "if (dough.Starter < 1)",
+              "endLine": 44
+            },
+            {
+              "file": "src/Steps/ProofSteps.cs",
+              "line": 52,
+              "kind": "if",
+              "class": "ProofDoughStep",
+              "method": "Shape",
+              "text": "if (dough.Shape == LoafShape.Boule)",
+              "endLine": 55
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/gizmo-shop",
+      "config": "gizmo.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": [
+            {
+              "file": "src/Controllers/GizmoController.cs",
+              "line": 27,
+              "kind": "if",
+              "class": "GizmoController",
+              "method": "Activate",
+              "text": "if (request == null || string.IsNullOrEmpty(request.SerialCode))",
+              "endLine": 30
+            },
+            {
+              "file": "src/Controllers/GizmoController.cs",
+              "line": 29,
+              "kind": "error_return",
+              "class": "GizmoController",
+              "method": "Activate",
+              "text": "return BadRequest(\"serialCode is required\");",
+              "endLine": 29
+            },
+            {
+              "file": "src/Controllers/GizmoController.cs",
+              "line": 33,
+              "kind": "if",
+              "class": "GizmoController",
+              "method": "Activate",
+              "text": "if (!activated)",
+              "endLine": 36
+            },
+            {
+              "file": "src/Controllers/GizmoController.cs",
+              "line": 35,
+              "kind": "error_return",
+              "class": "GizmoController",
+              "method": "Activate",
+              "text": "return Forbid();",
+              "endLine": 35
+            },
+            {
+              "file": "src/Repositories/WidgetLedgerRepository.cs",
+              "line": 49,
+              "kind": "if",
+              "class": "WidgetLedgerRepository",
+              "method": "RemoveEntry",
+              "text": "if (entryCode == null)",
+              "endLine": 52
+            },
+            {
+              "file": "src/Repositories/WidgetLedgerRepository.cs",
+              "line": 56,
+              "kind": "if",
+              "class": "WidgetLedgerRepository",
+              "method": "RemoveEntry",
+              "text": "if (!removed)",
+              "endLine": 59
+            },
+            {
+              "file": "src/Repositories/WidgetLedgerRepository.cs",
+              "line": 66,
+              "kind": "if",
+              "class": "WidgetLedgerRepository",
+              "method": "ArchiveEntry",
+              "text": "if (entryCode == null)",
+              "endLine": 69
+            },
+            {
+              "file": "src/Repositories/WidgetLedgerRepository.cs",
+              "line": 73,
+              "kind": "if",
+              "class": "WidgetLedgerRepository",
+              "method": "ArchiveEntry",
+              "text": "if (!archived)",
+              "endLine": 76
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/greenhouse-alerts",
+      "config": "greenhouse.config.json",
+      "repos": {
+        "backend": {
+          "kind": "backend",
+          "facts": [
+            {
+              "file": "src/Access/ZoneAccess.cs",
+              "line": 16,
+              "kind": "if",
+              "class": "ZoneAccess",
+              "method": "EnsureMayEditZone",
+              "text": "if (zone == null || !zone.EditorIds.Contains(growerId))",
+              "endLine": 19
+            },
+            {
+              "file": "src/Access/ZoneAccess.cs",
+              "line": 18,
+              "kind": "error_return",
+              "class": "ZoneAccess",
+              "method": "EnsureMayEditZone",
+              "text": "throw new UnauthorizedAccessException(\"the grower may not edit this zone\");",
+              "endLine": 18
+            },
+            {
+              "file": "src/Controllers/ZoneWatchersController.cs",
+              "line": 29,
+              "kind": "if",
+              "class": "ZoneWatchersController",
+              "method": "ReplaceWatchers",
+              "text": "if (request == null || request.GrowerIds == null)",
+              "endLine": 32
+            },
+            {
+              "file": "src/Controllers/ZoneWatchersController.cs",
+              "line": 31,
+              "kind": "error_return",
+              "class": "ZoneWatchersController",
+              "method": "ReplaceWatchers",
+              "text": "return BadRequest(\"growerIds is required\");",
+              "endLine": 31
+            },
+            {
+              "file": "src/Identity/GrowerIdentity.cs",
+              "line": 26,
+              "kind": "if",
+              "class": "GrowerIdentity",
+              "method": "RequireSignedInGrower",
+              "text": "if (string.IsNullOrEmpty(_session.GrowerId))",
+              "endLine": 29
+            },
+            {
+              "file": "src/Identity/GrowerIdentity.cs",
+              "line": 28,
+              "kind": "error_return",
+              "class": "GrowerIdentity",
+              "method": "RequireSignedInGrower",
+              "text": "throw new UnauthorizedAccessException(\"a signed-in grower is required\");",
+              "endLine": 28
+            },
+            {
+              "file": "src/Services/WatcherService.cs",
+              "line": 62,
+              "kind": "error_return",
+              "class": "WatcherService",
+              "method": "ReplaceWatchers",
+              "text": "if (eligible.Count == 0) throw new ArgumentException(\"at least one eligible watcher is required\", nameof(growerIds));",
+              "endLine": 62
+            },
+            {
+              "file": "src/Services/WatcherService.cs",
+              "line": 64,
+              "kind": "if",
+              "class": "WatcherService",
+              "method": "ReplaceWatchers",
+              "text": "if (zone.HasIrrigationSchedule)",
+              "endLine": 67
+            }
+          ]
+        },
+        "web": {
+          "kind": "web",
+          "facts": [
+            {
+              "file": "src/actions/primaryZone.ts",
+              "line": 12,
+              "kind": "if",
+              "class": "PrimaryZone",
+              "method": "loadPrimaryZone",
+              "text": "if (growers.length > 0)",
+              "endLine": 14
+            },
+            {
+              "file": "src/actions/watchers.ts",
+              "line": 18,
+              "kind": "if",
+              "class": "Watchers",
+              "method": "saveWatchers",
+              "text": "if (!response.stored)",
+              "endLine": 21
+            },
+            {
+              "file": "src/http/httpClient.ts",
+              "line": 2,
+              "kind": "ternary",
+              "class": "HttpClient",
+              "method": "request",
+              "text": "body === undefined ? undefined : JSON.stringify(body)",
+              "endLine": 2
+            },
+            {
+              "file": "src/http/httpClient.ts",
+              "line": 3,
+              "kind": "if",
+              "class": "HttpClient",
+              "method": "request",
+              "text": "if (!response.ok)",
+              "endLine": 3
+            },
+            {
+              "file": "src/http/httpClient.ts",
+              "line": 4,
+              "kind": "ternary",
+              "class": "HttpClient",
+              "method": "request",
+              "text": "response.status === 204 ? null : response.json()",
+              "endLine": 4
+            },
+            {
+              "file": "src/zones/ZoneOverviewPanel.tsx",
+              "line": 16,
+              "kind": "if",
+              "class": "ZoneOverviewPanel",
+              "method": "componentDidMount",
+              "text": "if (this.props.zoneId)",
+              "endLine": 18
+            },
+            {
+              "file": "src/zones/ZonesLandingPanel.tsx",
+              "line": 14,
+              "kind": "if",
+              "class": "ZonesLandingPanel",
+              "method": "componentDidMount",
+              "text": "if (this.props.growerId)",
+              "endLine": 16
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/kettle-market",
+      "config": "kettle.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": []
+        },
+        "suite": {
+          "kind": "playwright",
+          "facts": []
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/kiln-yard",
+      "config": "kiln.config.json",
+      "repos": {
+        "backend": {
+          "kind": "backend",
+          "facts": [
+            {
+              "file": "src/Controllers/KilnController.cs",
+              "line": 20,
+              "kind": "if",
+              "class": "KilnController",
+              "method": "GetFirings",
+              "text": "if (string.IsNullOrEmpty(kilnId))",
+              "endLine": 23
+            },
+            {
+              "file": "src/Controllers/KilnController.cs",
+              "line": 22,
+              "kind": "error_return",
+              "class": "KilnController",
+              "method": "GetFirings",
+              "text": "return BadRequest();",
+              "endLine": 22
+            },
+            {
+              "file": "src/Services/FiringService.cs",
+              "line": 15,
+              "kind": "if",
+              "class": "FiringService",
+              "method": "List",
+              "text": "if (kilnId.Length > 3)",
+              "endLine": 18
+            },
+            {
+              "file": "src/Services/FiringService.cs",
+              "line": 19,
+              "kind": "else",
+              "class": "FiringService",
+              "method": "List",
+              "text": "else",
+              "endLine": 22
+            }
+          ]
+        },
+        "mobile": {
+          "kind": "mobile",
+          "facts": [
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 9,
+              "kind": "if",
+              "class": "DecisionForms",
+              "method": "branches",
+              "text": "if (entry.open)",
+              "endLine": 11
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 11,
+              "kind": "else",
+              "class": "DecisionForms",
+              "method": "branches",
+              "text": "else if (mode === 'all')",
+              "endLine": 13
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 11,
+              "kind": "if",
+              "class": "DecisionForms",
+              "method": "branches",
+              "text": "if (mode === 'all')",
+              "endLine": 13
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 13,
+              "kind": "else",
+              "class": "DecisionForms",
+              "method": "branches",
+              "text": "else",
+              "endLine": 15
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 19,
+              "kind": "if",
+              "class": "DecisionForms",
+              "method": "single",
+              "text": "if (entry.pinned)",
+              "endLine": 19
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 20,
+              "kind": "else",
+              "class": "DecisionForms",
+              "method": "single",
+              "text": "else",
+              "endLine": 20
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 24,
+              "kind": "switch",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "switch (kind)",
+              "endLine": 32
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 25,
+              "kind": "case",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "case 'a':",
+              "endLine": 26
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 27,
+              "kind": "case",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "case 'b':",
+              "endLine": 27
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 28,
+              "kind": "case",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "case 'c':",
+              "endLine": 29
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 30,
+              "kind": "case",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "default:",
+              "endLine": 31
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 36,
+              "kind": "ternary",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.ready ? 'ready' : 'waiting'",
+              "endLine": 36
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 37,
+              "kind": "coalesce",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.owner ?? 'nobody'",
+              "endLine": 37
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 38,
+              "kind": "logical",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.open && entry.total > 0",
+              "endLine": 38
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 39,
+              "kind": "logical",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "(entry.open && entry.pinned) || entry.ready",
+              "endLine": 39
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 40,
+              "kind": "logical",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "item.open || item.pinned",
+              "endLine": 40
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 41,
+              "kind": "ternary",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.total ?.5 : 1",
+              "endLine": 41
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 42,
+              "kind": "ternary",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.total > 9 ? 'high' : 'low'",
+              "endLine": 44
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 49,
+              "kind": "if",
+              "class": "DecisionForms",
+              "method": "conditions",
+              "text": "if (entry.open && list.some((item) => item.ready && item.total > 0))",
+              "endLine": 51
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 49,
+              "kind": "logical",
+              "class": "DecisionForms",
+              "method": "conditions",
+              "text": "item.ready && item.total > 0",
+              "endLine": 49
+            },
+            {
+              "file": "src/app/features/forms/decision-forms.service.ts",
+              "line": 58,
+              "kind": "ternary",
+              "class": "DecisionForms",
+              "method": "conditions",
+              "text": "entry.open && entry.pinned ? 2 : 3",
+              "endLine": 58
+            },
+            {
+              "file": "src/app/features/tally/tally.service.ts",
+              "line": 13,
+              "kind": "if",
+              "class": "TallyService",
+              "method": "pick",
+              "text": "if (entry.open)",
+              "endLine": 15
+            }
+          ]
+        },
+        "web": {
+          "kind": "web",
+          "facts": [
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 9,
+              "kind": "if",
+              "class": "DecisionForms",
+              "method": "branches",
+              "text": "if (entry.open)",
+              "endLine": 11
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 11,
+              "kind": "else",
+              "class": "DecisionForms",
+              "method": "branches",
+              "text": "else if (mode === 'all')",
+              "endLine": 13
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 11,
+              "kind": "if",
+              "class": "DecisionForms",
+              "method": "branches",
+              "text": "if (mode === 'all')",
+              "endLine": 13
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 13,
+              "kind": "else",
+              "class": "DecisionForms",
+              "method": "branches",
+              "text": "else",
+              "endLine": 15
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 19,
+              "kind": "if",
+              "class": "DecisionForms",
+              "method": "single",
+              "text": "if (entry.pinned)",
+              "endLine": 19
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 20,
+              "kind": "else",
+              "class": "DecisionForms",
+              "method": "single",
+              "text": "else",
+              "endLine": 20
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 24,
+              "kind": "switch",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "switch (kind)",
+              "endLine": 32
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 25,
+              "kind": "case",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "case 'a':",
+              "endLine": 26
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 27,
+              "kind": "case",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "case 'b':",
+              "endLine": 27
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 28,
+              "kind": "case",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "case 'c':",
+              "endLine": 29
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 30,
+              "kind": "case",
+              "class": "DecisionForms",
+              "method": "clauses",
+              "text": "default:",
+              "endLine": 31
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 36,
+              "kind": "ternary",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.ready ? 'ready' : 'waiting'",
+              "endLine": 36
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 37,
+              "kind": "coalesce",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.owner ?? 'nobody'",
+              "endLine": 37
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 38,
+              "kind": "logical",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.open && entry.total > 0",
+              "endLine": 38
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 39,
+              "kind": "logical",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "(entry.open && entry.pinned) || entry.ready",
+              "endLine": 39
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 40,
+              "kind": "logical",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "item.open || item.pinned",
+              "endLine": 40
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 41,
+              "kind": "ternary",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.total ?.5 : 1",
+              "endLine": 41
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 42,
+              "kind": "ternary",
+              "class": "DecisionForms",
+              "method": "expressions",
+              "text": "entry.total > 9 ? 'high' : 'low'",
+              "endLine": 44
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 49,
+              "kind": "if",
+              "class": "DecisionForms",
+              "method": "conditions",
+              "text": "if (entry.open && list.some((item) => item.ready && item.total > 0))",
+              "endLine": 51
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 49,
+              "kind": "logical",
+              "class": "DecisionForms",
+              "method": "conditions",
+              "text": "item.ready && item.total > 0",
+              "endLine": 49
+            },
+            {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 58,
+              "kind": "ternary",
+              "class": "DecisionForms",
+              "method": "conditions",
+              "text": "entry.open && entry.pinned ? 2 : 3",
+              "endLine": 58
+            },
+            {
+              "file": "src/forms/FormsPanel.tsx",
+              "line": 5,
+              "kind": "if",
+              "class": "FormsPanel",
+              "method": "close",
+              "text": "if (open)",
+              "endLine": 5
+            },
+            {
+              "file": "src/forms/FormsPanel.tsx",
+              "line": 10,
+              "kind": "logical",
+              "class": "FormsPanel",
+              "method": "FormsPanel",
+              "text": "open && <span>open</span>",
+              "endLine": 10
+            },
+            {
+              "file": "src/forms/FormsPanel.tsx",
+              "line": 11,
+              "kind": "ternary",
+              "class": "FormsPanel",
+              "method": "FormsPanel",
+              "text": "rows.length > 0 ? <b>many</b> : <i>none?</i>",
+              "endLine": 11
+            },
+            {
+              "file": "src/forms/FormsPanel.tsx",
+              "line": 12,
+              "kind": "ternary",
+              "class": "FormsPanel",
+              "method": "FormsPanel",
+              "text": "open ? 'Close' : 'Open'",
+              "endLine": 12
+            },
+            {
+              "file": "src/kiln/KilnPanel.tsx",
+              "line": 7,
+              "kind": "if",
+              "class": "KilnPanel",
+              "method": "refresh",
+              "text": "if (kilnId)",
+              "endLine": 7
+            },
+            {
+              "file": "src/kiln/KilnPanel.tsx",
+              "line": 12,
+              "kind": "ternary",
+              "class": "KilnPanel",
+              "method": "KilnPanel",
+              "text": "firings.length > 0 ? <ul>{firings.length}</ul> : <p>No firings && none planned</p>",
+              "endLine": 12
+            },
+            {
+              "file": "src/ledger/LedgerService.ts",
+              "line": 9,
+              "kind": "if",
+              "class": "LedgerService",
+              "method": "pick",
+              "text": "if (entry.open)",
+              "endLine": 11
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/kite-club",
+      "config": "kite.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": []
+        },
+        "mobile": {
+          "kind": "mobile",
+          "facts": []
+        },
+        "suite": {
+          "kind": "playwright",
+          "facts": []
+        },
+        "web": {
+          "kind": "web",
+          "facts": [
+            {
+              "file": "src/http/httpClient.ts",
+              "line": 2,
+              "kind": "ternary",
+              "class": "HttpClient",
+              "method": "request",
+              "text": "body === undefined ? undefined : JSON.stringify(body)",
+              "endLine": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/lantern-console",
+      "config": "lantern.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": []
+        },
+        "mobile": {
+          "kind": "mobile",
+          "facts": []
+        },
+        "web": {
+          "kind": "web",
+          "facts": [
+            {
+              "file": "src/http/httpClient.ts",
+              "line": 2,
+              "kind": "ternary",
+              "class": "HttpClient",
+              "method": "request",
+              "text": "response.status === 204 ? null : response.json()",
+              "endLine": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/lantern-depot",
+      "config": "lantern.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": []
+        },
+        "depot": {
+          "kind": "playwright",
+          "facts": []
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/nursery-mobile",
+      "config": "nursery.config.json",
+      "repos": {
+        "backend": {
+          "kind": "backend",
+          "facts": []
+        },
+        "mobile": {
+          "kind": "mobile",
+          "facts": []
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/orchard-mobile",
+      "config": "orchard.config.json",
+      "repos": {
+        "backend": {
+          "kind": "backend",
+          "facts": []
+        },
+        "mobile": {
+          "kind": "mobile",
+          "facts": []
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/orchard-routes",
+      "config": "orchard-mounted.config.json",
+      "repos": {
+        "web": {
+          "kind": "web",
+          "facts": [
+            {
+              "file": "src/OrchardApp.tsx",
+              "line": 43,
+              "kind": "ternary",
+              "class": "OrchardApp",
+              "method": "OrchardApp",
+              "text": "features.pruningPlanner ? ( <Route path=\"pruning\" element={<PruningPlannerPage />} /> ) : ( <Route path=\"pruning\" elemen",
+              "endLine": 47
+            },
+            {
+              "file": "src/greenhouse/GreenhouseRoutes.tsx",
+              "line": 9,
+              "kind": "if",
+              "class": "GreenhouseRoutes",
+              "method": "glasshouseRoute",
+              "text": "if (features.greenhouse)",
+              "endLine": 11
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/orchard-routes",
+      "config": "orchard.config.json",
+      "repos": {
+        "web": {
+          "kind": "web",
+          "facts": [
+            {
+              "file": "src/OrchardApp.tsx",
+              "line": 43,
+              "kind": "ternary",
+              "class": "OrchardApp",
+              "method": "OrchardApp",
+              "text": "features.pruningPlanner ? ( <Route path=\"pruning\" element={<PruningPlannerPage />} /> ) : ( <Route path=\"pruning\" elemen",
+              "endLine": 47
+            },
+            {
+              "file": "src/greenhouse/GreenhouseRoutes.tsx",
+              "line": 9,
+              "kind": "if",
+              "class": "GreenhouseRoutes",
+              "method": "glasshouseRoute",
+              "text": "if (features.greenhouse)",
+              "endLine": 11
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/quarry-dispatch",
+      "config": "quarry.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": [
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 27,
+              "kind": "if",
+              "class": "DispatchController",
+              "method": "Plan",
+              "text": "if (request == null || string.IsNullOrEmpty(request.Serial))",
+              "endLine": 30
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 29,
+              "kind": "error_return",
+              "class": "DispatchController",
+              "method": "Plan",
+              "text": "return BadRequest(\"serial is required\");",
+              "endLine": 29
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 39,
+              "kind": "validation",
+              "class": "DispatchController",
+              "method": "Check",
+              "text": "if (!request.Serial.IsValid()) return BadRequest(\"serial is required\");",
+              "endLine": 39
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 40,
+              "kind": "validation",
+              "class": "DispatchController",
+              "method": "Check",
+              "text": "if (!request.Origin.IsValid()) return BadRequest(\"origin is required\");",
+              "endLine": 40
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 41,
+              "kind": "validation",
+              "class": "DispatchController",
+              "method": "Check",
+              "text": "if (!request.Destination.IsValid()) return BadRequest(\"destination is required\");",
+              "endLine": 41
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 42,
+              "kind": "validation",
+              "class": "DispatchController",
+              "method": "Check",
+              "text": "if (!request.Carrier.IsValid()) return BadRequest(\"carrier is required\");",
+              "endLine": 42
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 43,
+              "kind": "validation",
+              "class": "DispatchController",
+              "method": "Check",
+              "text": "if (!request.Window.IsValid()) return BadRequest(\"window is required\");",
+              "endLine": 43
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 44,
+              "kind": "validation",
+              "class": "DispatchController",
+              "method": "Check",
+              "text": "if (!request.Priority.IsValid()) return BadRequest(\"priority is required\");",
+              "endLine": 44
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 45,
+              "kind": "validation",
+              "class": "DispatchController",
+              "method": "Check",
+              "text": "if (!request.Reference.IsValid()) return BadRequest(\"reference is required\");",
+              "endLine": 45
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 46,
+              "kind": "validation",
+              "class": "DispatchController",
+              "method": "Check",
+              "text": "if (!request.Warehouse.IsValid()) return BadRequest(\"warehouse is required\");",
+              "endLine": 46
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 54,
+              "kind": "if",
+              "class": "DispatchController",
+              "method": "Route",
+              "text": "if (!decided)",
+              "endLine": 57
+            },
+            {
+              "file": "src/Controllers/DispatchController.cs",
+              "line": 56,
+              "kind": "error_return",
+              "class": "DispatchController",
+              "method": "Route",
+              "text": "return Forbid();",
+              "endLine": 56
+            }
+          ]
+        },
+        "web": {
+          "kind": "web",
+          "facts": [
+            {
+              "file": "src/http/httpClient.ts",
+              "line": 2,
+              "kind": "ternary",
+              "class": "HttpClient",
+              "method": "request",
+              "text": "body === undefined ? undefined : JSON.stringify(body)",
+              "endLine": 2
+            },
+            {
+              "file": "src/http/httpClient.ts",
+              "line": 3,
+              "kind": "if",
+              "class": "HttpClient",
+              "method": "request",
+              "text": "if (!response.ok)",
+              "endLine": 3
+            },
+            {
+              "file": "src/http/httpClient.ts",
+              "line": 4,
+              "kind": "ternary",
+              "class": "HttpClient",
+              "method": "request",
+              "text": "response.status === 204 ? null : response.json()",
+              "endLine": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/widget-cart",
+      "config": "widget.config.json",
+      "repos": {
+        "e2e": {
+          "kind": "playwright",
+          "facts": []
+        }
+      }
+    },
+    {
+      "corpus": "selftest/corpus/widget-kiosk",
+      "config": "widget.config.json",
+      "repos": {
+        "e2e": {
+          "kind": "playwright",
+          "facts": []
+        }
+      }
+    },
+    {
+      "corpus": "examples/demo-shop",
+      "config": "flowtrace.config.json",
+      "repos": {
+        "api": {
+          "kind": "backend",
+          "facts": [
+            {
+              "file": "src/Controllers/CatalogController.cs",
+              "line": 20,
+              "kind": "if",
+              "class": "CatalogController",
+              "method": "GetProducts",
+              "text": "if (string.IsNullOrEmpty(category))",
+              "endLine": 23
+            },
+            {
+              "file": "src/Controllers/CatalogController.cs",
+              "line": 22,
+              "kind": "error_return",
+              "class": "CatalogController",
+              "method": "GetProducts",
+              "text": "return BadRequest(\"category is required\");",
+              "endLine": 22
+            },
+            {
+              "file": "src/Controllers/CatalogController.cs",
+              "line": 33,
+              "kind": "if",
+              "class": "CatalogController",
+              "method": "GetProduct",
+              "text": "if (product == null)",
+              "endLine": 36
+            },
+            {
+              "file": "src/Controllers/CatalogController.cs",
+              "line": 35,
+              "kind": "error_return",
+              "class": "CatalogController",
+              "method": "GetProduct",
+              "text": "return NotFound();",
+              "endLine": 35
+            },
+            {
+              "file": "src/Controllers/OrdersController.cs",
+              "line": 27,
+              "kind": "if",
+              "class": "OrdersController",
+              "method": "AddCartItem",
+              "text": "if (request == null || request.Quantity <= 0)",
+              "endLine": 30
+            },
+            {
+              "file": "src/Controllers/OrdersController.cs",
+              "line": 29,
+              "kind": "error_return",
+              "class": "OrdersController",
+              "method": "AddCartItem",
+              "text": "return BadRequest(\"quantity must be positive\");",
+              "endLine": 29
+            },
+            {
+              "file": "src/Controllers/OrdersController.cs",
+              "line": 39,
+              "kind": "if",
+              "class": "OrdersController",
+              "method": "Checkout",
+              "text": "if (request == null || string.IsNullOrEmpty(request.PaymentToken))",
+              "endLine": 42
+            },
+            {
+              "file": "src/Controllers/OrdersController.cs",
+              "line": 41,
+              "kind": "error_return",
+              "class": "OrdersController",
+              "method": "Checkout",
+              "text": "return BadRequest(\"paymentToken is required\");",
+              "endLine": 41
+            },
+            {
+              "file": "src/Controllers/OrdersController.cs",
+              "line": 45,
+              "kind": "if",
+              "class": "OrdersController",
+              "method": "Checkout",
+              "text": "if (!placed)",
+              "endLine": 48
+            },
+            {
+              "file": "src/Controllers/OrdersController.cs",
+              "line": 47,
+              "kind": "error_return",
+              "class": "OrdersController",
+              "method": "Checkout",
+              "text": "return Forbid();",
+              "endLine": 47
+            },
+            {
+              "file": "src/Endpoints/ReplayEndpoints.cs",
+              "line": 23,
+              "kind": "if",
+              "class": "ReplayEndpoints",
+              "method": "MapReplayEndpoints(POST orders/v1/replay)",
+              "text": "if (request == null || string.IsNullOrEmpty(request.OrderId))",
+              "endLine": 26
+            },
+            {
+              "file": "src/Endpoints/ReplayEndpoints.cs",
+              "line": 25,
+              "kind": "error_return",
+              "class": "ReplayEndpoints",
+              "method": "MapReplayEndpoints(POST orders/v1/replay)",
+              "text": "return Results.BadRequest(\"orderId is required\");",
+              "endLine": 25
+            },
+            {
+              "file": "src/Endpoints/ReplayEndpoints.cs",
+              "line": 29,
+              "kind": "if",
+              "class": "ReplayEndpoints",
+              "method": "MapReplayEndpoints(POST orders/v1/replay)",
+              "text": "if (!recorded)",
+              "endLine": 32
+            },
+            {
+              "file": "src/Endpoints/ReplayEndpoints.cs",
+              "line": 31,
+              "kind": "error_return",
+              "class": "ReplayEndpoints",
+              "method": "MapReplayEndpoints(POST orders/v1/replay)",
+              "text": "return Results.NotFound();",
+              "endLine": 31
+            },
+            {
+              "file": "src/Services/FulfilmentHandler.cs",
+              "line": 24,
+              "kind": "if",
+              "class": "FulfilmentHandler",
+              "method": "Fulfil",
+              "text": "if (order == null)",
+              "endLine": 27
+            },
+            {
+              "file": "src/Services/FulfilmentHandler.cs",
+              "line": 26,
+              "kind": "error_return",
+              "class": "FulfilmentHandler",
+              "method": "Fulfil",
+              "text": "throw new InvalidOperationException(\"order not found\");",
+              "endLine": 26
+            },
+            {
+              "file": "src/Services/OrderReplayService.cs",
+              "line": 23,
+              "kind": "if",
+              "class": "OrderReplayService",
+              "method": "RecordReplay",
+              "text": "if (order == null)",
+              "endLine": 26
+            },
+            {
+              "file": "src/Services/OrderService.cs",
+              "line": 38,
+              "kind": "if",
+              "class": "OrderService",
+              "method": "PlaceOrder",
+              "text": "if (!accepted)",
+              "endLine": 41
+            }
+          ]
+        },
+        "e2e": {
+          "kind": "playwright",
+          "facts": []
+        },
+        "mobile": {
+          "kind": "mobile",
+          "facts": []
+        },
+        "shopfront": {
+          "kind": "web",
+          "facts": []
+        },
+        "stock": {
+          "kind": "backend",
+          "facts": [
+            {
+              "file": "src/Controllers/ReservationsController.cs",
+              "line": 21,
+              "kind": "if",
+              "class": "ReservationsController",
+              "method": "Reserve",
+              "text": "if (request == null || string.IsNullOrEmpty(request.ProductId))",
+              "endLine": 24
+            },
+            {
+              "file": "src/Controllers/ReservationsController.cs",
+              "line": 23,
+              "kind": "error_return",
+              "class": "ReservationsController",
+              "method": "Reserve",
+              "text": "return BadRequest(\"productId is required\");",
+              "endLine": 23
+            },
+            {
+              "file": "src/Controllers/ReservationsController.cs",
+              "line": 27,
+              "kind": "if",
+              "class": "ReservationsController",
+              "method": "Reserve",
+              "text": "if (!reserved)",
+              "endLine": 30
+            },
+            {
+              "file": "src/Services/ReservationService.cs",
+              "line": 26,
+              "kind": "if",
+              "class": "ReservationService",
+              "method": "Reserve",
+              "text": "if (!held)",
+              "endLine": 29
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

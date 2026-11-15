@@ -14,7 +14,7 @@ injects `PlotService` and the NgRx `Store`, and its template renders `SeedlingBa
 | Three handlers call three methods of one service | `onRefresh`, `onWater`, `onRelabel` | Each entry keeps its own route. |
 | A gateway call inside `pipe(mergeMap(...))` on one line | `PlotService.loadSeedlings` | `GET nursery/v1/plots/*/seedlings`, resolved, under `onRefresh`. |
 | One handler reaches two methods of the service, one through a `this.` helper | `onTend`, `prepareTend` | Both the `water` and the `label` routes, under `onTend`. |
-| A gateway call written over two lines | `PlotService.addNote` | No fact. `onNote` is an entry that reaches no route and has no unresolved arm. |
+| A gateway call written over two lines | `PlotService.addNote` | One `gateway_call` at the line of `this`, with the template a one-line call gets. `POST nursery/v1/plots/*/notes` under `onNote`. |
 | A path no route serves | `PlotService.exportPlot` | `no-route-match` under `onExport`. |
 | A template built by a method the extractor does not inline | `PlotService.replaceWatchers` | `template-not-resolved` under `onShareWatchers`. The route matcher lands it on `PUT nursery/v1/plots/*/label` by prefix, and the span does not trust that. |
 | A dispatched action that an effect answers | `onSync`, `PlotEffects.sync$` | `GET nursery/v1/plots/*/sensors` under `onSync`. |
@@ -34,21 +34,21 @@ test reads this block and compares every `header` with it.
 
 ```json
 {
-  "PlotDetailPage": { "routesResolved": 9, "armsResolved": 11, "armsUnresolved": 3, "entries": 13, "armsWithoutEntry": 1 },
-  "PlotDetailPage --depth 2": { "routesResolved": 8, "armsResolved": 8, "armsUnresolved": 16, "entries": 13, "armsWithoutEntry": 10 },
+  "PlotDetailPage": { "routesResolved": 10, "armsResolved": 12, "armsUnresolved": 3, "entries": 13, "armsWithoutEntry": 1 },
+  "PlotDetailPage --depth 2": { "routesResolved": 9, "armsResolved": 9, "armsUnresolved": 16, "entries": 13, "armsWithoutEntry": 11 },
   "PlotDetailPage --entry onTend": { "routesResolved": 2, "armsResolved": 2, "armsUnresolved": 0, "entries": 1, "armsWithoutEntry": 0 },
   "PlotDetailPage --entry ngOnInit": { "routesResolved": 1, "armsResolved": 1, "armsUnresolved": 0, "entries": 1, "armsWithoutEntry": 0 },
   "PlotDetailPage --entry click@6": { "routesResolved": 1, "armsResolved": 1, "armsUnresolved": 0, "entries": 1, "armsWithoutEntry": 0 },
   "PlotDetailPage --entry onExport": { "routesResolved": 0, "armsResolved": 0, "armsUnresolved": 1, "entries": 1, "armsWithoutEntry": 0 },
   "SeedlingBadgeComponent": { "routesResolved": 1, "armsResolved": 1, "armsUnresolved": 0, "entries": 1, "armsWithoutEntry": 0 },
-  "PlotService": { "routesResolved": 8, "armsResolved": 8, "armsUnresolved": 3, "entries": 0, "armsWithoutEntry": 11 }
+  "PlotService": { "routesResolved": 9, "armsResolved": 9, "armsUnresolved": 3, "entries": 0, "armsWithoutEntry": 12 }
 }
 ```
 
 The `--depth 2` run is the one with `walk-limit` arms. Each entry walk stops at a service
 method or at a store action. The constructor walk of the page spends no depth on its `ctor`
 hop, so at that depth it still reaches routes the entries do not. Those requests are arms
-without entry, which is why that run has ten of them.
+without entry, which is why that run has eleven of them.
 
 ## The trace goldens
 
@@ -63,6 +63,17 @@ The declaration-identity change added optional fields to the extracted facts. Th
 `status.identity` field digests the fact sets, so both goldens changed there. Their `root`,
 `nodes`, `edges` and `stats` are unchanged. The walk reaches the same declarations and
 requests.
+
+The gateway call rule then read a call split over lines, so `PlotService.addNote` states its
+`gateway_call` and the `onNote` entry reaches `POST nursery/v1/plots/*/notes`. Both goldens
+were captured again for that one cause. Only `status.identity` changed, because it digests the
+fact sets. Their `root`, `nodes`, `edges` and `stats` are unchanged. The nursery seed golden in
+`selftest/corpus/seed-goldens/nursery-mobile.json` was captured again for the same cause. Its
+route keys, seeds and cover output are unchanged, and only the `identity` of each trace changed.
+The nursery record in `selftest/corpus/dependency-goldens.json` was captured again for the same
+cause, rendered by the binary from before the source-flow view. Its facts digest and its `graph`
+and `json` hashes changed, because both outputs carry `identity`. Every exit status and every
+tree, mermaid and `span` hash is unchanged.
 
 Plain `trace` now lists the lifecycle hooks of a mobile start as `mount`, `update` or
 `unmount` entries, and it walks each template handler in a scope of its own. So

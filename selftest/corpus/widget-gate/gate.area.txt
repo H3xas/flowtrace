@@ -1,0 +1,7 @@
+GET gate/v1/open
+GET gate/v1/staged
+GET gate/v1/unread
+GET gate/v1/parked
+GET gate/v1/folded
+GET gate/v1/grouped
+GET gate/v1/wrapped

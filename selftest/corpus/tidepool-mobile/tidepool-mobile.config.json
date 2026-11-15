@@ -1,0 +1,6 @@
+{
+  "out": "out",
+  "repos": [
+    { "id": "mobile", "kind": "mobile", "root": "mobile" }
+  ]
+}
