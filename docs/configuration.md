@@ -37,9 +37,11 @@ checkouts named as siblings of the file.
 | `repos` | yes | non-empty array of repositories, below |
 | `aliases` | no | route-prefix rewrites the join step applies when a call finds no route |
 | `sinks` | no | what makes a class a data sink, below |
-| `caseId` | no | call shapes whose literal arguments are test-management case ids, below |
+| `caseId` | no | callees whose first argument is a test-management case id, below |
+| `testEnvironment` | no | the environment values a skip guard in a Playwright spec is read against, below |
 | `backend` | no | the calls that mock or patch the backend of a browser test, below |
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
+| `entryPoints` | no | the base classes whose methods start backend work with no route in front of them, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
 | `scope` | no | the node-ref patterns `scope` reads as a server-side authorization point, below |
@@ -190,20 +192,30 @@ reported at one position is one site, which is how a parameterised declaration k
 its instance titles — and the Nth site of a file is joined to the Nth declaration the
 extractor found in it.
 
-A spec file resolves either every declaration or none. Two guards must hold first: the two
-sides must count the same number of declarations in the file, and every declaration whose
-title has no `${` must find that title verbatim at its own site. If either fails the whole
-file is refused, because one missed declaration shifts every ordinal after it; its titles
-then stay `raw` and the header counts the file under `refused`. A missing title is visible;
-a wrong one would not be. A title reaches that check as text, with any quotes already stripped,
-so a title whose text reads as a single identifier, a dotted path or a call — `checkout`,
-`cart.badge`, `retries (twice)` — counts as dynamic and rests on its ordinal rather than being
-compared verbatim.
+A spec file resolves either every declaration or none. Two guards must hold first. The two
+sides must count the same number of declarations in the file. Each declaration whose title the
+source states must find that title at its own site. If either guard fails, the whole file is
+refused, because one missed declaration shifts every ordinal after it. Its titles then stay
+`raw` and the header counts the file under `refused`. A missing title is visible, but a wrong
+one would not be.
 
-What it needs: `@playwright/test` installed where a `require` from the repository root would
-find it, which is the suite's own `node_modules` or a hoisted workspace root, and Node to
-run it. The tool resolves the package there and nowhere else; nothing is fetched, nothing is
-installed, and no browser is started. The command runs with the repository as its working
+The title check reads the title argument in the spec file:
+
+- A string literal, or a template with no `${`, must be the runner title exactly. Its escapes
+  are read first, so `'it\'s open'` is held to `it's open`.
+- A template with literal parts must match those parts in their order, with any text in the
+  place of each `${…}`. So `` `refunds a ${kind} now` `` passes `refunds a sale now`.
+- A title inside a configured case-id wrapper is held to containment: see [`caseId`](#caseid).
+- An identifier, a member path, a call, a template with no literal part and each other computed
+  title rest on their ordinal.
+
+The check reads the whole argument, so a title longer than the 160 characters of
+`pw_test.test` is compared in full.
+
+What it needs: `@playwright/test` installed where a `require` from the configured repository
+root finds it, and Node to run it. Node looks in `node_modules` under the root first, then in
+`node_modules` of each parent directory, so a suite's own copy comes before a hoisted workspace
+copy. Nothing is fetched, nothing is installed, and no browser is started. The command runs with the repository as its working
 directory, a 60-second limit, and a small preload written to `out/.pw-list-preload.cjs` that
 pins every request for `@playwright/test` to the one installed copy, so a suite that vendors
 a second copy inside a helper package still lists.
@@ -354,15 +366,68 @@ a call flowtrace cannot know about. `caseId` names those callees. It defaults to
 }
 ```
 
-- `calls` — callee names whose call sites carry case ids: the entry `tms.id` makes every
-  string-literal argument of a `tms.id(...)` site a case id. Ids resolved either way join
-  the test's `case_id` fact ([fact-schema.md](fact-schema.md)).
+- `calls` — callee names whose call sites carry case ids. Ids resolved either way join the
+  test's `case_id` fact ([fact-schema.md](fact-schema.md)).
 
-A configured callee is also read in title position. A test declared as
-`test(tms.id(9001, 'refunds a sale'), …)` has the title the runner reports carried inside the
-wrapper, so title collection compares against `refunds a sale` rather than against the whole
-call. Without the entry the wrapper is opaque and the declaration resolves on its position in
-the file alone.
+A configured callee is read in two places. In both, its first argument is the case id, and
+later arguments are not read for an id:
+
+- In a test body, `tms.id(9001)` and `tms.id(9001, 'note')` both give the id `9001`.
+- In title position, as a wrapper, `test(tms.id(9001, 'refunds a sale'), …)` gives the id
+  `9001`, and the second argument, `refunds a sale`, is the title. A wrapper with one argument
+  holds a title and no id. The same is true for `test.skip(`, `test.only(` and `test.fixme(`,
+  and for a call written over several lines. The fact is on the line of the `test(` call.
+
+The first argument resolves when it is a number, a quoted string, an array of those, or a row
+property such as `row.id` of a same-file `for (const row of ROWS)` over an array of object
+literals. An empty string, an empty array and `'TODO'` are placeholders and give no fact. The
+title text and the arguments after the first are never read as an id.
+
+Any other first argument goes to a bounded reader of the spec file. It reads a value written in
+the same file: a `const` with an initializer, an object or array literal, a key such as
+`ids['a|alpha']` or `` ids[`${g}|${row.name}`] ``, a ternary, `&&`, `||` and `===`. It also reads
+the bindings of the `for…of` and `forEach` loops that enclose the call. Each loop instance that
+the argument reads gives one `case_id` fact with `source: "evaluated"` and `instance`, the loop
+bindings it read, such as `{ "g": false, "row.name": "alpha" }`. The facts are in loop order,
+outer loop first. A site gives 64 instances at most. A site past that limit gives one unresolved
+record.
+
+The reader does not read a function parameter, a call result, `process.env`, a `let` or `var`
+binding, or an imported value. Such an argument, and a key that is absent from its map, gives
+one unresolved record. That is a `case_id` fact with `ids: []`, `source: "unresolved"` and
+`expression`, the argument text on one line, cut at 160 characters. A loop instance that
+resolves no id also carries its `instance`. So each id in a fact is written in its own spec file.
+
+Title collection ([Playwright titles](#playwright-titles)) holds a wrapped title to
+containment. The wrapper's second argument is the title argument. Each title that the runner
+reports at the declaration's site must contain a string-literal title argument, or match the
+literal parts of a template one. So `refunds a sale (Case 9001)` and `[9001] refunds a sale`
+both pass `tms.id(9001, 'refunds a sale')`, and any other title refuses the spec file. A title
+argument of another shape rests on its position. Containment has a limit: a misaligned file in
+which each shifted wrapped title occurs inside the runner title that it meets resolves with the
+titles of those sites. Without the entry, the wrapper is opaque and the declaration rests on its
+position in the file alone.
+
+A configured name is matched only as a whole callee. `x.tms.id(9001)` is a call of a member of
+`x`, not of `tms.id`, so it gives no id.
+
+## `testEnvironment`
+
+The playwright extractor writes `eligibility` on each `pw_test` fact: whether the spec file says
+that the test runs ([fact-schema.md](fact-schema.md#test-evidence)). A skip guard such as
+`test.skip(process.env.E2E_ENV !== 'dev', 'dev only')` depends on the environment of the run.
+`testEnvironment` names those values. It defaults to none.
+
+```json
+"testEnvironment": {
+  "E2E_ENV": "dev"
+}
+```
+
+Each value is a string. The extractor reads `process.env.NAME` from this object and never from
+the shell that runs `flowtrace`. A guard that reads a name the object does not hold, or any
+other value it cannot read, is `unknown`, and a test under an `unknown` guard is never counted as
+one that runs. Without the key, every guard that reads `process.env` is `unknown`.
 
 ## `backend`
 
@@ -387,10 +452,19 @@ those calls. Both lists default to none, so no call name is built in.
 
 An entry is a callee as written: an identifier, or a dotted chain of identifiers. A bare entry
 matches a bare call and a member call (`seedCart` matches `seedCart(page)` and
-`fixtures.seedCart(page)`). A dotted entry matches that callee (`fixtures.priceList` matches
-`fixtures.priceList(page)` and not `catalog.priceList(page)`). The extractor does not read
-the body of a function with a configured name, because the entry decides the call. A name in
-a comment or in a string never matches.
+`fixtures.seedCart(page)`). A dotted entry matches only that callee as written, after the
+extractor removes white space and changes each `?.` to `.`. So `fixtures.priceList` matches
+`fixtures.priceList(page)`, `fixtures?.priceList(page)` and `fixtures . priceList(page)`. It
+does not match `catalog.priceList(page)`, `other.fixtures.priceList(page)` or
+`this.fixtures.priceList(page)`. To match the last one, write the entry
+`this.fixtures.priceList`. The extractor does not read the body of a function with a
+configured name, because the entry decides the call. A name in a comment or in a string
+never matches.
+
+A configured call also counts when a Playwright fixture that the test uses makes it, before
+the fixture calls `use(`. A call under `if (<option>)` in a fixture counts only when the
+option value that `test.use` or the option default gives makes the branch run
+([fact-schema.md](fact-schema.md#test-evidence)).
 
 The loader refuses, with one message that names `backend`, a value that is not an object, a
 key other than `mockCalls` and `patchCalls`, a list that is not an array of call names, and a
@@ -407,7 +481,7 @@ worker-queue framework registers processors, binds queues and publishes through 
 flowtrace cannot know about, names its saga-initiator interface differently, and may keep its
 contracts elsewhere under other names. `workerPatterns` teaches the extractor those shapes,
 and teaches the walk which verb enters a consumer. Every field is an array of regex-source
-strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and a
+strings (JSON-escaped) — `consumerEntryMethods` and `backgroundCalls` hold plain method names, and a
 `publishCalls` entry may carry a `/N` suffix (see below) — and every field defaults to empty.
 
 ```json
@@ -422,7 +496,8 @@ strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and 
   "configReads": ["ReadSetting"],
   "messagePaths": ["Bus/Types"],
   "messageSuffixes": ["Notice"],
-  "sagaInterfaces": ["IAmTriggeredBy"]
+  "sagaInterfaces": ["IAmTriggeredBy"],
+  "backgroundCalls": ["Schedule"]
 }
 ```
 
@@ -476,6 +551,36 @@ strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and 
   that way lists them here. A contract carries the same `fqn` onto every `publish` and
   `consume` of it, which is what lets `join` tell two same-named messages apart across
   repositories and keeps them out of `messages_without_contract`.
+- `backgroundCalls` — method names whose call hands its delegate argument to a background
+  queue; plain names, not regexes. The extractor already finds a queue by its shape: a
+  receiver type that declares a method whose delegate parameter takes a `CancellationToken`.
+  This field names the queue calls whose receiver the repository does not declare. Each call
+  gives a `queue_call` fact with `rule: "config"`, and the walk shows one queue node with the
+  delegate's calls under it (via `queued`).
+
+## `entryPoints`
+
+A backend method can start work with no route in front of it. The extractor finds two such
+entries by itself: each public method of a SignalR `Hub` class, and each message handler that
+an actor class registers. `entryPoints` names more of them. Each entry is an object with
+three fields:
+
+```json
+"entryPoints": [
+  { "kind": "timer", "bases": ["TimedJob"], "methods": ["Tick"] }
+]
+```
+
+- `kind` — a lowercase name of letters, digits and hyphens. It cannot be `route`, `hub` or
+  `actor`.
+- `bases` — base class names. A class that has one of them in its base chain is an entry
+  class. An abstract class is not.
+- `methods` — method names. Each method of that name that the class declares or inherits
+  gives one `entry` fact with that `kind`.
+
+`routes-of` walks each entry the same way it walks a route, and it lists the entries that
+reach the point. A malformed `entryPoints` value stops the run with one message that states
+the full shape.
 
 ## `scope`
 

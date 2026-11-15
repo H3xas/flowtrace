@@ -56,6 +56,21 @@ npm test
   inside a body, a `test` reached through a member access, a title wrapped in a configured
   case-id call, and a title supplied as a table identifier — plus a listing whose positions
   sit below the source so nothing can resolve by line.
+- `corpus/widget-till/` — an invented Playwright suite and a one-route backend for case ids in
+  a configured call: a wrapper in title position on every declaration form and over several
+  lines, body calls, a same-file table, arguments no reader resolves, and a misaligned file.
+  It has three configurations (both callees, the body call alone, none) and `pw-list.json`, a
+  listing whose wrapped titles carry the text the wrapper adds; `title-wrapper-case-ids.test.js`
+  reads it.
+- `corpus/widget-ledger/` — an invented Playwright suite for case ids that the bounded reader
+  evaluates: a same-file map read in nested loops, literal and ternary keys, a block-local
+  `const`, an array element and a destructured row, and each argument it refuses, with a loop
+  product at the 64-instance limit and one past it. `case-id-maps.test.js` reads it.
+- `corpus/widget-gate/` — an invented Playwright suite and a four-route backend for test
+  eligibility: static skips, environment guards at file, describe, hook and test scope, guards
+  that cannot be read, and a `test.describe.fixme(` stub spec. It has three configurations (no
+  `testEnvironment`, `E2E_ENV` set to `dev`, set to `stage`) and `gate.area.txt`;
+  `test-eligibility.test.js` reads it.
 - `corpus/greenhouse-alerts/` — the journey pack: an invented React + Redux client and
   ASP.NET Core service, the expected ledger (`expected.json`), the committed observed projection
   (`observed.json`) and a README with the formats, the replay commands and the rules for tickets
@@ -89,6 +104,14 @@ npm test
   decisions, sentinel fallthroughs, one-line branch labels, configured exception statuses
   and a gated pipeline. `csharp-reading.test.js` runs it through the CLI, one `CSharp
   reading AC-n:` test for each acceptance rule. The corpus README lists its file groups.
+- `corpus/tidepool-mobile/` and `corpus/tidepool-web/`: an invented Angular app and an
+  invented React app. Their templates hold each display condition form, transfer form and
+  trace step that the client condition reader reads, each trace reason, and each region
+  state. `client-conditions.test.js` runs both through the extractors, one `Client conditions
+  AC-n:` test for each acceptance rule. It also imports `lib/extract/client-conditions.js`
+  for the hop limit and the trace limit, because a corpus that reaches those limits is too
+  large to read. `client-conditions-outputs.test.js` runs the query verbs on each corpus
+  and on the worked example, with and without the new facts, and compares the outputs.
 - `corpus/bakery-orders/` and `corpus/bakery-gates/`: an invented bakery backend. Its
   pipelines take their steps from a DI factory, a `typeof(...)` list or an injected
   `IEnumerable<T>`. Their steps write a stop flag, return `false` or `null`, or throw. The
