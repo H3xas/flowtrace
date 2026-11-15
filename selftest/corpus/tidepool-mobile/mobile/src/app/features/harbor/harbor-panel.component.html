@@ -1,0 +1,13 @@
+<section>
+  <div *ngIf="showDock">dock</div>
+  <div *ngIf="!quiet">loud</div>
+  <div *ngIf="ready && (open || !locked); else waiting">ready</div>
+  <ng-template #waiting><p>waiting</p></ng-template>
+  <p *ngIf="(tide$ | async) as tide" [title]="tide.level">tide</p>
+  <aside [hidden]="!ready">aside</aside>
+  <ul>
+    <li *ngFor="let item of items">
+      <tp-buoy [childFlag]="item.flags.flagA"></tp-buoy>
+    </li>
+  </ul>
+</section>

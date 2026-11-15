@@ -41,6 +41,7 @@ checkouts named as siblings of the file.
 | `testEnvironment` | no | the environment values a skip guard in a Playwright spec is read against, below |
 | `backend` | no | the calls that mock or patch the backend of a browser test, below |
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
+| `entryPoints` | no | the base classes whose methods start backend work with no route in front of them, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
 | `scope` | no | the node-ref patterns `scope` reads as a server-side authorization point, below |
@@ -421,10 +422,19 @@ those calls. Both lists default to none, so no call name is built in.
 
 An entry is a callee as written: an identifier, or a dotted chain of identifiers. A bare entry
 matches a bare call and a member call (`seedCart` matches `seedCart(page)` and
-`fixtures.seedCart(page)`). A dotted entry matches that callee (`fixtures.priceList` matches
-`fixtures.priceList(page)` and not `catalog.priceList(page)`). The extractor does not read
-the body of a function with a configured name, because the entry decides the call. A name in
-a comment or in a string never matches.
+`fixtures.seedCart(page)`). A dotted entry matches only that callee as written, after the
+extractor removes white space and changes each `?.` to `.`. So `fixtures.priceList` matches
+`fixtures.priceList(page)`, `fixtures?.priceList(page)` and `fixtures . priceList(page)`. It
+does not match `catalog.priceList(page)`, `other.fixtures.priceList(page)` or
+`this.fixtures.priceList(page)`. To match the last one, write the entry
+`this.fixtures.priceList`. The extractor does not read the body of a function with a
+configured name, because the entry decides the call. A name in a comment or in a string
+never matches.
+
+A configured call also counts when a Playwright fixture that the test uses makes it, before
+the fixture calls `use(`. A call under `if (<option>)` in a fixture counts only when the
+option value that `test.use` or the option default gives makes the branch run
+([fact-schema.md](fact-schema.md#test-evidence)).
 
 The loader refuses, with one message that names `backend`, a value that is not an object, a
 key other than `mockCalls` and `patchCalls`, a list that is not an array of call names, and a
@@ -441,7 +451,7 @@ worker-queue framework registers processors, binds queues and publishes through 
 flowtrace cannot know about, names its saga-initiator interface differently, and may keep its
 contracts elsewhere under other names. `workerPatterns` teaches the extractor those shapes,
 and teaches the walk which verb enters a consumer. Every field is an array of regex-source
-strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and a
+strings (JSON-escaped) — `consumerEntryMethods` and `backgroundCalls` hold plain method names, and a
 `publishCalls` entry may carry a `/N` suffix (see below) — and every field defaults to empty.
 
 ```json
@@ -456,7 +466,8 @@ strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and 
   "configReads": ["ReadSetting"],
   "messagePaths": ["Bus/Types"],
   "messageSuffixes": ["Notice"],
-  "sagaInterfaces": ["IAmTriggeredBy"]
+  "sagaInterfaces": ["IAmTriggeredBy"],
+  "backgroundCalls": ["Schedule"]
 }
 ```
 
@@ -510,6 +521,36 @@ strings (JSON-escaped) — `consumerEntryMethods` holds plain method names, and 
   that way lists them here. A contract carries the same `fqn` onto every `publish` and
   `consume` of it, which is what lets `join` tell two same-named messages apart across
   repositories and keeps them out of `messages_without_contract`.
+- `backgroundCalls` — method names whose call hands its delegate argument to a background
+  queue; plain names, not regexes. The extractor already finds a queue by its shape: a
+  receiver type that declares a method whose delegate parameter takes a `CancellationToken`.
+  This field names the queue calls whose receiver the repository does not declare. Each call
+  gives a `queue_call` fact with `rule: "config"`, and the walk shows one queue node with the
+  delegate's calls under it (via `queued`).
+
+## `entryPoints`
+
+A backend method can start work with no route in front of it. The extractor finds two such
+entries by itself: each public method of a SignalR `Hub` class, and each message handler that
+an actor class registers. `entryPoints` names more of them. Each entry is an object with
+three fields:
+
+```json
+"entryPoints": [
+  { "kind": "timer", "bases": ["TimedJob"], "methods": ["Tick"] }
+]
+```
+
+- `kind` — a lowercase name of letters, digits and hyphens. It cannot be `route`, `hub` or
+  `actor`.
+- `bases` — base class names. A class that has one of them in its base chain is an entry
+  class. An abstract class is not.
+- `methods` — method names. Each method of that name that the class declares or inherits
+  gives one `entry` fact with that `kind`.
+
+`routes-of` walks each entry the same way it walks a route, and it lists the entries that
+reach the point. A malformed `entryPoints` value stops the run with one message that states
+the full shape.
 
 ## `scope`
 

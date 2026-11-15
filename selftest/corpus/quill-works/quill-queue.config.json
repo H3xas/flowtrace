@@ -1,0 +1,12 @@
+{
+  "out": "out",
+  "workerPatterns": { "backgroundCalls": ["Schedule"] },
+  "repos": [
+    {
+      "id": "quill",
+      "kind": "backend",
+      "root": "backend",
+      "role": ["api"]
+    }
+  ]
+}
