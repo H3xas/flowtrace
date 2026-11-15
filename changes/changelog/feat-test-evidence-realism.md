@@ -107,3 +107,8 @@
   and `{{{…}}}` placeholder of the subject becomes `*`. A selector that matches no element or two
   gives a null value and a `reason` (`id-no-element`, `subject-two-elements` and so on), and a file
   that does not parse gives `reason: "unread-file"`.
+- `extract` reads email senders in backend classes. With `email.senders`, a member written as
+  `string <Member> => <value>;` or `string <Member> { get; } = <value>;` gives one `email_sender`
+  fact with `class`, `member` and `id`, nested classes included. A value is a string literal, or a
+  `<Class>.<NAME>` reference to a `public const string` in any file of the repository, named in
+  `constant`. A reference to no constant or to two gives `id: null` and a `reason`.

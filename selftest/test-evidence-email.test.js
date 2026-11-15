@@ -339,3 +339,91 @@ test('Test evidence AC-19: an email template gives its id and its subject with e
   const text = readFileSync(join(dir, 'mail', 'templates', 'welcome.json'), 'utf8');
   assert.equal(text.split('\n')[welcome.line - 1].includes('Welcome to {{club}}'), true, 'the line of the subject value');
 });
+
+const SENDERS_CS = `namespace Kite.Mail
+{
+    public class WelcomeEmail : EmailBase
+    {
+        public override string EmailCode => "club-welcome";
+    }
+
+    public class ResetEmail : EmailBase
+    {
+        public override string EmailCode { get; } = EmailCodes.Reset;
+    }
+
+    public class Outer
+    {
+        public class InviteEmail : EmailBase
+        {
+            public string EmailCode => EmailCodes.Invite;
+        }
+    }
+
+    public class MissingEmail : EmailBase
+    {
+        public string EmailCode => EmailCodes.Missing;
+    }
+
+    public class TwiceEmail : EmailBase
+    {
+        public string EmailCode => Mail.Twice.Code;
+    }
+
+    public class Quiet
+    {
+        // public string EmailCode => "in a comment";
+        public string OtherCode => "not configured";
+    }
+}
+`;
+
+const CODES_CS = `namespace Kite.Mail
+{
+    public static class EmailCodes
+    {
+        public const string Reset = "club-reset";
+        public const string Invite = "club-invite";
+    }
+
+    public class Twice { public const string Code = "one"; }
+}
+`;
+
+const TWICE_CS = `namespace Kite.Other
+{
+    public class Twice { public const string Code = "two"; }
+}
+`;
+
+test('Test evidence AC-20: a configured sender member gives its email id, through a constant when it names one', (t) => {
+  const dir = writeRepo(
+    t,
+    { 'api/Mail/Senders.cs': SENDERS_CS, 'api/Mail/EmailCodes.cs': CODES_CS, 'api/Other/Twice.cs': TWICE_CS },
+    { email: { senders: [{ member: 'EmailCode' }] }, repos: [{ id: 'api', kind: 'backend', root: 'api', role: ['api'] }] },
+  );
+  const senders = extractRepoFacts(dir, 'api').filter((fact) => fact.type === 'email_sender');
+  assert.deepEqual(
+    senders.map((fact) => [fact.class, fact.member, fact.id, fact.constant ?? null, fact.reason ?? null, fact.line]),
+    [
+      ['WelcomeEmail', 'EmailCode', 'club-welcome', null, null, 5],
+      ['MissingEmail', 'EmailCode', null, 'EmailCodes.Missing', 'no-constant', 23],
+      ['TwiceEmail', 'EmailCode', null, 'Twice.Code', 'two-constants', 28],
+      ['InviteEmail', 'EmailCode', 'club-invite', 'EmailCodes.Invite', null, 17],
+      ['ResetEmail', 'EmailCode', 'club-reset', 'EmailCodes.Reset', null, 10],
+    ].sort((a, b) => a[5] - b[5]),
+  );
+
+  const plain = writeRepo(
+    t,
+    { 'api/Mail/Senders.cs': SENDERS_CS, 'api/Mail/EmailCodes.cs': CODES_CS, 'api/Other/Twice.cs': TWICE_CS },
+    { repos: [{ id: 'api', kind: 'backend', root: 'api', role: ['api'] }] },
+  );
+  const without = extractRepoFacts(plain, 'api');
+  assert.deepEqual(without.filter((fact) => fact.type === 'email_sender'), []);
+  assert.deepEqual(
+    extractRepoFacts(dir, 'api').filter((fact) => fact.type !== 'email_sender'),
+    without,
+    'senders add their facts and change no other',
+  );
+});
