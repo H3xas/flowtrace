@@ -513,15 +513,25 @@ test('Stopped walk AC-7: readiness counts stopped routes per area and once acros
   assert.equal(complete.estate.stoppedWalks, undefined, 'no walk stopped, no column');
 });
 
-test('Stopped walk AC-7: scope over stale facts keeps its exit 4 and its stderr', (t) => {
+test('Stopped walk AC-7: scope over stale facts marks its routes as over fresh facts, and only --require-complete fails it', (t) => {
   const dir = quarry(t);
+  const fresh = json(run(dir, ['scope', '--area', AREA, '--json']));
   appendFileSync(join(dir, 'backend', 'src', 'Repositories', 'DispatchLedger.cs'), '\n// committed\n');
   commitAll(dir, 'move HEAD past the facts');
   const stale = run(dir, ['scope', '--area', AREA]);
-  assert.equal(stale.status, 4);
-  assert.equal(stale.stdout, '');
+  assert.equal(stale.status, 0, stale.stderr);
   assert.match(stale.stderr, /facts for api/);
-  assert.doesNotMatch(stale.stderr, MARK);
+  assert.match(stale.stdout, MARK);
+  const model = json(run(dir, ['scope', '--area', AREA, '--json']));
+  assert.notEqual(model.freshness.value, 'matching');
+  const rows = (report) => report.routes.map((route) => [route.key, route.serverGate, route.walk ?? null]);
+  assert.deepEqual(rows(model), rows(fresh));
+  assert.ok(model.routes.some((route) => route.walk && route.serverGate === 'unknown'));
+  const gated = run(dir, ['scope', '--area', AREA, '--require-complete']);
+  assert.equal(gated.status, 4, gated.stderr);
+  assert.equal(gated.stdout, stale.stdout, 'the routes come first and stay');
+  assert.match(gated.stderr, /facts for api/);
+  assert.match(gated.stderr, /^flowtrace: not complete: scope /m);
 });
 
 test('Stopped walk AC-8: surface states the walk after its first line, and --out facts hold no status', (t) => {
@@ -670,12 +680,13 @@ test('Stopped walk AC-14: a route summary marks its own stopped walk, and the ou
   const tree = run(dir, ['trace', 'PlotDetailPage'], config);
   assert.match(tree.stdout, /POST nursery\/v1\/plots\/\*\/health .* · walk unknown \(provider-unavailable 1\)$/m);
   const model = json(run(dir, ['trace', 'PlotDetailPage', '--json'], config));
-  assert.deepEqual(model.status.stops, {}, 'no reason only a summary walk had');
+  assert.equal(model.status.stops['provider-unavailable'], undefined, 'no reason only a summary walk had');
   const summaries = model.nodes.filter((node) => node.summaryWalk);
   assert.ok(summaries.length > 0);
   for (const node of summaries) assert.equal(node.summaryWalk.traversal, 'unknown');
-  run(dir, ['trace', 'PlotDetailPage', '--html', 'out/tree.html'], config);
-  assert.match(readFileSync(join(dir, 'out', 'tree.html'), 'utf8'), /walk unknown \(provider-unavailable 1\)/);
+  const regatta = gitFixture(t, 'regatta-desk', 'regatta.config.json');
+  run(regatta, ['trace', 'RegattaHeader', '--html', 'out/tree.html'], 'regatta.config.json');
+  assert.match(readFileSync(join(regatta, 'out', 'tree.html'), 'utf8'), /walk unknown \(provider-unavailable 1\)/);
   const flow = run(dir, ['trace', 'PlotDetailPage', '--view', 'source-flow', '--json'], config);
   assert.doesNotMatch(flow.stdout, /summaryWalk/);
   assert.doesNotMatch(run(dir, ['trace', 'PlotDetailPage', '--view', 'source-flow'], config).stdout, MARK);
