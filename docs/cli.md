@@ -483,6 +483,9 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   Seeds from a globally registered filter count in their route's seeds and again, apart,
   as "shared-gate" in totals and the headline; a route whose pipeline the walk could not
   resolve names it with its reason, and totals count those pipelines.
+  A pw_request whose first path segment is an interpolation the extractor could not fold
+  gives no evidence: notes.intercepts.unresolvedBase counts it, and the intercepts line
+  names that count next to the requests with no path and those matching no route.
 
   --runtime <file> joins per-spec runtime line hits against the branch spans facts
   already carry: a cobertura or lcov artifact, or a JSON manifest naming one report
@@ -504,11 +507,14 @@ scope --area <file|name> [--json]
   the route's own cover-depth walk whose ref matches "scope.gatePatterns"
   (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,
   Entitlement and Claims and both misses an unnamed check and over-reports a name that
-  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:
-  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no
-  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts
-  behind the repository HEAD — facts that only predate an uncommitted edit at the same
-  commit are noted on stderr and never gate this verb, since it reads no diff of its own.
+  merely contains one of these words. The rows describe the fact snapshot, not the
+  source as it stands now, so stale facts warn on stderr in both modes and never change
+  the exit code. --json emits { schemaVersion: 1, area, freshness: { value, sets },
+  routes: [{key, repo, file, line, automation, serverGate}] }, deterministic and with
+  no timestamp. Freshness reuses the extraction witnesses: value is matching, mismatched
+  or unknown, and each set names its repo with matching, head-stale, worktree-stale,
+  no-witness or not-observed. Exit 0 the area resolved, 2 a missing or unresolvable
+  --area.
 
 affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]
             [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]
