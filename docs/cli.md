@@ -105,10 +105,17 @@ routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then
   an exact allowlisted literal. --symbol and --literal force one mode and never fall
   back. --repo scopes point resolution only; originating routes remain cross-repository.
+  A route that reaches the point only through a global filter has a witness whose
+  second hop is that filter, with via "gate". The walk also starts at each backend
+  entry with no route in front of it: a SignalR hub method, an actor message handler and
+  each entryPoints kind of the configuration. Entries that reach the point are listed
+  beside the routes, each with its kind, class, method, site and witness. The verdict
+  is routes when a route reaches the point, entries when only entries do, else empty.
   A resolved point with no routes exits 0. Unresolved or ambiguous input exits 2 and
-  returns no route set. An incomplete forward walk exits 4 and returns no partial set.
-  JSON output is deterministic and carries schemaVersion 1; neither renderer claims
-  that route-level test evidence proves execution of the resolved point.
+  returns no route set. An incomplete forward walk, of a route, a gate or an entry,
+  exits 4 and returns no partial set. JSON output is deterministic and carries
+  schemaVersion 2, with entries, entryCount and completeness.entriesWalked; neither
+  renderer claims that route-level test evidence proves execution of the resolved point.
 
 trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]
             [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]
@@ -160,13 +167,31 @@ trace --area <file> [--require-complete]
   a base controller, adds one outcome per context.Result it assigns, and a global
   filter's seeds carry gate.shared: true. A loop whose step list, order, stop rule or
   step overload the walk cannot read prints "pipeline unresolved: <reason>", adds no step
-  outcome and keeps the name-sorted fan-out; the trailer counts both kinds.
+  outcome and keeps the name-sorted fan-out; the trailer counts both kinds. When only the
+  stop rule is unreadable, the steps are still walked in registration order. A stop can
+  be a block that ends in its jump: the statements before the jump run under each step's
+  reject, and a reject seed prints them as "before the reject". Each step after the
+  first of a loop that can stop is marked conditional.
+
+  More hops: a Map call on an IMapper field reaches the converters, resolvers and actions
+  of the matching Profile maps (via mapper). Work handed to a background queue is one
+  queue node whose children are the delegate's calls (via queued); the queue is found
+  by its cancellation-token delegate parameter or by workerPatterns.backgroundCalls. A
+  call through a dictionary built from an injected IEnumerable<I> reaches the method of
+  each implementation (via keyed_dispatch, inferred, marked "keyed <key> (inferred)"); a
+  constant key keeps the implementations whose key property returns it. A route that a
+  gateway route table forwards has one gateway hop after its action: the middleware, the
+  global and the named delegating handlers, then the downstream call as an http_out sink.
 
   --from-handler <selector> restricts a mobile walk to the subtree rooted at one
   `template_handler` hop, matched by its display form ("(click) onLike()"), the
-  compact "click:onLike", or the bare method name "onLike". Several handlers matching
-  the selector, or none, is exit 2 — the first case lists what matched, the second
-  lists every handler the walk found. Seeds, folding, --graph, --mermaid and --html all
+  compact "click:onLike", or the bare method name "onLike". Each form takes an optional
+  "@<line>" or "@<line>:<column>" suffix ("onLike@14") that keeps only the binding written
+  at that template site; a mobile binding has no column. Any other suffix is a usage
+  error. Several handlers matching the selector, or none, is exit 2 — the first case
+  lists what matched, one line for each binding site, the second lists every handler the
+  walk found. One handler bound at two or more sites is one node for each site, and each
+  such node names its site. Seeds, folding, --graph, --mermaid and --html all
   run on the narrowed walk unchanged; the default walk is untouched without the flag.
 
   Folding: the first time a node (same repo, file, line, kind and ref) appears, it
@@ -312,19 +337,37 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   declares prints as a `component-unresolved` arm. Neither is entered. A tag imported
   from a module outside the repository (react, react-router-dom, ...) is no arm.
   --json prints the same entries, arms and reasons without the per-route sections.
+  That model, schemaVersion 1, is one contract for web and mobile: the same fields with
+  the same meanings on both. Its top-level fields are component, status, header, entries,
+  selectedEntry, orphans, routes (each with key, arms and status), unresolved and limits.
+  A reached arm, under routes, has key, via, breadcrumb, entry, file, line and route. An
+  unresolved arm has reason, attempted, caller, breadcrumb, entry, file and line, and it
+  can also have candidates, source, cause, continuedBy and outcome. Each breadcrumb hop
+  has kind, ref and via. entry is the id of the entry that reached the arm, or null for
+  an arm without entry. A breadcrumb runs in walk order from the start
+  component through its entry to the request or to the node that failed. Two requests
+  that one entry reaches are two arms with two breadcrumbs under one entry id. Web hop
+  kinds are page, component, entry, method, store_action and route. Mobile hop kinds are
+  page, component, service, class, entry, method, store_action and route.
   On a mobile (Ionic) start, each template event binding of kind call is an `event`
-  entry with the handler it calls, and each lifecycle hook the class itself declares is
-  an entry with the hook as its trigger: ngOnInit, ngAfterContentInit, ngAfterViewInit,
+  entry with the handler it calls, and each lifecycle hook the class declares is an
+  entry with the hook as its trigger: ngOnInit, ngAfterContentInit, ngAfterViewInit,
   ionViewWillEnter and ionViewDidEnter (mount), ngOnChanges, ngDoCheck,
   ngAfterContentChecked and ngAfterViewChecked (update), ngOnDestroy, ionViewWillLeave
-  and ionViewDidLeave (unmount). The chain follows this. calls, injected service calls
-  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call on one
-  line, also inside pipe or mergeMap. A request no entry reaches, such as one a method
-  only a decorator, a subscription or an inherited hook runs, prints once as an arm
+  and ionViewDidLeave (unmount). A listed hook the class inherits is an entry too, at the
+  hook in the first base class up the extends chain that declares it. A base imported from
+  a package gives no entry, and a relative base that resolves to no one declaration prints
+  as one mobile-declaration-unresolved arm at the extends site. The chain follows this.
+  calls, injected service calls, static calls on a class the file declares or imports
+  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call, also
+  one written over more than one line or with comments between its tokens, and also
+  inside pipe or mergeMap. A request no entry reaches, such as one a method
+  only a decorator or a subscription runs, prints once as an arm
   without entry, and a request an entry reaches is never counted again there. A method,
-  service or component node the depth or node budget cut is a walk-limit arm too. A
-  gateway call written over more than one line states no fact, so its handler shows as
-  an entry that reaches no route; assign and prop bindings are no entries. --out defaults to
+  service or component node the depth or node budget cut is a walk-limit arm too. The
+  text of a walk-limit arm names the kind of node that was cut: action, method, service,
+  component, page or entry. Its JSON reason stays walk-limit.
+  Assign and prop bindings are no entries. --out defaults to
   <out>/span/component-<slug>.html, the slug naming the component, the file that declares
   it and, under --entry, the selected entry's own site; a name longer than the
   120-character cap ends in a digest of the whole name rather than losing that site, and
@@ -462,6 +505,9 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   Seeds from a globally registered filter count in their route's seeds and again, apart,
   as "shared-gate" in totals and the headline; a route whose pipeline the walk could not
   resolve names it with its reason, and totals count those pipelines.
+  A pw_request whose first path segment is an interpolation the extractor could not fold
+  gives no evidence: notes.intercepts.unresolvedBase counts it, and the intercepts line
+  names that count next to the requests with no path and those matching no route.
 
   --runtime <file> joins per-spec runtime line hits against the branch spans facts
   already carry: a cobertura or lcov artifact, or a JSON manifest naming one report
@@ -483,11 +529,14 @@ scope --area <file|name> [--json]
   the route's own cover-depth walk whose ref matches "scope.gatePatterns"
   (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,
   Entitlement and Claims and both misses an unnamed check and over-reports a name that
-  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:
-  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no
-  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts
-  behind the repository HEAD — facts that only predate an uncommitted edit at the same
-  commit are noted on stderr and never gate this verb, since it reads no diff of its own.
+  merely contains one of these words. The rows describe the fact snapshot, not the
+  source as it stands now, so stale facts warn on stderr in both modes and never change
+  the exit code. --json emits { schemaVersion: 1, area, freshness: { value, sets },
+  routes: [{key, repo, file, line, automation, serverGate}] }, deterministic and with
+  no timestamp. Freshness reuses the extraction witnesses: value is matching, mismatched
+  or unknown, and each set names its repo with matching, head-stale, worktree-stale,
+  no-witness or not-observed. Exit 0 the area resolved, 2 a missing or unresolvable
+  --area.
 
 affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]
             [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]
