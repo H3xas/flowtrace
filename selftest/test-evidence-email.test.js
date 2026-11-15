@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { validateConfig } from '../lib/config.js';
 import { factIdentity, validateFacts } from '../lib/facts.js';
-import { copyFixture, runCli } from './helpers.js';
+import { copyFixture, extractRepoFacts, runCli, writeRepo } from './helpers.js';
 
 const EMAIL_REFUSAL =
   '"email" must be an object with optional "reads" and "senders": "reads" an array of ' +
@@ -287,4 +287,55 @@ test('Test evidence AC-18: the email key changes no fact but the email reads', (
     const others = factsIn(withReads, repo).filter((fact) => fact.type !== 'email_read');
     assert.deepEqual(others, factsIn(without, repo), repo);
   }
+});
+
+const template = (code, channels) => `${JSON.stringify({ meta: { template: { code } }, channels }, null, 2)}\n`;
+const emailChannel = (...sections) => ({ kind: 'email', sections });
+const subjectSection = (text) => ({ role: 'subject', text });
+
+test('Test evidence AC-19: an email template gives its id and its subject with each placeholder as a star', (t) => {
+  const dir = writeRepo(
+    t,
+    {
+      'mail/templates/welcome.json': template('club-welcome', [
+        { kind: 'sms', sections: [subjectSection('Not this one')] },
+        emailChannel({ role: 'body', text: 'Hi' }, subjectSection('Welcome to {{club}}, {{{member.name}}}')),
+      ]),
+      'mail/templates/nested/reset.json': template('club-reset', [emailChannel(subjectSection('Reset your code'))]),
+      'mail/templates/no-email.json': template('club-sms', [{ kind: 'sms', sections: [subjectSection('Text only')] }]),
+      'mail/templates/two-subjects.json': template('club-twice', [emailChannel(subjectSection('One'), subjectSection('Two'))]),
+      'mail/templates/no-id.json': `${JSON.stringify({ meta: {}, channels: [emailChannel(subjectSection('Orphan'))] })}\n`,
+      'mail/templates/broken.json': '{ "meta": ',
+      'mail/other/ignored.json': template('club-ignored', [emailChannel(subjectSection('Ignored'))]),
+    },
+    {
+      repos: [
+        {
+          id: 'mail',
+          kind: 'email-templates',
+          root: 'mail',
+          templates: {
+            files: ['templates/**/*.json'],
+            id: 'meta.template.code',
+            subject: 'channels[kind=email].sections[role=subject].text',
+          },
+        },
+      ],
+    },
+  );
+  const facts = extractRepoFacts(dir, 'mail');
+  assert.deepEqual(
+    facts.map((fact) => [fact.file, fact.id, fact.subject, fact.reason ?? null]),
+    [
+      ['templates/broken.json', null, null, 'unread-file'],
+      ['templates/nested/reset.json', 'club-reset', 'Reset your code', null],
+      ['templates/no-email.json', 'club-sms', null, 'subject-no-element'],
+      ['templates/no-id.json', null, 'Orphan', 'id-no-element'],
+      ['templates/two-subjects.json', 'club-twice', null, 'subject-two-elements'],
+      ['templates/welcome.json', 'club-welcome', 'Welcome to *, *', null],
+    ],
+  );
+  const welcome = facts.find((fact) => fact.id === 'club-welcome');
+  const text = readFileSync(join(dir, 'mail', 'templates', 'welcome.json'), 'utf8');
+  assert.equal(text.split('\n')[welcome.line - 1].includes('Welcome to {{club}}'), true, 'the line of the subject value');
 });

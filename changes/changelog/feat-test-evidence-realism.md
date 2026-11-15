@@ -102,3 +102,8 @@
   with each `${…}` as `*`, and a `const` of the same function bound to one of these gives its
   value. Another expression gives `subject: null` and `reason: "unreadable-subject"`. A test
   whose title is not a literal gives `test: null`.
+- `extract` reads an `email-templates` repository. Each JSON file that a `templates.files` glob
+  matches gives one `email_template` fact with `id`, `subject`, `file` and `line`. Each `{{…}}`
+  and `{{{…}}}` placeholder of the subject becomes `*`. A selector that matches no element or two
+  gives a null value and a `reason` (`id-no-element`, `subject-two-elements` and so on), and a file
+  that does not parse gives `reason: "unread-file"`.
