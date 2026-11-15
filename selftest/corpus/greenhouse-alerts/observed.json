@@ -345,7 +345,7 @@
         {
           "id": "click-acknowledge-alarm",
           "found": true,
-          "by": "symbol",
+          "by": "both",
           "match": null
         },
         {

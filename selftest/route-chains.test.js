@@ -157,7 +157,8 @@ test('Route chains AC-1: the web thunk chain and the mobile effect chain run fro
 
 test('Route chains AC-2: a page comes from the route element, the route range or the Ionic page', () => {
   const joinPage = byEntry(base, 'JoinPage');
-  assert.equal(joinPage.length, 2, 'the thunk call and its dispatch');
+  assert.equal(joinPage.length, 1, 'the thunk call and its dispatch are one chain');
+  assert.deepEqual(kinds(joinPage[0]), ['page', 'entry', 'dispatch', 'effect', 'request']);
   for (const chain of joinPage) {
     assert.equal(chain.complete, true);
     assert.equal(chain.page.fact, 'page_route');
@@ -215,8 +216,9 @@ test('Route chains AC-3: each break is one gap from the closed list', () => {
   assert.deepEqual(kinds(sidebar), ['page', 'render', 'gap', 'dispatch', 'bind', 'effect', 'request']);
 
   const badge = base.chains.filter((chain) => chain.hops.some((hop) => hop.file === 'src/legacy/Badge.tsx'));
-  assert.equal(badge.length, 2, 'the thunk call and its dispatch');
+  assert.equal(badge.length, 1, 'the thunk call and its dispatch are one chain');
   for (const chain of badge) {
+    assert.deepEqual(kinds(chain).slice(2), ['dispatch', 'effect', 'request']);
     assert.deepEqual(chain.gaps, ['component-ambiguous', 'no-entry']);
     assert.equal(chain.hops[0].reason, 'component-ambiguous');
     assert.deepEqual(chain.hops[0].candidates, ['src/cards/Badge.tsx', 'src/legacy/Badge.tsx']);
@@ -225,8 +227,9 @@ test('Route chains AC-3: each break is one gap from the closed list', () => {
   assert.equal(base.chains.some((chain) => chain.hops.some((hop) => hop.file === 'src/cards/Badge.tsx')), false);
 
   const orphan = base.chains.filter((chain) => chain.hops.some((hop) => hop.file === 'src/clubs/OrphanNotice.tsx'));
-  assert.equal(orphan.length, 2);
+  assert.equal(orphan.length, 1);
   for (const chain of orphan) {
+    assert.deepEqual(kinds(chain).slice(2), ['dispatch', 'effect', 'request']);
     assert.deepEqual(chain.gaps, ['no-page', 'no-entry']);
     assert.equal(chain.hops[0].component, 'OrphanNotice');
   }

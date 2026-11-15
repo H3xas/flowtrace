@@ -1,0 +1,4 @@
+# ferry-tickets: the deck routes that differ only by a constant prefix.
+GET upper/seats
+GET lower/seats
+GET car/seats

@@ -52,7 +52,7 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 
 | type | fields | stated when |
 |---|---|---|
-| `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route; a minimal-API registration adds `handler` (`lambda`, or `method` for a method group naming a method the repository declares), and a lambda's `action` is `<registering method>(<VERBS> <template>)` |
+| `route` | `controller`, `action`, `verb`, `template` | a controller action declares an HTTP route; a minimal-API registration adds `handler` (`lambda`, or `method` for a method group naming a method the repository declares), and a lambda's `action` is `<registering method>(<VERBS> <template>)`. The route argument is a constant string expression: a literal, a `const` string field, a concatenation or interpolation of constants, or `nameof`. When the argument has no single value, optional `unresolvedArgument` gives its `text` and `line`, and the route matches and joins no request |
 | `http_out` | `configKey`, `template` | the service calls out over HTTP to another service |
 | `publish` | `message`, `verb` | a message is published to the bus; `message` is `null` and `unresolved` names why when the argument's type could not be read; `verb` is the matched call name lower-cased (`publish`, `send`, `defer`, `submitjob`, `reply`, an `Async` suffix dropped either way) |
 | `consume` | `message`, `consumer` | a class consumes a message type |
@@ -65,15 +65,15 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `message_class` | `name`, `fqn` | a message type is declared |
 | `di_binding` | `iface`, `impl` | an interface is registered to an implementation |
 | `ctor_field` | `class`, `field`, `paramType` | a class holds a constructor-injected field; with `method`, a parameter the framework injects into that one handler |
-| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form. A fact set carrying `controlEvidence` also gives every `method_call` a `column` and a `control` (see [Control evidence](#control-evidence)) |
+| `method_call` | `class`, `method`, `field`, `calledMethod` | a body calls a member on an injected field; optional `receiverType` names the receiver's type when the field is not a constructor field. A link of a member-access chain such as `_store.Find(id).Close()` gives one fact with `receiverType` when the static type of its receiver is known and the repository declares exactly one target; on a mobile fact, `field` keeps the local type spelling, and optional `source` and `imported` carry the same import provenance as the `injects` fact, with `unresolved: "mobile-declaration-unresolved"` for an unsupported form; optional `static: true` marks a mobile call on a class name (`Helper.member(...)`), where `field` is that name as written and the call carries the same provenance fields. A fact set carrying `controlEvidence` also gives every `method_call` a `column` and a `control` (see [Control evidence](#control-evidence)) |
 | `method_span` | `class`, `method`, `endLine` | a method body's extent; optional `paramTypes` lists the signature's parameter types as written |
-| `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch` |
+| `branch_point` | `class`, `method`, `kind`, `text`, `endLine` | a body branches; `kind` is `error_return`, `validation`, `toggle`, `guard`, `if` or `switch`. Three kinds are decisions inside an expression: `ternary` for a `?:` conditional, `coalesce` for a `??` choice, and `predicate` for a lambda that a `Where`, `Any`, `All`, `First` or `FirstOrDefault` call tests. These three never multiply seeds |
 | `param_source` | `class`, `method`, `param`, `source`, `via` | where a parameter's value comes from — `body`, `query`, `route`, `jwt`, `injected` |
 | `exception_map` | `scope`, `class`, `exception`, `status` | an exception type is converted to a status — `scope` is `global` for a registered exception filter, `action` for a `catch` inside one controller action |
 
 | `step_composition` | `class`, `field`, `source`, `steps` | the source names the ordered steps of one pipeline's collection field: `source` is `factory` (registration calls on the instance a DI factory lambda builds and returns), `typeof-list` (a literal `typeof(...)` list resolved through the container) or `enumerable` (an injected `IEnumerable<T>` and its `Add*<T, X>()` registrations); `steps` is `[{ type, file, line }]` in run order, or `null` with a `reason` (`step-expression`, `registration-order`, `no-registration`, `factory-count`) when the list cannot be read |
-| `loop_stop` | `class`, `method`, `field`, `form`, `step` | a `foreach` over a collection field calls `step` on each element; `form` is `flag-return` (with `flag`, `negated`, `position` `before` or `after` the call, and `returns`), `flag-break` (with `flag`, `negated` and `after`, the line after the loop that tests the flag), `bool-return` (with `returns`), `none`, or `unresolved` with `reason: "stop-rule"`; `endLine`, `stepLine`, `arg` and `argType` describe the loop and its argument |
-| `flag_write` | `class`, `method`, `member`, `value` | a body writes `param.member = value;` for a member that a loop's stop rule reads; `value` is `true`, `false` or `expression`, and `param` names the receiver |
+| `loop_stop` | `class`, `method`, `field`, `form`, `step` | a `foreach` over a collection field calls `step` on each element; `form` is `flag-return` (with `flag`, `negated`, `position` `before` or `after` the call, and `returns`), `flag-break` (with `flag`, `negated` and `after`, the line after the loop that tests the flag), `bool-return` (with `returns`), `none`, or `unresolved` with `reason: "stop-rule"`; `endLine`, `stepLine`, `arg` and `argType` describe the loop and its argument. A stop that is a block ending in its jump also carries `rejectFrom` and `rejectTo`, the lines of the statements before the jump. Optional `gate` `{ method, line, text }` names the test the loop makes of each step before it runs it, `if (!step.G(x)) continue;` or `if (step.G(x)) { … }` |
+| `flag_write` | `class`, `method`, `member`, `value` | a body writes `param.member = value;` for a member that a loop's stop rule reads; `value` is `true`, `false` or `expression`, and `param` names the receiver. When the value is a call, optional `call` `{ field, calledMethod }` names it |
 | `sentinel_return` | `class`, `method`, `value` | a body returns `false` or `null`; `ifLine` names the `if` it answers, when it has one |
 | `return_flow` | `class`, `method`, `field`, `calledMethod` | a method returns a call's value unchanged, so a sentinel passes through it to its caller |
 | `sentinel_map` | `class`, `method`, `field`, `calledMethod`, `sentinel`, `status` | an action answers `status` when the call it names returns `sentinel` (`null` or `false`), read from a `?:` conditional or an `if` on the value; `local` names the variable that holds the value |
@@ -81,11 +81,23 @@ extractor read never carries it. The absence is the mark, and a provider cannot 
 | `filter_result` | `class`, `method`, `status` | a filter's entry method assigns `context.Result` a result whose status the status rules read |
 | `filter_use` | `filter`, `scope` | a filter applies: `scope` is `global` (an `options.Filters.Add(typeof(X))` registration, with its `position`), or `controller` or `action` for an attribute on that class or method (with `class`, and `method` for an action) |
 | `class_base` | `class`, `base` | a class header names a base class that the repository declares; a framework base such as `ControllerBase` gives no fact |
+| `entry` | `kind`, `class`, `method` | a method starts work that no route is in front of: `kind` is `hub` (a public method of a SignalR `Hub` class, or its connection events), `actor` (a message handler that an actor class registers, with `message`) or a kind that `entryPoints` names; `declaringClass` names the base class that declares an inherited method |
+| `mapper_map` | `class`, `source`, `dest`, `target`, `method`, `role` | a `CreateMap<S, D>` statement in a `Profile` class names a class the mapper runs: `role` is `converter` (`ConvertUsing`), `resolver` (`MapFrom<T>`) or `action` (`BeforeMap`, `AfterMap`), and `method` is the method the walk enters on `target` |
+| `mapper_call` | `class`, `method`, `field`, `dest` | a body calls `Map<D>` or `Map<S, D>` on an `IMapper` field; `source` is present for the two-argument form |
+| `queue_call` | `class`, `method`, `receiver`, `calledMethod`, `delegate`, `target`, `rule` | a body hands a delegate to a background queue: `rule` is `shape` (the receiver declares a method whose delegate parameter takes a `CancellationToken`) or `config` (`workerPatterns.backgroundCalls` names the call); `delegate` is `method-group` or `lambda`, and `target` is the method the delegate runs |
+| `keyed_collection` | `class`, `field`, `iface`, `key`, `param` | a constructor builds a dictionary field from an injected `IEnumerable<iface>` parameter `param` with `ToDictionary`; `key` is the property that the key selector reads |
+| `keyed_call` | `class`, `method`, `field`, `calledMethod`, `key`, `form` | a body reads a keyed collection and calls `calledMethod` on the value: `form` is `indexer`, `local` (the value goes into a local first) or `try-get` (`TryGetValue`), and `key` is the key expression as written |
+| `key_property` | `class`, `property`, `value` | a class returns a constant from the property that a keyed collection uses as its key |
+| `gateway_route` | `verb`, `template`, `downstreamVerb`, `downstreamTemplate`, `hosts`, `handlers` | a `.json` gateway route table forwards one upstream verb and template: `hosts` lists `host:port` values, and `handlers` lists the delegating handlers that the route names. A route with no `UpstreamHttpMethod` gives no fact |
+| `gateway_table` | `state`, `reason` | a `.json` file that holds a gateway route table cannot be read; `state` is `unreadable` |
+| `gateway_handler` | `handler`, `global` | an `AddDelegatingHandler<T>()` registration; `global` is `true` when the call passes `true` |
+| `gateway_middleware` | `middleware`, `position` | a `UseMiddleware<T>()` call before the `UseOcelot` call in the same method; `position` is its order, from 1 |
 
 `param_source` is what makes seed reachability answerable: a branch reading only `jwt` or
 `injected` values cannot be forced by a black-box caller.
 
-The walk reads the last ten types only at a pipeline loop, a sentinel return or a filter. A
+The walk reads the ten types from `step_composition` to `class_base` only at a pipeline loop,
+a sentinel return or a filter. A
 fact set without them gives the same tree and seeds as before, and each pipeline loop then
 shows `composition-not-extracted`. From these facts the walk adds reject decisions: a branch
 of kind `reject` with the sides `taken` and `not-taken`, whose `rejectForm` is `flag-write`,
@@ -101,6 +113,8 @@ only where they apply:
 - A seed that a filter decides carries `gate: { filter, scope, stage, shared }`. The value of
   `shared` is `true` for a global filter. A seed with no readable status carries
   `statusReason`.
+- A fault decision that an `exception_map` or the `exceptionStatuses` configuration maps carries
+  `mappedStatus: { status, scope, via }`. The value of `scope` is `action`, `global` or `table`.
 - `stats.pipelines` gives the resolved count and the unresolved pipelines with their reasons.
   `stats.gates` gives the filters that the route ran.
 
@@ -108,9 +122,9 @@ only where they apply:
 
 | type | fields | stated when |
 |---|---|---|
-| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook` or `service`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; `exports` lists each name its module exports it under: on a web component `default` is included, and on a mobile component only named value exports are listed, with `[]` for a declaration the module does not export; a render's `source` binds only a component whose `exports` holds the imported name, and a component without `exports` binds no import |
+| `component` | `name`, `selector`, `role` | a component is declared; `role` is `page`, `container`, `component`, `hook`, `service` or `class` (a mobile class with no `@Component` or `@Injectable` decorator); optional `extends` is the base class name a mobile declaration writes, as written, and optional `extendsSource` and `extendsImported` are that name's import provenance, read as for `injects`; optional `lazy` is the module a `lazy(() => import(...))` binding loads; `exports` lists each name its module exports it under: on a web component `default` is included, and on a mobile component only named value exports are listed, with `[]` for a declaration the module does not export; a render's `source` binds only a component whose `exports` holds the imported name, and a component without `exports` binds no import |
 | `renders` | `from`, `to` | one component's template renders another; optional `source` is the module the rendering file imports `to` from; optional `imported` is the name that module exports it under when it is not `to` itself (`default` for a default import, `A` for `{ A as B }`, the member for a namespace tag `<NS.A>`); on a mobile fact, optional `componentFile` is the declaration file that owns the template, while `file` and `line` stay the template source site |
-| `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler; on a mobile fact, optional `componentFile` is the declaration file that owns the template |
+| `template_handler` | `component`, `event`, `handler`, `kind` | a template or JSX binds an event to a handler; on a mobile fact, optional `componentFile` is the declaration file that owns the template; a web inline arrow that dispatches a creator call, `dispatch(c(x))`, names the creator `c` as its handler |
 | `injects` | `from`, `to` | a class is given another as a dependency; on a mobile fact, optional `source` is the written module specifier, `imported` the named value export, and `unresolved: "mobile-declaration-unresolved"` an import form the reader cannot bind |
 | `gateway_call` | `service`, `method`, `verb`, `template`, `resolved` | a service issues an HTTP call; `resolved` is false when the URL could not be made literal; with `controlEvidence`, it also carries `column` and `control` |
 | `action_def` | `action` | an action type is declared |
@@ -160,6 +174,15 @@ whose response handler this dispatch is written inside, and `outcome` is `succes
 source states the relation — a `.then` or `.catch` callback — never inferred from two
 statements sharing a body. Optional on `template_handler`: the `column` of the binding.
 
+Optional on web `action_dispatch` and `method_call`: `arrow` names the innermost arrow
+function or function expression that holds the fact. It is `{ line, column }` of the arrow
+start, with `name` when a local `const`, `let` or assignment binds the arrow to a name. It
+has `attribute: { name, line, column }` when the arrow is the value of a JSX `on*`
+attribute. That attribute site is the site of the `template_handler` fact of the binding.
+A fact outside every arrow has no `arrow`. A reader of a fact set that has no `arrow` on
+any web fact keeps the walk of the older fact sets. A fact set extracted again has a new
+facts digest.
+
 Mobile declaration identity works from these facts alone. A mobile `injects` or
 injected-receiver `method_call` fact can carry `source` and `imported`. The reader follows
 them to one declaration in one file and enters that declaration's own class name. A written
@@ -171,6 +194,119 @@ single declaration in the repository. A site the evidence cannot prove states th
 `mobile-declaration-unresolved` result, with the sorted candidate files when more than one
 declaration is possible. An older fact set that lacks these optional fields remains
 readable. It keeps the name-only limits, and a fresh extraction adds the provenance.
+
+A mobile class with no Angular decorator is a `component` fact with the role `class`. It
+gets the same member, call, injection, gateway and dispatch facts as a decorated class. It
+renders no template and owns no entries of its own. The `extends` of a declaration and a
+`static` call on a class name resolve by the same rules as an `injects` fact: `extends`
+with `extendsSource` and `extendsImported`, a `static` call with `field`, `source` and
+`imported`. A static call is stated only on a class the file declares or on a value or
+default import from a relative module. A namespace, type-only or package import and an
+unbound global state nothing.
+
+### Client display conditions
+
+The mobile and web extractors record the conditions that show or hide a part of a component
+template. They also record the values that a parent passes to a child component. Each read of a field in
+one of these expressions has a trace. A trace is the list of hops from the read back to the
+place that gives the value. The reader holds no list of field names, so each field name is
+data.
+
+| type | fields | stated when |
+|---|---|---|
+| `display_condition` | `component`, `form`, `shows`, `text` | a condition shows or hides a part of the template, and `text` is the condition as written |
+| `client_transfer` | `component`, `target`, `name`, `text` | a template passes a value to a child: `target` is the child tag, `name` the bound input or prop, and `text` the value expression |
+| `client_assignment` | `component`, `target`, `text` | a trace passes through an assignment: `target` is the assigned name, `text` the assigned value, and `step` the trace step |
+| `client_read` | `component`, `path`, `context` | a condition, a transfer or an assignment reads a field: `path` is the read as `a.b.c`, and `context` is `condition`, `transfer` or `assignment` |
+| `client_scan` | `component`, `region`, `status` | the reader scans one template region: `region` is `template` (Angular) or `jsx` (React), and `status` is `complete`, `partial` or `failed` |
+
+Each fact also has `column`. If the template is a separate file, a mobile fact has
+`componentFile`, as other mobile facts do. That is the file that declares the component.
+Two sites on one line give two facts.
+
+The forms of a `display_condition` are these:
+
+- `ngIf`, from `*ngIf`, with `; else`, `then`, `let` and `as` parts. `shows` is `true`.
+- `hidden`, from `[hidden]`. `shows` is `false`.
+- `and`, from `{c && <X/>}`, and `return-and`, from `return c && (<X/>)`. `shows` is `true`.
+- `ternary`, from `{c ? <X/> : <Y/>}`. `shows` is `"both"`, because each branch shows a part.
+- `early-return`, from `if (c) return …` before the last `return` of a component.
+  `shows` is `false`.
+
+A `client_transfer` has `form`. The template forms are `property` for `[x]`, `two-way` for
+`[(x)]`, and `attr`, `class` or `style` for `[attr.x]`, `[class.x]` and `[style.x]`. The JSX
+forms are `jsx` for `x={…}` and `spread` for `{...x}`. If one component declares the child tag or the imported name, the fact has
+`targetComponent` and `targetFile`. A JSX attribute whose value is an element gives a
+transfer with no read.
+
+A `client_read` has `negated` and `traces`. If an odd number of `!` holds the read, `negated`
+is `true`. With Angular pipes, it has `pipes`, the pipe names from the read outward. Its
+`site` is `{ kind, file, line, column }`, the site that holds the read. A trace is
+`{ hops, end }`. Each hop is `{ step, file, line, column, path }`, where `path` is the path
+that the step looks up. If the trace reaches a literal value, `end` is
+`{ origin: "literal", text }`. If the trace stops, `end` is `{ unresolved: <reason> }`. A stopped trace keeps the hops
+before the stop. A read with a stopped trace has `unresolved`, the reason of its first
+stopped trace.
+
+The trace steps are these:
+
+| step | the hop goes to |
+|---|---|
+| `alias` | a `const` or `let` that holds the read |
+| `destructure` | a destructuring pattern that names the read |
+| `member` | a class member initializer |
+| `assignment` | a `this.x = …` assignment in a class body |
+| `getter` | the single `return` of a getter |
+| `input` | an `@Input()` member |
+| `prop` | a prop of a function or class component |
+| `transfer` | the parent site that binds the input or prop |
+| `iteration` | the list of an `*ngFor` or a `.map` callback, with `[]` added to the path |
+| `async` | the value under an `async` pipe |
+
+A trace reason names why a trace stops. The list is closed:
+
+| reason | the trace stops at |
+|---|---|
+| `dynamic-key` | a key that is not a literal, as in `flags[key]` |
+| `store-selector` | a store `select` or a `useSelector` read |
+| `call` | the result of a helper or method call |
+| `external-root` | an import, a global or an injected service member |
+| `unsupported-local` | a `#ref`, `let-x` or `index as i` template local |
+| `no-binding` | an input or prop that no parent site binds |
+| `spread-props` | a prop that only a `{...x}` spread can give |
+| `ambiguous` | a name with two declarations in scope, or a selector that two components declare |
+| `cycle` | a member that the trace already passed through |
+| `depth-limit` | the hop limit, 16 hops |
+| `trace-limit` | the trace limit, 64 traces for one read, and the branches after it give no trace |
+| `unsupported-syntax` | an expression outside the grammar, or a hop with no supported source |
+| `unsupported-form` | a form that the reader knows and does not read, such as a static attribute at a child tag |
+
+A `client_scan` fact is at line 1 of a separate template file. An inline template has its
+fact at its `template:` line, and a JSX region at its component declaration. The fact has
+`counts`, the number of conditions, transfers, assignments and reads of the region. The
+status is one of these:
+
+- `complete` means that the reader parsed each condition and each transfer site.
+- `partial` means that some sites are outside the reader. Each one is an `unsupported` row
+  `{ file, line, column, reason, text }`, with the reason `unsupported-syntax` or
+  `unsupported-form`. A `[ngSwitch]`, an `@if (…) {` block, and a JSX `{c || <X/>}` are
+  `unsupported-form`. An error in the reader gives a row with `internal: true`, and the
+  other facts of the file stay.
+- `failed` means that the reader cannot read the template. The fact has a `reason`.
+
+| reason | the template |
+|---|---|
+| `template-url-unresolved` | the `templateUrl` names no readable file |
+| `template-url-non-literal` | the `templateUrl` is not a plain string |
+| `inline-template-substitution` | the inline `template` is not a plain string, for example a template literal with `${}` |
+
+The five types join the one `facts` array. So a fact set extracted again has a new facts
+`digest`, and each identity that hashes the digest changes with it: the `status.identity` of
+`trace`, `span` and `chains`, and the `provenance.id` of an edge export. A snapshot taken
+before reports drift for that set. The fact count of a set changes with its facts, in the
+`extract` line and in the "Fact producers" table of the `render` report. A file whose only
+facts are new facts is a file that the extractor read. So `decisions` reads it with blame,
+and a member-scoped `affected` widening keeps an edge to it.
 
 ### Control evidence
 
@@ -220,15 +356,29 @@ inside the loop.
 
 | type | fields | stated when |
 |---|---|---|
-| `pw_test` | `spec`, `test`, `skipped` | a Playwright test is declared — not a `test.skip(condition, reason)` guard written inside a test body, and not a `test` reached through a member access (a regular expression's `.test(...)`, a matcher object's) |
+| `pw_test` | `spec`, `test`, `skipped`, `eligibility`, `guards` | a Playwright test is declared — not a `test.skip(condition, reason)` guard written inside a test body, and not a `test` reached through a member access (a regular expression's `.test(...)`, a matcher object's); `unread` says why the reader could not read it in full |
 | `pw_request` | `spec`, `test`, `verb`, `template`, `resolved` | a test issues a request |
 | `pw_assert` | `spec`, `test`, `kind` | a test asserts something |
 | `pw_stub` | `spec`, `test`, `kind` | a test stubs a response; `handler` says what its route handler does |
 | `pw_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `pw_test`: whether the test runs on a real backend, on patched responses or on a mocked backend |
 | `cypress_test` | `spec`, `test`, `skipped` | a Cypress test is declared |
 | `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL |
-| `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal argument of a configured case-id call, `table` for one row of a same-file data table the test iterates |
+| `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal first argument of a configured case-id call, `table` for one row of a same-file data table the test iterates, `evaluated` for one loop instance of a same-file value the bounded reader resolves, `unresolved` for a configured call whose first argument none of those readers resolve; an `evaluated` fact adds `instance`, and an `unresolved` fact has empty `ids` and adds `expression`, the argument text, and `instance` when one loop instance resolves no id |
 | `pw_title` | `spec`, `titles` | *(optional)* the titles a collector resolved for one `pw_test` declaration, one per parameter instance; its `line` is that declaration's *source* line |
+
+`pw_test` facts count the declarations in the source, not the instances the runner makes of
+them. A declaration that the reader cannot read in full still gives its `pw_test`, with the
+optional field `unread`:
+
+- `unbalanced-call`: the reader cannot find the `)` that closes the `test(` call. The title is
+  read, the body is not.
+- `reader-failure`: the reader failed while it read this test. The facts that it already made
+  for the test are dropped, except the `case_id` facts that it finished. The other tests of
+  the spec are read as usual.
+
+Such a test has no `pw_request` and no `pw_assert`, and its `pw_backend` is `unknown` with
+`sites: []` and the same value as its `reason`. A test that the reader reads in full has no
+`unread` field.
 
 A `pw_request` can have four optional fields. `via: "helper"` marks a request that the test
 makes through a call into a helper function, a helper class method or a client method. That
@@ -245,12 +395,32 @@ gives one fact with `verb: "ANY"`, `resolved: false`, a placeholder `template`, 
 and a `reason`. The reason is `ambiguous-receiver` when two or more bodies can answer the call,
 and `depth-bound` when the call needs a fifth body. The chain of that fact ends at the call.
 A request written in the test body itself, also inside an `expect(...)` argument, has none of
-the four fields.
+the four fields, except `reason`.
+
+A third reason, `unresolved-base`, can be on any `pw_request`. It says that the first path
+segment of the URL is an interpolation that the reader cannot fold, for example a
+`process.env` value, a parameter or a call: `${base}/join/${id}`. The fact has
+`resolved: false`, and the template keeps the interpolation as written. Such a fact keeps its
+`via`, `receiver` and `chain`. `cover` gives such a request no evidence and counts it in
+`notes.intercepts.unresolvedBase`, because a suffix match would join an unrelated route.
+
+The parameters of a test that name fixtures with a readable type are typed for the call walk.
+The type comes from the type argument of `extend<{ name: Type }>`, else from a
+`use(new Type(...))` call in the fixture. A type that names no class of the repository types
+nothing.
 
 A name in a URL resolves in the file that holds the URL. If that file does not define the
 name, a named import resolves to the one value of the files that export the name. Otherwise
 the name resolves to its one value in the repository. If two or more values are left, the
-template keeps `${name}` and the fact has `resolved: false`.
+template keeps `${name}` and the fact has `resolved: false`. An export list entry with an
+inline `type` marker (`export { type Name }`) exports no value.
+
+A string const can end with `;`, a line break or the end of the file, and can have
+`as const`. A const template over another const folds into its full text, and a const that
+reaches itself again stays `${name}` with `resolved: false`. A URL argument that is the name of
+a `const` in the same function before the call reads the value of that const. In a `+`
+concatenation, each part that is not a literal becomes `${part}`, and the template rule
+applies, so a name with no const is a path parameter.
 
 A `cypress_intercept` written in a support command carries no enclosing test and is exactly
 as much proof that a route is exercised as one written inline. There is no Cypress assertion
@@ -270,8 +440,11 @@ basis for it.
   passed by name), `named-handler` (a route handler named by a function that its file does
   not declare), `unread-handler` (a handler that calls none of `fulfill`, `fetch`, `continue`,
   `fallback` and `abort` on its route), `ambiguous-helper` (a bare call name whose
-  repo-wide functions reach different kinds), or `unread-file` (the reader could not parse the
-  spec file).
+  repo-wide functions reach different kinds), `unread-file` (the reader could not parse the
+  spec file), `unbalanced-call` or `reader-failure` (the `unread` value of the `pw_test`),
+  `unread-fixture` (a fixture that the test counts and whose value the reader cannot read, or
+  a name that the fixture chain does not define and that Playwright does not supply), or
+  `unread-option` (a stub under an option whose value the reader cannot resolve).
 - `real`: none of the above.
 
 The precedence is `mocked`, then `patched`, then `unknown`, then `real`, and only an `unknown`
@@ -281,8 +454,28 @@ that those regions call. A function of the same file wins over a repo-wide class
 top-level function of the same name. The walk follows calls to a fixed point, so a cycle
 ends it. Comments and string contents are never read as calls.
 
+A test is also read through the regions of the fixtures that it counts. The reader finds the
+`test` of the spec through a local `const test = base.extend(...)` or a named import from a
+relative module, and follows each `.extend(...)` of the chain back to `@playwright/test`. It
+reads only the files of the extract root that the configuration does not exclude. It reads
+each fixture of an object literal `extend` argument: an arrow, a `function`, a method
+shorthand, `[fn, { auto: true }]`, `[value, { option: true }]` or a literal value. The region
+of a fixture is the code of its function before its `use(` call. A test counts a fixture that
+its parameters name, that an applicable `beforeEach` or `beforeAll` hook names, that another
+counted fixture names, and every `auto` fixture. Code after `use(`, and the `afterEach` and
+`afterAll` hooks, never change the class.
+
+A stub in a fixture region can be under `if (<option>)` or `if (!<option>)`, where `<option>`
+is an option fixture that the fixture names. The stub counts only when the option value makes
+its branch run. The value comes from the innermost `test.use({ <option>: <literal> })` at file
+scope or in a `test.describe` block that holds the test, and the last `test.use` of one scope
+wins. Without one, the value is the option default. A literal is a boolean, a number, a string
+or `null`. Any other condition keeps the stub.
+
 `sites` lists the calls that decided the class, sorted by line. A site has `line`, `where`
-(`test`, `hook` or `helper`) and `kind`, and can have `call`, `via` and `at`:
+(`test`, `hook`, `helper` or `fixture`) and `kind`, and can have `call`, `via`, `at` and
+`fixture`. A `fixture` site names its fixture in `fixture`. When another file holds the
+fixture, its `line` is the line of the test declaration:
 
 | `kind` | the deciding call |
 |---|---|
@@ -307,14 +500,47 @@ holds it, else the line of the test's call into `via`.
 takes the kind that every repo-wide helper of that name agrees on, else `unresolved`. The field
 adds nothing to the set of `pw_stub` facts, and `cover` reads neither field.
 
-`case_id` resolves only three shapes and refuses the rest: a
-`test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is
-a string literal, a literal argument of a configured case-id call (`caseId.calls` in the
-configuration file — an entry like `tms.id` matches `tms.id(...)` sites; none are
-configured out of the box), or a member expression whose object is the loop binding of a
-same-file `for (const row of ROWS)` over an array of object literals. A subscript, a
-computed value, a template or a cross-file table stays absent rather than being
-approximated — the id a tester pastes into a case tool is never invented.
+`case_id` resolves four shapes. The first is a
+`test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is a
+string literal. The second is a literal first argument of a configured case-id call
+(`caseId.calls` in the configuration file). An entry like `tms.id` matches `tms.id(...)` sites
+in a test body and a `tms.id(…)` wrapper in title position. None are configured out of the box.
+The third is a first argument that is a member expression whose object is the loop binding of a
+same-file `for (const row of ROWS)` over an array of object literals.
+
+The fourth is the bounded reader of the spec file
+([configuration.md](configuration.md#caseid)). It reads `const` values, object and array
+literals, keys, ternaries and the bindings of the `for…of` and `forEach` loops around the call.
+It gives one `evaluated` fact for each loop instance, 64 at most for a site, in loop order. Its
+`instance` is an object of the loop bindings that the argument read, each a string, a number or
+a boolean, such as `{ "g": false, "row.name": "alpha" }`. An argument with no loop gives
+`instance: {}`.
+
+A configured call whose first argument none of these read gives one `unresolved` record with
+`ids: []` and `expression`, the argument text with its white space collapsed and cut at 160
+characters. Examples are a function parameter, a call result, `process.env`, a `let` binding,
+an imported value, and a site past 64 instances. A loop instance that reads an absent key gives
+the same record with its `instance`. An id is never approximated, so the id a tester pastes
+into a case tool is never invented. A reader that counts ids reads the record as no ids. The
+`span` page shows its expression as `case id not read: <expression>`.
+
+`pw_test.eligibility` says whether the spec file says that the test runs. It is one of four
+states, and the first that applies wins:
+
+1. `static-skip`: the test is skipped with no condition. That is `test.skip(` or `test.fixme(`
+   as the declaration, a `test.describe.skip(` or `test.describe.fixme(` around it, or a bare
+   `test.skip()` in its file, describe, hook or body.
+2. `environment-skip`: a guard of the test reads true.
+3. `unknown`: a guard reads a value the extractor cannot read.
+4. `eligible`: none of these.
+
+`skipped` is `true` exactly when `eligibility` is `static-skip`. `guards` lists each conditional
+`test.skip(condition, …)` and `test.fixme(condition, …)` that applies to the test, outer scope
+first. Each entry has `line`, `scope` (`file`, `describe`, `hook` or `test`), `expression`, the
+condition text, and `value`: `true`, `false` or `"unknown"`. A guard reads `process.env` only
+from `testEnvironment` in the configuration ([configuration.md](configuration.md#testenvironment)).
+`cover` counts a `pw_test` as running only when it is `eligible`. A fact set written before these
+fields keeps the `skipped` rule.
 
 `pw_title` is written by `extract` for a `playwright` repository configured `"titles": true`
 (see [configuration.md](configuration.md#playwright-titles)): Playwright's own list mode
@@ -394,7 +620,9 @@ order and come first; the provider's follow in the order it gave them.
 `fact(type, fields)` throws on an unknown type, a missing required field, a `file` that is
 not repository-relative with forward slashes, or a `line` that is not a positive integer.
 `validateFacts(array)` checks a whole set and reports the first bad entry by index and type.
-Both live in `lib/facts.js`; an extractor cannot emit a malformed fact by accident.
+Both live in `lib/facts.js`; an extractor cannot emit a malformed fact by accident. An
+optional object field (`route.unresolvedArgument`, `loop_stop.gate`, `flag_write.call`) is
+refused when it is present and its shape is wrong.
 `parseProviderDocument(document)` applies the same checks to an external provider's document
 and additionally refuses a fact that already carries `provenance`, so the stamp is always
 this tool's own statement.

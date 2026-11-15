@@ -1,0 +1,2073 @@
+{
+  "repo": "web",
+  "kind": "web",
+  "generatedFrom": "flowtrace 0.5.1",
+  "generatedAt": "2026-11-14T01:37:15.703Z",
+  "facts": [
+    {
+      "type": "method_span",
+      "file": "src/actions/boats.ts",
+      "line": 4,
+      "endLine": 6,
+      "class": "Boats",
+      "method": "loadBoats"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/boats.ts",
+      "line": 8,
+      "endLine": 10,
+      "class": "Boats",
+      "method": "pickBoat"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/boats.ts",
+      "line": 12,
+      "endLine": 14,
+      "class": "Boats",
+      "method": "removeBoat"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/boats.ts",
+      "line": 16,
+      "endLine": 18,
+      "class": "Boats",
+      "method": "inspectBoat"
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/boats.ts",
+      "line": 5,
+      "service": "httpClient",
+      "method": "loadBoats",
+      "verb": "GET",
+      "template": "/boats/v1/all",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/boats.ts",
+      "line": 9,
+      "service": "httpClient",
+      "method": "pickBoat",
+      "verb": "POST",
+      "template": "/boats/v1/${boatId}/pick",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/boats.ts",
+      "line": 13,
+      "service": "httpClient",
+      "method": "removeBoat",
+      "verb": "DELETE",
+      "template": "/boats/v1/${boatId}",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/boats.ts",
+      "line": 17,
+      "service": "httpClient",
+      "method": "inspectBoat",
+      "verb": "POST",
+      "template": "/boats/v1/${boatId}/inspect",
+      "resolved": true
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/boats.ts",
+      "line": 4,
+      "action": "loadBoats"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/boats.ts",
+      "line": 8,
+      "action": "pickBoat"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/boats.ts",
+      "line": 12,
+      "action": "removeBoat"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/boats.ts",
+      "line": 16,
+      "action": "inspectBoat"
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/boats.ts",
+      "line": 4,
+      "endLine": 6,
+      "class": "Boats",
+      "field": "loadBoats",
+      "actions": [
+        "loadBoats"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/boats.ts",
+      "line": 8,
+      "endLine": 10,
+      "class": "Boats",
+      "field": "pickBoat",
+      "actions": [
+        "pickBoat"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/boats.ts",
+      "line": 12,
+      "endLine": 14,
+      "class": "Boats",
+      "field": "removeBoat",
+      "actions": [
+        "removeBoat"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/boats.ts",
+      "line": 16,
+      "endLine": 18,
+      "class": "Boats",
+      "field": "inspectBoat",
+      "actions": [
+        "inspectBoat"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/crews.ts",
+      "line": 4,
+      "endLine": 6,
+      "class": "Crews",
+      "method": "loadCrew"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/crews.ts",
+      "line": 8,
+      "endLine": 10,
+      "class": "Crews",
+      "method": "signUpCrew"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/crews.ts",
+      "line": 12,
+      "endLine": 14,
+      "class": "Crews",
+      "method": "loadSignups"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/crews.ts",
+      "line": 16,
+      "endLine": 20,
+      "class": "Crews",
+      "method": "releaseCrew"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/crews.ts",
+      "line": 19,
+      "column": 19,
+      "class": "Crews",
+      "method": "releaseCrew",
+      "action": "crews/released",
+      "continuesFile": "src/actions/crews.ts",
+      "continuesLine": 18,
+      "outcome": "success"
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/crews.ts",
+      "line": 5,
+      "service": "httpClient",
+      "method": "loadCrew",
+      "verb": "GET",
+      "template": "/crews/v1/${crewId}",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/crews.ts",
+      "line": 9,
+      "service": "httpClient",
+      "method": "signUpCrew",
+      "verb": "POST",
+      "template": "/crews/v1/${crewId}/signup",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/crews.ts",
+      "line": 13,
+      "service": "httpClient",
+      "method": "loadSignups",
+      "verb": "GET",
+      "template": "/crews/v1/signups",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/crews.ts",
+      "line": 18,
+      "service": "httpClient",
+      "method": "releaseCrew",
+      "verb": "POST",
+      "template": "/crews/v1/${crewId}/release",
+      "resolved": true
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/crews.ts",
+      "line": 4,
+      "action": "loadCrew"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/crews.ts",
+      "line": 8,
+      "action": "signUpCrew"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/crews.ts",
+      "line": 12,
+      "action": "loadSignups"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/crews.ts",
+      "line": 16,
+      "action": "releaseCrew"
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/crews.ts",
+      "line": 4,
+      "endLine": 6,
+      "class": "Crews",
+      "field": "loadCrew",
+      "actions": [
+        "loadCrew"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/crews.ts",
+      "line": 8,
+      "endLine": 10,
+      "class": "Crews",
+      "field": "signUpCrew",
+      "actions": [
+        "signUpCrew"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/crews.ts",
+      "line": 12,
+      "endLine": 14,
+      "class": "Crews",
+      "field": "loadSignups",
+      "actions": [
+        "loadSignups"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/crews.ts",
+      "line": 16,
+      "endLine": 20,
+      "class": "Crews",
+      "field": "releaseCrew",
+      "actions": [
+        "releaseCrew"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/groups.ts",
+      "line": 3,
+      "endLine": 5,
+      "class": "Groups",
+      "method": "loadGroup"
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/groups.ts",
+      "line": 4,
+      "service": "httpClient",
+      "method": "loadGroup",
+      "verb": "GET",
+      "template": "/groups/v1/${groupId}",
+      "resolved": true
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/groups.ts",
+      "line": 3,
+      "action": "loadGroup"
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/groups.ts",
+      "line": 3,
+      "endLine": 5,
+      "class": "Groups",
+      "field": "loadGroup",
+      "actions": [
+        "loadGroup"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/marks.ts",
+      "line": 4,
+      "endLine": 6,
+      "class": "Marks",
+      "method": "roundMark"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/marks.ts",
+      "line": 8,
+      "endLine": 10,
+      "class": "Marks",
+      "method": "skipMark"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/marks.ts",
+      "line": 12,
+      "endLine": 14,
+      "class": "Marks",
+      "method": "loadMark"
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/marks.ts",
+      "line": 5,
+      "service": "httpClient",
+      "method": "roundMark",
+      "verb": "POST",
+      "template": "/marks/v1/${markId}/round",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/marks.ts",
+      "line": 9,
+      "service": "httpClient",
+      "method": "skipMark",
+      "verb": "POST",
+      "template": "/marks/v1/${markId}/skip",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/marks.ts",
+      "line": 13,
+      "service": "httpClient",
+      "method": "loadMark",
+      "verb": "GET",
+      "template": "/marks/v1/${markId}",
+      "resolved": true
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/marks.ts",
+      "line": 4,
+      "action": "roundMark"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/marks.ts",
+      "line": 8,
+      "action": "skipMark"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/marks.ts",
+      "line": 12,
+      "action": "loadMark"
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/marks.ts",
+      "line": 4,
+      "endLine": 6,
+      "class": "Marks",
+      "field": "roundMark",
+      "actions": [
+        "roundMark"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/marks.ts",
+      "line": 8,
+      "endLine": 10,
+      "class": "Marks",
+      "field": "skipMark",
+      "actions": [
+        "skipMark"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/marks.ts",
+      "line": 12,
+      "endLine": 14,
+      "class": "Marks",
+      "field": "loadMark",
+      "actions": [
+        "loadMark"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/regattas.ts",
+      "line": 6,
+      "endLine": 10,
+      "class": "Regattas",
+      "method": "loadRegatta"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/regattas.ts",
+      "line": 12,
+      "endLine": 16,
+      "class": "Regattas",
+      "method": "loadEntries"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/regattas.ts",
+      "line": 18,
+      "endLine": 20,
+      "class": "Regattas",
+      "method": "fileProtest"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/regattas.ts",
+      "line": 22,
+      "endLine": 24,
+      "class": "Regattas",
+      "method": "loadResults"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/regattas.ts",
+      "line": 26,
+      "endLine": 28,
+      "class": "Regattas",
+      "method": "loadStandings"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/regattas.ts",
+      "line": 30,
+      "endLine": 35,
+      "class": "Regattas",
+      "method": "refreshDesk"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/regattas.ts",
+      "line": 37,
+      "endLine": 37,
+      "class": "Regattas",
+      "method": "refreshResults"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/regattas.ts",
+      "line": 42,
+      "endLine": 46,
+      "class": "Regattas",
+      "method": "refreshAll"
+    },
+    {
+      "type": "method_call",
+      "file": "src/actions/regattas.ts",
+      "line": 32,
+      "class": "Regattas",
+      "method": "refreshDesk",
+      "field": "this",
+      "calledMethod": "loadRegatta"
+    },
+    {
+      "type": "method_call",
+      "file": "src/actions/regattas.ts",
+      "line": 33,
+      "class": "Regattas",
+      "method": "refreshDesk",
+      "field": "this",
+      "calledMethod": "loadEntries"
+    },
+    {
+      "type": "method_call",
+      "file": "src/actions/regattas.ts",
+      "line": 38,
+      "class": "Regattas",
+      "method": "Regattas",
+      "field": "this",
+      "calledMethod": "loadResults"
+    },
+    {
+      "type": "method_call",
+      "file": "src/actions/regattas.ts",
+      "line": 39,
+      "class": "Regattas",
+      "method": "Regattas",
+      "field": "this",
+      "calledMethod": "loadStandings"
+    },
+    {
+      "type": "method_call",
+      "file": "src/actions/regattas.ts",
+      "line": 44,
+      "class": "Regattas",
+      "method": "refreshAll",
+      "field": "this",
+      "calledMethod": "refreshDesk"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/regattas.ts",
+      "line": 9,
+      "column": 26,
+      "class": "Regattas",
+      "method": "loadRegatta",
+      "action": "REGATTA_LOADED",
+      "continuesFile": "src/actions/regattas.ts",
+      "continuesLine": 8,
+      "outcome": "success"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/regattas.ts",
+      "line": 15,
+      "column": 26,
+      "class": "Regattas",
+      "method": "loadEntries",
+      "action": "REGATTA_LOADED",
+      "continuesFile": "src/actions/regattas.ts",
+      "continuesLine": 14,
+      "outcome": "success"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/regattas.ts",
+      "line": 32,
+      "column": 5,
+      "class": "Regattas",
+      "method": "refreshDesk",
+      "action": "loadRegatta"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/regattas.ts",
+      "line": 33,
+      "column": 12,
+      "class": "Regattas",
+      "method": "refreshDesk",
+      "action": "loadEntries"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/regattas.ts",
+      "line": 38,
+      "column": 3,
+      "class": "Regattas",
+      "method": "Regattas",
+      "action": "loadResults"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/regattas.ts",
+      "line": 39,
+      "column": 3,
+      "class": "Regattas",
+      "method": "Regattas",
+      "action": "loadStandings"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/regattas.ts",
+      "line": 44,
+      "column": 5,
+      "class": "Regattas",
+      "method": "refreshAll",
+      "action": "refreshDesk"
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/regattas.ts",
+      "line": 8,
+      "service": "httpClient",
+      "method": "loadRegatta",
+      "verb": "GET",
+      "template": "/regattas/v1/${regattaId}",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/regattas.ts",
+      "line": 14,
+      "service": "httpClient",
+      "method": "loadEntries",
+      "verb": "GET",
+      "template": "/regattas/v1/${regattaId}/entries",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/regattas.ts",
+      "line": 19,
+      "service": "httpClient",
+      "method": "fileProtest",
+      "verb": "POST",
+      "template": "/regattas/v1/${regattaId}/protests",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/regattas.ts",
+      "line": 23,
+      "service": "httpClient",
+      "method": "loadResults",
+      "verb": "GET",
+      "template": "/regattas/v1/results",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/regattas.ts",
+      "line": 27,
+      "service": "httpClient",
+      "method": "loadStandings",
+      "verb": "GET",
+      "template": "/regattas/v1/${regattaId}/standings",
+      "resolved": true
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/regattas.ts",
+      "line": 6,
+      "action": "loadRegatta"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/regattas.ts",
+      "line": 12,
+      "action": "loadEntries"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/regattas.ts",
+      "line": 18,
+      "action": "fileProtest"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/regattas.ts",
+      "line": 22,
+      "action": "loadResults"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/regattas.ts",
+      "line": 26,
+      "action": "loadStandings"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/regattas.ts",
+      "line": 30,
+      "action": "refreshDesk"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/regattas.ts",
+      "line": 37,
+      "action": "refreshResults"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/regattas.ts",
+      "line": 42,
+      "action": "refreshAll"
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/regattas.ts",
+      "line": 6,
+      "endLine": 10,
+      "class": "Regattas",
+      "field": "loadRegatta",
+      "actions": [
+        "loadRegatta"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/regattas.ts",
+      "line": 12,
+      "endLine": 16,
+      "class": "Regattas",
+      "field": "loadEntries",
+      "actions": [
+        "loadEntries"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/regattas.ts",
+      "line": 18,
+      "endLine": 20,
+      "class": "Regattas",
+      "field": "fileProtest",
+      "actions": [
+        "fileProtest"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/regattas.ts",
+      "line": 22,
+      "endLine": 24,
+      "class": "Regattas",
+      "field": "loadResults",
+      "actions": [
+        "loadResults"
+      ]
+    },
+    {
+      "type": "effect_handler",
+      "file": "src/actions/regattas.ts",
+      "line": 26,
+      "endLine": 28,
+      "class": "Regattas",
+      "field": "loadStandings",
+      "actions": [
+        "loadStandings"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/weather.ts",
+      "line": 6,
+      "endLine": 6,
+      "class": "Weather",
+      "method": "loadWind"
+    },
+    {
+      "type": "method_span",
+      "file": "src/actions/weather.ts",
+      "line": 9,
+      "endLine": 9,
+      "class": "Weather",
+      "method": "loadTide"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/weather.ts",
+      "line": 7,
+      "column": 72,
+      "class": "Weather",
+      "method": "Weather",
+      "action": "WIND_LOADED",
+      "continuesFile": "src/actions/weather.ts",
+      "continuesLine": 7,
+      "outcome": "success"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/actions/weather.ts",
+      "line": 10,
+      "column": 79,
+      "class": "Weather",
+      "method": "Weather",
+      "action": "WIND_LOADED",
+      "continuesFile": "src/actions/weather.ts",
+      "continuesLine": 10,
+      "outcome": "success"
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/weather.ts",
+      "line": 7,
+      "service": "httpClient",
+      "method": "Weather",
+      "verb": "GET",
+      "template": "/weather/v1/wind",
+      "resolved": true
+    },
+    {
+      "type": "gateway_call",
+      "file": "src/actions/weather.ts",
+      "line": 10,
+      "service": "httpClient",
+      "method": "Weather",
+      "verb": "GET",
+      "template": "/weather/v1/tide",
+      "resolved": true
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/weather.ts",
+      "line": 6,
+      "action": "loadWind"
+    },
+    {
+      "type": "action_def",
+      "file": "src/actions/weather.ts",
+      "line": 9,
+      "action": "loadTide"
+    },
+    {
+      "type": "component",
+      "file": "src/app.tsx",
+      "line": 14,
+      "name": "App",
+      "selector": "App",
+      "role": "component",
+      "exports": [
+        "App"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/app.tsx",
+      "line": 14,
+      "endLine": 26,
+      "class": "App",
+      "method": "App"
+    },
+    {
+      "type": "page_route",
+      "file": "src/app.tsx",
+      "line": 17,
+      "column": 7,
+      "endLine": 17,
+      "owner": "App",
+      "path": "regattas/:regattaId",
+      "element": "RegattaPage",
+      "elementLine": 17,
+      "elementFile": "src/regatta/RegattaPage.tsx"
+    },
+    {
+      "type": "page_route",
+      "file": "src/app.tsx",
+      "line": 18,
+      "column": 7,
+      "endLine": 18,
+      "owner": "App",
+      "path": "results",
+      "element": "ResultsBoard",
+      "elementLine": 18,
+      "elementFile": "src/results/ResultsBoard.tsx",
+      "elementName": "ResultsBoard"
+    },
+    {
+      "type": "page_route",
+      "file": "src/app.tsx",
+      "line": 19,
+      "column": 7,
+      "endLine": 19,
+      "owner": "App",
+      "path": "crews/:crewId",
+      "element": "Layout",
+      "elementLine": 19,
+      "elementFile": "src/layout/Layout.tsx",
+      "elementName": "Layout"
+    },
+    {
+      "type": "page_route",
+      "file": "src/app.tsx",
+      "line": 20,
+      "column": 7,
+      "endLine": 20,
+      "owner": "App",
+      "path": "boats",
+      "guards": [
+        {
+          "kind": "wrapper",
+          "text": "<Frame>",
+          "line": 20
+        }
+      ],
+      "wrappers": [
+        "Frame"
+      ],
+      "element": "BoatList",
+      "elementLine": 20,
+      "elementFile": "src/boats/BoatList.tsx"
+    },
+    {
+      "type": "page_route",
+      "file": "src/app.tsx",
+      "line": 21,
+      "column": 7,
+      "endLine": 21,
+      "owner": "App",
+      "path": "marks",
+      "element": "Layout",
+      "elementLine": 21,
+      "elementFile": "src/layout/Layout.tsx",
+      "elementName": "Layout"
+    },
+    {
+      "type": "page_route",
+      "file": "src/app.tsx",
+      "line": 21,
+      "column": 83,
+      "endLine": 21,
+      "owner": "App",
+      "path": "marks/:markId",
+      "element": "Layout",
+      "elementLine": 21,
+      "elementFile": "src/layout/Layout.tsx",
+      "elementName": "Layout"
+    },
+    {
+      "type": "page_route",
+      "file": "src/app.tsx",
+      "line": 22,
+      "column": 7,
+      "endLine": 22,
+      "owner": "App",
+      "path": "weather",
+      "element": "WindBox",
+      "elementLine": 22,
+      "elementFile": "src/weather/WindBox.tsx",
+      "elementName": "WindBox"
+    },
+    {
+      "type": "page_route",
+      "file": "src/app.tsx",
+      "line": 23,
+      "column": 7,
+      "endLine": 23,
+      "owner": "App",
+      "path": "groups/:groupId/*",
+      "element": "GroupShell",
+      "elementLine": 23,
+      "elementFile": "src/groups/GroupShell.tsx",
+      "elementName": "GroupShell"
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 17,
+      "from": "App",
+      "to": "RegattaPage",
+      "source": "./regatta/RegattaPage",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 18,
+      "from": "App",
+      "to": "ResultsBoard",
+      "source": "./results/ResultsBoard",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 19,
+      "from": "App",
+      "to": "Layout",
+      "source": "./layout/Layout",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 19,
+      "from": "App",
+      "to": "CrewRoster",
+      "source": "./crews/CrewRoster",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 19,
+      "from": "App",
+      "to": "SignupPanel",
+      "source": "./crews/SignupPanel",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 20,
+      "from": "App",
+      "to": "Frame",
+      "source": "./layout/Frame",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 20,
+      "from": "App",
+      "to": "BoatList",
+      "source": "./boats/BoatList",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 21,
+      "from": "App",
+      "to": "Layout",
+      "source": "./layout/Layout",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 21,
+      "from": "App",
+      "to": "MarkBoard",
+      "source": "./marks/MarkBoard",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 21,
+      "from": "App",
+      "to": "Layout",
+      "source": "./layout/Layout",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 21,
+      "from": "App",
+      "to": "MarkBoard",
+      "source": "./marks/MarkBoard",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 22,
+      "from": "App",
+      "to": "WindBox",
+      "source": "./weather/WindBox",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "renders",
+      "file": "src/app.tsx",
+      "line": 23,
+      "from": "App",
+      "to": "GroupShell",
+      "source": "./groups/GroupShell",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "component",
+      "file": "src/boats/BoatList.tsx",
+      "line": 11,
+      "name": "BoatList",
+      "selector": "BoatList",
+      "role": "page",
+      "exports": [
+        "default"
+      ],
+      "path": "boats"
+    },
+    {
+      "type": "props_bind",
+      "file": "src/boats/BoatList.tsx",
+      "line": 32,
+      "component": "BoatList",
+      "prop": "pickBoat",
+      "target": "pickBoat"
+    },
+    {
+      "type": "props_bind",
+      "file": "src/boats/BoatList.tsx",
+      "line": 32,
+      "component": "BoatList",
+      "prop": "removeBoat",
+      "target": "removeBoat"
+    },
+    {
+      "type": "method_span",
+      "file": "src/boats/BoatList.tsx",
+      "line": 12,
+      "endLine": 29,
+      "class": "BoatList",
+      "method": "render"
+    },
+    {
+      "type": "renders",
+      "file": "src/boats/BoatList.tsx",
+      "line": 26,
+      "from": "BoatList",
+      "to": "BoatRow",
+      "source": "./BoatRow",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "template_handler",
+      "file": "src/boats/BoatList.tsx",
+      "line": 15,
+      "column": 31,
+      "component": "BoatList",
+      "event": "onClick",
+      "handler": "pickBoat",
+      "kind": "inline"
+    },
+    {
+      "type": "template_handler",
+      "file": "src/boats/BoatList.tsx",
+      "line": 20,
+      "column": 11,
+      "component": "BoatList",
+      "event": "onClick",
+      "handler": "removeBoat",
+      "kind": "inline"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/boats/BoatList.tsx",
+      "line": 15,
+      "column": 46,
+      "class": "BoatList",
+      "method": "render",
+      "action": "pickBoat"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/boats/BoatList.tsx",
+      "line": 21,
+      "column": 13,
+      "class": "BoatList",
+      "method": "render",
+      "action": "removeBoat"
+    },
+    {
+      "type": "component",
+      "file": "src/boats/BoatRow.tsx",
+      "line": 11,
+      "name": "BoatRow",
+      "selector": "BoatRow",
+      "role": "container",
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "type": "props_bind",
+      "file": "src/boats/BoatRow.tsx",
+      "line": 29,
+      "component": "BoatRow",
+      "prop": "inspectBoat",
+      "target": "inspectBoat"
+    },
+    {
+      "type": "props_bind",
+      "file": "src/boats/BoatRow.tsx",
+      "line": 29,
+      "component": "BoatRow",
+      "prop": "loadBoats",
+      "target": "loadBoats"
+    },
+    {
+      "type": "method_span",
+      "file": "src/boats/BoatRow.tsx",
+      "line": 11,
+      "endLine": 27,
+      "class": "BoatRow",
+      "method": "BoatRow"
+    },
+    {
+      "type": "template_handler",
+      "file": "src/boats/BoatRow.tsx",
+      "line": 14,
+      "column": 29,
+      "component": "BoatRow",
+      "event": "onClick",
+      "handler": "inspectBoat",
+      "kind": "inline"
+    },
+    {
+      "type": "template_handler",
+      "file": "src/boats/BoatRow.tsx",
+      "line": 19,
+      "column": 9,
+      "component": "BoatRow",
+      "event": "onClick",
+      "handler": "loadBoats",
+      "kind": "inline"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/boats/BoatRow.tsx",
+      "line": 14,
+      "column": 44,
+      "class": "BoatRow",
+      "method": "BoatRow",
+      "action": "inspectBoat"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/boats/BoatRow.tsx",
+      "line": 20,
+      "column": 11,
+      "class": "BoatRow",
+      "method": "BoatRow",
+      "action": "loadBoats"
+    },
+    {
+      "type": "component",
+      "file": "src/crews/CrewRoster.tsx",
+      "line": 12,
+      "name": "CrewRoster",
+      "selector": "CrewRoster",
+      "role": "container",
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "type": "props_bind",
+      "file": "src/crews/CrewRoster.tsx",
+      "line": 22,
+      "component": "CrewRoster",
+      "prop": "loadCrew",
+      "target": "loadCrew"
+    },
+    {
+      "type": "props_bind",
+      "file": "src/crews/CrewRoster.tsx",
+      "line": 22,
+      "component": "CrewRoster",
+      "prop": "signUpCrew",
+      "target": "signUpCrew"
+    },
+    {
+      "type": "method_span",
+      "file": "src/crews/CrewRoster.tsx",
+      "line": 12,
+      "endLine": 20,
+      "class": "CrewRoster",
+      "method": "CrewRoster"
+    },
+    {
+      "type": "method_span",
+      "file": "src/crews/CrewRoster.tsx",
+      "line": 14,
+      "endLine": 14,
+      "class": "CrewRoster",
+      "method": "onSignUp"
+    },
+    {
+      "type": "renders",
+      "file": "src/crews/CrewRoster.tsx",
+      "line": 17,
+      "from": "CrewRoster",
+      "to": "ActionButton",
+      "source": "../layout/ActionButton",
+      "resolved": true
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/crews/CrewRoster.tsx",
+      "line": 13,
+      "column": 3,
+      "class": "CrewRoster",
+      "method": "CrewRoster",
+      "action": "loadCrew"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/crews/CrewRoster.tsx",
+      "line": 14,
+      "column": 26,
+      "class": "CrewRoster",
+      "method": "onSignUp",
+      "action": "signUpCrew"
+    },
+    {
+      "type": "component",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 12,
+      "name": "SignupPanel",
+      "selector": "SignupPanel",
+      "role": "container",
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "type": "props_bind",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 25,
+      "component": "SignupPanel",
+      "prop": "loadSignups",
+      "target": "loadSignups"
+    },
+    {
+      "type": "props_bind",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 25,
+      "component": "SignupPanel",
+      "prop": "releaseCrew",
+      "target": "releaseCrew"
+    },
+    {
+      "type": "method_span",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 13,
+      "endLine": 22,
+      "class": "SignupPanel",
+      "method": "render"
+    },
+    {
+      "type": "method_span",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 15,
+      "endLine": 15,
+      "class": "SignupPanel",
+      "method": "action"
+    },
+    {
+      "type": "branch_point",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 16,
+      "class": "SignupPanel",
+      "method": "render",
+      "kind": "if",
+      "text": "if (this.props.crewId)",
+      "endLine": 20
+    },
+    {
+      "type": "renders",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 21,
+      "from": "SignupPanel",
+      "to": "ActionButton",
+      "source": "../layout/ActionButton",
+      "resolved": true
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 14,
+      "column": 5,
+      "class": "SignupPanel",
+      "method": "render",
+      "action": "loadSignups"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/crews/SignupPanel.tsx",
+      "line": 18,
+      "column": 9,
+      "class": "SignupPanel",
+      "method": "render",
+      "action": "releaseCrew"
+    },
+    {
+      "type": "component",
+      "file": "src/groups/GlanceCard.tsx",
+      "line": 3,
+      "name": "GlanceCard",
+      "selector": "GlanceCard",
+      "role": "page",
+      "exports": [
+        "default"
+      ],
+      "path": "groups/:groupId"
+    },
+    {
+      "type": "method_span",
+      "file": "src/groups/GlanceCard.tsx",
+      "line": 3,
+      "endLine": 5,
+      "class": "GlanceCard",
+      "method": "GlanceCard"
+    },
+    {
+      "type": "component",
+      "file": "src/groups/GroupGlance.tsx",
+      "line": 5,
+      "name": "GroupGlance",
+      "selector": "GroupGlance",
+      "role": "component",
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/groups/GroupGlance.tsx",
+      "line": 5,
+      "endLine": 11,
+      "class": "GroupGlance",
+      "method": "GroupGlance"
+    },
+    {
+      "type": "page_route",
+      "file": "src/groups/GroupGlance.tsx",
+      "line": 8,
+      "column": 7,
+      "endLine": 8,
+      "owner": "GroupGlance",
+      "path": "groups/:groupId",
+      "element": "GlanceCard",
+      "elementLine": 8,
+      "elementFile": "src/groups/GlanceCard.tsx",
+      "elementName": "GlanceCard"
+    },
+    {
+      "type": "renders",
+      "file": "src/groups/GroupGlance.tsx",
+      "line": 8,
+      "from": "GroupGlance",
+      "to": "GlanceCard",
+      "source": "./GlanceCard",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "component",
+      "file": "src/groups/GroupShell.tsx",
+      "line": 5,
+      "name": "GroupShell",
+      "selector": "GroupShell",
+      "role": "page",
+      "exports": [
+        "default"
+      ],
+      "path": "groups/:groupId/*"
+    },
+    {
+      "type": "component_entry",
+      "file": "src/groups/GroupShell.tsx",
+      "line": 8,
+      "column": 3,
+      "component": "GroupShell",
+      "kind": "effect",
+      "trigger": "useEffect",
+      "handler": null,
+      "guards": [],
+      "endLine": 10,
+      "deps": [
+        "dispatch"
+      ],
+      "method": "GroupShell.useEffect@8:3"
+    },
+    {
+      "type": "method_span",
+      "file": "src/groups/GroupShell.tsx",
+      "line": 5,
+      "endLine": 13,
+      "class": "GroupShell",
+      "method": "GroupShell"
+    },
+    {
+      "type": "method_call",
+      "file": "src/groups/GroupShell.tsx",
+      "line": 9,
+      "class": "GroupShell",
+      "method": "GroupShell.useEffect@8:3",
+      "field": "import",
+      "calledMethod": "loadGroup"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/groups/GroupShell.tsx",
+      "line": 9,
+      "column": 5,
+      "class": "GroupShell",
+      "method": "GroupShell.useEffect@8:3",
+      "action": "loadGroup"
+    },
+    {
+      "type": "method_span",
+      "file": "src/http/httpClient.ts",
+      "line": 1,
+      "endLine": 2,
+      "class": "HttpClient",
+      "method": "request"
+    },
+    {
+      "type": "branch_point",
+      "file": "src/http/httpClient.ts",
+      "line": 2,
+      "class": "HttpClient",
+      "method": "request",
+      "kind": "ternary",
+      "text": "body === undefined ? undefined : JSON.stringify(body)",
+      "endLine": 2
+    },
+    {
+      "type": "method_call",
+      "file": "src/http/httpClient.ts",
+      "line": 5,
+      "class": "HttpClient",
+      "method": "HttpClient",
+      "field": "this",
+      "calledMethod": "request"
+    },
+    {
+      "type": "method_call",
+      "file": "src/http/httpClient.ts",
+      "line": 6,
+      "class": "HttpClient",
+      "method": "HttpClient",
+      "field": "this",
+      "calledMethod": "request"
+    },
+    {
+      "type": "method_call",
+      "file": "src/http/httpClient.ts",
+      "line": 7,
+      "class": "HttpClient",
+      "method": "HttpClient",
+      "field": "this",
+      "calledMethod": "request"
+    },
+    {
+      "type": "page_mount",
+      "file": "src/index.tsx",
+      "line": 8,
+      "path": "/",
+      "source": "app-root",
+      "component": "App"
+    },
+    {
+      "type": "renders",
+      "file": "src/index.tsx",
+      "line": 8,
+      "from": "Index",
+      "to": "App",
+      "source": "./app",
+      "resolved": true
+    },
+    {
+      "type": "component",
+      "file": "src/layout/ActionButton.tsx",
+      "line": 8,
+      "name": "ActionButton",
+      "selector": "ActionButton",
+      "role": "component",
+      "exports": [
+        "ActionButton"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/layout/ActionButton.tsx",
+      "line": 8,
+      "endLine": 14,
+      "class": "ActionButton",
+      "method": "ActionButton"
+    },
+    {
+      "type": "template_handler",
+      "file": "src/layout/ActionButton.tsx",
+      "line": 10,
+      "column": 27,
+      "component": "ActionButton",
+      "event": "onClick",
+      "handler": "action",
+      "kind": "ref"
+    },
+    {
+      "type": "component",
+      "file": "src/layout/Frame.tsx",
+      "line": 3,
+      "name": "Frame",
+      "selector": "Frame",
+      "role": "page",
+      "exports": [
+        "Frame"
+      ],
+      "path": "boats"
+    },
+    {
+      "type": "method_span",
+      "file": "src/layout/Frame.tsx",
+      "line": 3,
+      "endLine": 5,
+      "class": "Frame",
+      "method": "Frame"
+    },
+    {
+      "type": "component",
+      "file": "src/layout/Layout.tsx",
+      "line": 8,
+      "name": "Layout",
+      "selector": "Layout",
+      "role": "page",
+      "exports": [
+        "Layout"
+      ],
+      "path": "crews/:crewId"
+    },
+    {
+      "type": "method_span",
+      "file": "src/layout/Layout.tsx",
+      "line": 8,
+      "endLine": 15,
+      "class": "Layout",
+      "method": "Layout"
+    },
+    {
+      "type": "component",
+      "file": "src/marks/DriftNotice.tsx",
+      "line": 9,
+      "name": "DriftNotice",
+      "selector": "DriftNotice",
+      "role": "container",
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "type": "props_bind",
+      "file": "src/marks/DriftNotice.tsx",
+      "line": 14,
+      "component": "DriftNotice",
+      "prop": "loadMark",
+      "target": "loadMark"
+    },
+    {
+      "type": "method_span",
+      "file": "src/marks/DriftNotice.tsx",
+      "line": 9,
+      "endLine": 12,
+      "class": "DriftNotice",
+      "method": "DriftNotice"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/marks/DriftNotice.tsx",
+      "line": 10,
+      "column": 3,
+      "class": "DriftNotice",
+      "method": "DriftNotice",
+      "action": "loadMark"
+    },
+    {
+      "type": "component",
+      "file": "src/marks/MarkBoard.tsx",
+      "line": 5,
+      "name": "MarkBoard",
+      "selector": "MarkBoard",
+      "role": "component",
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "type": "method_span",
+      "file": "src/marks/MarkBoard.tsx",
+      "line": 5,
+      "endLine": 24,
+      "class": "MarkBoard",
+      "method": "MarkBoard"
+    },
+    {
+      "type": "template_handler",
+      "file": "src/marks/MarkBoard.tsx",
+      "line": 9,
+      "column": 29,
+      "component": "MarkBoard",
+      "event": "onClick",
+      "handler": "dispatch",
+      "kind": "inline"
+    },
+    {
+      "type": "template_handler",
+      "file": "src/marks/MarkBoard.tsx",
+      "line": 14,
+      "column": 9,
+      "component": "MarkBoard",
+      "event": "onClick",
+      "handler": "dispatch",
+      "kind": "inline"
+    },
+    {
+      "type": "method_call",
+      "file": "src/marks/MarkBoard.tsx",
+      "line": 9,
+      "class": "MarkBoard",
+      "method": "MarkBoard",
+      "field": "import",
+      "calledMethod": "roundMark"
+    },
+    {
+      "type": "method_call",
+      "file": "src/marks/MarkBoard.tsx",
+      "line": 16,
+      "class": "MarkBoard",
+      "method": "MarkBoard",
+      "field": "import",
+      "calledMethod": "skipMark"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/marks/MarkBoard.tsx",
+      "line": 9,
+      "column": 44,
+      "class": "MarkBoard",
+      "method": "MarkBoard",
+      "action": "roundMark"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/marks/MarkBoard.tsx",
+      "line": 15,
+      "column": 11,
+      "class": "MarkBoard",
+      "method": "MarkBoard",
+      "action": "skipMark"
+    },
+    {
+      "type": "component",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 11,
+      "name": "RegattaHeader",
+      "selector": "RegattaHeader",
+      "role": "container",
+      "exports": [
+        "default"
+      ]
+    },
+    {
+      "type": "props_bind",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 25,
+      "component": "RegattaHeader",
+      "prop": "loadRegatta",
+      "target": "loadRegatta"
+    },
+    {
+      "type": "props_bind",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 25,
+      "component": "RegattaHeader",
+      "prop": "loadEntries",
+      "target": "loadEntries"
+    },
+    {
+      "type": "component_entry",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 12,
+      "column": 3,
+      "endLine": 14,
+      "component": "RegattaHeader",
+      "kind": "mount",
+      "trigger": "componentDidMount",
+      "handler": null,
+      "guards": [],
+      "method": "componentDidMount"
+    },
+    {
+      "type": "component_entry",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 16,
+      "column": 3,
+      "endLine": 18,
+      "component": "RegattaHeader",
+      "kind": "update",
+      "trigger": "componentDidUpdate",
+      "handler": null,
+      "guards": [],
+      "method": "componentDidUpdate"
+    },
+    {
+      "type": "method_span",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 12,
+      "endLine": 14,
+      "class": "RegattaHeader",
+      "method": "componentDidMount"
+    },
+    {
+      "type": "method_span",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 16,
+      "endLine": 18,
+      "class": "RegattaHeader",
+      "method": "componentDidUpdate"
+    },
+    {
+      "type": "method_span",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 20,
+      "endLine": 22,
+      "class": "RegattaHeader",
+      "method": "render"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 13,
+      "column": 5,
+      "class": "RegattaHeader",
+      "method": "componentDidMount",
+      "action": "loadRegatta"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/regatta/RegattaHeader.tsx",
+      "line": 17,
+      "column": 5,
+      "class": "RegattaHeader",
+      "method": "componentDidUpdate",
+      "action": "loadEntries"
+    },
+    {
+      "type": "component",
+      "file": "src/regatta/RegattaPage.tsx",
+      "line": 11,
+      "name": "RegattaPage",
+      "selector": "RegattaPage",
+      "role": "page",
+      "exports": [
+        "default"
+      ],
+      "path": "regattas/:regattaId"
+    },
+    {
+      "type": "props_bind",
+      "file": "src/regatta/RegattaPage.tsx",
+      "line": 28,
+      "component": "RegattaPage",
+      "prop": "refreshAll",
+      "target": "refreshAll"
+    },
+    {
+      "type": "method_span",
+      "file": "src/regatta/RegattaPage.tsx",
+      "line": 12,
+      "endLine": 14,
+      "class": "RegattaPage",
+      "method": "handleRefresh"
+    },
+    {
+      "type": "method_span",
+      "file": "src/regatta/RegattaPage.tsx",
+      "line": 16,
+      "endLine": 25,
+      "class": "RegattaPage",
+      "method": "render"
+    },
+    {
+      "type": "renders",
+      "file": "src/regatta/RegattaPage.tsx",
+      "line": 19,
+      "from": "RegattaPage",
+      "to": "RegattaHeader",
+      "source": "./RegattaHeader",
+      "imported": "default",
+      "resolved": true
+    },
+    {
+      "type": "template_handler",
+      "file": "src/regatta/RegattaPage.tsx",
+      "line": 20,
+      "column": 31,
+      "component": "RegattaPage",
+      "event": "onClick",
+      "handler": "handleRefresh",
+      "kind": "ref"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/regatta/RegattaPage.tsx",
+      "line": 13,
+      "column": 5,
+      "class": "RegattaPage",
+      "method": "handleRefresh",
+      "action": "refreshAll"
+    },
+    {
+      "type": "component",
+      "file": "src/results/ResultsBoard.tsx",
+      "line": 5,
+      "name": "ResultsBoard",
+      "selector": "ResultsBoard",
+      "role": "page",
+      "exports": [
+        "default"
+      ],
+      "path": "results"
+    },
+    {
+      "type": "component_entry",
+      "file": "src/results/ResultsBoard.tsx",
+      "line": 8,
+      "column": 3,
+      "component": "ResultsBoard",
+      "kind": "effect",
+      "trigger": "useEffect",
+      "handler": null,
+      "guards": [],
+      "endLine": 10,
+      "deps": [
+        "dispatch"
+      ],
+      "method": "ResultsBoard.useEffect@8:3"
+    },
+    {
+      "type": "method_span",
+      "file": "src/results/ResultsBoard.tsx",
+      "line": 5,
+      "endLine": 19,
+      "class": "ResultsBoard",
+      "method": "ResultsBoard"
+    },
+    {
+      "type": "template_handler",
+      "file": "src/results/ResultsBoard.tsx",
+      "line": 14,
+      "column": 29,
+      "component": "ResultsBoard",
+      "event": "onClick",
+      "handler": "dispatch",
+      "kind": "inline"
+    },
+    {
+      "type": "method_call",
+      "file": "src/results/ResultsBoard.tsx",
+      "line": 9,
+      "class": "ResultsBoard",
+      "method": "ResultsBoard.useEffect@8:3",
+      "field": "import",
+      "calledMethod": "loadResults"
+    },
+    {
+      "type": "method_call",
+      "file": "src/results/ResultsBoard.tsx",
+      "line": 14,
+      "class": "ResultsBoard",
+      "method": "ResultsBoard",
+      "field": "import",
+      "calledMethod": "refreshResults"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/results/ResultsBoard.tsx",
+      "line": 9,
+      "column": 5,
+      "class": "ResultsBoard",
+      "method": "ResultsBoard.useEffect@8:3",
+      "action": "loadResults"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/results/ResultsBoard.tsx",
+      "line": 14,
+      "column": 44,
+      "class": "ResultsBoard",
+      "method": "ResultsBoard",
+      "action": "refreshResults"
+    },
+    {
+      "type": "component",
+      "file": "src/weather/WindBox.tsx",
+      "line": 5,
+      "name": "WindBox",
+      "selector": "WindBox",
+      "role": "page",
+      "exports": [
+        "default"
+      ],
+      "path": "weather"
+    },
+    {
+      "type": "method_span",
+      "file": "src/weather/WindBox.tsx",
+      "line": 5,
+      "endLine": 15,
+      "class": "WindBox",
+      "method": "WindBox"
+    },
+    {
+      "type": "template_handler",
+      "file": "src/weather/WindBox.tsx",
+      "line": 10,
+      "column": 29,
+      "component": "WindBox",
+      "event": "onClick",
+      "handler": "dispatch",
+      "kind": "inline"
+    },
+    {
+      "type": "method_call",
+      "file": "src/weather/WindBox.tsx",
+      "line": 7,
+      "class": "WindBox",
+      "method": "WindBox",
+      "field": "import",
+      "calledMethod": "loadWind"
+    },
+    {
+      "type": "method_call",
+      "file": "src/weather/WindBox.tsx",
+      "line": 10,
+      "class": "WindBox",
+      "method": "WindBox",
+      "field": "import",
+      "calledMethod": "loadTide"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/weather/WindBox.tsx",
+      "line": 7,
+      "column": 3,
+      "class": "WindBox",
+      "method": "WindBox",
+      "action": "loadWind"
+    },
+    {
+      "type": "action_dispatch",
+      "file": "src/weather/WindBox.tsx",
+      "line": 10,
+      "column": 44,
+      "class": "WindBox",
+      "method": "WindBox",
+      "action": "loadTide"
+    }
+  ]
+}

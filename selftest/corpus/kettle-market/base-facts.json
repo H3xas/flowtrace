@@ -6,7 +6,9 @@
       "line": 11,
       "spec": "tests/describe-hooks.spec.ts",
       "test": "lists the kettles",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -14,7 +16,9 @@
       "line": 16,
       "spec": "tests/describe-hooks.spec.ts",
       "test": "filters the kettles",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -22,7 +26,9 @@
       "line": 21,
       "spec": "tests/describe-hooks.spec.ts",
       "test": "opens one kettle",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -30,7 +36,9 @@
       "line": 28,
       "spec": "tests/describe-hooks.spec.ts",
       "test": "lists the live kettles",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -38,7 +46,9 @@
       "line": 32,
       "spec": "tests/describe-hooks.spec.ts",
       "test": "opens the live basket",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -46,7 +56,9 @@
       "line": 42,
       "spec": "tests/describe-hooks.spec.ts",
       "test": "compares two kettles",
-      "skipped": true
+      "skipped": true,
+      "eligibility": "static-skip",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -54,7 +66,9 @@
       "line": 7,
       "spec": "tests/file-hook.spec.ts",
       "test": "shows the price list",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -62,7 +76,9 @@
       "line": 12,
       "spec": "tests/file-hook.spec.ts",
       "test": "shows one price",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -70,7 +86,9 @@
       "line": 19,
       "spec": "e2e/basket.pw.ts",
       "test": "shows the discounted prices",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -78,7 +96,9 @@
       "line": 24,
       "spec": "e2e/basket.pw.ts",
       "test": "shows the stock badge",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -86,7 +106,9 @@
       "line": 29,
       "spec": "e2e/basket.pw.ts",
       "test": "warms the cache first",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -94,7 +116,9 @@
       "line": 38,
       "spec": "e2e/basket.pw.ts",
       "test": "shows an empty drawer",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -102,7 +126,9 @@
       "line": 7,
       "spec": "e2e/catalog.pw.ts",
       "test": "browses a fully stubbed catalog",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -110,7 +136,9 @@
       "line": 12,
       "spec": "e2e/catalog.pw.ts",
       "test": "starts from a seeded basket",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -118,7 +146,9 @@
       "line": 17,
       "spec": "e2e/catalog.pw.ts",
       "test": "reads the fixture price list",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -126,7 +156,9 @@
       "line": 21,
       "spec": "e2e/catalog.pw.ts",
       "test": "reads the catalog price list",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -134,7 +166,9 @@
       "line": 4,
       "spec": "e2e/comments.pw.ts",
       "test": "ignores a stub in a line comment",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -142,7 +176,9 @@
       "line": 9,
       "spec": "e2e/comments.pw.ts",
       "test": "ignores a stub in a block comment",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -150,7 +186,9 @@
       "line": 16,
       "spec": "e2e/comments.pw.ts",
       "test": "ignores a stub name in a string",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -158,7 +196,9 @@
       "line": 21,
       "spec": "e2e/comments.pw.ts",
       "test": "reads a stub inside an interpolation",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -166,7 +206,9 @@
       "line": 5,
       "spec": "e2e/precedence.pw.ts",
       "test": "mocks and patches",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -174,7 +216,9 @@
       "line": 10,
       "spec": "e2e/precedence.pw.ts",
       "test": "mocks and cannot read a handler",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -182,7 +226,9 @@
       "line": 15,
       "spec": "e2e/precedence.pw.ts",
       "test": "patches and cannot read a handler",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -190,7 +236,9 @@
       "line": 20,
       "spec": "e2e/precedence.pw.ts",
       "test": "spies and cannot read a handler",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -198,7 +246,9 @@
       "line": 25,
       "spec": "e2e/precedence.pw.ts",
       "test": "replays an archive",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -206,7 +256,9 @@
       "line": 30,
       "spec": "e2e/precedence.pw.ts",
       "test": "waits for a parked feature",
-      "skipped": true
+      "skipped": true,
+      "eligibility": "static-skip",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -214,7 +266,9 @@
       "line": 35,
       "spec": "e2e/precedence.pw.ts",
       "test": "blocks then spies",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -222,7 +276,9 @@
       "line": 4,
       "spec": "e2e/spies.pw.ts",
       "test": "lets the prices through",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -230,7 +286,9 @@
       "line": 9,
       "spec": "e2e/spies.pw.ts",
       "test": "falls back for the stock",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -238,7 +296,9 @@
       "line": 15,
       "spec": "e2e/spies.pw.ts",
       "test": "records the order requests",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -246,7 +306,9 @@
       "line": 21,
       "spec": "e2e/spies.pw.ts",
       "test": "blocks the images",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -254,7 +316,9 @@
       "line": 26,
       "spec": "e2e/spies.pw.ts",
       "test": "answers only the posts",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -262,7 +326,9 @@
       "line": 5,
       "spec": "e2e/storefront.pw.ts",
       "test": "opens the storefront with a banner",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -270,7 +336,9 @@
       "line": 10,
       "spec": "e2e/storefront.pw.ts",
       "test": "opens a mocked storefront",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -278,7 +346,9 @@
       "line": 15,
       "spec": "e2e/storefront.pw.ts",
       "test": "opens the storefront through two layers",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -286,7 +356,9 @@
       "line": 20,
       "spec": "e2e/storefront.pw.ts",
       "test": "counts down without a stub",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -294,7 +366,9 @@
       "line": 15,
       "spec": "e2e/unreadable.pw.ts",
       "test": "runs a shared scenario",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -302,7 +376,9 @@
       "line": 17,
       "spec": "e2e/unreadable.pw.ts",
       "test": "answers through an imported handler",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -310,7 +386,9 @@
       "line": 21,
       "spec": "e2e/unreadable.pw.ts",
       "test": "prepares through an ambiguous helper",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -318,7 +396,9 @@
       "line": 26,
       "spec": "e2e/unreadable.pw.ts",
       "test": "prepares a mocked counter",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -326,7 +406,9 @@
       "line": 32,
       "spec": "e2e/unreadable.pw.ts",
       "test": "prepares a seeded counter",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -334,7 +416,9 @@
       "line": 41,
       "spec": "e2e/unreadable.pw.ts",
       "test": "shows the counter",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -342,7 +426,9 @@
       "line": 51,
       "spec": "e2e/unreadable.pw.ts",
       "test": "runs a mocked shared scenario",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_stub",
@@ -716,7 +802,9 @@
       "line": 4,
       "spec": "tests/catalog.spec.ts",
       "test": "lists the products of a category",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -724,7 +812,9 @@
       "line": 9,
       "spec": "tests/catalog.spec.ts",
       "test": "rejects a listing with no category",
-      "skipped": true
+      "skipped": true,
+      "eligibility": "static-skip",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -732,7 +822,9 @@
       "line": 4,
       "spec": "tests/checkout.spec.ts",
       "test": "places an order when the cart holds an item",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -740,7 +832,9 @@
       "line": 11,
       "spec": "tests/checkout.spec.ts",
       "test": "rejects a checkout with no payment token",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -748,7 +842,9 @@
       "line": 16,
       "spec": "tests/checkout.spec.ts",
       "test": "lists the cart",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -756,7 +852,9 @@
       "line": 22,
       "spec": "tests/checkout.spec.ts",
       "test": "rejects a cart item with no quantity",
-      "skipped": true
+      "skipped": true,
+      "eligibility": "static-skip",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -764,7 +862,9 @@
       "line": 16,
       "spec": "ui/storefront.pw.ts",
       "test": "shows the half-price banner",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_test",
@@ -772,7 +872,9 @@
       "line": 23,
       "spec": "ui/storefront.pw.ts",
       "test": "lists the products",
-      "skipped": false
+      "skipped": false,
+      "eligibility": "eligible",
+      "guards": []
     },
     {
       "type": "pw_stub",

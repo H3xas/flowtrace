@@ -1,0 +1,6 @@
+{
+  "out": "out",
+  "repos": [
+    { "id": "web", "kind": "web", "root": "web" }
+  ]
+}

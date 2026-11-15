@@ -455,9 +455,11 @@ test('a URL start walks the same page as its name start, joining requests throug
   assert.ok(routes(byUrl).includes('PUT glasshouse/v1/zones/*/watchers [alias]'), 'the gateway request joins its backend route through the configured alias');
   assert.deepEqual(
     byUrl.nodes.filter((node) => node.kind !== 'mount' && node.id !== byUrl.root.id).map((node) => `${node.kind} ${node.ref} ${node.file}:${node.line}`),
-    byName.nodes.filter((node) => node.id !== byName.root.id).map((node) => `${node.kind} ${node.ref} ${node.file}:${node.line}`),
-    'below the mount chain the two walks are the same walk',
+    byName.nodes.filter((node) => node.kind !== 'mount' && node.id !== byName.root.id).map((node) => `${node.kind} ${node.ref} ${node.file}:${node.line}`),
+    'below the mount chain and the page hops the two walks are the same walk',
   );
+  const pageHops = byName.nodes.filter((node) => node.kind === 'mount').map((node) => `${node.ref} ${node.file}:${node.line}`);
+  assert.deepEqual(pageHops, ['page /greenhouse/zones/:zoneId/alerts/watchers src/zones/ZoneRoutes.tsx:11'], 'the name start lists the page the URL start resolves to');
   assert.equal(walk('PUT glasshouse/v1/zones/{zoneId}/watchers').root.kind, 'route', 'a route key keeps resolving to its backend route');
 });
 
