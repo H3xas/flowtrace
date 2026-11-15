@@ -9,13 +9,15 @@
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { validateConfig } from '../lib/config.js';
 import { buildEvidenceIndex, stateOf } from '../lib/cover.js';
+import { extract as extractPlaywright } from '../lib/extract/playwright.js';
 import { inlineFunctionBody } from '../lib/extract/text.js';
 import { validateFacts } from '../lib/facts.js';
 import { copyFixture, extract, runCli } from './helpers.js';
@@ -330,4 +332,45 @@ test('Test eligibility AC-32: the schema accepts the eligibility fields and refu
       eligibility,
     );
   }
+});
+
+const UNREAD_SPECS = {
+  'tests/unread.spec.ts': [
+    "import { test } from '@playwright/test';",
+    "import { featureOn } from '../support/flags';",
+    "test.describe('guarded', () => {",
+    "  test.skip(!featureOn, 'needs the feature');",
+    "  test('fails inside', async ({ request }) => {",
+    "    await request.get('api/one');",
+    '  });',
+    '});',
+    "test.skip('never closes', async ({ request }) => {",
+    "  await request.get('api/two');",
+    '',
+  ].join('\n'),
+};
+
+test('Test eligibility AC-27: a test the reader cannot read in full keeps its eligibility and guards', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-eligibility-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  for (const [path, text] of Object.entries(UNREAD_SPECS)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), text);
+  }
+  const spec = 'tests/unread.spec.ts';
+  const plain = testsOf(await extractPlaywright(dir), spec);
+  const failed = await extractPlaywright(dir, {
+    readerFault: (at, context) => {
+      if (at === 'request' && context.test === 'fails inside') throw new Error('injected');
+    },
+  });
+  const tests = testsOf(failed, spec);
+  const state = (candidate) => [candidate.test, candidate.unread, candidate.eligibility, candidate.skipped, candidate.guards.map(({ line, scope, value }) => [line, scope, value])];
+  assert.deepEqual(tests.map(state), [
+    ['fails inside', 'reader-failure', 'unknown', false, [[4, 'describe', 'unknown']]],
+    ['never closes', 'unbalanced-call', 'static-skip', true, []],
+  ]);
+  const { unread, ...readable } = tests[0];
+  assert.deepEqual(readable, plain[0], 'the failure changes only the unread field of the declaration');
+  assert.equal(validateFacts(failed), failed.length);
 });
