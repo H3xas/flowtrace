@@ -1546,6 +1546,17 @@ function twinFacts() {
   }];
 }
 
+/** The report the released `affected()` gives for two unmapped paths and no `diffRepo`. */
+function releasedUnmappedReport(changed) {
+  return {
+    area: null,
+    universe: { source: 'area', routes: 0, seeds: 0 },
+    changed: { files: changed, counts: { source: 0, spec: 0, harness: 0, config: 0, generated: 0, excluded: 0, unmapped: 2 } },
+    routes: [], seeds: { affected: 0, universe: 0 }, specs: [], changedSpecs: [], uncovered: [], suites: [],
+    reasons: [], fallbacks: [], fullSuite: [], widened: [], widenDropped: [], braked: [], stale: [], exit: 3,
+  };
+}
+
 test('Web extractor reach AC-20: an unmapped path calls no impact, adds no shared dependency and keeps the base report without diffRepo', () => {
   const calls = [];
   const impact = (root, path) => {
@@ -1572,9 +1583,9 @@ test('Web extractor reach AC-20: an unmapped path calls no impact, adds no share
   assert.ok(!owned.reasons.some((line) => line.startsWith('unmapped:')));
 
   const changed = [UNMAPPED_SERVICE, { repo: null, path: '.github/ci.yml', kind: 'unmapped' }];
-  const base = affected(twinFacts(), { changed, repos, stale: [] });
-  assert.deepEqual([base.exit, base.reasons, base.fallbacks], [3, [], []], 'without diffRepo an unmapped path reads as at the base');
-  assert.deepEqual(affected(twinFacts(), { changed, repos, stale: [], diffRepo: null }), base);
+  const released = releasedUnmappedReport(changed);
+  assert.deepEqual(affected(twinFacts(), { changed, repos, stale: [] }), released, 'without diffRepo the report is the released one');
+  assert.deepEqual(affected(twinFacts(), { changed, repos, stale: [], diffRepo: null }), released);
 
   const stale = run([UNMAPPED_SERVICE], { stale: [{ kind: 'head', message: 'backend: the facts are behind the repository HEAD' }] });
   assert.equal(stale.exit, 4);
@@ -1832,4 +1843,233 @@ test('Web extractor reach AC-19: a web root in no git checkout gives the checkou
   assert.deepEqual([report.exit, report.fallbacks, report.reasons], [0, [], [
     'checkout-not-read [web]: no git checkout holds the repository root — its changed files select nothing',
   ]]);
+});
+
+const ITEMS_BACKEND = controller('ItemsController', 'api', [['Get', 'items', 'List'], ['Post', 'items', 'Add']]);
+
+function gatewayLines(dir) {
+  return ofType(factsOf(dir), 'gateway_call')
+    .map((entry) => `${entry.file}:${entry.line} ${entry.service} ${entry.method} ${entry.verb} ${entry.template}`)
+    .sort();
+}
+
+test('Web extractor reach AC-3: a listed name with a $ or a non-ASCII letter gives a gateway call, as the configuration accepts it', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([BACKEND, { ...WEB, httpClients: ['$api', 'café', 'kliënt'] }]),
+    'backend/src/ItemsController.cs': ITEMS_BACKEND,
+    'web/src/items.js': [
+      'export function load($api) {',
+      "  return $api.get('/api/items');",
+      '}',
+      'export function add(café) {',
+      "  return café.post('/api/items');",
+      '}',
+      'export class Store {',
+      '  constructor(kliënt) {',
+      '    this.kliënt = kliënt;',
+      '  }',
+      '  list() {',
+      "    return this.kliënt.get('/api/items');",
+      '  }',
+      '}',
+      'export function near(a$api, xcafé) {',
+      "  return a$api.get('/api/items') || xcafé.get('/api/items');",
+      '}',
+      '',
+    ].join('\n'),
+    'web/src/viaAxios.js': [
+      "import $http from 'axios';",
+      '',
+      'const $client = $http.create();',
+      '',
+      'export function fetchItems() {',
+      "  return $http.get('/api/items');",
+      '}',
+      'export function addItem() {',
+      "  return $client.post('/api/items');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  extractAndJoin(dir);
+  assert.deepEqual(gatewayLines(dir), [
+    'src/items.js:12 kliënt list GET /api/items',
+    'src/items.js:2 $api load GET /api/items',
+    'src/items.js:5 café add POST /api/items',
+    'src/viaAxios.js:6 $http fetchItems GET /api/items',
+    'src/viaAxios.js:9 $client addItem POST /api/items',
+  ], 'a longer name that ends in a listed name is another name');
+  const calls = flowOf(dir).edges.filter((edge) => edge.kind === 'calls');
+  assert.equal(calls.length, 5, JSON.stringify(calls.map((edge) => edge.from)));
+});
+
+test('Web extractor reach AC-2: a parameter or a local that has the name of the axios import or instance is not that receiver', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([BACKEND, WEB]),
+    'backend/src/ItemsController.cs': ITEMS_BACKEND,
+    'web/src/shadow.js': [
+      "import http from 'axios';",
+      '',
+      'const api = http.create();',
+      '',
+      'export function viaImport() {',
+      "  return http.get('/api/items');",
+      '}',
+      'export function param(http) {',
+      "  return http.get('/api/items');",
+      '}',
+      "export const arrow = (http) => http.get('/api/items');",
+      "export const bare = http => http.post('/api/items');",
+      'export function local() {',
+      '  const http = makeClient();',
+      "  return http.get('/api/items');",
+      '}',
+      'export function viaInstance() {',
+      "  return api.get('/api/items');",
+      '}',
+      'export function instanceParam({ api }) {',
+      "  return api.get('/api/items');",
+      '}',
+      'export function made() {',
+      '  const made = http.create();',
+      "  return made.get('/api/items');",
+      '}',
+      'export function caught() {',
+      '  try {',
+      '    return 1;',
+      '  } catch (http) {',
+      "    return http.get('/api/items');",
+      '  }',
+      '}',
+      'export function inner(list) {',
+      "  list.forEach((api) => api.get('/api/items'));",
+      "  return api.post('/api/items');",
+      '}',
+      'export function guarded(x) {',
+      '  if (http) {',
+      "    return http.get('/api/items');",
+      '  }',
+      '  return x;',
+      '}',
+      'export function withDefault(a = http.get, b = 1) {',
+      "  return http.get('/api/items');",
+      '}',
+      '',
+    ].join('\n'),
+  });
+  extractAndJoin(dir);
+  assert.deepEqual(gatewayLines(dir), [
+    'src/shadow.js:18 api viaInstance GET /api/items',
+    'src/shadow.js:25 made made GET /api/items',
+    'src/shadow.js:36 api inner POST /api/items',
+    'src/shadow.js:40 http guarded GET /api/items',
+    'src/shadow.js:45 http withDefault GET /api/items',
+    'src/shadow.js:6 http viaImport GET /api/items',
+  ]);
+});
+
+test('Web extractor reach AC-13: a member body call through a parameter or a local of the same name names no module function', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/api/helper.ts': [
+      'export function request() {',
+      '  return 1;',
+      '}',
+      'export const helper = {',
+      '  load(request) {',
+      '    return request();',
+      '  },',
+      '  ok() {',
+      '    return request();',
+      '  },',
+      '  arrow: (request) => request(),',
+      '  local() {',
+      '    const request = () => 2;',
+      '    return request();',
+      '  },',
+      '  later() {',
+      '    [1].map((request) => request);',
+      '    return request();',
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+  });
+  const extracted = cli(dir, ['extract']);
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const calls = ofType(factsOf(dir), 'method_call')
+    .filter((entry) => entry.calledClass !== undefined)
+    .map((entry) => `${entry.line} ${entry.class}.${entry.method} ${entry.field} ${entry.calledMethod} ${entry.calledClass}`);
+  assert.deepEqual(calls, ['9 helper.ok this request Helper', '18 helper.later this request Helper']);
+});
+
+test('Web extractor reach AC-11: an imported route target follows the re-exports of its module and never falls back to another module', (t) => {
+  const page = (name) => `import React from 'react';\nexport function ${name}() {\n  return <div>${name}</div>;\n}\n`;
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/foo.jsx': 'export function Foo() {\n  return null;\n}\n',
+    'web/src/Other.jsx': page('Bar'),
+    'web/src/pages/index.js': "export { Foo } from './Foo';\nexport { default as Baz } from './Baz';\nexport * from './more';\n",
+    'web/src/pages/Foo.jsx': page('Foo'),
+    'web/src/pages/Baz.jsx': "import React from 'react';\nexport default function Baz() {\n  return <div>Baz</div>;\n}\n",
+    'web/src/pages/more.jsx': page('Qux'),
+    'web/src/other/Foo.jsx': page('Foo'),
+    'web/src/other/Baz.jsx': page('Baz'),
+    'web/src/other/Qux.jsx': page('Qux'),
+    'web/src/other/Page.jsx': page('Page'),
+    'web/src/App.jsx': [
+      "import React from 'react';",
+      "import { Route, Routes } from 'react-router-dom';",
+      "import { Foo as Bar } from './foo';",
+      "import { Foo as Page, Baz, Qux as Q } from './pages';",
+      '',
+      'export function App() {',
+      '  return (',
+      '    <Routes>',
+      '      <Route path="/wrong" element={<Bar />} />',
+      '      <Route path="/foo" element={<Page />} />',
+      '      <Route path="/baz" element={<Baz />} />',
+      '      <Route path="/qux" element={<Q />} />',
+      '    </Routes>',
+      '  );',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  const extracted = cli(dir, ['extract']);
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const pages = ofType(factsOf(dir), 'component')
+    .filter((entry) => entry.role === 'page')
+    .map((entry) => `${entry.file} ${entry.name} ${entry.path}`)
+    .sort();
+  assert.deepEqual(pages, [
+    'src/pages/Baz.jsx Baz /baz',
+    'src/pages/Foo.jsx Foo /foo',
+    'src/pages/more.jsx Qux /qux',
+  ]);
+});
+
+test('Web extractor reach AC-7: without diffRepo a changed web caller differs from the released report only in the route it selects', () => {
+  const facts = [
+    { repo: 'backend', facts: [{ type: 'route', file: 'src/Controllers/GizmoController.cs', line: 10, controller: 'GizmoController', action: 'Activate', verb: 'POST', template: 'gizmos/v1/activate' }] },
+    { repo: 'web', facts: [{ type: 'gateway_call', file: 'src/api/gizmo.ts', line: 3, service: 'http', method: 'activate', verb: 'POST', template: '/gizmos/v1/activate', resolved: true }] },
+  ];
+  const repos = [{ id: 'backend', kind: 'backend', root: '/checkout/backend' }, { id: 'web', kind: 'web', root: '/checkout/web' }];
+  const changed = [{ repo: 'web', path: 'src/api/gizmo.ts', kind: 'source' }];
+  const released = {
+    area: null,
+    universe: { source: 'area', routes: 1, seeds: 1 },
+    changed: { files: changed, counts: { source: 1, spec: 0, harness: 0, config: 0, generated: 0, excluded: 0, unmapped: 0 } },
+    routes: [], seeds: { affected: 0, universe: 1 }, specs: [], changedSpecs: [], uncovered: [], suites: [],
+    reasons: [], fallbacks: [], fullSuite: [], widened: [], widenDropped: [], braked: [], stale: [], exit: 3,
+  };
+  const report = affected(facts, { changed, repos, stale: [], keys: ['POST gizmos/v1/activate'] });
+  assert.deepEqual(report, {
+    ...released,
+    routes: [{ key: 'POST gizmos/v1/activate', ref: 'POST gizmos/v1/activate', file: 'src/Controllers/GizmoController.cs', line: 10, state: 'none', seeds: 1, changed: ['src/api/gizmo.ts'] }],
+    seeds: { affected: 1, universe: 1 },
+    uncovered: [{ route: 'POST gizmos/v1/activate', seeds: 1, scaffold: report.uncovered[0]?.scaffold }],
+    exit: 0,
+  }, 'the route, its seed, its uncovered line and the exit code are the change the caller rule makes');
+  assert.match(report.uncovered[0].scaffold, /^flowtrace scaffold --seed [0-9a-f]{8}$/);
 });
