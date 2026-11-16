@@ -2527,6 +2527,7 @@ const BINDING_ROWS = {
   '/b1/generic-arrow': false,
   '/b1/computed-method': false,
   '/b1/computed-string-method': false,
+  '/b1/generic-default-arrow-type': false,
   '/b2/outside': true,
   '/b2/hidden': false,
   '/b3/outside': true,
@@ -2551,6 +2552,10 @@ const BINDING_ROWS = {
   '/b8/function': false,
   '/b8/class': false,
   '/b8/generic-function': false,
+  '/b8/generic-class': false,
+  '/b8/class-extends-generic': false,
+  '/b8/class-extends-call': false,
+  '/b8/class-implements-two': false,
 };
 
 const BINDING_SOURCE = `import axios from 'axios';
@@ -2561,6 +2566,10 @@ declare const key: string;
 declare const list: unknown[];
 declare const deps: { api: unknown; b: unknown; inner: { api: unknown } };
 declare function other(): unknown;
+declare const Base: any;
+declare function mixin(...parts: unknown[]): any;
+interface First {}
+interface Second {}
 
 export function r1Visible() { return axios.get('/r1/visible'); }
 export function r1Hidden(axios: unknown) { return axios.get('/r1/hidden-by-b1'); }
@@ -2595,6 +2604,7 @@ export const b1Arrow = (api: unknown) => api.get('/b1/arrow');
 export function b1Destructured({ api }: { api: unknown }) { return api.get('/b1/destructured'); }
 export function b1Generic<T>(api: T) { return api.get('/b1/generic-function'); }
 export const b1GenericArrow = <T,>(api: T) => { return api.get('/b1/generic-arrow'); };
+export function b1GenericDefault<T = () => void>(api: T) { return api.get('/b1/generic-default-arrow-type'); }
 
 export function b2Outside() { return api.get('/b2/outside'); }
 export const b2 = api => api.get('/b2/hidden');
@@ -2638,6 +2648,10 @@ export function b7() {
 export const b8 = function api() { return api.get('/b8/function'); };
 export const b8Class = class api { load() { return api.get('/b8/class'); } };
 export const b8Generic = function api<T>(x: T) { return api.get('/b8/generic-function'); };
+export const b8GenericClass = class api<K, V = string> { load() { return api.get('/b8/generic-class'); } };
+export const b8ExtendsGeneric = class api extends Base<string, number> { load() { return api.get('/b8/class-extends-generic'); } };
+export const b8ExtendsCall = class api extends mixin(First, Second) { load() { return api.get('/b8/class-extends-call'); } };
+export const b8Implements = class api implements First, Second { load() { return api.get('/b8/class-implements-two'); } };
 export function b8Outside() { return api.get('/b8/outside'); }
 `;
 
