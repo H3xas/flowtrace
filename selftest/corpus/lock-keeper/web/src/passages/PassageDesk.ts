@@ -280,6 +280,17 @@ export class PassageDesk {
     api.save(x);
   }
 
+  bareBlockExit(form: PassageForm, x: Passage) {
+    const held = form.stale
+    {
+      if (form.invalid) {
+        return;
+      }
+    }
+    api.save(x);
+    return held;
+  }
+
   staticBlockExit(form: PassageForm, x: Passage) {
     class Guard {
       static {

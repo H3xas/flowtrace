@@ -142,6 +142,7 @@ const EXIT_GATES = [
   ['helperExit', 'save(x)', []],
   ['classExit', 'save(x)', []],
   ['typedHelperExit', 'save(x)', []],
+  ['bareBlockExit', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-one-arm']]],
   ['staticBlockExit', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-one-arm']]],
   ['tryExit', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-try']]],
   ['catchExit', 'save(x)', [['if (form.strict)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-try']]],
