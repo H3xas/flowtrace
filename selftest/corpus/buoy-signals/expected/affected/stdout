@@ -1,0 +1,92 @@
+{
+  "area": "harbor.area",
+  "universe": {
+    "source": "area",
+    "routes": 3,
+    "seeds": 6
+  },
+  "changed": {
+    "files": [
+      {
+        "repo": "backend",
+        "path": "src/Controllers/ZoneWatchersController.cs",
+        "kind": "source"
+      }
+    ],
+    "counts": {
+      "source": 1,
+      "spec": 0,
+      "harness": 0,
+      "config": 0,
+      "generated": 0,
+      "excluded": 0,
+      "unmapped": 0
+    }
+  },
+  "routes": [
+    {
+      "key": "GET glasshouse/v1/zones/*/watchers",
+      "ref": "GET glasshouse/v1/zones/*/watchers",
+      "file": "src/Controllers/ZoneWatchersController.cs",
+      "line": 22,
+      "state": "route",
+      "seeds": 2,
+      "changed": [
+        "src/Controllers/ZoneWatchersController.cs"
+      ]
+    }
+  ],
+  "seeds": {
+    "affected": 2,
+    "universe": 6
+  },
+  "specs": [
+    {
+      "repo": "suite",
+      "spec": "tests/watchers.spec.ts",
+      "kind": "spec",
+      "routes": [
+        "GET glasshouse/v1/zones/*/watchers"
+      ],
+      "seedKeys": [
+        "0a764c91",
+        "456045ba"
+      ],
+      "level": "disposition",
+      "seedKey": "456045ba",
+      "why": [
+        "seed #456045ba (403 Forbidden, disposition)",
+        "GET glasshouse/v1/zones/*/watchers  (src/Controllers/ZoneWatchersController.cs:22)",
+        "src/Controllers/ZoneWatchersController.cs  (changed)"
+      ]
+    }
+  ],
+  "changedSpecs": [],
+  "uncovered": [],
+  "suites": [
+    {
+      "repo": "suite",
+      "selected": 1,
+      "support": 0,
+      "total": 1,
+      "share": 1
+    }
+  ],
+  "reasons": [],
+  "fallbacks": [
+    {
+      "rung": "max-share",
+      "scope": "suite",
+      "action": "full-suite",
+      "reason": "selection saved nothing: 1 of 1 specs (100 %) above --max-share 0.5"
+    }
+  ],
+  "fullSuite": [
+    "suite"
+  ],
+  "widened": [],
+  "widenDropped": [],
+  "braked": [],
+  "stale": [],
+  "exit": 4
+}

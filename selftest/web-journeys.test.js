@@ -477,7 +477,12 @@ test('Web journeys AC-4: a creator with no effect walks the creators it dispatch
   const header = traceNodes(json(dir, REGATTA[1], ['trace', 'RegattaHeader']))
     .filter((node) => node.kind !== 'mount')
     .map((node) => ({ ...node, keys: node.keys.filter((key) => key !== 'pages') }));
-  assert.deepEqual(header, BASE.trace.RegattaHeader.filter((node) => node.kind !== 'mount'), 'a creator with an effect walks as at the base');
+  // The nested walks of these two routes stop, so their summaries carry the walk mark.
+  const marked = new Set(['GET regattas/v1/*', 'GET regattas/v1/*/entries']);
+  const expected = BASE.trace.RegattaHeader
+    .filter((node) => node.kind !== 'mount')
+    .map((node) => (node.kind === 'route' && marked.has(node.ref) ? { ...node, keys: [...node.keys, 'summaryWalk'].sort() } : node));
+  assert.deepEqual(header, expected, 'a creator with an effect walks as at the base');
 });
 
 /** Each hop of a chain as `kind fact file:line ref`. */

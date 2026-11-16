@@ -1,0 +1,644 @@
+{
+  "cases": {
+    "outbound": {
+      "edges": {
+        "edges": [
+          {
+            "kind": "uses-type",
+            "file": "Backend/A.cs",
+            "line": 4,
+            "target": "Backend/B.cs"
+          }
+        ],
+        "unavailable": false,
+        "reason": null,
+        "counts": {
+          "uses-type": {
+            "total": 1,
+            "dropped": 0
+          }
+        },
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--out"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "ambiguous": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--out"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "exit 3": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer gave no answer",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--out"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "no symbol matches": {
+        "edges": [],
+        "unavailable": false,
+        "reason": null,
+        "counts": {},
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--out"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "timeout": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--out"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "output above the limit": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--out"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "exit by signal": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--out"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "start throws": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer could not be started",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--out"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      }
+    },
+    "inbound": {
+      "edges": {
+        "edges": [
+          {
+            "kind": "ctor-di",
+            "file": "Tests/A.cs",
+            "line": 3,
+            "heuristic": false
+          }
+        ],
+        "unavailable": false,
+        "reason": null,
+        "counts": {
+          "ctor-di": {
+            "total": 1,
+            "dropped": 0
+          }
+        },
+        "dropped": 0,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "exit 3 with a payload": {
+        "edges": [
+          {
+            "kind": "ctor-di",
+            "file": "Tests/A.cs",
+            "line": 3,
+            "heuristic": false
+          }
+        ],
+        "unavailable": false,
+        "reason": null,
+        "counts": {
+          "ctor-di": {
+            "total": 1,
+            "dropped": 0
+          }
+        },
+        "dropped": 0,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "exit 3 with an empty payload": {
+        "edges": [],
+        "unavailable": false,
+        "reason": null,
+        "counts": {},
+        "dropped": 0,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "ambiguous": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "no symbol matches": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "no symbol matches",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "timeout": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "output above the limit": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "exit by signal": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "no symbol matches",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "start throws": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer could not be started",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "refs",
+              "ZoneWatchersController",
+              "--json"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      }
+    },
+    "impact": {
+      "edges": {
+        "edges": [
+          {
+            "file": "Tests/A.cs",
+            "hops": 1,
+            "via": "direct"
+          }
+        ],
+        "unavailable": false,
+        "reason": null,
+        "counts": null,
+        "dropped": null,
+        "braked": [
+          {
+            "iface": "IZoneFeed",
+            "fanin": 40
+          }
+        ],
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "exit 3 with a payload": {
+        "edges": [
+          {
+            "file": "Tests/A.cs",
+            "hops": 1,
+            "via": "direct"
+          }
+        ],
+        "unavailable": false,
+        "reason": null,
+        "counts": null,
+        "dropped": null,
+        "braked": [
+          {
+            "iface": "IZoneFeed",
+            "fanin": 40
+          }
+        ],
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "exit 3 with an empty payload": {
+        "edges": [],
+        "unavailable": false,
+        "reason": null,
+        "counts": null,
+        "dropped": null,
+        "braked": [],
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "ambiguous": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "no file match": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "no file match",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "timeout": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "output above the limit": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer exited with an error",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "exit by signal": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "no file match",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      },
+      "start throws": {
+        "edges": [],
+        "unavailable": true,
+        "reason": "indexer could not be started",
+        "counts": null,
+        "dropped": null,
+        "braked": null,
+        "calls": [
+          {
+            "bin": "/fixture/bin/scout",
+            "args": [
+              "impact",
+              "src/Services/ZoneReadingService.cs",
+              "--hops",
+              "3",
+              "--json",
+              "--no-iface"
+            ],
+            "cwd": "/fixture/backend"
+          }
+        ]
+      }
+    }
+  },
+  "missing": {
+    "outbound": {
+      "edges": [],
+      "unavailable": true,
+      "reason": "binary not found",
+      "counts": null,
+      "dropped": null,
+      "braked": null,
+      "calls": []
+    },
+    "inbound": {
+      "edges": [],
+      "unavailable": true,
+      "reason": "binary not found",
+      "counts": null,
+      "dropped": null,
+      "braked": null,
+      "calls": []
+    },
+    "impact": {
+      "edges": [],
+      "unavailable": true,
+      "reason": "binary not found",
+      "counts": null,
+      "dropped": null,
+      "braked": null,
+      "calls": []
+    }
+  },
+  "bare": {
+    "outbound": {
+      "edges": [],
+      "unavailable": true,
+      "reason": "indexer exited with an error",
+      "counts": null,
+      "dropped": null,
+      "braked": null
+    },
+    "inbound": {
+      "edges": [],
+      "unavailable": true,
+      "reason": "indexer exited with an error",
+      "counts": null,
+      "dropped": null,
+      "braked": null
+    },
+    "impact": {
+      "edges": [],
+      "unavailable": true,
+      "reason": "indexer exited with an error",
+      "counts": null,
+      "dropped": null,
+      "braked": null
+    }
+  }
+}

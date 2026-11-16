@@ -1,0 +1,33 @@
+# Port readiness
+
+Join: 2/3 components matched to an area (66.7%), 1 unmatched
+Unmatched: GatewayService (src/app/features/core/gateway.service.ts)
+
+## Area: zones
+
+2 components · 1 distinct backend route
+
+Zero backend reach (pure-UI, cheapest to cover): none
+Unreachable-only (JWT/body-gated, needs fixture data): none
+
+| Route | Reachable | Edge | Unreachable | Unknown | DB write | DB read | Publish | Worker | SignalR | Push (other) | Infra-only | Coverage |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| GET glasshouse/v1/zones/*/watchers | 1 | 0 | 0 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | route |
+
+## Area: readings
+
+0 components · 0 distinct backend routes
+
+Zero backend reach (pure-UI, cheapest to cover): none
+Unreachable-only (JWT/body-gated, needs fixture data): none
+
+_No backend route reached by this area's components._
+
+## Estate summary
+
+| Area | Components | Routes | Zero-reach | Unreachable-only | Reachable | Edge | Unreachable | Unknown | Coverage |
+|---|---|---|---|---|---|---|---|---|---|
+| zones | 2 | 1 | 0 | 0 | 1 | 0 | 0 | 1 | 1 route · 0 skipped · 0 none |
+| readings | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 route · 0 skipped · 0 none |
+| **Estate** | 2 | 1 | 0 | 0 | 1 | 0 | 0 | 1 | 1 route · 0 skipped · 0 none |
+

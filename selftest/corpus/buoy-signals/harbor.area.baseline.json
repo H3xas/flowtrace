@@ -1,0 +1,50 @@
+{
+  "area": "harbor.area",
+  "generatedAt": "2026-10-23T19:17:16.024Z",
+  "facts": [],
+  "totals": {
+    "routes": 3,
+    "observed": 0,
+    "skippedOnly": 0,
+    "none": 3,
+    "seeds": 3,
+    "seedsObserved": 0,
+    "seedsSkipped": 0,
+    "seedsNone": 3,
+    "parity": {
+      "cypressOnly": 0,
+      "playwrightOnly": 0,
+      "both": 0,
+      "neither": 3
+    }
+  },
+  "routes": [
+    {
+      "key": "GET glasshouse/v1/zones/*/readings",
+      "state": "none",
+      "seeds": 1,
+      "parityCypress": "none",
+      "parityPlaywright": "none",
+      "traversal": "complete",
+      "boundary": []
+    },
+    {
+      "key": "GET glasshouse/v1/zones/*/watchers",
+      "state": "none",
+      "seeds": 1,
+      "parityCypress": "none",
+      "parityPlaywright": "none",
+      "traversal": "complete",
+      "boundary": []
+    },
+    {
+      "key": "POST glasshouse/v1/zones/*/harvest-plan",
+      "state": "none",
+      "seeds": 1,
+      "parityCypress": "none",
+      "parityPlaywright": "none",
+      "traversal": "complete",
+      "boundary": []
+    }
+  ]
+}

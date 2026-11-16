@@ -96,7 +96,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 1
+      "methodDepth": 1,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n7",
@@ -162,7 +168,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 1
+      "methodDepth": 1,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n14",
@@ -224,7 +236,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 1
+      "methodDepth": 1,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n18",
@@ -286,7 +304,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 1
+      "methodDepth": 1,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n22",
@@ -348,7 +372,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 1
+      "methodDepth": 1,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n26",
@@ -549,7 +579,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 0
+      "methodDepth": 0,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n49",
@@ -621,7 +657,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 0
+      "methodDepth": 0,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n53",
@@ -693,7 +735,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 0
+      "methodDepth": 0,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n57",
@@ -765,7 +813,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 0
+      "methodDepth": 0,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n61",
@@ -824,7 +878,13 @@
         ]
       },
       "homeRepo": "backend",
-      "methodDepth": 0
+      "methodDepth": 0,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "provider-unavailable": 1
+        }
+      }
     },
     {
       "id": "n70",

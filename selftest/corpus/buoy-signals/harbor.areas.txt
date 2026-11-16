@@ -1,0 +1,2 @@
+zones,src/app/features/zones/**
+readings,src/app/features/readings/**

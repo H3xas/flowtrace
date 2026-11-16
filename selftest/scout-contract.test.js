@@ -58,6 +58,32 @@ test('parseRefs reads every outbound sub-block the graph declares, not a fixed s
   assert.deepEqual(parsed.counts.imports, { total: 1, dropped: 0 });
 });
 
+test('parseRefs reads the reply the index prints and calls it whole only with every row of its outbound section', () => {
+  const reply = [
+    'Shop.Widget  (class)  1 inbound (showing 1)',
+    'def: Backend/Widget.cs:8',
+    'inbound:',
+    '  uses-type (1):',
+    '    Backend/Shelf.cs:4  uses-type  private readonly Widget _widget;',
+    'outbound:',
+    '  inherits (0):',
+    '  uses-type (1):',
+    '    Backend/Widget.cs:12  uses-type  -> Backend/Gizmo.cs  private readonly Gizmo _gizmo;',
+    'next: devscout tests Shop.Widget',
+    '',
+  ].join('\n');
+  const parsed = parseRefs(reply);
+  assert.equal(parsed.whole, true);
+  assert.deepEqual(parsed.edges, [{ kind: 'uses-type', file: 'Backend/Widget.cs', line: 12, target: 'Backend/Gizmo.cs' }]);
+
+  const inboundOnly = reply.slice(0, reply.indexOf('outbound:'));
+  assert.equal(parseRefs(inboundOnly).whole, false, 'a reply with no outbound section');
+  const unread = reply.replace('  uses-type  -> Backend/Gizmo.cs', ' uses-type Gizmo');
+  assert.equal(parseRefs(unread).whole, false, 'a row the header counts but the parser cannot read');
+  assert.equal(parseRefs('index unavailable\n').whole, false);
+  assert.equal(parseRefs('outbound:\n  uses-type (0):\n').whole, true, 'an empty outbound section is whole');
+});
+
 test('parseRefsInbound reads every inbound kind object the payload declares', () => {
   const payload = {
     status: 'resolved',

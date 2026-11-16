@@ -1,0 +1,3205 @@
+[
+  {
+    "key": "GET glasshouse/v1/zones/*/watchers",
+    "schemaVersion": 1,
+    "view": "dependency",
+    "root": {
+      "id": "n1",
+      "repo": "backend",
+      "kind": "route",
+      "ref": "GET glasshouse/v1/zones/*/watchers",
+      "file": "src/Controllers/ZoneWatchersController.cs",
+      "line": 22,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "backend"
+    },
+    "nodes": [
+      {
+        "id": "n1",
+        "repo": "backend",
+        "kind": "route",
+        "ref": "GET glasshouse/v1/zones/*/watchers",
+        "file": "src/Controllers/ZoneWatchersController.cs",
+        "line": 22,
+        "via": "start",
+        "hops": 0,
+        "homeRepo": "backend"
+      },
+      {
+        "id": "n2",
+        "repo": "backend",
+        "kind": "action",
+        "ref": "ZoneWatchersController.GetWatchers",
+        "file": "src/Controllers/ZoneWatchersController.cs",
+        "line": 22,
+        "via": "literal",
+        "hops": 1,
+        "class": "ZoneWatchersController",
+        "method": "GetWatchers",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n3",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "HarborBridge",
+        "file": "src/Controllers/ZoneWatchersController.cs",
+        "line": 19,
+        "via": "ctor",
+        "hops": 1,
+        "class": "HarborBridge",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n4",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "HarborBridge.Forward",
+        "file": "src/Controllers/ZoneWatchersController.cs",
+        "line": 19,
+        "via": "body",
+        "hops": 2,
+        "class": "HarborBridge",
+        "method": "Forward",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n5",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "SignalRelay",
+        "file": "backend/src/Services/SignalRelay.cs",
+        "line": 1,
+        "via": "graph",
+        "hops": 3,
+        "class": "SignalRelay",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n6",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "RelaySink",
+        "file": "backend/src/Services/RelaySink.cs",
+        "line": 1,
+        "via": "graph",
+        "hops": 4,
+        "class": "RelaySink",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n7",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "RelayGate",
+        "file": "backend/src/Services/RelayGate.cs",
+        "line": 1,
+        "via": "graph",
+        "hops": 5,
+        "class": "RelayGate",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n8",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "ReadingRepository",
+        "file": "src/DataAccess/ReadingRepository.cs",
+        "line": 14,
+        "via": "graph",
+        "hops": 6,
+        "sink": true,
+        "access": "unknown",
+        "accessUnknown": true,
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n9",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IWatcherService",
+        "file": "src/Controllers/ZoneWatchersController.cs",
+        "line": 18,
+        "via": "ctor",
+        "hops": 1,
+        "class": "IWatcherService",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n10",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "WatcherService",
+        "file": "src/Services/WatcherService.cs",
+        "line": 40,
+        "via": "di",
+        "hops": 1,
+        "class": "WatcherService",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n11",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "WatcherService.ListWatchers",
+        "file": "src/Services/WatcherService.cs",
+        "line": 50,
+        "via": "body",
+        "hops": 2,
+        "class": "WatcherService",
+        "method": "ListWatchers",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n12",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IWatcherRepository",
+        "file": "src/Services/WatcherService.cs",
+        "line": 45,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IWatcherRepository",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n13",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "WatcherRepository",
+        "file": "src/DataAccess/WatcherRepository.cs",
+        "line": 13,
+        "via": "di",
+        "hops": 2,
+        "sink": true,
+        "access": "read",
+        "class": "WatcherRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "ListWatchers"
+        ],
+        "methodDepth": 1
+      }
+    ],
+    "edges": [
+      {
+        "from": "n1",
+        "to": "n2",
+        "via": "literal",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"route\",\"src/Controllers/ZoneWatchersController.cs\",22]",
+            "repo": "backend",
+            "type": "route",
+            "file": "src/Controllers/ZoneWatchersController.cs",
+            "line": 22
+          }
+        ]
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n3",
+        "to": "n4",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Controllers/ZoneWatchersController.cs\",27,\"ZoneWatchersController\",\"GetWatchers\",\"_relay\",\"Forward\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Controllers/ZoneWatchersController.cs",
+            "line": 27
+          }
+        ]
+      },
+      {
+        "from": "n4",
+        "to": "n5",
+        "via": "graph",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n5",
+        "to": "n6",
+        "via": "graph",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n6",
+        "to": "n7",
+        "via": "graph",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n7",
+        "to": "n8",
+        "via": "graph",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n2",
+        "to": "n9",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n9",
+        "to": "n10",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n10",
+        "to": "n11",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Controllers/ZoneWatchersController.cs\",28,\"ZoneWatchersController\",\"GetWatchers\",\"_watchers\",\"ListWatchers\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Controllers/ZoneWatchersController.cs",
+            "line": 28
+          }
+        ]
+      },
+      {
+        "from": "n11",
+        "to": "n12",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n12",
+        "to": "n13",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/WatcherService.cs\",52,\"WatcherService\",\"ListWatchers\",\"_watchers\",\"ListWatchers\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/WatcherService.cs",
+            "line": 52
+          }
+        ]
+      }
+    ],
+    "sinks": [
+      {
+        "id": "n8",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "ReadingRepository",
+        "file": "src/DataAccess/ReadingRepository.cs",
+        "line": 14,
+        "via": "graph",
+        "hops": 6,
+        "sink": true,
+        "access": "unknown",
+        "accessUnknown": true,
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n13",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "WatcherRepository",
+        "file": "src/DataAccess/WatcherRepository.cs",
+        "line": 13,
+        "via": "di",
+        "hops": 2,
+        "sink": true,
+        "access": "read",
+        "class": "WatcherRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "ListWatchers"
+        ],
+        "methodDepth": 1
+      }
+    ],
+    "branches": [],
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "456045ba",
+        "kind": "reject",
+        "reachability": "unknown",
+        "reachabilityReason": "context ← unresolved",
+        "dispositions": [
+          {
+            "kind": "reject",
+            "line": 23,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "context.Result → 403 Forbidden",
+            "response": "403 Forbidden",
+            "responseKind": "reject",
+            "rejectForm": "filter-result",
+            "statusVia": {
+              "file": "src/Filters/RelayCheckFilter.cs",
+              "line": 23
+            },
+            "disposition": "taken",
+            "file": "src/Filters/RelayCheckFilter.cs",
+            "reachability": "unknown",
+            "reachabilityReason": "context ← unresolved"
+          }
+        ],
+        "response": "403 Forbidden",
+        "statusVia": {
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 23
+        },
+        "outcomes": [],
+        "always": [],
+        "alsoOnPath": [
+          {
+            "kind": "if",
+            "line": 21,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "if (!allowed)"
+          }
+        ],
+        "infrastructure": [],
+        "gate": {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true
+        }
+      },
+      {
+        "id": "U2",
+        "key": "0a764c91",
+        "kind": "effect",
+        "reachability": "reachable",
+        "dispositions": [],
+        "response": null,
+        "outcomes": [
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "WatcherRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/WatcherRepository.cs",
+            "line": 13,
+            "infra": false,
+            "gates": [],
+            "method": "ListWatchers",
+            "access": "read"
+          }
+        ],
+        "always": [],
+        "alsoOnPath": [],
+        "infrastructure": []
+      }
+    ],
+    "seedsTruncated": 0,
+    "stats": {
+      "nodes": 13,
+      "edges": 12,
+      "sinks": 2,
+      "branches": 0,
+      "primaryBranches": 0,
+      "seedCount": 2,
+      "routes": 1,
+      "inventory": false,
+      "repos": [
+        "backend"
+      ],
+      "via": {
+        "literal": 1,
+        "ctor": 3,
+        "body": 2,
+        "graph": 4,
+        "di": 2
+      },
+      "depth": 6,
+      "crossings": 0,
+      "budgetHit": false,
+      "graphUnavailable": 0,
+      "graphUnknownKinds": [],
+      "gates": [
+        {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 18,
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true,
+          "seeds": 1
+        }
+      ]
+    },
+    "status": {
+      "schemaVersion": 1,
+      "traversal": "complete",
+      "freshness": "matching",
+      "factSets": [
+        {
+          "repo": "backend",
+          "freshness": "matching"
+        },
+        {
+          "repo": "mobile",
+          "freshness": "matching"
+        },
+        {
+          "repo": "suite",
+          "freshness": "matching"
+        },
+        {
+          "repo": "web",
+          "freshness": "matching"
+        }
+      ],
+      "evidence": {
+        "source-supported": 8,
+        "inferred": 4,
+        "runtime": "not supplied"
+      },
+      "scope": {
+        "start": {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "GET glasshouse/v1/zones/*/watchers",
+          "file": "src/Controllers/ZoneWatchersController.cs",
+          "line": 22
+        },
+        "mode": "full",
+        "fromHandler": null,
+        "unscoped": false,
+        "graph": false,
+        "seeds": true,
+        "entries": false
+      },
+      "limits": {
+        "depth": 6,
+        "maxNodes": 1500,
+        "seedCap": 64,
+        "interfaceFanOut": 16,
+        "graphFanOut": 8
+      },
+      "schedule": {
+        "order": "depth-first"
+      },
+      "stops": {},
+      "frontier": [],
+      "identity": "sha256:cfae3f5e701aa2af005dd0b59efeace33edc84d6265269fb85c79703b656a53e"
+    }
+  },
+  {
+    "key": "GET glasshouse/v1/zones/*/readings",
+    "schemaVersion": 1,
+    "view": "dependency",
+    "root": {
+      "id": "n1",
+      "repo": "backend",
+      "kind": "route",
+      "ref": "GET glasshouse/v1/zones/*/readings",
+      "file": "src/Controllers/ZoneReadingsController.cs",
+      "line": 19,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "backend"
+    },
+    "nodes": [
+      {
+        "id": "n1",
+        "repo": "backend",
+        "kind": "route",
+        "ref": "GET glasshouse/v1/zones/*/readings",
+        "file": "src/Controllers/ZoneReadingsController.cs",
+        "line": 19,
+        "via": "start",
+        "hops": 0,
+        "homeRepo": "backend"
+      },
+      {
+        "id": "n2",
+        "repo": "backend",
+        "kind": "action",
+        "ref": "ZoneReadingsController.GetReadings",
+        "file": "src/Controllers/ZoneReadingsController.cs",
+        "line": 19,
+        "via": "literal",
+        "hops": 1,
+        "class": "ZoneReadingsController",
+        "method": "GetReadings",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n3",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IZoneReadingService",
+        "file": "src/Controllers/ZoneReadingsController.cs",
+        "line": 16,
+        "via": "ctor",
+        "hops": 1,
+        "class": "IZoneReadingService",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n4",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "ZoneReadingService",
+        "file": "src/Services/ZoneReadingService.cs",
+        "line": 19,
+        "via": "di",
+        "hops": 1,
+        "class": "ZoneReadingService",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n5",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "ZoneReadingService.ListReadings",
+        "file": "src/Services/ZoneReadingService.cs",
+        "line": 22,
+        "via": "body",
+        "hops": 2,
+        "class": "ZoneReadingService",
+        "method": "ListReadings",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n6",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IReadingRepository",
+        "file": "src/Services/ZoneReadingService.cs",
+        "line": 19,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IReadingRepository",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n7",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "ReadingRepository",
+        "file": "src/DataAccess/ReadingRepository.cs",
+        "line": 14,
+        "via": "di",
+        "hops": 2,
+        "sink": true,
+        "access": "read",
+        "class": "ReadingRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "ListReadings"
+        ],
+        "methodDepth": 1
+      }
+    ],
+    "edges": [
+      {
+        "from": "n1",
+        "to": "n2",
+        "via": "literal",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"route\",\"src/Controllers/ZoneReadingsController.cs\",19]",
+            "repo": "backend",
+            "type": "route",
+            "file": "src/Controllers/ZoneReadingsController.cs",
+            "line": 19
+          }
+        ]
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n3",
+        "to": "n4",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n4",
+        "to": "n5",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Controllers/ZoneReadingsController.cs\",22,\"ZoneReadingsController\",\"GetReadings\",\"_readings\",\"ListReadings\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Controllers/ZoneReadingsController.cs",
+            "line": 22
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n6",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n6",
+        "to": "n7",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/ZoneReadingService.cs\",24,\"ZoneReadingService\",\"ListReadings\",\"_store\",\"ListReadings\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/ZoneReadingService.cs",
+            "line": 24
+          }
+        ]
+      }
+    ],
+    "sinks": [
+      {
+        "id": "n7",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "ReadingRepository",
+        "file": "src/DataAccess/ReadingRepository.cs",
+        "line": 14,
+        "via": "di",
+        "hops": 2,
+        "sink": true,
+        "access": "read",
+        "class": "ReadingRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "ListReadings"
+        ],
+        "methodDepth": 1
+      }
+    ],
+    "branches": [],
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "c288f95f",
+        "kind": "reject",
+        "reachability": "unknown",
+        "reachabilityReason": "context ← unresolved",
+        "dispositions": [
+          {
+            "kind": "reject",
+            "line": 23,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "context.Result → 403 Forbidden",
+            "response": "403 Forbidden",
+            "responseKind": "reject",
+            "rejectForm": "filter-result",
+            "statusVia": {
+              "file": "src/Filters/RelayCheckFilter.cs",
+              "line": 23
+            },
+            "disposition": "taken",
+            "file": "src/Filters/RelayCheckFilter.cs",
+            "reachability": "unknown",
+            "reachabilityReason": "context ← unresolved"
+          }
+        ],
+        "response": "403 Forbidden",
+        "statusVia": {
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 23
+        },
+        "outcomes": [],
+        "always": [],
+        "alsoOnPath": [
+          {
+            "kind": "if",
+            "line": 21,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "if (!allowed)"
+          }
+        ],
+        "infrastructure": [],
+        "gate": {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true
+        }
+      },
+      {
+        "id": "U2",
+        "key": "66026a0d",
+        "kind": "effect",
+        "reachability": "reachable",
+        "dispositions": [],
+        "response": null,
+        "outcomes": [
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "ReadingRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/ReadingRepository.cs",
+            "line": 14,
+            "infra": false,
+            "gates": [],
+            "method": "ListReadings",
+            "access": "read"
+          }
+        ],
+        "always": [],
+        "alsoOnPath": [],
+        "infrastructure": []
+      }
+    ],
+    "seedsTruncated": 0,
+    "stats": {
+      "nodes": 7,
+      "edges": 6,
+      "sinks": 1,
+      "branches": 0,
+      "primaryBranches": 0,
+      "seedCount": 2,
+      "routes": 1,
+      "inventory": false,
+      "repos": [
+        "backend"
+      ],
+      "via": {
+        "literal": 1,
+        "ctor": 2,
+        "di": 2,
+        "body": 1
+      },
+      "depth": 6,
+      "crossings": 0,
+      "budgetHit": false,
+      "graphUnavailable": 0,
+      "graphUnknownKinds": [],
+      "gates": [
+        {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 18,
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true,
+          "seeds": 1
+        }
+      ]
+    },
+    "status": {
+      "schemaVersion": 1,
+      "traversal": "complete",
+      "freshness": "matching",
+      "factSets": [
+        {
+          "repo": "backend",
+          "freshness": "matching"
+        },
+        {
+          "repo": "mobile",
+          "freshness": "matching"
+        },
+        {
+          "repo": "suite",
+          "freshness": "matching"
+        },
+        {
+          "repo": "web",
+          "freshness": "matching"
+        }
+      ],
+      "evidence": {
+        "source-supported": 6,
+        "inferred": 0,
+        "runtime": "not supplied"
+      },
+      "scope": {
+        "start": {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "GET glasshouse/v1/zones/*/readings",
+          "file": "src/Controllers/ZoneReadingsController.cs",
+          "line": 19
+        },
+        "mode": "full",
+        "fromHandler": null,
+        "unscoped": false,
+        "graph": false,
+        "seeds": true,
+        "entries": false
+      },
+      "limits": {
+        "depth": 6,
+        "maxNodes": 1500,
+        "seedCap": 64,
+        "interfaceFanOut": 16,
+        "graphFanOut": 8
+      },
+      "schedule": {
+        "order": "depth-first"
+      },
+      "stops": {},
+      "frontier": [],
+      "identity": "sha256:9f442353d35128da28519fdfd06d15bbbc06359259b50f2b6705cb3556757a8b"
+    }
+  },
+  {
+    "key": "POST glasshouse/v1/zones/*/harvest-plan",
+    "schemaVersion": 1,
+    "view": "dependency",
+    "root": {
+      "id": "n1",
+      "repo": "backend",
+      "kind": "route",
+      "ref": "POST glasshouse/v1/zones/*/harvest-plan",
+      "file": "src/Controllers/HarvestPlanController.cs",
+      "line": 19,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "backend"
+    },
+    "nodes": [
+      {
+        "id": "n1",
+        "repo": "backend",
+        "kind": "route",
+        "ref": "POST glasshouse/v1/zones/*/harvest-plan",
+        "file": "src/Controllers/HarvestPlanController.cs",
+        "line": 19,
+        "via": "start",
+        "hops": 0,
+        "homeRepo": "backend"
+      },
+      {
+        "id": "n2",
+        "repo": "backend",
+        "kind": "action",
+        "ref": "HarvestPlanController.CommitPlan",
+        "file": "src/Controllers/HarvestPlanController.cs",
+        "line": 19,
+        "via": "literal",
+        "hops": 1,
+        "class": "HarvestPlanController",
+        "method": "CommitPlan",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n3",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IHarvestPlanner",
+        "file": "src/Controllers/HarvestPlanController.cs",
+        "line": 16,
+        "via": "ctor",
+        "hops": 1,
+        "class": "IHarvestPlanner",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n4",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "HarvestPlanner",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 41,
+        "via": "di",
+        "hops": 1,
+        "class": "HarvestPlanner",
+        "homeRepo": "backend",
+        "methodDepth": 0
+      },
+      {
+        "id": "n5",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "HarvestPlanner.CommitPlan",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 56,
+        "via": "body",
+        "hops": 2,
+        "class": "HarvestPlanner",
+        "method": "CommitPlan",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n6",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IAirflowInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 41,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IAirflowInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n7",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "AirflowInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 16,
+        "via": "di",
+        "hops": 2,
+        "class": "AirflowInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n8",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "AirflowInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 19,
+        "via": "body",
+        "hops": 3,
+        "class": "AirflowInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n9",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IAirflowRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 16,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IAirflowRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n10",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "AirflowRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 10,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "AirflowRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindAirflow"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n11",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IBrightnessInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 42,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IBrightnessInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n12",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "BrightnessInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 36,
+        "via": "di",
+        "hops": 2,
+        "class": "BrightnessInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n13",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "BrightnessInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 39,
+        "via": "body",
+        "hops": 3,
+        "class": "BrightnessInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n14",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IBrightnessRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 36,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IBrightnessRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n15",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "BrightnessRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 23,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "BrightnessRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindBrightness"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n16",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "ICarbonInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 43,
+        "via": "ctor",
+        "hops": 2,
+        "class": "ICarbonInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n17",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "CarbonInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 56,
+        "via": "di",
+        "hops": 2,
+        "class": "CarbonInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n18",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "CarbonInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 59,
+        "via": "body",
+        "hops": 3,
+        "class": "CarbonInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n19",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "ICarbonRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 56,
+        "via": "ctor",
+        "hops": 3,
+        "class": "ICarbonRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n20",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "CarbonRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 36,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "CarbonRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindCarbon"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n21",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IDewPointInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 44,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IDewPointInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n22",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "DewPointInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 76,
+        "via": "di",
+        "hops": 2,
+        "class": "DewPointInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n23",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "DewPointInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 79,
+        "via": "body",
+        "hops": 3,
+        "class": "DewPointInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n24",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IDewPointRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 76,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IDewPointRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n25",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "DewPointRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 49,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "DewPointRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindDewPoint"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n26",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IEvaporationInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 45,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IEvaporationInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n27",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "EvaporationInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 96,
+        "via": "di",
+        "hops": 2,
+        "class": "EvaporationInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n28",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "EvaporationInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 99,
+        "via": "body",
+        "hops": 3,
+        "class": "EvaporationInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n29",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IEvaporationRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 96,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IEvaporationRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n30",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "EvaporationRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 62,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "EvaporationRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindEvaporation"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n31",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IFeedInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 46,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IFeedInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n32",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "FeedInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 116,
+        "via": "di",
+        "hops": 2,
+        "class": "FeedInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n33",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "FeedInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 119,
+        "via": "body",
+        "hops": 3,
+        "class": "FeedInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n34",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IFeedRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 116,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IFeedRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n35",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "FeedRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 75,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "FeedRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindFeed"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n36",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IGrowthStageInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 47,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IGrowthStageInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n37",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "GrowthStageInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 136,
+        "via": "di",
+        "hops": 2,
+        "class": "GrowthStageInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n38",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "GrowthStageInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 139,
+        "via": "body",
+        "hops": 3,
+        "class": "GrowthStageInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n39",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IGrowthStageRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 136,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IGrowthStageRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n40",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "GrowthStageRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 88,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "GrowthStageRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindGrowthStage"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n41",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IHumidityInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 48,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IHumidityInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n42",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "HumidityInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 156,
+        "via": "di",
+        "hops": 2,
+        "class": "HumidityInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n43",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "HumidityInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 159,
+        "via": "body",
+        "hops": 3,
+        "class": "HumidityInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n44",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IHumidityRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 156,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IHumidityRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n45",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "HumidityRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 101,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "HumidityRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindHumidity"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n46",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IInfestationInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 49,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IInfestationInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n47",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "InfestationInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 176,
+        "via": "di",
+        "hops": 2,
+        "class": "InfestationInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n48",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "InfestationInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 179,
+        "via": "body",
+        "hops": 3,
+        "class": "InfestationInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n49",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IInfestationRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 176,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IInfestationRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n50",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "InfestationRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 114,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "InfestationRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindInfestation"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n51",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IJunctionValveInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 50,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IJunctionValveInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n52",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "JunctionValveInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 196,
+        "via": "di",
+        "hops": 2,
+        "class": "JunctionValveInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n53",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "JunctionValveInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 199,
+        "via": "body",
+        "hops": 3,
+        "class": "JunctionValveInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n54",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IJunctionValveRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 196,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IJunctionValveRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n55",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "JunctionValveRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 127,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "JunctionValveRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindJunctionValve"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n56",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IKilowattLoadInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 51,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IKilowattLoadInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n57",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "KilowattLoadInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 216,
+        "via": "di",
+        "hops": 2,
+        "class": "KilowattLoadInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n58",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "KilowattLoadInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 219,
+        "via": "body",
+        "hops": 3,
+        "class": "KilowattLoadInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n59",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IKilowattLoadRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 216,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IKilowattLoadRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n60",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "KilowattLoadRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 140,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "KilowattLoadRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindKilowattLoad"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n61",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "ILeafTemperatureInputs",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 52,
+        "via": "ctor",
+        "hops": 2,
+        "class": "ILeafTemperatureInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n62",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "LeafTemperatureInputs",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 236,
+        "via": "di",
+        "hops": 2,
+        "class": "LeafTemperatureInputs",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n63",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "LeafTemperatureInputs.Load",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 239,
+        "via": "body",
+        "hops": 3,
+        "class": "LeafTemperatureInputs",
+        "method": "Load",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n64",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "ILeafTemperatureRepository",
+        "file": "src/Services/HarvestInputs.cs",
+        "line": 236,
+        "via": "ctor",
+        "hops": 3,
+        "class": "ILeafTemperatureRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n65",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "LeafTemperatureRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 153,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "LeafTemperatureRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindLeafTemperature"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n66",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IHarvestPlanWriter",
+        "file": "src/Services/HarvestPlanner.cs",
+        "line": 53,
+        "via": "ctor",
+        "hops": 2,
+        "class": "IHarvestPlanWriter",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n67",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "HarvestPlanWriter",
+        "file": "src/Services/HarvestPlanWriter.cs",
+        "line": 17,
+        "via": "di",
+        "hops": 2,
+        "class": "HarvestPlanWriter",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n68",
+        "repo": "backend",
+        "kind": "method",
+        "ref": "HarvestPlanWriter.SavePlan",
+        "file": "src/Services/HarvestPlanWriter.cs",
+        "line": 20,
+        "via": "body",
+        "hops": 3,
+        "class": "HarvestPlanWriter",
+        "method": "SavePlan",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n69",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "IHarvestPlanRepository",
+        "file": "src/Services/HarvestPlanWriter.cs",
+        "line": 17,
+        "via": "ctor",
+        "hops": 3,
+        "class": "IHarvestPlanRepository",
+        "homeRepo": "backend",
+        "methodDepth": 2
+      },
+      {
+        "id": "n70",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "HarvestPlanRepository",
+        "file": "src/DataAccess/HarvestPlanRepository.cs",
+        "line": 12,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "write",
+        "class": "HarvestPlanRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "InsertPlan"
+        ],
+        "methodDepth": 2
+      }
+    ],
+    "edges": [
+      {
+        "from": "n1",
+        "to": "n2",
+        "via": "literal",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"route\",\"src/Controllers/HarvestPlanController.cs\",19]",
+            "repo": "backend",
+            "type": "route",
+            "file": "src/Controllers/HarvestPlanController.cs",
+            "line": 19
+          }
+        ]
+      },
+      {
+        "from": "n2",
+        "to": "n3",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n3",
+        "to": "n4",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n4",
+        "to": "n5",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Controllers/HarvestPlanController.cs\",22,\"HarvestPlanController\",\"CommitPlan\",\"_planner\",\"CommitPlan\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Controllers/HarvestPlanController.cs",
+            "line": 22
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n6",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n6",
+        "to": "n7",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n7",
+        "to": "n8",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",58,\"HarvestPlanner\",\"CommitPlan\",\"_airflow\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 58
+          }
+        ]
+      },
+      {
+        "from": "n8",
+        "to": "n9",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n9",
+        "to": "n10",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",21,\"AirflowInputs\",\"Load\",\"_source\",\"FindAirflow\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 21
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n11",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n11",
+        "to": "n12",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n12",
+        "to": "n13",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",59,\"HarvestPlanner\",\"CommitPlan\",\"_brightness\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 59
+          }
+        ]
+      },
+      {
+        "from": "n13",
+        "to": "n14",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n14",
+        "to": "n15",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",41,\"BrightnessInputs\",\"Load\",\"_source\",\"FindBrightness\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 41
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n16",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n16",
+        "to": "n17",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n17",
+        "to": "n18",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",60,\"HarvestPlanner\",\"CommitPlan\",\"_carbon\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 60
+          }
+        ]
+      },
+      {
+        "from": "n18",
+        "to": "n19",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n19",
+        "to": "n20",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",61,\"CarbonInputs\",\"Load\",\"_source\",\"FindCarbon\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 61
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n21",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n21",
+        "to": "n22",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n22",
+        "to": "n23",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",61,\"HarvestPlanner\",\"CommitPlan\",\"_dewPoint\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 61
+          }
+        ]
+      },
+      {
+        "from": "n23",
+        "to": "n24",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n24",
+        "to": "n25",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",81,\"DewPointInputs\",\"Load\",\"_source\",\"FindDewPoint\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 81
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n26",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n26",
+        "to": "n27",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n27",
+        "to": "n28",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",62,\"HarvestPlanner\",\"CommitPlan\",\"_evaporation\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 62
+          }
+        ]
+      },
+      {
+        "from": "n28",
+        "to": "n29",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n29",
+        "to": "n30",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",101,\"EvaporationInputs\",\"Load\",\"_source\",\"FindEvaporation\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 101
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n31",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n31",
+        "to": "n32",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n32",
+        "to": "n33",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",63,\"HarvestPlanner\",\"CommitPlan\",\"_feed\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 63
+          }
+        ]
+      },
+      {
+        "from": "n33",
+        "to": "n34",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n34",
+        "to": "n35",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",121,\"FeedInputs\",\"Load\",\"_source\",\"FindFeed\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 121
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n36",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n36",
+        "to": "n37",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n37",
+        "to": "n38",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",64,\"HarvestPlanner\",\"CommitPlan\",\"_growthStage\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 64
+          }
+        ]
+      },
+      {
+        "from": "n38",
+        "to": "n39",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n39",
+        "to": "n40",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",141,\"GrowthStageInputs\",\"Load\",\"_source\",\"FindGrowthStage\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 141
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n41",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n41",
+        "to": "n42",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n42",
+        "to": "n43",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",65,\"HarvestPlanner\",\"CommitPlan\",\"_humidity\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 65
+          }
+        ]
+      },
+      {
+        "from": "n43",
+        "to": "n44",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n44",
+        "to": "n45",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",161,\"HumidityInputs\",\"Load\",\"_source\",\"FindHumidity\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 161
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n46",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n46",
+        "to": "n47",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n47",
+        "to": "n48",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",66,\"HarvestPlanner\",\"CommitPlan\",\"_infestation\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 66
+          }
+        ]
+      },
+      {
+        "from": "n48",
+        "to": "n49",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n49",
+        "to": "n50",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",181,\"InfestationInputs\",\"Load\",\"_source\",\"FindInfestation\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 181
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n51",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n51",
+        "to": "n52",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n52",
+        "to": "n53",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",67,\"HarvestPlanner\",\"CommitPlan\",\"_junctionValve\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 67
+          }
+        ]
+      },
+      {
+        "from": "n53",
+        "to": "n54",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n54",
+        "to": "n55",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",201,\"JunctionValveInputs\",\"Load\",\"_source\",\"FindJunctionValve\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 201
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n56",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n56",
+        "to": "n57",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n57",
+        "to": "n58",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",68,\"HarvestPlanner\",\"CommitPlan\",\"_kilowattLoad\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 68
+          }
+        ]
+      },
+      {
+        "from": "n58",
+        "to": "n59",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n59",
+        "to": "n60",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",221,\"KilowattLoadInputs\",\"Load\",\"_source\",\"FindKilowattLoad\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 221
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n61",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n61",
+        "to": "n62",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n62",
+        "to": "n63",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",69,\"HarvestPlanner\",\"CommitPlan\",\"_leafTemperature\",\"Load\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 69
+          }
+        ]
+      },
+      {
+        "from": "n63",
+        "to": "n64",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n64",
+        "to": "n65",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestInputs.cs\",241,\"LeafTemperatureInputs\",\"Load\",\"_source\",\"FindLeafTemperature\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestInputs.cs",
+            "line": 241
+          }
+        ]
+      },
+      {
+        "from": "n5",
+        "to": "n66",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n66",
+        "to": "n67",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n67",
+        "to": "n68",
+        "via": "body",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanner.cs\",71,\"HarvestPlanner\",\"CommitPlan\",\"_planWriter\",\"SavePlan\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanner.cs",
+            "line": 71
+          }
+        ]
+      },
+      {
+        "from": "n68",
+        "to": "n69",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n69",
+        "to": "n70",
+        "via": "di",
+        "fromRepo": "backend",
+        "toRepo": "backend",
+        "evidence": [
+          {
+            "key": "[\"backend\",\"method_call\",\"src/Services/HarvestPlanWriter.cs\",22,\"HarvestPlanWriter\",\"SavePlan\",\"_plans\",\"InsertPlan\"]",
+            "repo": "backend",
+            "type": "method_call",
+            "file": "src/Services/HarvestPlanWriter.cs",
+            "line": 22
+          }
+        ]
+      }
+    ],
+    "sinks": [
+      {
+        "id": "n10",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "AirflowRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 10,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "AirflowRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindAirflow"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n15",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "BrightnessRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 23,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "BrightnessRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindBrightness"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n20",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "CarbonRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 36,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "CarbonRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindCarbon"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n25",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "DewPointRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 49,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "DewPointRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindDewPoint"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n30",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "EvaporationRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 62,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "EvaporationRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindEvaporation"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n35",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "FeedRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 75,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "FeedRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindFeed"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n40",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "GrowthStageRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 88,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "GrowthStageRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindGrowthStage"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n45",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "HumidityRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 101,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "HumidityRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindHumidity"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n50",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "InfestationRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 114,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "InfestationRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindInfestation"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n55",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "JunctionValveRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 127,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "JunctionValveRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindJunctionValve"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n60",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "KilowattLoadRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 140,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "KilowattLoadRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindKilowattLoad"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n65",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "LeafTemperatureRepository",
+        "file": "src/DataAccess/HarvestInputRepositories.cs",
+        "line": 153,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "read",
+        "class": "LeafTemperatureRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "FindLeafTemperature"
+        ],
+        "methodDepth": 2
+      },
+      {
+        "id": "n70",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "HarvestPlanRepository",
+        "file": "src/DataAccess/HarvestPlanRepository.cs",
+        "line": 12,
+        "via": "di",
+        "hops": 3,
+        "sink": true,
+        "access": "write",
+        "class": "HarvestPlanRepository",
+        "homeRepo": "backend",
+        "methods": [
+          "InsertPlan"
+        ],
+        "methodDepth": 2
+      }
+    ],
+    "branches": [],
+    "seeds": [
+      {
+        "id": "U1",
+        "key": "1580c88e",
+        "kind": "reject",
+        "reachability": "unknown",
+        "reachabilityReason": "context ← unresolved",
+        "dispositions": [
+          {
+            "kind": "reject",
+            "line": 23,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "context.Result → 403 Forbidden",
+            "response": "403 Forbidden",
+            "responseKind": "reject",
+            "rejectForm": "filter-result",
+            "statusVia": {
+              "file": "src/Filters/RelayCheckFilter.cs",
+              "line": 23
+            },
+            "disposition": "taken",
+            "file": "src/Filters/RelayCheckFilter.cs",
+            "reachability": "unknown",
+            "reachabilityReason": "context ← unresolved"
+          }
+        ],
+        "response": "403 Forbidden",
+        "statusVia": {
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 23
+        },
+        "outcomes": [],
+        "always": [],
+        "alsoOnPath": [
+          {
+            "kind": "if",
+            "line": 21,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "if (!allowed)"
+          }
+        ],
+        "infrastructure": [],
+        "gate": {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true
+        }
+      },
+      {
+        "id": "U2",
+        "key": "3d18d80b",
+        "kind": "effect",
+        "reachability": "reachable",
+        "dispositions": [],
+        "response": null,
+        "outcomes": [
+          {
+            "order": 0,
+            "kind": "db",
+            "ref": "HarvestPlanRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestPlanRepository.cs",
+            "line": 12,
+            "infra": false,
+            "gates": [],
+            "method": "InsertPlan",
+            "access": "write"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "AirflowRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 10,
+            "infra": false,
+            "gates": [],
+            "method": "FindAirflow",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "BrightnessRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 23,
+            "infra": false,
+            "gates": [],
+            "method": "FindBrightness",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "CarbonRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 36,
+            "infra": false,
+            "gates": [],
+            "method": "FindCarbon",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "DewPointRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 49,
+            "infra": false,
+            "gates": [],
+            "method": "FindDewPoint",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "EvaporationRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 62,
+            "infra": false,
+            "gates": [],
+            "method": "FindEvaporation",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "FeedRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 75,
+            "infra": false,
+            "gates": [],
+            "method": "FindFeed",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "GrowthStageRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 88,
+            "infra": false,
+            "gates": [],
+            "method": "FindGrowthStage",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "HumidityRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 101,
+            "infra": false,
+            "gates": [],
+            "method": "FindHumidity",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "InfestationRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 114,
+            "infra": false,
+            "gates": [],
+            "method": "FindInfestation",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "JunctionValveRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 127,
+            "infra": false,
+            "gates": [],
+            "method": "FindJunctionValve",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "KilowattLoadRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 140,
+            "infra": false,
+            "gates": [],
+            "method": "FindKilowattLoad",
+            "access": "read"
+          },
+          {
+            "order": 1,
+            "kind": "db",
+            "ref": "LeafTemperatureRepository",
+            "repo": "backend",
+            "file": "src/DataAccess/HarvestInputRepositories.cs",
+            "line": 153,
+            "infra": false,
+            "gates": [],
+            "method": "FindLeafTemperature",
+            "access": "read"
+          }
+        ],
+        "always": [],
+        "alsoOnPath": [],
+        "infrastructure": []
+      }
+    ],
+    "seedsTruncated": 0,
+    "stats": {
+      "nodes": 70,
+      "edges": 69,
+      "sinks": 13,
+      "branches": 0,
+      "primaryBranches": 0,
+      "seedCount": 2,
+      "routes": 1,
+      "inventory": false,
+      "repos": [
+        "backend"
+      ],
+      "via": {
+        "literal": 1,
+        "ctor": 27,
+        "di": 27,
+        "body": 14
+      },
+      "depth": 6,
+      "crossings": 0,
+      "budgetHit": false,
+      "graphUnavailable": 0,
+      "graphUnknownKinds": [],
+      "gates": [
+        {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 18,
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true,
+          "seeds": 1
+        }
+      ]
+    },
+    "status": {
+      "schemaVersion": 1,
+      "traversal": "complete",
+      "freshness": "matching",
+      "factSets": [
+        {
+          "repo": "backend",
+          "freshness": "matching"
+        },
+        {
+          "repo": "mobile",
+          "freshness": "matching"
+        },
+        {
+          "repo": "suite",
+          "freshness": "matching"
+        },
+        {
+          "repo": "web",
+          "freshness": "matching"
+        }
+      ],
+      "evidence": {
+        "source-supported": 69,
+        "inferred": 0,
+        "runtime": "not supplied"
+      },
+      "scope": {
+        "start": {
+          "repo": "backend",
+          "kind": "route",
+          "ref": "POST glasshouse/v1/zones/*/harvest-plan",
+          "file": "src/Controllers/HarvestPlanController.cs",
+          "line": 19
+        },
+        "mode": "full",
+        "fromHandler": null,
+        "unscoped": false,
+        "graph": false,
+        "seeds": true,
+        "entries": false
+      },
+      "limits": {
+        "depth": 6,
+        "maxNodes": 1500,
+        "seedCap": 64,
+        "interfaceFanOut": 16,
+        "graphFanOut": 8
+      },
+      "schedule": {
+        "order": "depth-first"
+      },
+      "stops": {},
+      "frontier": [],
+      "identity": "sha256:8da9a2dd0fbc927efea59cbacdff2a777dc01d15bb846f806aa5af04de4f1036"
+    }
+  }
+]
