@@ -244,7 +244,9 @@ success the header carries `"titles": { "status": "ok", "facts": N, "refused": M
 ### Email templates
 
 An `email-templates` repository has a `templates` object. `files` is a non-empty array of
-globs, relative to `root`, and only `.json` files are read. `id` and `subject` are selectors.
+globs, relative to `root`, and only `.json` files are read. In these globs, `*` and `?` match
+inside one path segment, `**/` matches zero or more whole directories, and another `**` matches
+text across segments. The `exclude` globs keep their own rule. `id` and `subject` are selectors.
 
 ```json
 { "id": "mail", "kind": "email-templates", "root": "shop-mail",

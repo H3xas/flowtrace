@@ -7,7 +7,8 @@
   also applies after an alias rewrite (kind `alias`) and in a tail match (kind `suffix`). If
   two candidates have equal rank, the caller matches no route. `join` `calls` edges, `trace`,
   `span`, `span --from-component` and `cover` can reach routes they did not reach before.
-- A `span` caller row names its match kind when the match is not `exact`.
+- A `span` caller row that matched by `parameter` says `parameter match`. Other caller rows do
+  not change.
 - `join` and `cover` read a Cypress intercept pattern and a Playwright route stub pattern as
   a glob, segment by segment. A trailing `*` stays inside its segment, so `api/users*` no
   longer matches `api/users/42`. A trailing `**` takes one or more segments, also when literal
@@ -53,12 +54,15 @@
   same title in one spec now have different owner lines. Facts extracted again have a new facts
   digest, so the `trace` status identity and the export identities change once.
 - Both Cypress readers give `cypress_intercept` the optional field `handler`, with the words
-  `pw_stub` uses: `spy` for no handler, a `req.continue()` that changes nothing or a handler that
-  only reads the request; `fulfill` for a static response or a `req.reply(`; `fetch-fulfill` for
-  a `res.send(` in a `req.continue(` callback or a `response` or `before:response` listener;
-  `abort` for `req.destroy(` or `forceNetworkError`; `unresolved` for a handler the file does not
-  define or a request handed to other code. The two readers give the same word for the same
-  source.
+  `pw_stub` uses. The reader supports a closed list of handler forms. No handler gives `spy`. A
+  string, template or array literal gives `fulfill`. A static response object of plain
+  `key: value` parts gives `fulfill`, or `abort` with one `forceNetworkError: true`. A function,
+  or a function name that the file declares once, is read by its calls. There, `.reply(` gives
+  `fulfill` and `.destroy(` gives `abort`. A `res.send(` in a `.continue(` callback or in a
+  `response` or `before:response` listener gives `fetch-fulfill`. A function that only reads
+  the request gives `spy`. Every other handler,
+  such as an object with a spread or a function followed by `.bind(…)`, gives `unresolved`. The
+  two readers give the same word for the same source.
 - Both Cypress readers give each `cypress_test` one `cypress_backend` fact in the shape of
   `pw_backend`: `real`, `patched`, `mocked` or `unknown`, with the sites that decided it. The
   reader follows the test body, the `before` and `beforeEach` hooks of the file and of each
@@ -77,8 +81,9 @@
 - `extract` reads page visits. A `page.goto(` call gives a `pw_visit` fact and a `cy.visit(`
   call gives a `cypress_visit` fact, with `spec`, `test`, `testLine`, `path`, `skipped` and
   `where`. They are read from the regions that decide the backend class of the test: its body,
-  its hooks, and the functions and Cypress commands those call. A path that is not a string
-  literal gives `path: null` and `reason: "not-literal"`.
+  its hooks, and the functions and Cypress commands those call. A string literal, or a template
+  literal with no `${`, gives its text as the path. Every other path gives `path: null` and
+  `reason: "not-literal"`.
 - `cover` shows the inferred page reach of each route. A visit path loses its origin, query and
   fragment, and then matches a page path by the route comparator. A page also answers under the
   app-root mount of its repository, and a trailing `*` takes the rest of the path. Each route
@@ -100,10 +105,13 @@
   `email_read` fact for each Playwright or Cypress test that reaches it through its body, its
   hooks, its helpers or a Cypress command (a Cypress read is the command `cy.<call>(`). The fact
   has `spec`, `test`, `testLine`, `call`, `subject`, `skipped` and `where`, and the `file` and
-  `line` of the call. A string literal subject gives its text, a template literal gives its text
-  with each `${…}` as `*`, and a `const` of the same function bound to one of these gives its
-  value. Another expression gives `subject: null` and `reason: "unreadable-subject"`. A test
-  whose title is not a literal gives `test: null`.
+  `line` of the call. The reader supports a closed list of subject forms. A string literal gives
+  its text. A template literal gives its text with each `${…}` as `*`. A name gives the value of
+  a one-declarator `const` whose whole initializer is one of these literals. The `const` is in a
+  block that holds the call, before the call, with no nearer binding of the name. A key of an
+  object literal of plain `key: value` parts gives the value of that key, read by the same
+  rules. Every other subject gives `subject: null` and
+  `reason: "unreadable-subject"`. A test whose title is not a literal gives `test: null`.
 - `extract` reads an `email-templates` repository. Each JSON file that a `templates.files` glob
   matches gives one `email_template` fact with `id`, `subject`, `file` and `line`. Each `{{…}}`
   and `{{{…}}}` placeholder of the subject becomes `*`. A selector that matches no element or two
@@ -114,7 +122,10 @@
   fact with `class`, `member` and `id`, nested classes included. A value is a string literal, or a
   `<Class>.<NAME>` reference to a `public const string` in any file of the repository, named in
   `constant`. A reference to no constant or to two gives `id: null` and a `reason`. A regular
-  literal gives its value with its escapes decoded, and a verbatim or raw literal is read too.
+  literal gives its value with its escapes decoded. A verbatim literal and a raw literal on one
+  line give their text. Every other value, such as a raw literal on two or more
+  lines, an interpolated string or a concatenation, gives `id: null` and
+  `reason: "unread-literal"`. A member or a constant inside a C# comment or string gives nothing.
 - `cover` lists the email reads of the area under `emails.entries`. Each read links to one
   `email_template` by its subject and to one `email_sender` by the template id. The link state is
   `linked`, `no-subject`, `no-template`, `ambiguous-template`, `no-sender` or `ambiguous-sender`,
@@ -123,5 +134,6 @@
   node of an area route walk. `emails.outsideArea` counts the other reads. The text and markdown
   reports label a link as a static match, not proof of delivery. No route state, level or parity
   changes.
-- A `**/` in a `templates.files` glob or in an `exclude` glob takes zero or more whole
-  directories. So `templates/**/welcome.json` no longer selects `templates/notwelcome.json`.
+- In a `templates.files` glob, a `**/` takes zero or more whole directories, so
+  `templates/**/welcome.json` does not select `templates/notwelcome.json`. The `exclude` globs
+  keep their rule.

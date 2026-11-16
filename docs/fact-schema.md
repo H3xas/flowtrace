@@ -506,12 +506,24 @@ holds it, else the line of the test's call into `via`.
 takes the kind that every repo-wide helper of that name agrees on, else `unresolved`. The field
 adds nothing to the set of `pw_stub` facts.
 
-`cypress_intercept.handler` uses the same words. It is `spy` for no handler, for a
-`req.continue()` that changes nothing, and for a handler that only reads the request. It is
-`fulfill` for a static response or a `req.reply(`, and `fetch-fulfill` for a `res.send(` in a
-`req.continue(` callback or in a `response` or `before:response` listener. It is `abort` for
-`req.destroy(` or `forceNetworkError`. It is `unresolved` for a handler that the file does not
-define, or for a handler that gives the request to other code.
+`cypress_intercept.handler` uses the same words. The reader supports a closed list of handler
+forms:
+
+- No handler gives `spy`.
+- A string literal, a template literal or an array literal gives `fulfill`.
+- A static response object gives `fulfill`, or `abort` with one `forceNetworkError: true`. Each
+  top-level part of the object must be `key: value` with a plain or quoted key, or a shorthand
+  name. One `forceNetworkError` with another value, or as a shorthand name, gives `unresolved`.
+- An arrow or `function` expression, or a name that the file declares once as a function, is
+  read through the calls on its first parameter. `.reply(` gives `fulfill`, or the value of its
+  static response object. `.destroy(` gives `abort`. A `res.send(` in a `.continue(` callback,
+  or in a `response` or `before:response` listener, gives `fetch-fulfill`. A `.continue()` that
+  changes nothing, or a function that only reads the request, gives `spy`. A function that
+  gives its first parameter to other code gives `unresolved`.
+
+Every other handler gives `unresolved`. Examples are an object with a spread, a computed key,
+a method, an accessor or two `forceNetworkError` keys, and a literal or a function with more
+text after it, such as `.bind(…)`.
 
 `cypress_backend` has the classes, precedence, `sites` and `reason` of `pw_backend`. The reader
 follows the test body, the `before` and `beforeEach` hooks of the file and of each enclosing
@@ -533,16 +545,30 @@ A stub that the endpoint registry names and a `pw_request` template keep their o
 
 `pw_visit` and `cypress_visit` are read from the regions that decide the backend class of the
 test: its body, its hooks, the Playwright fixtures it uses, and the functions and Cypress
-commands those call. `path` is the literal page path, or `null` with `reason: "not-literal"`.
+commands those call. `path` is the text of a string literal, or of a template literal with no
+`${` in its source text, with its escapes decoded. Every other first argument gives `path: null`
+with `reason: "not-literal"`.
 `where` is `test`, `hook`, `helper` or `fixture`, and `file` and `line` name the visit call,
 also when a fixture in another file holds it.
 
 `email_read` is written for each test that reaches a configured read call, at the call, with
-`where` as above. A Cypress read is the command `cy.<call>(`. `subject` is the text of a string
-literal, the text of a template literal with each `${…}` as `*`, or the value of a `const` of
-the same function bound to one of these. Another expression gives `subject: null` and
-`reason: "unreadable-subject"`. A test whose title is not a literal gives `test: null`, and
-`testLine` still names the test. A read records no assertion.
+`where` as above. A Cypress read is the command `cy.<call>(`. The reader supports a closed list
+of subject forms:
+
+- A string literal gives its text, with its escapes decoded.
+- A template literal gives its text, with its escapes decoded and each `${…}` as `*`.
+- A name gives the value of its `const`, read by the two items above. The `const` has one
+  declarator, and its literal is the whole initializer: after the literal, past comments, comes
+  `;`, `}` or a line end, and the next line does not continue the expression. The `const` is in
+  the region of the call, before the call, in a block that holds the call. No nearer `var`, block
+  `let` or `const`, or function parameter of the name stands between it and the call.
+- At an index and a key, the argument is an object literal. Each top-level part is `key: value`
+  with a plain or quoted key, or a shorthand name, and the key occurs once. The value of the key
+  is read by the items above.
+
+Every other subject gives `subject: null` and `reason: "unreadable-subject"`. A test whose title
+is not a literal gives `test: null`, and `testLine` still names the test. A read records no
+assertion.
 
 `email_template` has the `id` and `subject` that the `templates` selectors pick
 ([configuration.md](configuration.md#email-templates)), and `line` is the line of the subject
@@ -552,12 +578,22 @@ example `id-no-element`, `subject-two-elements` or `subject-not-a-string`. Two r
 with a space. A file that does not parse gives both values null and `reason: "unread-file"`.
 
 `email_sender` is written for a member written as `string <Member> => <value>;` or
-`string <Member> { get; } = <value>;`, nested classes included. The value of a string literal
-is the `id`: a regular literal with its escapes decoded, a verbatim `@"…"` literal or a raw
-literal. A literal the reader cannot read gives `id: null` and `reason: "unread-literal"`. A
-`<Class>.<NAME>` value names a `public const string` in any file of the repository, and
-`constant` keeps that reference. A reference to no constant gives `id: null` and
-`reason: "no-constant"`, and a reference to two gives `reason: "two-constants"`.
+`string <Member> { get; } = <value>;`, nested classes included. The value runs to the `;` that
+ends the member. The reader supports a closed list of values:
+
+- A regular literal gives its text, with its escapes decoded.
+- A verbatim `@"…"` literal gives its text, with each `""` as one quote.
+- A raw literal on one line gives the text between its quotes.
+- A `<Class>.<NAME>` reference names a `public const string <NAME> = <literal>;` in a class of
+  that name, in any file of the repository, and `constant` keeps that reference. One such
+  constant gives the value of its literal by the three items above. No constant gives `id: null`
+  and `reason: "no-constant"`, two give `reason: "two-constants"`, and a constant whose literal
+  is not in the list gives `reason: "unread-literal"`. A constant whose value is not one literal
+  counts as no constant.
+
+Every other value gives `id: null` and `reason: "unread-literal"`. Examples are a raw literal on
+two or more lines, an interpolated string, a concatenation, a call and a bare name. A member or a
+constant inside a C# comment or string literal gives nothing.
 
 `case_id` resolves four shapes. The first is a
 `test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is a
