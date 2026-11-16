@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { isExcluded } from '../lib/affected.js';
 import { validateConfig } from '../lib/config.js';
 import { factIdentity, validateFacts } from '../lib/facts.js';
+import { globToRegExp } from '../lib/walk.js';
 import { copyFixture, extractRepoFacts, runCli, writeRepo } from './helpers.js';
 
 const EMAIL_REFUSAL =
@@ -527,6 +529,40 @@ test('Test evidence AC-20: a sender id is the value of its C# literal, in each l
       ['ConstRawEmail', 'club-raw', null],
     ],
   );
+});
+
+test('Test evidence AC-19: a ** segment of a template path takes whole directories only', (t) => {
+  const dir = writeRepo(
+    t,
+    {
+      'mail/templates/welcome.json': template('club-welcome', [emailChannel(subjectSection('Welcome'))]),
+      'mail/templates/deep/er/welcome.json': template('club-deep', [emailChannel(subjectSection('Deep'))]),
+      'mail/templates/notwelcome.json': template('club-not', [emailChannel(subjectSection('Not'))]),
+      'mail/templates/a/notwelcome.json': template('club-not-nested', [emailChannel(subjectSection('Not nested'))]),
+    },
+    {
+      repos: [
+        {
+          id: 'mail',
+          kind: 'email-templates',
+          root: 'mail',
+          templates: { files: ['templates/**/welcome.json'], id: 'meta.template.code', subject: 'channels[kind=email].sections[role=subject].text' },
+        },
+      ],
+    },
+  );
+  assert.deepEqual(
+    extractRepoFacts(dir, 'mail').map((fact) => [fact.file, fact.id]),
+    [
+      ['templates/deep/er/welcome.json', 'club-deep'],
+      ['templates/welcome.json', 'club-welcome'],
+    ],
+  );
+  assert.equal(globToRegExp('**/welcome.json').test('welcome.json'), true);
+  assert.equal(globToRegExp('**/welcome.json').test('notwelcome.json'), false);
+  assert.equal(globToRegExp('a/**').test('a/b/c'), true);
+  assert.equal(isExcluded('templates/notwelcome.json', ['templates/**/welcome.json']), false);
+  assert.equal(isExcluded('templates/x/welcome.json', ['templates/**/welcome.json']), true);
 });
 
 const LINK_SPEC = `import { test } from '@playwright/test';

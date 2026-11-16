@@ -10,7 +10,8 @@
 - A `span` caller row names its match kind when the match is not `exact`.
 - `join` and `cover` read a Cypress intercept pattern and a Playwright route stub pattern as
   a glob, segment by segment. A trailing `*` stays inside its segment, so `api/users*` no
-  longer matches `api/users/42`. A trailing `**` takes one or more segments. A `${…}` span
+  longer matches `api/users/42`. A trailing `**` takes one or more segments, also when literal
+  text comes before it, as in `api/items**`. A `${…}` span
   is a value, not a glob: alone in its segment it meets only a route parameter, so an
   intercept of `` `api/items/${id}` `` no longer reaches the literal route `api/items/featured`.
   A span at the end of literal text, as in `` `api/items${query}` ``, stands for the route
@@ -112,7 +113,8 @@
   `string <Member> => <value>;` or `string <Member> { get; } = <value>;` gives one `email_sender`
   fact with `class`, `member` and `id`, nested classes included. A value is a string literal, or a
   `<Class>.<NAME>` reference to a `public const string` in any file of the repository, named in
-  `constant`. A reference to no constant or to two gives `id: null` and a `reason`.
+  `constant`. A reference to no constant or to two gives `id: null` and a `reason`. A regular
+  literal gives its value with its escapes decoded, and a verbatim or raw literal is read too.
 - `cover` lists the email reads of the area under `emails.entries`. Each read links to one
   `email_template` by its subject and to one `email_sender` by the template id. The link state is
   `linked`, `no-subject`, `no-template`, `ambiguous-template`, `no-sender` or `ambiguous-sender`,
@@ -121,3 +123,5 @@
   node of an area route walk. `emails.outsideArea` counts the other reads. The text and markdown
   reports label a link as a static match, not proof of delivery. No route state, level or parity
   changes.
+- A `**/` in a `templates.files` glob or in an `exclude` glob takes zero or more whole
+  directories. So `templates/**/welcome.json` no longer selects `templates/notwelcome.json`.
