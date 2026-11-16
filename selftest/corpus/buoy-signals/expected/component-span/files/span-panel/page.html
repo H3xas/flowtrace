@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="flowtrace-key" content="web|WatcherNotesPanel@src/zones/notes/WatcherNotesPanel.tsx">
+<title>flowtrace span: WatcherNotesPanel</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --panel: #12181f;
+  --edge: #232c37;
+  --fg: #c9d1d9;
+  --muted: #7d8794;
+  --bold: #f0f6fc;
+  --cyan: #56b6c2;
+  --magenta: #c678dd;
+  --ok: #56c07a;
+  --warn: #d8a13a;
+  --red: #e06c6c;
+  --off: #6b7581;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", "Liberation Mono", monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 14px; line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 30px 22px 72px; }
+h1 { font-size: 17px; margin: 0 0 4px; color: var(--bold); font-weight: 600; }
+h1 .route { font-family: var(--mono); color: var(--cyan); }
+h2 { font-size: 13px; margin: 30px 0 10px; color: var(--bold); font-weight: 600; text-transform: uppercase; letter-spacing: .09em; }
+h3 { font-size: 12px; margin: 18px 0 8px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.sub { color: var(--muted); margin: 0 0 16px; font-size: 12.5px; }
+.sub a { color: var(--warn); }
+code { font-family: var(--mono); font-size: 12px; color: var(--cyan); }
+.strip {
+  display: flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--edge); border-radius: 6px;
+  background: var(--panel); margin-bottom: 14px; overflow: hidden;
+}
+.cell { padding: 9px 16px; border-right: 1px solid var(--edge); min-width: 0; }
+.cell:last-child { border-right: 0; }
+.cell .k { display: block; color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .09em; }
+.cell .v { display: block; color: var(--bold); font-size: 13px; margin-top: 2px; font-family: var(--mono); word-break: break-word; }
+.v.ok { color: var(--ok); } .v.warn { color: var(--warn); } .v.off { color: var(--off); }
+.note {
+  border: 1px solid var(--edge); border-left: 3px solid var(--warn); border-radius: 6px;
+  background: var(--panel); padding: 12px 16px; margin: 14px 0; font-size: 12.5px;
+}
+.note b { color: var(--warn); font-weight: 600; }
+.plain { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
+.chain { border: 1px solid var(--edge); border-radius: 6px; background: var(--panel); margin-bottom: 12px; overflow: hidden; }
+.chain-row { display: flex; justify-content: space-between; gap: 14px; padding: 7px 14px; border-bottom: 1px solid var(--edge); }
+.chain-row:last-child { border-bottom: 0; }
+.chain-name { color: var(--bold); font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
+.chain-verb { color: var(--off); font-size: 11px; white-space: nowrap; }
+.chain-row.more { color: var(--muted); }
+.endpoint {
+  border: 1px solid var(--edge); border-left: 3px solid var(--cyan); border-radius: 6px;
+  background: var(--panel); padding: 11px 16px; margin-bottom: 12px;
+}
+.endpoint .verb { font-family: var(--mono); font-size: 14px; color: var(--bold); font-weight: 700; }
+.endpoint .path { font-family: var(--mono); font-size: 14px; color: var(--cyan); overflow-wrap: anywhere; }
+.endpoint .owning { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+.acc { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; padding: 0 5px; border-radius: 7px; }
+.acc-write { color: var(--warn); border: 1px solid rgba(216,161,58,.45); background: rgba(216,161,58,.10); }
+.acc-read { color: var(--off); border: 1px solid rgba(107,117,129,.40); background: rgba(107,117,129,.08); }
+.row {
+  border: 1px solid var(--edge); border-radius: 6px; background: var(--panel);
+  padding: 11px 15px; margin-bottom: 9px;
+}
+.row-fault { border-left: 3px solid var(--red); }
+.row-success { border-left: 3px solid var(--ok); }
+.row-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.status {
+  font-family: var(--mono); font-weight: 700; color: var(--bold); font-size: 13px;
+  border: 1px solid var(--edge); border-radius: 5px; padding: 0 7px; white-space: nowrap;
+}
+.status.off { color: var(--off); font-weight: 400; }
+.what { flex: 1 1 260px; color: var(--fg); }
+.tag {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .07em; padding: 1px 8px;
+  border-radius: 9px; border: 1px solid transparent; white-space: nowrap; cursor: help; font-weight: 700;
+}
+.t-tested { color: #06210f; background: var(--ok); border-color: var(--ok); }
+.t-inherited { color: var(--warn); background: none; border-color: rgba(216,161,58,.55); font-weight: 400; }
+.t-untested { color: var(--red); background: rgba(224,108,108,.10); border-color: rgba(224,108,108,.50); }
+.map { color: var(--magenta); font-size: 12px; margin: 6px 0 2px; }
+.row-body { display: flex; flex-wrap: wrap; gap: 8px 34px; margin-top: 6px; }
+.col { flex: 1 1 300px; min-width: 0; }
+.col-k { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .09em; }
+ul.pre, ul.expect, ul.eff { margin: 2px 0 0; padding-left: 18px; }
+ul.pre li, ul.expect li, ul.eff li { font-size: 12.5px; overflow-wrap: anywhere; }
+ul.expect li { color: var(--bold); }
+li.off { color: var(--off); }
+.row-foot { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; }
+.seedkey { color: var(--off); font-family: var(--mono); font-size: 11px; }
+.jump { color: var(--warn); font-size: 11.5px; text-decoration: none; }
+.jump:hover { text-decoration: underline; }
+details.where, details.draft { margin-top: 7px; }
+details.where > summary, details.draft > summary {
+  cursor: pointer; color: var(--muted); font-size: 11.5px; list-style: none;
+}
+details.where > summary::before, details.draft > summary::before { content: "▸ "; }
+details[open].where > summary::before, details[open].draft > summary::before { content: "▾ "; }
+.where-body { border-left: 2px solid var(--edge); margin-top: 5px; padding: 2px 0 2px 12px; }
+.where-row { margin-bottom: 7px; }
+.where-phrase { color: var(--fg); font-size: 12.5px; }
+.where-kind { margin-left: 8px; color: var(--off); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; }
+.where-code { font-family: var(--mono); font-size: 11.5px; color: var(--magenta); overflow-wrap: anywhere; }
+.where-site { font-family: var(--mono); font-size: 11px; color: var(--off); overflow-wrap: anywhere; }
+.msg { border: 1px solid var(--edge); border-left: 3px solid var(--magenta); border-radius: 6px; background: var(--panel); padding: 11px 15px; margin-bottom: 9px; }
+.msg-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+.msg-name { font-family: var(--mono); font-size: 13px; color: var(--bold); font-weight: 700; }
+.msg-contract { color: var(--off); font-size: 11px; }
+.answer { margin: 7px 0 0 12px; border-left: 2px solid var(--edge); padding-left: 12px; }
+.answer.none { color: var(--off); font-size: 12px; }
+.answer-head { color: var(--fg); font-size: 12.5px; font-family: var(--mono); overflow-wrap: anywhere; }
+.answer-kind { color: var(--cyan); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; margin-right: 8px; }
+.worktype { color: var(--off); font-size: 11px; margin-left: 8px; }
+.eff-repo { color: var(--off); font-size: 10.5px; }
+.lrow { border: 1px solid var(--edge); border-radius: 6px; background: var(--panel); padding: 10px 15px; margin-bottom: 8px; }
+.lrow-t-untested { border-left: 3px solid var(--red); }
+.lrow-t-inherited { border-left: 3px solid rgba(216,161,58,.55); }
+.lrow-t-tested { border-left: 3px solid var(--ok); }
+.lrow-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.ord { color: var(--off); font-family: var(--mono); font-size: 11px; min-width: 2.2em; }
+.tests { margin-top: 7px; border-left: 2px solid var(--edge); padding: 2px 0 2px 12px; }
+.tests-head { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
+.test-row { font-size: 12px; overflow-wrap: anywhere; }
+.test-row.off { color: var(--off); }
+.mech { margin-left: 8px; font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; padding: 0 5px; border-radius: 7px; }
+.mech-listed { color: var(--cyan); border: 1px solid rgba(86,182,194,.40); background: rgba(86,182,194,.10); }
+.mech-raw { color: var(--off); border: 1px solid rgba(107,117,129,.40); background: rgba(107,117,129,.08); }
+.caseid { margin-left: 8px; font-size: 9.5px; letter-spacing: .05em; color: var(--magenta); border: 1px solid rgba(198,120,221,.40); background: rgba(198,120,221,.10); padding: 0 5px; border-radius: 7px; }
+.caseid-unresolved { font-style: italic; }
+.insts { display: block; color: var(--cyan); font-size: 11px; }
+.noid { color: var(--off); font-size: 11px; margin-top: 4px; }
+pre.gherkin {
+  margin: 6px 0 0; padding: 11px 13px; background: #0a0e14; border: 1px solid var(--edge);
+  border-radius: 5px; overflow-x: auto; font-family: var(--mono); font-size: 12px;
+  white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg);
+}
+.surf { border: 1px solid var(--edge); border-left: 3px solid var(--cyan); border-radius: 6px; background: var(--panel); padding: 10px 15px; margin-bottom: 8px; }
+.surf-gap { border-left-color: var(--red); }
+.surf-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.surf-state { font-family: var(--mono); font-size: 13px; color: var(--bold); font-weight: 700; overflow-wrap: anywhere; }
+.surf-via { color: var(--magenta); font-size: 11.5px; overflow-wrap: anywhere; }
+.leg { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; padding: 0 6px; border-radius: 8px; white-space: nowrap; cursor: help; }
+.leg-sync { color: var(--cyan); border: 1px solid rgba(86,182,194,.45); background: rgba(86,182,194,.10); }
+.leg-async { color: var(--magenta); border: 1px solid rgba(198,120,221,.45); background: rgba(198,120,221,.10); }
+.gapkind { font-size: 10px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; padding: 1px 8px; border-radius: 9px; color: var(--red); border: 1px solid rgba(224,108,108,.50); background: rgba(224,108,108,.10); white-space: nowrap; }
+.surf-at { margin-top: 5px; }
+.surf-k { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; }
+ul.obs { margin: 2px 0 0; padding-left: 18px; }
+ul.obs li { font-size: 12.5px; font-family: var(--mono); overflow-wrap: anywhere; color: var(--fg); }
+ul.obs li.off { font-family: var(--sans); color: var(--off); }
+.hops { color: var(--off); font-family: var(--sans); font-size: 10.5px; margin-left: 6px; }
+.gap-why { color: var(--red); font-size: 12.5px; margin-top: 4px; }
+.dedup { margin-top: 8px; border-left: 2px solid var(--edge); padding-left: 10px; }
+.dedup-why { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.arm { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--edge); }
+.arm:first-child { border-top: 0; padding-top: 0; }
+.arm-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.arm-src { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.foot { margin-top: 22px; color: var(--off); font-size: 11px; }
+@media (max-width: 720px) { .wrap { padding: 18px 12px 48px; } .row-body { gap: 8px; } }
+
+.route-section { border-top: 3px solid var(--edge); padding-top: 18px; margin-top: 26px; }
+.route-divider { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.route-pos { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.route-key { font-family: var(--mono); color: var(--cyan); font-size: 13px; }
+.crumb { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; font-size: 11.5px; }
+.hop { color: var(--bold); font-family: var(--mono); }
+.hop-via { color: var(--off); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+.hop-sep { color: var(--off); margin: 0 2px; }
+.arm-row { margin-bottom: 6px; }
+.arm-row.off { color: var(--off); font-size: 11.5px; }
+details.arms > summary { color: var(--muted); }
+.entry-row { border-left: 2px solid var(--edge); padding: 8px 0 8px 12px; margin-bottom: 10px; }
+.entry-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
+.entry-name { font-family: var(--mono); color: var(--bold); }
+.entry-id { color: var(--off); font-size: 10.5px; font-family: var(--mono); }
+.entry-fact { display: flex; gap: 8px; font-size: 11.5px; }
+.entry-fact .k { color: var(--muted); min-width: 110px; }
+.entry-fact .v { color: var(--bold); }
+.reached { font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+</style>
+</head><body>
+<div class="wrap">
+<h1>flowtrace span · <span class="route">WatcherNotesPanel</span></h1>
+<p class="sub">Resolved through component → entry → handler or body → action_dispatch → effect_handler → gateway_call → route. Every arm below is traceable to the fact it was read from — an arm the join could not resolve prints as a gap, never a guess.</p>
+
+<div class="plain"><b>Result status.</b><pre class="status">start: WatcherNotesPanel (component, web src/zones/notes/WatcherNotesPanel.tsx:16)
+scope: to-routes
+limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
+status: traversal unknown, freshness matching
+evidence: 30 source-supported, 0 inferred, runtime not supplied
+stops: unresolved-target 7; frontier 7</pre><details><summary>7 stopped places</summary><ul><li>unresolved-target  web  WatcherNotesPanel.useNoteDraft@19:31  src/zones/notes/WatcherNotesPanel.tsx:19  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li><li>unresolved-target  web  WATCHERS_LOADED  src/actions/watchers.ts:11  via dispatch  caller Watchers.loadWatchers src/actions/watchers.ts:8  detail no-effect  remaining 0</li><li>unresolved-target  web  READINGS_LOADED  src/actions/zoneReadings.ts:10  via dispatch  caller ZoneReadings.loadZoneReadings src/actions/zoneReadings.ts:7  detail no-effect  remaining 0</li><li>unresolved-target  web  WatcherNotesPanel.useEffect@38:3  src/zones/notes/WatcherNotesPanel.tsx:38  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li><li>unresolved-target  web  WATCHERS_LOADED  src/actions/watchers.ts:11  via dispatch  caller Watchers.loadWatchers src/actions/watchers.ts:8  detail no-effect  remaining 0</li><li>unresolved-target  web  READINGS_LOADED  src/actions/zoneReadings.ts:10  via dispatch  caller ZoneReadings.loadZoneReadings src/actions/zoneReadings.ts:7  detail no-effect  remaining 0</li><li>unresolved-target  web  WatcherNotesPanel.useNoteDraft@48:3  src/zones/notes/WatcherNotesPanel.tsx:48  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li></ul></details></div>
+
+<div class="strip"><div class="cell"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="cell"><span class="k">kind</span><span class="v">component</span></div><div class="cell"><span class="k">repository</span><span class="v">web</span></div><div class="cell"><span class="k">declared at</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:16</span></div><div class="cell"><span class="k">entries</span><span class="v">10</span></div><div class="cell"><span class="k">routes resolved</span><span class="v">2</span></div><div class="cell"><span class="k">arms resolved</span><span class="v">4</span></div><div class="cell"><span class="k">arms unresolved</span><span class="v warn">7</span></div></div>
+
+
+<h2>Entries (10)</h2>
+<div class="plain">One row per way execution reaches this component — a lifecycle callback, a hook effect, the cleanup an effect returns, or a JSX event handler. The rows name where a trigger fires, never how often React runs it, and never an order between two of them.</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useEffect</span><span class="entry-id">WatcherNotesPanel:cleanup:useEffect:@src/zones/notes/WatcherNotesPanel.tsx:31:5</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">cleanup</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:31</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">no route</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">0</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useEffect</span><span class="entry-id">WatcherNotesPanel:effect:useEffect:@src/zones/notes/WatcherNotesPanel.tsx:25:3</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">effect</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:25</span></div><div class="entry-fact"><span class="k">dependencies</span><span class="v">none written ([])</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">GET glasshouse/v1/zones/*/watchers</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">1</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useEffect</span><span class="entry-id">WatcherNotesPanel:effect:useEffect:@src/zones/notes/WatcherNotesPanel.tsx:29:3</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">effect</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:29</span></div><div class="entry-fact"><span class="k">dependencies</span><span class="v">draft</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">no route</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">0</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useEffect</span><span class="entry-id">WatcherNotesPanel:effect:useEffect:@src/zones/notes/WatcherNotesPanel.tsx:42:3</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">effect</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:42</span></div><div class="entry-fact"><span class="k">dependencies</span><span class="v">written as an expression — the values are not literals</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">no route</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">0</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useEffect</span><span class="entry-id">WatcherNotesPanel:effect:useEffect:@src/zones/notes/WatcherNotesPanel.tsx:46:3</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">effect</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:46</span></div><div class="entry-fact"><span class="k">dependencies</span><span class="v">none written ([])</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">GET glasshouse/v1/zones/*/watchers</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">1</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useEffect</span><span class="entry-id">WatcherNotesPanel:effect:useEffect:@src/zones/notes/WatcherNotesPanel.tsx:46:63</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">effect</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:46</span></div><div class="entry-fact"><span class="k">dependencies</span><span class="v">none written ([])</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">GET glasshouse/v1/zones/*/readings</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">1</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useEffect → refresh</span><span class="entry-id">WatcherNotesPanel:effect:useEffect:refresh:@src/zones/notes/WatcherNotesPanel.tsx:36:3</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">effect</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:36</span></div><div class="entry-fact"><span class="k">handler</span><span class="v">refresh</span></div><div class="entry-fact"><span class="k">dependencies</span><span class="v">readings</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">GET glasshouse/v1/zones/*/readings</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">1</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useEffect</span><span class="entry-id">WatcherNotesPanel:unknown:useEffect:@src/zones/notes/WatcherNotesPanel.tsx:38:3</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">unknown</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:38</span></div><div class="entry-fact"><span class="k">not followed</span><span class="v">the callback is an expression, not a literal this extractor can follow</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">no route</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">1</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useNoteDraft</span><span class="entry-id">WatcherNotesPanel:unknown:useNoteDraft:@src/zones/notes/WatcherNotesPanel.tsx:19:31</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">unknown</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:19</span></div><div class="entry-fact"><span class="k">not followed</span><span class="v">the component calls a hook this extractor does not read</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">no route</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">1</span></div>
+</div>
+<div class="entry-row">
+<div class="entry-head"><span class="entry-name">useNoteDraft</span><span class="entry-id">WatcherNotesPanel:unknown:useNoteDraft:@src/zones/notes/WatcherNotesPanel.tsx:48:3</span></div>
+<div class="entry-fact"><span class="k">kind</span><span class="v">unknown</span></div><div class="entry-fact"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="entry-fact"><span class="k">site</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:48</span></div><div class="entry-fact"><span class="k">not followed</span><span class="v">the component calls a hook this extractor does not read</span></div>
+<div class="entry-fact"><span class="k">reaches</span><span class="v">no route</span></div>
+<div class="entry-fact"><span class="k">unresolved arms</span><span class="v">1</span></div>
+</div>
+
+<h2>Routes resolved (2)</h2>
+<section class="route-section" id="route-1">
+<div class="route-divider"><span class="route-pos">route 1 of 2</span><span class="route-key">GET glasshouse/v1/zones/*/readings</span></div>
+<div class="reached">reached from <span class="entry-name">useEffect</span>, <span class="entry-name">useEffect → refresh</span></div>
+<details class="where arms"><summary>2 arms reach this route</summary><div class="where-body"><div class="arm-row"><div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@36:3</span><span class="hop-via">entry</span><span class="hop-sep">→</span><span class="hop">ZoneReadings.loadZoneReadings</span><span class="hop-via">body</span><span class="hop-sep">→</span><span class="hop">GET glasshouse/v1/zones/*/readings</span><span class="hop-via">alias match</span></div><div class="where-site">src/actions/zoneReadings.ts:9</div></div><div class="arm-row"><div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@46:63</span><span class="hop-via">entry</span><span class="hop-sep">→</span><span class="hop">ZoneReadings.loadZoneReadings</span><span class="hop-via">body</span><span class="hop-sep">→</span><span class="hop">GET glasshouse/v1/zones/*/readings</span><span class="hop-via">alias match</span></div><div class="where-site">src/actions/zoneReadings.ts:9</div></div></div></details>
+<div class="wrap">
+<h1>flowtrace span · <span class="route">GET glasshouse/v1/zones/*/readings</span></h1>
+<p class="sub">What this endpoint can do that somebody could observe, and which of those a test already pins. Code sits behind the expanders. <a href="#honesty">What this page cannot know →</a></p>
+
+<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/readings (route, backend src/Controllers/ZoneReadingsController.cs:19)
+scope: full
+limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
+status: traversal complete, freshness matching
+evidence: 6 source-supported, 0 inferred, runtime not supplied
+stops: none; frontier 0</pre></div>
+
+<div class="strip"><div class="cell"><span class="k">route</span><span class="v">GET glasshouse/v1/zones/*/readings</span></div><div class="cell"><span class="k">owning action</span><span class="v">ZoneReadingsController.GetReadings</span></div><div class="cell"><span class="k">outcomes</span><span class="v">2</span></div><div class="cell"><span class="k">tested</span><span class="v off">0</span></div><div class="cell"><span class="k">inherited only</span><span class="v off">0</span></div><div class="cell"><span class="k">untested</span><span class="v warn">2</span></div><div class="cell"><span class="k">route evidence tier</span><span class="v">none</span></div><div class="cell"><span class="k">reconciles with cover</span><span class="v">2/2 seeds</span></div></div>
+
+<h2>1 · Span map</h2>
+
+<h3>Who calls it</h3>
+<div class="chain"><div class="chain-row"><span class="chain-name">web › httpClient.loadZoneReadings</span><span class="chain-verb">literal url</span></div></div><details class="where"><summary>where these calls are written</summary><div class="where-body"><div class="where-site">web — src/actions/zoneReadings.ts:9 — /greenhouse/v1/zones/${zoneId}/readings</div></div></details>
+
+<h3>The endpoint</h3>
+<div class="endpoint"><span class="verb">GET</span> <span class="path">glasshouse/v1/zones/*/readings</span>
+<div class="owning">answered by ZoneReadingsController.GetReadings</div>
+<details class="where"><summary>where this is written, and the chain it walks</summary><div class="where-body"><div class="where-site">src/Controllers/ZoneReadingsController.cs:19</div><div class="where-site">ZoneReadingsController.GetReadings → ZoneReadingService.ListReadings</div></div></details></div>
+<div class="plain">Owned by ZoneReadingsController, ZoneReadingService. Stores touched: ReadingRepository <span class="acc acc-read">read</span>.</div>
+
+<h3>Success outcomes (1)</h3>
+<div class="row row-success">
+<div class="row-head"><span class="status off">no status stated</span><span class="what">succeeds on the happy path</span><span class="tag t-untested" title="nothing names this outcome — the draft below is what a test for it would say">untested</span></div>
+
+<div class="row-body"><div class="col"><div class="col-k">given</div><ul class="pre"><li>none (happy path — no deciding branch)</li></ul></div>
+<div class="col"><div class="col-k">then</div><ul class="expect"><li>reads only (no observable write)</li></ul></div></div>
+<div class="row-foot"><span class="seedkey">U2 #66026a0d</span> <a class="jump" href="#seed-66026a0d">what to write →</a></div>
+<details class="where"><summary>where this is written</summary><div class="where-body"><div class="where-row">no deciding branch — this is the route's own happy path</div></div></details>
+</div>
+
+<h3>Fault outcomes (1)</h3>
+<div class="row row-fault">
+<div class="row-head"><span class="status">403</span><span class="what">answers 403 when RelayCheckFilter.OnAuthorizationAsync sets the filter result</span><span class="tag t-untested" title="nothing names this outcome — the draft below is what a test for it would say">untested</span><span class="tag t-inherited" title="a globally registered filter decides this outcome, so every route it applies to lists it too">shared gate · RelayCheckFilter</span></div>
+
+<div class="row-body"><div class="col"><div class="col-k">given</div><ul class="pre"><li>RelayCheckFilter.OnAuthorizationAsync sets the filter result (reject taken)</li></ul></div>
+<div class="col"><div class="col-k">then</div><ul class="expect"><li>403 Forbidden</li></ul></div></div>
+<div class="row-foot"><span class="seedkey">U1 #c288f95f</span> <a class="jump" href="#seed-c288f95f">what to write →</a></div>
+<details class="where"><summary>where this is written (1 branch)</summary><div class="where-body"><div class="where-row"><span class="where-phrase">RelayCheckFilter.OnAuthorizationAsync sets the filter result</span><span class="where-kind">reject taken</span><div class="where-code">context.Result → 403 Forbidden</div><div class="where-site">RelayCheckFilter.OnAuthorizationAsync — src/Filters/RelayCheckFilter.cs:23</div></div></div></details>
+</div>
+
+<h3>Messages published, and what answers them</h3>
+<div class="plain">This route publishes nothing to the bus on the traced path.</div>
+
+<h2>2 · Test ledger</h2>
+<div class="plain">Every outcome above appears here exactly once, tagged with exactly one of three tags, ordered by what to do first:
+untested fault contracts, then untested branches, then inherited-only, then the outcomes a test already pins. Inside a tier the route's own seed
+order decides. The three counts sum to 2 outcomes — reconciling with the
+2 seeds <code>cover --json</code> reports for this route, which is asserted by a test rather
+than claimed here. An <em>inherited only</em> row is never counted as tested in any total on this page.</div>
+<div class="lrow lrow-t-untested" id="seed-c288f95f">
+<div class="lrow-head"><span class="ord">1</span><span class="tag t-untested" title="nothing names this outcome — the draft below is what a test for it would say">untested</span><span class="tag t-inherited" title="a globally registered filter decides this outcome, so every route it applies to lists it too">shared gate · RelayCheckFilter</span><span class="status">403</span><span class="what">answers 403 when RelayCheckFilter.OnAuthorizationAsync sets the filter result</span><span class="seedkey">U1 #c288f95f</span></div>
+
+<details class="draft" id="draft-c288f95f"><summary>what a test for this would say — <code>cases --gherkin-draft</code>, quoted</summary><pre class="gherkin"><span class="gk">## Scenario: GET glasshouse/v1/zones/*/readings · rejects the request with 403 Forbidden when RelayCheckFilter.OnAuthorizationAsync sets the filter result
+
+&lt;!-- U1 #c288f95f --&gt;
+
+Given the GET glasshouse/v1/zones/*/readings endpoint
+And the caller is a user without the required permission
+And RelayCheckFilter.OnAuthorizationAsync sets the filter result
+And the path names an existing id
+When a GET request is made to glasshouse/v1/zones/*/readings
+Then the request is rejected with 403 Forbidden
+
+**Case id:** TODO: pending — see `cases` sheet for the human-readable version</span></pre></details>
+</div>
+<div class="lrow lrow-t-untested" id="seed-66026a0d">
+<div class="lrow-head"><span class="ord">2</span><span class="tag t-untested" title="nothing names this outcome — the draft below is what a test for it would say">untested</span><span class="status off">—</span><span class="what">succeeds on the happy path</span><span class="seedkey">U2 #66026a0d</span></div>
+
+<details class="draft" id="draft-66026a0d"><summary>what a test for this would say — <code>cases --gherkin-draft</code>, quoted</summary><pre class="gherkin"><span class="gk">## Scenario: GET glasshouse/v1/zones/*/readings · returns with no observable write on the happy path
+
+&lt;!-- U2 #66026a0d --&gt;
+
+Given the GET glasshouse/v1/zones/*/readings endpoint
+And the caller is an authorised user
+And the path names an existing id
+When a GET request is made to glasshouse/v1/zones/*/readings
+Then the request returns with no observable write
+
+**Case id:** TODO: pending — see `cases` sheet for the human-readable version</span></pre></details>
+</div>
+
+<h2>3 · Assertion surface</h2>
+<div class="plain">No assertion surface derives for this route: the walk reaches no store write at all, so there is no changed state to read back and nothing below is an endpoint.</div>
+
+<div class="surf surf-gap">
+<div class="surf-head"><span class="surf-state">no state written</span><span class="gapkind">no-write</span></div>
+<div class="gap-why">the route walk reaches no store write, so there is no changed state to read back</div>
+<div class="surf-at"><span class="surf-k">evidence:</span><ul class="obs"><li class="off">no evidence row — the walk found nothing to name at the point it stopped</li></ul></div>
+<details class="where"><summary>where the chain stopped</summary><div class="where-body"><div class="where-site">no state — src/Controllers/ZoneReadingsController.cs:19</div></div></details>
+</div>
+
+<h2>4 · Honesty strip</h2>
+<div class="note" id="honesty"><b>What this page cannot know.</b>
+<br><b>Every edge here is source-inferred; none is runtime-confirmed.</b> The page is built by reading code, not by watching a request. The
+runtime-confirmed-edge minimum that would let a page claim otherwise is not part of this tool, so nothing below is evidence that
+a request actually took this path in any environment.
+<br><b>Feature flags and tenant configuration decide branches a static read cannot evaluate.</b> An outcome listed here may be unreachable in a
+given tenant, and one that is reachable in that tenant may be missing from this list entirely. Treat the list as the shape of the endpoint, not
+as its behaviour in front of you.
+<br><b>Runtime fan-out is invisible.</b> A consumer bound at deploy time, a handler registered by configuration, a processor selected by a
+runtime work type — none of them is visible to a source read, so the consumers named below are the ones written down, not necessarily the ones
+that run.
+<br><b>Outcome-symmetric branches stay unattributable.</b> Where both sides of a decision end in the same observable outcome, nothing here can
+say which side a test drove; per-branch certainty for those needs the per-test runtime line hits <code>cover --runtime</code> joins. Those rows read
+<em>inherited only</em>, and that is the ceiling, not a gap in the join.
+<br><b>Case ids are best-effort.</b> A tested row shows a case id only when a <code>case_id</code> fact resolves one at that test's declaration
+line — a case-id annotation, a literal configured call, a same-file table row or a value the bounded same-file reader resolves. A case id
+written as a parameter, a call result or a cross-file value is shown by its expression as <em>case id not read</em> rather than guessed, and a
+row showing no case id may still carry one written in a form no reader recognises.
+<br><b>Two limits inherited unchanged from the evidence index.</b> A skipped test is not evidence in any tier, and Cypress evidence can never
+reach <em>asserted</em> because the fact schema records no Cypress assertion fact — only Playwright's.<br><b>Field-level correlation is a judgment, not a walk.</b> An assertion surface names an endpoint, never a field:
+a surface names an endpoint that reads the same state, never a claim that a particular response field reflects this write — that correlation is a cached verdict, not a walk. Nor is a hop a payload: the hops between a store and a controller are the service methods the state travels through; the facts carry no return type, so no DTO is named and none is guessed. The reverse walk behind that section is
+bounded at 3 receiver hops and observes only GET, HEAD, so a reader further away than that, or one
+reachable only behind a state-changing verb, is absent from the section rather than approximated into it. 1 gap row in that section stands where a chain stopped, and a gap is never filled with the most plausible endpoint.</div>
+
+<p class="foot">2 outcomes · 0 tested · 0 inherited only · 2 untested · reconciles with cover: 2/2 seeds · assertion surface: 0 state groups observed, 1 gap · outcomes from the trace walk, tiers from the cover overlay and the branch-outcome / asserted-status join, drafts quoted from cases --gherkin-draft, observation points from the assertion-surface walk</p>
+</div>
+</section>
+<section class="route-section" id="route-2">
+<div class="route-divider"><span class="route-pos">route 2 of 2</span><span class="route-key">GET glasshouse/v1/zones/*/watchers</span></div>
+<div class="reached">reached from <span class="entry-name">useEffect</span>, <span class="entry-name">useEffect</span></div>
+<details class="where arms"><summary>2 arms reach this route</summary><div class="where-body"><div class="arm-row"><div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@25:3</span><span class="hop-via">entry</span><span class="hop-sep">→</span><span class="hop">Watchers.loadWatchers</span><span class="hop-via">body</span><span class="hop-sep">→</span><span class="hop">GET glasshouse/v1/zones/*/watchers</span><span class="hop-via">alias match</span></div><div class="where-site">src/actions/watchers.ts:10</div></div><div class="arm-row"><div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@46:3</span><span class="hop-via">entry</span><span class="hop-sep">→</span><span class="hop">Watchers.loadWatchers</span><span class="hop-via">body</span><span class="hop-sep">→</span><span class="hop">GET glasshouse/v1/zones/*/watchers</span><span class="hop-via">alias match</span></div><div class="where-site">src/actions/watchers.ts:10</div></div></div></details>
+<div class="wrap">
+<h1>flowtrace span · <span class="route">GET glasshouse/v1/zones/*/watchers</span></h1>
+<p class="sub">What this endpoint can do that somebody could observe, and which of those a test already pins. Code sits behind the expanders. <a href="#honesty">What this page cannot know →</a></p>
+
+<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/watchers (route, backend src/Controllers/ZoneWatchersController.cs:22)
+scope: full
+limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
+status: traversal complete, freshness matching
+evidence: 8 source-supported, 4 inferred, runtime not supplied
+stops: none; frontier 0</pre></div>
+
+<div class="strip"><div class="cell"><span class="k">route</span><span class="v">GET glasshouse/v1/zones/*/watchers</span></div><div class="cell"><span class="k">owning action</span><span class="v">ZoneWatchersController.GetWatchers</span></div><div class="cell"><span class="k">outcomes</span><span class="v">2</span></div><div class="cell"><span class="k">tested</span><span class="v ok">1</span></div><div class="cell"><span class="k">inherited only</span><span class="v warn">1</span></div><div class="cell"><span class="k">untested</span><span class="v ok">0</span></div><div class="cell"><span class="k">route evidence tier</span><span class="v">asserted</span></div><div class="cell"><span class="k">reconciles with cover</span><span class="v">2/2 seeds</span></div></div>
+
+<h2>1 · Span map</h2>
+
+<h3>Who calls it</h3>
+<div class="chain"><div class="chain-row"><span class="chain-name">mobile › ZoneWatcherFeed.listWatchers</span><span class="chain-verb">literal url</span></div><div class="chain-row"><span class="chain-name">web › httpClient.loadPrimaryZone</span><span class="chain-verb">literal url</span></div><div class="chain-row"><span class="chain-name">web › httpClient.loadWatchers</span><span class="chain-verb">literal url</span></div></div><details class="where"><summary>where these calls are written</summary><div class="where-body"><div class="where-site">mobile — src/app/features/zones/zone-watcher-feed.service.ts:9 — greenhouse/v1/zones/${zoneId}/watchers</div><div class="where-site">web — src/actions/primaryZone.ts:9 — /greenhouse/v1/zones/${growerId}/watchers</div><div class="where-site">web — src/actions/watchers.ts:10 — /greenhouse/v1/zones/${zoneId}/watchers</div></div></details>
+
+<h3>The endpoint</h3>
+<div class="endpoint"><span class="verb">GET</span> <span class="path">glasshouse/v1/zones/*/watchers</span>
+<div class="owning">answered by ZoneWatchersController.GetWatchers</div>
+<details class="where"><summary>where this is written, and the chain it walks</summary><div class="where-body"><div class="where-site">src/Controllers/ZoneWatchersController.cs:22</div><div class="where-site">ZoneWatchersController.GetWatchers → HarborBridge.Forward → WatcherService.ListWatchers</div></div></details></div>
+<div class="plain">Owned by ZoneWatchersController, HarborBridge, WatcherService. Stores touched: ReadingRepository <span class="acc acc-unknown">unknown</span>, WatcherRepository <span class="acc acc-read">read</span>.</div>
+
+<h3>Success outcomes (1)</h3>
+<div class="row row-success">
+<div class="row-head"><span class="status off">no status stated</span><span class="what">succeeds on the happy path</span><span class="tag t-inherited" title="a test names this route and covers the path, but nothing pins this outcome; never counted as tested in any total on this page">inherited only</span></div>
+
+<div class="row-body"><div class="col"><div class="col-k">given</div><ul class="pre"><li>none (happy path — no deciding branch)</li></ul></div>
+<div class="col"><div class="col-k">then</div><ul class="expect"><li>reads only (no observable write)</li></ul></div></div>
+<div class="row-foot"><span class="seedkey">U2 #0a764c91</span></div>
+<details class="where"><summary>where this is written</summary><div class="where-body"><div class="where-row">no deciding branch — this is the route's own happy path</div></div></details>
+</div>
+
+<h3>Fault outcomes (1)</h3>
+<div class="row row-fault">
+<div class="row-head"><span class="status">403</span><span class="what">answers 403 when RelayCheckFilter.OnAuthorizationAsync sets the filter result</span><span class="tag t-tested" title="a verifying test asserts the status this outcome answers on this route, so the outcome was observed — the same join the trace page draws as &quot;direct&quot;">tested</span><span class="tag t-inherited" title="a globally registered filter decides this outcome, so every route it applies to lists it too">shared gate · RelayCheckFilter</span></div>
+
+<div class="row-body"><div class="col"><div class="col-k">given</div><ul class="pre"><li>RelayCheckFilter.OnAuthorizationAsync sets the filter result (reject taken)</li></ul></div>
+<div class="col"><div class="col-k">then</div><ul class="expect"><li>403 Forbidden</li></ul></div></div>
+<div class="row-foot"><span class="seedkey">U1 #456045ba</span></div>
+<details class="where"><summary>where this is written (1 branch)</summary><div class="where-body"><div class="where-row"><span class="where-phrase">RelayCheckFilter.OnAuthorizationAsync sets the filter result</span><span class="where-kind">reject taken</span><div class="where-code">context.Result → 403 Forbidden</div><div class="where-site">RelayCheckFilter.OnAuthorizationAsync — src/Filters/RelayCheckFilter.cs:23</div></div></div></details>
+</div>
+
+<h3>Messages published, and what answers them</h3>
+<div class="plain">This route publishes nothing to the bus on the traced path.</div>
+
+<h2>2 · Test ledger</h2>
+<div class="plain">Every outcome above appears here exactly once, tagged with exactly one of three tags, ordered by what to do first:
+untested fault contracts, then untested branches, then inherited-only, then the outcomes a test already pins. Inside a tier the route's own seed
+order decides. The three counts sum to 2 outcomes — reconciling with the
+2 seeds <code>cover --json</code> reports for this route, which is asserted by a test rather
+than claimed here. An <em>inherited only</em> row is never counted as tested in any total on this page.</div>
+<div class="lrow lrow-t-inherited" id="seed-0a764c91">
+<div class="lrow-head"><span class="ord">1</span><span class="tag t-inherited" title="a test names this route and covers the path, but nothing pins this outcome; never counted as tested in any total on this page">inherited only</span><span class="status off">—</span><span class="what">succeeds on the happy path</span><span class="seedkey">U2 #0a764c91</span></div>
+<div class="tests"><div class="tests-head">on a path 1 test already drive — none of them pins this outcome</div><div class="test-row">suite › tests/watchers.spec.ts › a grower the relay ledger refuses gets no watchers<span class="mech mech-raw">raw</span></div><div class="noid">no case id: no case_id fact resolved for this test — a case-id annotation, a configured call or a same-file table row would surface one here.</div></div>
+
+</div>
+<div class="lrow lrow-t-tested" id="seed-456045ba">
+<div class="lrow-head"><span class="ord">2</span><span class="tag t-tested" title="a verifying test asserts the status this outcome answers on this route, so the outcome was observed — the same join the trace page draws as &quot;direct&quot;">tested</span><span class="tag t-inherited" title="a globally registered filter decides this outcome, so every route it applies to lists it too">shared gate · RelayCheckFilter</span><span class="status">403</span><span class="what">answers 403 when RelayCheckFilter.OnAuthorizationAsync sets the filter result</span><span class="seedkey">U1 #456045ba</span></div>
+<div class="tests"><div class="tests-head">asserted by 1 test</div><div class="test-row">suite › tests/watchers.spec.ts › a grower the relay ledger refuses gets no watchers<span class="mech mech-raw">raw</span></div><div class="noid">no case id: no case_id fact resolved for this test — a case-id annotation, a configured call or a same-file table row would surface one here.</div></div>
+
+</div>
+
+<h2>3 · Assertion surface</h2>
+<div class="plain">No assertion surface derives for this route: the walk reaches no store write at all, so there is no changed state to read back and nothing below is an endpoint.</div>
+
+<div class="surf surf-gap">
+<div class="surf-head"><span class="surf-state">no state written</span><span class="gapkind">no-write</span></div>
+<div class="gap-why">the route walk reaches no store write, so there is no changed state to read back</div>
+<div class="surf-at"><span class="surf-k">evidence:</span><ul class="obs"><li class="off">no evidence row — the walk found nothing to name at the point it stopped</li></ul></div>
+<details class="where"><summary>where the chain stopped</summary><div class="where-body"><div class="where-site">no state — src/Controllers/ZoneWatchersController.cs:22</div></div></details>
+</div>
+
+<h2>4 · Honesty strip</h2>
+<div class="note" id="honesty"><b>What this page cannot know.</b>
+<br><b>Every edge here is source-inferred; none is runtime-confirmed.</b> The page is built by reading code, not by watching a request. The
+runtime-confirmed-edge minimum that would let a page claim otherwise is not part of this tool, so nothing below is evidence that
+a request actually took this path in any environment.
+<br><b>Feature flags and tenant configuration decide branches a static read cannot evaluate.</b> An outcome listed here may be unreachable in a
+given tenant, and one that is reachable in that tenant may be missing from this list entirely. Treat the list as the shape of the endpoint, not
+as its behaviour in front of you.
+<br><b>Runtime fan-out is invisible.</b> A consumer bound at deploy time, a handler registered by configuration, a processor selected by a
+runtime work type — none of them is visible to a source read, so the consumers named below are the ones written down, not necessarily the ones
+that run.
+<br><b>Outcome-symmetric branches stay unattributable.</b> Where both sides of a decision end in the same observable outcome, nothing here can
+say which side a test drove; per-branch certainty for those needs the per-test runtime line hits <code>cover --runtime</code> joins. Those rows read
+<em>inherited only</em>, and that is the ceiling, not a gap in the join.
+<br><b>Case ids are best-effort.</b> A tested row shows a case id only when a <code>case_id</code> fact resolves one at that test's declaration
+line — a case-id annotation, a literal configured call, a same-file table row or a value the bounded same-file reader resolves. A case id
+written as a parameter, a call result or a cross-file value is shown by its expression as <em>case id not read</em> rather than guessed, and a
+row showing no case id may still carry one written in a form no reader recognises.
+<br><b>Two limits inherited unchanged from the evidence index.</b> A skipped test is not evidence in any tier, and Cypress evidence can never
+reach <em>asserted</em> because the fact schema records no Cypress assertion fact — only Playwright's.<br><b>Field-level correlation is a judgment, not a walk.</b> An assertion surface names an endpoint, never a field:
+a surface names an endpoint that reads the same state, never a claim that a particular response field reflects this write — that correlation is a cached verdict, not a walk. Nor is a hop a payload: the hops between a store and a controller are the service methods the state travels through; the facts carry no return type, so no DTO is named and none is guessed. The reverse walk behind that section is
+bounded at 3 receiver hops and observes only GET, HEAD, so a reader further away than that, or one
+reachable only behind a state-changing verb, is absent from the section rather than approximated into it. 1 gap row in that section stands where a chain stopped, and a gap is never filled with the most plausible endpoint.</div>
+
+<p class="foot">2 outcomes · 1 tested · 1 inherited only · 0 untested · reconciles with cover: 2/2 seeds · assertion surface: 0 state groups observed, 1 gap · outcomes from the trace walk, tiers from the cover overlay and the branch-outcome / asserted-status join, drafts quoted from cases --gherkin-draft, observation points from the assertion-surface walk</p>
+</div>
+</section>
+
+<h2>Arms unresolved (7)</h2>
+<div class="plain">Every arm below either reaches a gateway call the extractor left <code>resolved: false</code>, matches no route in the fact store, or dispatches an action no <code>effect_handler</code> answers. Nothing here is a guess at what the arm would have reached.</div>
+<div class="lrow lrow-t-untested">
+<div class="lrow-head"><span class="tag t-untested" title="this trigger was read but not followed — the extractor stated the entry and could not resolve what it runs">entry not followed</span><span class="what">WatcherNotesPanel.useEffect@38:3</span></div>
+<div class="plain">this trigger was read but not followed — the extractor stated the entry and could not resolve what it runs — the callback is an expression, not a literal this extractor can follow</div>
+<div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@38:3</span><span class="hop-via">entry</span></div>
+<div class="where-site">src/zones/notes/WatcherNotesPanel.tsx:38</div>
+</div>
+<div class="lrow lrow-t-untested">
+<div class="lrow-head"><span class="tag t-untested" title="this trigger was read but not followed — the extractor stated the entry and could not resolve what it runs">entry not followed</span><span class="what">WatcherNotesPanel.useNoteDraft@19:31</span></div>
+<div class="plain">this trigger was read but not followed — the extractor stated the entry and could not resolve what it runs — the component calls a hook this extractor does not read</div>
+<div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useNoteDraft@19:31</span><span class="hop-via">entry</span></div>
+<div class="where-site">src/zones/notes/WatcherNotesPanel.tsx:19</div>
+</div>
+<div class="lrow lrow-t-untested">
+<div class="lrow-head"><span class="tag t-untested" title="this trigger was read but not followed — the extractor stated the entry and could not resolve what it runs">entry not followed</span><span class="what">WatcherNotesPanel.useNoteDraft@48:3</span></div>
+<div class="plain">this trigger was read but not followed — the extractor stated the entry and could not resolve what it runs — the component calls a hook this extractor does not read</div>
+<div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useNoteDraft@48:3</span><span class="hop-via">entry</span></div>
+<div class="where-site">src/zones/notes/WatcherNotesPanel.tsx:48</div>
+</div>
+<div class="lrow lrow-t-untested">
+<div class="lrow-head"><span class="tag t-untested" title="no effect_handler answers this action">no effect answers</span><span class="what">READINGS_LOADED</span></div>
+<div class="plain">no effect_handler answers this action</div>
+<div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@36:3</span><span class="hop-via">entry</span><span class="hop-sep">→</span><span class="hop">ZoneReadings.loadZoneReadings</span><span class="hop-via">body</span><span class="hop-sep">→</span><span class="hop">READINGS_LOADED</span><span class="hop-via">dispatch</span></div>
+<div class="where-site">src/actions/zoneReadings.ts:10</div>
+</div>
+<div class="lrow lrow-t-untested">
+<div class="lrow-head"><span class="tag t-untested" title="no effect_handler answers this action">no effect answers</span><span class="what">READINGS_LOADED</span></div>
+<div class="plain">no effect_handler answers this action</div>
+<div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@46:63</span><span class="hop-via">entry</span><span class="hop-sep">→</span><span class="hop">ZoneReadings.loadZoneReadings</span><span class="hop-via">body</span><span class="hop-sep">→</span><span class="hop">READINGS_LOADED</span><span class="hop-via">dispatch</span></div>
+<div class="where-site">src/actions/zoneReadings.ts:10</div>
+</div>
+<div class="lrow lrow-t-untested">
+<div class="lrow-head"><span class="tag t-untested" title="no effect_handler answers this action">no effect answers</span><span class="what">WATCHERS_LOADED</span></div>
+<div class="plain">no effect_handler answers this action</div>
+<div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@25:3</span><span class="hop-via">entry</span><span class="hop-sep">→</span><span class="hop">Watchers.loadWatchers</span><span class="hop-via">body</span><span class="hop-sep">→</span><span class="hop">WATCHERS_LOADED</span><span class="hop-via">dispatch</span></div>
+<div class="where-site">src/actions/watchers.ts:11</div>
+</div>
+<div class="lrow lrow-t-untested">
+<div class="lrow-head"><span class="tag t-untested" title="no effect_handler answers this action">no effect answers</span><span class="what">WATCHERS_LOADED</span></div>
+<div class="plain">no effect_handler answers this action</div>
+<div class="crumb"><span class="hop">WatcherNotesPanel</span><span class="hop-via">start</span><span class="hop-sep">→</span><span class="hop">WatcherNotesPanel.useEffect@46:3</span><span class="hop-via">entry</span><span class="hop-sep">→</span><span class="hop">Watchers.loadWatchers</span><span class="hop-via">body</span><span class="hop-sep">→</span><span class="hop">WATCHERS_LOADED</span><span class="hop-via">dispatch</span></div>
+<div class="where-site">src/actions/watchers.ts:11</div>
+</div>
+
+<p class="foot">2 routes resolved · 4 arms resolved · 7 arms unresolved</p>
+</div>
+</body></html>
