@@ -7,6 +7,9 @@
   as the page, and a render lands on the component that its import names.
 - A method of a module-level object literal is a `method_span` whose `class` is the const
   name.
+- A bare call in such a method to a module-level function of the same file gives a
+  `method_call` with `field: "this"` and `calledClass`, the class of that function span.
+  `trace`, `chains` and `surface` resolve it to that span in the same file.
 - A `gateway_call` reads a call on the default import from `axios`, on an `axios.create`
   instance or field, or on a constructor parameter typed `AxiosInstance`. `service` names
   the receiver. The new `repos[].httpClients` key lists more receiver names. A bad value or

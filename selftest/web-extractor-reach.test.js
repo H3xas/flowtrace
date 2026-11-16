@@ -669,6 +669,115 @@ test('Web extractor reach AC-13: the methods of a module-level object literal ar
 
 const GATEWAY_CLIENT = 'export class HttpClient {\n  getGatewayClient() {\n    return null;\n  }\n}\nexport const httpClient = new HttpClient();\n';
 
+const MEMBER_CALLS = {
+  'flowtrace.config.json': config([WEB, BACKEND]),
+  'web/src/http/httpClient.ts': GATEWAY_CLIENT,
+  'web/src/api/audit.ts': 'export function audit() {\n  return 1;\n}\n',
+  'web/src/api/itemsApi.ts': [
+    "import { httpClient } from '../http/httpClient';",
+    "import { audit } from './audit';",
+    '',
+    'function loadItem(id: string) {',
+    '  return httpClient.getGatewayClient().get(`/api/v1/items/${id}`);',
+    '}',
+    '',
+    "const request = () => httpClient.getGatewayClient().get('/api/v1/ping');",
+    '',
+    'export const itemsApi = {',
+    '  load: (id: string) => loadItem(id),',
+    '  reload(id: string) {',
+    '    audit();',
+    '    missing(id);',
+    '    this.load(id);',
+    '    return loadItem(id);',
+    '  },',
+    '  loadAll: (ids: string[]) => ids.map((id) => loadItem(id)),',
+    '  request: () => request(),',
+    '  skipAll: (ids: string[]) => ids.map((id) => absent(id)),',
+    '};',
+    '',
+  ].join('\n'),
+  'web/src/api/otherApi.ts': [
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'export function loadItem(id: string) {',
+    '  return httpClient.getGatewayClient().get(`/api/v1/other/${id}`);',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/pages/ItemsPage.tsx': [
+    "import React from 'react';",
+    "import { itemsApi } from '../api/itemsApi';",
+    '',
+    'export function ItemsPage() {',
+    '  const onOpen = () => {',
+    "    itemsApi.load('1');",
+    '  };',
+    '  return <button onClick={onOpen}>open</button>;',
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/App.tsx': [
+    "import React from 'react';",
+    "import { Route } from 'react-router-dom';",
+    "import { ItemsPage } from './pages/ItemsPage';",
+    '',
+    'export function App() {',
+    '  return <Route path="/items" element={<ItemsPage />} />;',
+    '}',
+    '',
+  ].join('\n'),
+  'backend/src/ItemsController.cs': controller('ItemsController', 'api/v1', [
+    ['Get', 'items/{id}', 'GetItem'],
+    ['Get', 'ping', 'Ping'],
+    ['Get', 'other/{id}', 'GetOther'],
+  ]),
+};
+
+test('Web extractor reach AC-13: a member body call to a module-level function of the file names that function span', (t) => {
+  const dir = buildRepo(t, MEMBER_CALLS);
+  extractAndJoin(dir);
+  const calls = ofType(factsOf(dir), 'method_call').filter((entry) => entry.file === 'src/api/itemsApi.ts');
+  assert.deepEqual(
+    calls.map((entry) => `${entry.class}.${entry.method} ${entry.field} ${entry.calledMethod} ${entry.calledClass ?? '-'}`),
+    [
+      'itemsApi.load this loadItem ItemsApi',
+      'itemsApi.reload import audit -',
+      'itemsApi.reload this load -',
+      'itemsApi.reload this loadItem ItemsApi',
+      'itemsApi.loadAll this loadItem ItemsApi',
+      'itemsApi.request this request ItemsApi',
+    ],
+    'an imported callee keeps the import form, an undeclared one gives no fact, and this.<sibling> keeps the sibling form',
+  );
+  const held = calls.find((entry) => entry.method === 'loadAll');
+  assert.deepEqual([held.arrow?.line, held.arrow?.column], [held.line, 39], 'a call in a held arrow names that arrow');
+  const withField = calls.find((entry) => entry.calledClass !== undefined);
+  assert.deepEqual(Object.keys(withField).slice(0, 8), ['type', 'file', 'line', 'class', 'method', 'field', 'calledMethod', 'calledClass']);
+
+  const reach = (json) => json.nodes.map((node) => `${node.repo} ${node.kind} ${node.ref} ${node.file ?? ''}`.trim());
+  for (const start of ['itemsApi.load', 'itemsApi.reload', 'itemsApi.loadAll']) {
+    const traced = traceJson(dir, start);
+    assert.equal(traced.status, 0, traced.stderr);
+    const nodes = reach(traced.json);
+    assert.ok(nodes.includes('web method ItemsApi.loadItem src/api/itemsApi.ts'), `${start}: ${JSON.stringify(nodes)}`);
+    assert.ok(nodes.some((node) => node.startsWith('backend action ItemsController.GetItem')), `${start}: ${JSON.stringify(nodes)}`);
+    assert.ok(!nodes.some((node) => node.includes('src/api/otherApi.ts') || node.includes('GetOther')), `${start} never enters the same-named function of another file`);
+  }
+  const named = traceJson(dir, 'itemsApi.request');
+  assert.equal(named.status, 0, named.stderr);
+  assert.ok(reach(named.json).includes('web method ItemsApi.request src/api/itemsApi.ts'), 'a member named as the module function is no recursion');
+  assert.ok(reach(named.json).some((node) => node.startsWith('backend action ItemsController.Ping')));
+
+  const chained = cli(dir, ['chains', 'GET api/v1/items/{id}', '--json']);
+  assert.equal(chained.status, 0, chained.stderr);
+  const complete = JSON.parse(chained.stdout).chains.filter((chain) => chain.complete);
+  assert.ok(
+    complete.some((chain) => chain.page && chain.hops.some((hop) => JSON.stringify(hop).includes('itemsApi.load'))),
+    chained.stdout,
+  );
+});
+
 const CONTENT_API = [
   "import { httpClient } from '../http/httpClient';",
   '',
