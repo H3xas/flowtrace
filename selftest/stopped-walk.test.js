@@ -654,6 +654,27 @@ test('Stopped walk AC-13: the identity binds every code index answer the walk re
   assert.equal(walk(createScout({ repos }).outbound).identity, unconfigured.identity);
 });
 
+test('Stopped walk AC-13: the same edges in another order are another answer when the fan-out limit cuts them', (t) => {
+  const dir = quarry(t);
+  const repos = [
+    { id: 'api', kind: 'backend', root: join(dir, 'backend'), role: ['api'] },
+    { id: 'web', kind: 'web', root: join(dir, 'web') },
+  ];
+  const edges = Array.from({ length: 9 }, (_, n) => ({
+    kind: 'uses-type',
+    file: 'backend/src/Services/SurveyChain.cs',
+    line: 1,
+    target: `backend/src/Data/Repository${n}.cs`,
+  }));
+  const walk = (list) => trace(factSetsOf(dir, ['api', 'web']), QUIET, { repos, outbound: () => list.map((edge) => ({ ...edge })) });
+  const reached = (result) => result.nodes.filter((node) => /^Repository\d$/.test(node.ref)).map((node) => node.ref).sort();
+  const forward = walk(edges);
+  const backward = walk([...edges].reverse());
+  assert.notDeepEqual(reached(forward), reached(backward), 'the limit keeps other classes');
+  assert.notEqual(forward.status.identity, backward.status.identity);
+  assert.equal(walk(edges).status.identity, forward.status.identity);
+});
+
 test('Stopped walk AC-13: a lookup made inside a gate walk changes the route identity', (t) => {
   const dir = gitFixture(t, 'bakery-gates', 'bakery.config.json');
   const repos = [{ id: 'api', kind: 'backend', root: join(dir, 'backend'), role: ['api'] }];
@@ -706,6 +727,27 @@ test('Stopped walk AC-15: the scout wrapper reads exit 3 as an answer', () => {
   const failed = scoutWith({ status: 1, stdout: '' }).outbound('/repo', 'A');
   assert.equal(failed.unavailable, true);
   assert.equal(failed.reason, 'indexer exited with an error');
+});
+
+test('Stopped walk AC-15: a killed or blank index reply is no answer, never a zero-hit', () => {
+  const scoutWith = (result) =>
+    createScout({ bin: '/bin/scout', fileExists: () => true, repos: [{ root: '/repo', scout: true }], run: () => result });
+  for (const [label, result] of [
+    ['killed', { status: null, signal: 'SIGTERM', stdout: '' }],
+    ['killed after a zero-hit line', { status: null, signal: 'SIGKILL', stdout: "no symbol matches 'A'\n" }],
+    ['blank exit 0', { status: 0, stdout: '' }],
+    ['blank exit 3', { status: 3, stdout: '\n' }],
+    ['blank with no status', { stdout: '' }],
+  ]) {
+    const reply = scoutWith(result).outbound('/repo', 'A');
+    assert.equal(reply.noMatch, undefined, label);
+    assert.equal(reply.unavailable, true, label);
+  }
+  for (const status of [0, 3]) {
+    const zero = scoutWith({ status, stdout: "no symbol matches 'A'\n" }).outbound('/repo', 'A');
+    assert.equal(zero.noMatch, true, `zero-hit exit ${status}`);
+    assert.equal(zero.unavailable, undefined, `zero-hit exit ${status}`);
+  }
 });
 
 test('Stopped walk AC-15: a zero-hit for a class no repository declares is an external boundary', (t) => {
