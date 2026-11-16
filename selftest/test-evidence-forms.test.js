@@ -119,3 +119,120 @@ ${indent(intercepts)}
   }
 });
 
+// [row, first argument text or null for none, path or null for not-literal]
+const VISIT_ROWS = [
+  ['string', "'/items'", '/items'],
+  ['string-escapes', '"/caf\\u00e9\\x21"', '/café!'],
+  ['string-holding-dollar-brace', "'/items/${id}'", '/items/${id}'],
+  ['string-joined', "'/items/' + id", null],
+  ['template', '`/items`', '/items'],
+  ['template-escapes', '`/caf\\u00e9`', '/café'],
+  ['template-interpolated', '`/items/${id}`', null],
+  ['template-escaped-interpolation', '`/items/\\${id}`', null],
+  ['no-argument', null, null],
+  ['name', 'itemsPath', null],
+  ['call', "pathFor('items')", null],
+  ['options-object', "{ url: '/items' }", null],
+];
+
+function visitSpecs(rows) {
+  const pw = rows
+    .map(([row, arg]) => `test('${row}', async ({ page }) => {\n  await page.goto(${arg ?? ''});\n});\n`)
+    .join('\n');
+  const cy = rows.map(([row, arg]) => `  it('${row}', () => {\n    cy.visit(${arg ?? ''});\n  });`).join('\n');
+  return {
+    'suite/e2e/visits.pw.ts': `import { test } from '@playwright/test';\n\n${pw}`,
+    'web/cypress/e2e/visits.cy.ts': `describe('visits', () => {\n${cy}\n});\n`,
+  };
+}
+
+test('Test evidence AC-15: each listed visit argument gives its path, and each named unlisted argument gives not-literal', (t) => {
+  const dir = writeRepo(t, { 'backend/src/Controllers/ItemController.cs': CONTROLLER, ...visitSpecs(VISIT_ROWS) }, { repos: RUNNER_REPOS });
+  const expected = VISIT_ROWS.map(([row, , path]) => [row, path, path === null ? 'not-literal' : null]);
+  for (const [repo, type] of [['suite', 'pw_visit'], ['web', 'cypress_visit']]) {
+    const visits = extractRepoFacts(dir, repo)
+      .filter((fact) => fact.type === type)
+      .map((fact) => [fact.test, fact.path, fact.reason ?? null]);
+    assert.deepEqual(visits, expected, repo);
+  }
+});
+
+// [row, statements before the read, read argument, subject or null for unreadable-subject].
+// `readText` takes its subject at index 0 and `readMail` at index 0, key `subject`.
+const SUBJECT_ROWS = [
+  ['string', '', "readText('Welcome')", 'Welcome'],
+  ['string-escapes', '', "readText('It\\'s \\x41\\u{42}')", "It's AB"],
+  ['string-joined', '', "readText('Welcome ' + member)", null],
+  ['template', '', 'readText(`Code ${code}!`)', 'Code *!'],
+  ['template-joined', '', 'readText(`Code` + code)', null],
+  ['const', "const subject = 'Welcome';", 'readText(subject)', 'Welcome'],
+  ['const-typed', "const subject: string = 'Welcome';", 'readText(subject)', 'Welcome'],
+  ['const-template', 'const subject = `Hi ${name}`;', 'readText(subject)', 'Hi *'],
+  ['const-line-end', "const subject = 'Welcome'", 'readText(subject)', 'Welcome'],
+  ['const-long-comment', "const subject = 'Welcome' /* a comment that runs well past forty characters */;", 'readText(subject)', 'Welcome'],
+  ['const-in-outer-block', "const subject = 'Welcome';\nif (ready) {", 'readText(subject);\n}', 'Welcome'],
+  ['const-joined-past-comment', "const subject = 'Welcome ' /* a comment that runs well past forty characters */ + member;", 'readText(subject)', null],
+  ['const-joined-next-line', "const subject = 'Welcome'\n  + member;", 'readText(subject)', null],
+  ['const-member-next-line', "const subject = 'Welcome'\n  .trim();", 'readText(subject)', null],
+  ['const-two-declarators', "const subject = 'Welcome', other = 'Other';", 'readText(subject)', null],
+  ['const-second-declarator', "const prefix = 'unused', subject = 'Welcome';", 'readText(subject)', null],
+  ['const-call', 'const subject = subjectFor(member);', 'readText(subject)', null],
+  ['let', "let subject = 'Welcome';", 'readText(subject)', null],
+  ['const-in-closed-block', "{\n  const subject = 'Inner';\n}", 'readText(subject)', null],
+  ['const-nearer-let', "const subject = 'Outer';\n{\n  let subject = 'Inner';", 'readText(subject);\n}', null],
+  ['const-nearer-var', "const subject = 'Outer';\nitems.forEach(() => {\n  var subject = 'Inner';", 'readText(subject);\n});', null],
+  ['const-nearer-arrow-param', "const subject = 'Outer';\nitems.forEach((subject) => {", 'readText(subject);\n});', null],
+  ['const-nearer-bare-param', "const subject = 'Outer';\nitems.forEach(subject =>", 'readText(subject));', null],
+  ['const-nearer-function-param', "const subject = 'Outer';\nitems.forEach(function (subject) {", 'readText(subject);\n});', null],
+  ['const-nearer-const', "const subject = 'Outer';\nif (ready) {\n  const subject = 'Inner';", 'readText(subject);\n}', 'Inner'],
+  ['object', '', "readMail({ subject: 'Welcome' })", 'Welcome'],
+  ['object-quoted-key', '', "readMail({ 'subject': 'Welcome', to: inbox })", 'Welcome'],
+  ['object-template', '', 'readMail({ "subject": `Code ${code}` })', 'Code *'],
+  ['object-shorthand', "const subject = 'Welcome';", 'readMail({ subject, })', 'Welcome'],
+  ['object-key-twice', '', "readMail({ subject: 'Welcome', subject: 'Other' })", null],
+  ['object-spread-after', '', "readMail({ subject: 'Welcome', ...extra })", null],
+  ['object-spread-before', '', "readMail({ ...base, subject: 'Welcome' })", null],
+  ['object-computed', '', "readMail({ [key]: 'x', subject: 'Welcome' })", null],
+  ['object-method', '', "readMail({ subject: 'Welcome', to() { return inbox; } })", null],
+  ['object-accessor', '', "readMail({ get subject() { return 'Welcome'; } })", null],
+  ['object-no-key', '', 'readMail({ to: inbox })', null],
+  ['object-not-literal', '', 'readMail(options)', null],
+  ['object-shorthand-unbound', '', 'readMail({ subject })', null],
+];
+
+const FILE_CONST = "const SUBJECT = 'File level';";
+const FILE_ROW = ['const-outside-test-region', '', 'readText(SUBJECT)', null];
+
+function readSpecs(rows) {
+  const pw = rows
+    .map(([row, before, read]) => `test('${row}', async () => {\n${indent([before, `await ${read};`].filter(Boolean).join('\n'))}\n});\n`)
+    .join('\n');
+  const cy = rows
+    .map(([row, before, read]) => `  it('${row}', () => {\n${indent(indent([before, `cy.${read};`].filter(Boolean).join('\n')))}\n  });`)
+    .join('\n');
+  return {
+    'suite/e2e/reads.pw.ts': `import { test } from '@playwright/test';\n${FILE_CONST}\n\n${pw}`,
+    'web/cypress/e2e/reads.cy.ts': `${FILE_CONST}\ndescribe('reads', () => {\n${cy}\n});\n`,
+  };
+}
+
+test('Test evidence AC-18: each listed subject form gives its subject, and each named unlisted form gives unreadable-subject', (t) => {
+  const rows = [...SUBJECT_ROWS, FILE_ROW];
+  const dir = writeRepo(t, { 'backend/src/Controllers/ItemController.cs': CONTROLLER, ...readSpecs(rows) }, {
+    repos: RUNNER_REPOS,
+    email: {
+      reads: [
+        { call: 'readText', subject: 0 },
+        { call: 'readMail', subject: '0.subject' },
+      ],
+    },
+  });
+  const expected = rows.map(([row, , , subject]) => [row, subject, subject === null ? 'unreadable-subject' : null]);
+  for (const repo of ['suite', 'web']) {
+    const reads = extractRepoFacts(dir, repo)
+      .filter((fact) => fact.type === 'email_read')
+      .map((fact) => [fact.test, fact.subject, fact.reason ?? null]);
+    assert.deepEqual(reads, expected, repo);
+  }
+});
+
