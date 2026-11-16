@@ -6,7 +6,7 @@ copy, and reads the web and mobile `branch_point` facts it writes.
 
 | File | What it holds |
 |---|---|
-| `web/src/forms/ScannerForms.ts` | One method per form: a regex literal after the head of an `if`, `while`, `for` and `with`, division after a parenthesized operand, optional method members in a type literal, an interface, a class body and a type argument, the same members in a generic interface or class and after a generic `extends` clause, three spellings of one ternary, and unbraced nested `if` statements with `else`. |
+| `web/src/forms/ScannerForms.ts` | One method per form: a regex literal after the head of an `if`, `while`, `for` and `with`, division after a parenthesized operand, optional method members in a type literal, an interface, a class body and a type argument, the same members in a generic interface or class, after a generic `extends` clause, after a type parameter with an object type or a function type in its constraint or default, and after an `extends` clause that calls a mixin, three spellings of one ternary, and unbraced nested `if` statements with `else`. |
 | `mobile/src/app/features/forms/scanner-forms.service.ts` | The same class body as the web file, in an `@Injectable` class. |
 | `web/src/forms/BadgeRow.tsx` | A ternary and a `&&` chain whose right operand is a JSX element over three lines, without and with parentheses. |
 

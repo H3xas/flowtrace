@@ -233,4 +233,66 @@ export class PassageDesk {
     }
     api.save(x);
   }
+
+  argumentAnd(open: boolean, held: boolean, kept: boolean, x: Passage) {
+    check(open && held, api.save(x)) || kept;
+  }
+
+  commaAnd(open: boolean, held: boolean, kept: boolean, x: Passage) {
+    (open && held, api.save(x)) || kept;
+  }
+
+  ternaryAnd(open: boolean, held: boolean, kept: boolean, x: Passage) {
+    (open ? held && kept : api.save(x)) || held;
+  }
+
+  typedHelperExit(form: PassageForm, x: Passage) {
+    const helper = {
+      check(): { ok: boolean } {
+        if (form.invalid) {
+          return { ok: false };
+        }
+        return { ok: true };
+      },
+      run(): Promise<{ ok: boolean }> {
+        if (form.stale) {
+          return Promise.resolve({ ok: false });
+        }
+        return Promise.resolve({ ok: true });
+      },
+      'audit'() {
+        if (form.invalid) {
+          return;
+        }
+      },
+      catch() {
+        if (form.stale) {
+          return;
+        }
+      },
+    };
+    function checked(): { ok: boolean } {
+      if (form.invalid) {
+        return { ok: false };
+      }
+      return { ok: true };
+    }
+    api.save(x);
+  }
+
+  staticBlockExit(form: PassageForm, x: Passage) {
+    class Guard {
+      static {
+        if (form.invalid) {
+          throw new Error('invalid');
+        }
+      }
+    }
+    api.save(x);
+  }
+
+  rankedLoad(open: boolean, x: Passage) {
+    api.load(x.id);
+    open && api.save(x) || api.load(x.id);
+  }
 }

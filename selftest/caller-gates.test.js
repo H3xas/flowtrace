@@ -114,6 +114,9 @@ const ARM_GATES = [
   ['mixed', 'save(x)', [['first || second && $save(x)', 'logical', 'right', UNKNOWN, 'unknown', 'mixed-operators']]],
   ['groupedAnd', 'save(x)', [['(open && $save(x)) || held', 'logical', 'right', UNKNOWN, 'unknown', 'mixed-operators']]],
   ['groupedCoalesce', 'save(x)', [['(held ?? $save(x)) ?? kept', 'coalesce', 'right', { nullish: 'unknown', set: 'unknown' }, 'unknown', 'mixed-operators']]],
+  ['argumentAnd', 'save(x)', []],
+  ['commaAnd', 'save(x)', []],
+  ['ternaryAnd', 'save(x)', [['open ? held && kept : $save(x)', 'ternary', 'alternate', SKIPS_TRUE, 'known', null]]],
   ['display', 'save({', []],
   ['inCondition', 'load(x.id)', []],
 ];
@@ -138,6 +141,8 @@ const EXIT_GATES = [
   ]],
   ['helperExit', 'save(x)', []],
   ['classExit', 'save(x)', []],
+  ['typedHelperExit', 'save(x)', []],
+  ['staticBlockExit', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-one-arm']]],
   ['tryExit', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-try']]],
   ['catchExit', 'save(x)', [['if (form.strict)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-try']]],
 ];
@@ -429,6 +434,44 @@ test('Caller gates AC-12: one gate list stays flat, more lists give anyOf', () =
   assert.deepEqual(forkCase(held, 'p').prerequisites, [[]]);
   assert.deepEqual(forkCase(held, 'e').skipped.map((item) => item.column), [1, 9]);
   assert.deepEqual(forkCase(below([forkSite(1, 'p', 'e'), forkSite(9, 'p', 'e')]), 'e').prerequisites, [[passed('p')]], 'the same earlier gates stay flat');
+});
+
+test('Caller gates AC-12: two gates of one decision and arm with other outcomes are two cases', (t) => {
+  const env = extract(t);
+  for (const side of SIDES) {
+    const { inMethod } = locate(env.lines(side.repo, side.file));
+    const line = inMethod('rankedLoad', `open && ${side.call}save(x)`);
+    const decision = `${side.repo}:${side.file}:${line}:logical`;
+    const cases = env.json(['trace', side.start, '--seeds']).callerCases.filter((entry) => entry.gate.decision === decision);
+    const read = cases.map((entry) => [entry.when, entry.outcome, entry.reason ?? null, entry.skipped.map((site) => site.routes.includes(SAVE))]);
+    assert.deepEqual(read.sort((a, b) => a[1].localeCompare(b[1])), [
+      ['true', 'skips', null, [false]],
+      [null, 'unknown', 'mixed-operators', [true]],
+    ], side.repo);
+  }
+});
+
+test('Caller gates AC-12: a known and an unknown gate of one arm stay two cases in either order', () => {
+  const known = forkGate('a');
+  const unknown = { ...known, outcomes: { true: 'unknown', false: 'unknown' }, status: 'unknown', reason: 'mixed-operators' };
+  const root = {
+    id: 'root',
+    children: [
+      { id: 'first', kind: 'method', children: [{ id: 'end', kind: 'route', ref: END, children: [] }] },
+      { id: 'second', kind: 'method', children: [{ id: 'other', kind: 'route', ref: 'POST fork/v1/other', children: [] }] },
+    ],
+  };
+  for (const [one, two] of [[known, unknown], [unknown, known]]) {
+    const cases = buildCallerCases(root, new Map([
+      ['first', [{ file: 'src/Fork.ts', line: 1, column: 1, gates: [one] }]],
+      ['second', [{ file: 'src/Fork.ts', line: 1, column: 9, gates: [two] }]],
+    ]));
+    const read = cases.map((entry) => [entry.outcome, entry.skipped.flatMap((site) => site.routes)]);
+    assert.deepEqual(read.sort(), [
+      ['skips', [one === known ? END : 'POST fork/v1/other']],
+      ['unknown', [one === known ? 'POST fork/v1/other' : END]],
+    ], one.status);
+  }
 });
 
 test('Caller gates AC-12: a case whose gate is unknown has outcome unknown', () => {

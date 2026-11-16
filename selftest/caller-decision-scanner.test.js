@@ -82,7 +82,7 @@ test('Caller decision scanner AC-3: the bracket around a `?` tells an optional m
   const env = corpus(t);
   for (const side of SIDES) {
     const { lineOf, of } = sideOf(env, side);
-    for (const method of ['annotated', 'typeLiteral', 'localInterface', 'localClass', 'typeArgument', 'genericInterface', 'genericClass', 'genericHeritage']) {
+    for (const method of ['annotated', 'typeLiteral', 'localInterface', 'localClass', 'typeArgument', 'genericInterface', 'genericClass', 'genericHeritage', 'constrainedGeneric', 'mixinHeritage']) {
       assert.deepEqual(of(method), [], `${side.repo} ${method}`);
     }
     const tight = lineOf('a?(run()):stop();');

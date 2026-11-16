@@ -54,6 +54,18 @@ export class ScannerForms {
     return Sized;
   }
 
+  constrainedGeneric() {
+    interface Sized<T extends {}> { size?(): T }
+    class Kept<T = { a: number }> { size?(): T; }
+    interface Called<T extends (a: { b: number }) => void> { size?(): number }
+    return Kept;
+  }
+
+  mixinHeritage() {
+    class Mixed extends mix(Base) { size?(): number; }
+    return Mixed;
+  }
+
   genericHeritage() {
     interface Sized extends Array<number> { size?(): number }
     class Kept extends Map<string, number> { size?(): number; }
