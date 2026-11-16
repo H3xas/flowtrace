@@ -2720,9 +2720,11 @@ async function runAffected(config, options) {
     attributeChanges,
     changedPaths,
     dotnetArgs,
+    gitTopLevel,
     nxBaseRef,
     playwrightArgs,
     renderAffected,
+    withRealRoots,
   } = affectedModule;
   const { readAreaKeys } = coverModule;
 
@@ -2735,11 +2737,15 @@ async function runAffected(config, options) {
 
   const source = diffSourceRepo(config, options.repo);
   if (!source) throw new Error('no repository configured to read a diff from');
-  const paths = changedPaths(source.root, { diff: options.diff, staged: options.staged });
+  // The diff is read at the top level of the checkout, because `git ls-files --others`
+  // lists only the files under the folder in which it runs, and a web root beside the
+  // backend root is outside that folder.
+  const top = gitTopLevel(source.root);
+  const paths = top === null ? null : changedPaths(top, { diff: options.diff, staged: options.staged });
   if (paths === null) {
     throw new Error(`cannot read a diff in ${source.id}: not a git repository, or git is unavailable`);
   }
-  const changed = attributeChanges(paths, config.repos, { root: source.root });
+  const changed = attributeChanges(paths, withRealRoots(config.repos), { root: top, prefix: '' });
 
   const area = options.allRoutes ? null : resolveAreaFile(options.area);
   const keys = area
@@ -2785,6 +2791,7 @@ async function runAffected(config, options) {
       impact: lookups.impact,
       dotnet,
       nx,
+      diffRepo: source.id,
       trace: counted,
       // `--repo` names the suite to print, never the repository a route is resolved in:
       // scoping the walk to a test repository would resolve no route at all.

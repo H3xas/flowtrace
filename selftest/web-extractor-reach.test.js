@@ -6,10 +6,12 @@
  * repository into a temporary directory and runs the CLI on it as a user would.
  */
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { affected } from '../lib/affected.js';
 import { runCli } from './helpers.js';
 
 const TEMP = realpathSync(tmpdir());
@@ -1248,4 +1250,349 @@ test('Web extractor reach AC-14: a web module-level function a span names is a t
   const nested = cli(dir, ['trace', 'onPick', '--repo', 'web']);
   assert.notEqual(nested.status, 0);
   assert.match(nested.stderr, /no page, component, service, route, method or class matches "onPick"/);
+});
+
+const REVISION_API = [
+  "import { httpClient } from '../http/httpClient';",
+  '',
+  "const REVISIONS_URL = '/content/v1/revisions';",
+  '',
+  'export function loadRevision(id: string, rev: number) {',
+  '  const url = `${REVISIONS_URL}?contentId=${encodeURIComponent(id)}&rev=${rev}`;',
+  '  return httpClient.getGatewayClient().get(url);',
+  '}',
+  '',
+].join('\n');
+
+const REVISION_BACKEND = controller('ContentController', 'content/v1', [['Get', 'revisions', 'GetRevision']]);
+
+const PLAYWRIGHT_SPEC = "import { test } from '@playwright/test';\n\ntest('reads a revision', async ({ page }) => {\n  await page.goto('/');\n});\n";
+
+const CYPRESS_REVISION_SPEC = "describe('revisions', () => {\n  it('loads', () => {\n    cy.intercept('GET', '/content/v1/revisions*');\n  });\n});\n";
+
+/** The report keys of `affected --json` without `--dotnet-filter`, as at the base. */
+const AFFECTED_KEYS = 'area,universe,changed,routes,seeds,specs,changedSpecs,uncovered,suites,reasons,fallbacks,fullSuite,widened,widenDropped,braked,stale,exit';
+
+function unmappedLine(path) {
+  return `unmapped: ${path} — no configured root holds this path, so it selects nothing`;
+}
+
+/** An edit that git sees and that the grammar of the file still reads. */
+function edited(path, text, n) {
+  if (path.endsWith('.json')) return `${JSON.stringify({ ...JSON.parse(text), edit: n }, null, 2)}\n`;
+  if (path.endsWith('.yml')) return `${text}# edit ${n}\n`;
+  return `${text}// edit ${n}\n`;
+}
+
+/**
+ * One git checkout that holds `files`, with `repos` as its configuration. `change(paths, mode)`
+ * edits each path (or adds it, when `files` has no text for it) and reads the diff in that
+ * mode: a commit read as `HEAD~1..HEAD`, the index, or the working tree. The facts are
+ * extracted at the commit that each read starts from, so no stale rung fires.
+ */
+function gitCheckout(t, repos, files) {
+  const dir = buildRepo(t, { 'flowtrace.config.json': config(repos), '.gitignore': 'out/\n', ...files });
+  const git = (...args) => {
+    const result = spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+    assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
+  };
+  git('init', '-q');
+  git('config', 'user.email', 'selftest@example.invalid');
+  git('config', 'user.name', 'flowtrace selftest');
+  git('add', '-A');
+  git('commit', '-q', '-m', 'initial');
+  const extract = () => {
+    const result = cli(dir, ['extract']);
+    assert.equal(result.status, 0, result.stderr);
+  };
+  extract();
+  let edits = 0;
+  const change = (paths, mode = 'range', extra = []) => {
+    edits += 1;
+    for (const path of paths) {
+      const target = join(dir, ...path.split('/'));
+      mkdirSync(dirname(target), { recursive: true });
+      writeFileSync(target, files[path] === undefined
+        ? `export const added${edits} = ${edits};\n`
+        : edited(path, readFileSync(target, 'utf8'), edits));
+    }
+    let args;
+    if (mode === 'range') {
+      git('add', '-A');
+      git('commit', '-q', '-m', `edit ${edits}`);
+      extract();
+      args = ['--diff', 'HEAD~1..HEAD'];
+    } else if (mode === 'staged') {
+      git('add', '-A');
+      args = ['--staged'];
+    } else {
+      args = [];
+    }
+    const result = cli(dir, ['affected', ...args, '--all-routes', '--json', ...extra]);
+    const json = JSON.parse(result.stdout);
+    assert.equal(result.status, json.exit, result.stderr);
+    if (mode !== 'range') {
+      git('add', '-A');
+      git('commit', '-q', '-m', `edit ${edits} kept`);
+      extract();
+    }
+    return json;
+  };
+  return { dir, change };
+}
+
+function answer(json) {
+  return {
+    exit: json.exit,
+    files: json.changed.files.map((file) => `${file.repo}:${file.path}:${file.kind}`),
+    specs: json.changedSpecs.map((spec) => `${spec.repo}:${spec.spec}`),
+    routes: json.routes.map((route) => route.key),
+    fallbacks: json.fallbacks.map((entry) => `${entry.rung}[${entry.scope}]`),
+    reasons: json.reasons,
+  };
+}
+
+const ATTRIBUTION_FILES = {
+  'web/src/http/httpClient.ts': GATEWAY_CLIENT,
+  'web/src/api/revisionApi.ts': REVISION_API,
+  'backend/src/ContentController.cs': REVISION_BACKEND,
+  'e2e/tests/a.spec.ts': PLAYWRIGHT_SPEC,
+  'e2e/tests/helper.ts': 'export const pause = 1;\n',
+  'tools/notes.ts': 'export const note = 1;\n',
+  'tools/x.config.json': '{ "a": 1 }\n',
+};
+
+function attributionRepos(backendRoot) {
+  return [
+    { id: 'web', kind: 'web', root: 'web' },
+    { ...BACKEND, root: backendRoot },
+    { id: 'e2e', kind: 'playwright', root: 'e2e' },
+  ];
+}
+
+const HARNESS_LINE = 'harness-change [e2e]: 1 changed harness file — no route walk reaches one, so they select nothing';
+
+test('Web extractor reach AC-20: a diff root in a subfolder attributes each path from the checkout top level, in the three modes', (t) => {
+  const { change } = gitCheckout(t, attributionRepos('backend'), ATTRIBUTION_FILES);
+  for (const mode of ['range', 'staged', 'worktree']) {
+    const web = change(['web/src/api/revisionApi.ts'], mode);
+    assert.deepEqual(answer(web).files, ['web:src/api/revisionApi.ts:source'], `${mode}: a web file beside the backend root is the web file`);
+    assert.equal(Object.keys(web).join(','), AFFECTED_KEYS);
+    assert.deepEqual(answer(change(['backend/src/ContentController.cs'], mode)), {
+      exit: 0, files: ['backend:src/ContentController.cs:source'], specs: [], routes: ['GET content/v1/revisions'], fallbacks: [], reasons: [],
+    }, `${mode}: a path inside the diff root keeps its base entry and report`);
+  }
+  assert.deepEqual(answer(change(['web/src/api/added.ts', 'backend/src/Added.cs'], 'worktree')).files, [
+    'backend:src/Added.cs:source',
+    'web:src/api/added.ts:source',
+  ], 'an untracked file beside the diff root and one inside it each get their owner');
+  assert.deepEqual(answer(change(['e2e/tests/helper.ts'])), {
+    exit: 4, files: ['e2e:tests/helper.ts:harness'], specs: [], routes: [], fallbacks: ['harness-only[e2e]'], reasons: [HARNESS_LINE],
+  });
+  assert.deepEqual(answer(change(['e2e/tests/a.spec.ts'])), {
+    exit: 0, files: ['e2e:tests/a.spec.ts:spec'], specs: ['e2e:tests/a.spec.ts'], routes: [], fallbacks: [],
+    reasons: ['spec-only: 1 changed spec file, no production source'],
+  });
+  assert.deepEqual(answer(change(['tools/notes.ts'])), {
+    exit: 3, files: ['null:tools/notes.ts:unmapped'], specs: [], routes: [], fallbacks: [], reasons: [unmappedLine('tools/notes.ts')],
+  });
+  assert.deepEqual(answer(change(['tools/x.config.json'])), {
+    exit: 4, files: ['null:tools/x.config.json:unmapped'], specs: [], routes: [], fallbacks: ['config-only[backend]'], reasons: [],
+  }, 'a configuration file under no root keeps the config-only answer and gets no reason line');
+});
+
+test('Web extractor reach AC-20: a diff root at the checkout top level keeps the base report', (t) => {
+  const { change } = gitCheckout(t, attributionRepos('.'), ATTRIBUTION_FILES);
+  for (const mode of ['range', 'staged', 'worktree']) {
+    assert.deepEqual(answer(change(['web/src/api/revisionApi.ts'], mode)).files, ['web:src/api/revisionApi.ts:source']);
+    assert.deepEqual(answer(change(['backend/src/ContentController.cs'], mode)), {
+      exit: 0, files: ['backend:backend/src/ContentController.cs:source'], specs: [], routes: ['GET content/v1/revisions'], fallbacks: [], reasons: [],
+    });
+  }
+  assert.deepEqual(answer(change(['tools/notes.ts'])), {
+    exit: 3, files: ['backend:tools/notes.ts:source'], specs: [], routes: [], fallbacks: [], reasons: [],
+  });
+  assert.deepEqual(answer(change(['tools/x.config.json'])), {
+    exit: 4, files: ['backend:tools/x.config.json:config'], specs: [], routes: [], fallbacks: ['config-only[backend]'], reasons: [],
+  });
+  assert.deepEqual(answer(change(['e2e/tests/helper.ts'])).fallbacks, ['harness-only[e2e]']);
+  assert.deepEqual(answer(change(['e2e/tests/a.spec.ts'])).specs, ['e2e:tests/a.spec.ts']);
+});
+
+test('Web extractor reach AC-20: a path under no configured root keeps each whole-suite answer and states the rest in one reason line', (t) => {
+  const { dir, change } = gitCheckout(t, [
+    BACKEND,
+    { id: 'web', kind: 'web', root: 'web', cypressSubpath: 'cypress' },
+    { id: 'e2e', kind: 'playwright', root: 'e2e' },
+  ], {
+    'backend/src/ContentController.cs': REVISION_BACKEND,
+    'web/src/a.ts': 'export const a = 1;\n',
+    'web/package.json': '{ "name": "web" }\n',
+    'web/cypress/e2e/rev.cy.ts': CYPRESS_REVISION_SPEC,
+    'e2e/tests/a.spec.ts': PLAYWRIGHT_SPEC,
+    'e2e/tests/helper.ts': 'export const pause = 1;\n',
+    'tools/notes.ts': 'export const note = 1;\n',
+    'tools/a.spec.ts': PLAYWRIGHT_SPEC,
+    '.github/workflows/ci.yml': 'name: ci\n',
+    'generated/api.ts': 'export const g = 1;\n',
+    'libs/Web/BaseController.cs': 'namespace Lib\n{\n    public class BaseController { }\n}\n',
+    'src/ContentController.cs': REVISION_BACKEND,
+  });
+  const cases = [
+    [['tools/a.spec.ts'], { exit: 3, specs: [], fallbacks: [], reasons: [unmappedLine('tools/a.spec.ts')] }],
+    [['tools/notes.ts', 'e2e/tests/a.spec.ts'], { exit: 0, specs: ['e2e:tests/a.spec.ts'], fallbacks: [], reasons: [unmappedLine('tools/notes.ts')] }],
+    [['e2e/tests/helper.ts', 'tools/notes.ts'], { exit: 3, specs: [], fallbacks: [], reasons: [HARNESS_LINE, unmappedLine('tools/notes.ts')] }],
+    [['.github/workflows/ci.yml'], { exit: 4, specs: [], fallbacks: ['config-only[backend]'], reasons: [] }],
+    [['generated/api.ts'], { exit: 4, specs: [], fallbacks: ['config-only[backend]'], reasons: [] }],
+    [['web/package.json'], { exit: 4, specs: [], fallbacks: ['config-only[web]'], reasons: [] }],
+    [['.github/workflows/ci.yml', 'tools/notes.ts'], {
+      exit: 3, specs: [], fallbacks: [], reasons: [unmappedLine('.github/workflows/ci.yml'), unmappedLine('tools/notes.ts')],
+    }],
+    [['libs/Web/BaseController.cs'], { exit: 4, specs: [], fallbacks: ['unindexed[backend]'], reasons: [] }],
+    [['src/ContentController.cs'], { exit: 4, specs: [], fallbacks: ['unindexed[backend]'], reasons: [] }],
+    [['backend/src/ContentController.cs', 'tools/notes.ts'], {
+      exit: 4, specs: [], fallbacks: ['max-share[web]'], reasons: [unmappedLine('tools/notes.ts')],
+    }],
+  ];
+  for (const [paths, expected] of cases) {
+    const { files, routes, ...rest } = answer(change(paths));
+    assert.deepEqual(rest, expected, paths.join(' '));
+    assert.ok(files.every((file) => !file.startsWith('backend:') || file === 'backend:src/ContentController.cs:source'), files.join(' '));
+    assert.deepEqual(routes, paths.includes('backend/src/ContentController.cs') ? ['GET content/v1/revisions'] : [],
+      `${paths.join(' ')}: no route through a backend file with the same relative path`);
+  }
+  change(['tools/notes.ts']);
+  rmSync(join(dir, 'out', 'facts', 'backend.json'));
+  const result = cli(dir, ['affected', '--diff', 'HEAD~1..HEAD', '--all-routes', '--json']);
+  const noFacts = answer(JSON.parse(result.stdout));
+  assert.deepEqual([noFacts.exit, noFacts.fallbacks, noFacts.reasons], [4, ['no-facts[backend]'], []], 'no-facts reads the path and states no line');
+});
+
+test('Web extractor reach AC-20: a path with the relative path of a backend file that the route reaches selects no route', (t) => {
+  const service = 'namespace Sample.Api.Services\n{\n    public class ContentService\n    {\n        public string Load(string id) { return id; }\n    }\n}\n';
+  const injected = REVISION_BACKEND
+    .replace('    {\n        [HttpGet', '    {\n        private readonly ContentService _service;\n        public ContentController(ContentService service) { _service = service; }\n        [HttpGet')
+    .replace('return Ok();', 'return Ok(_service.Load(id));');
+  const { change } = gitCheckout(t, [BACKEND, { id: 'web', kind: 'web', root: 'web', cypressSubpath: 'cypress' }], {
+    'backend/src/Controllers/ContentController.cs': injected,
+    'backend/src/Services/ContentService.cs': service,
+    'src/Services/ContentService.cs': service,
+    'web/src/a.ts': 'export const a = 1;\n',
+    'web/cypress/e2e/rev.cy.ts': CYPRESS_REVISION_SPEC,
+  });
+  assert.deepEqual(answer(change(['backend/src/Services/ContentService.cs'])).routes, ['GET content/v1/revisions'],
+    'the route walk reaches the backend service');
+  assert.deepEqual(answer(change(['src/Services/ContentService.cs'])), {
+    exit: 3, files: ['null:src/Services/ContentService.cs:unmapped'], specs: [], routes: [], fallbacks: [],
+    reasons: [unmappedLine('src/Services/ContentService.cs')],
+  });
+});
+
+test('Web extractor reach AC-20: --dotnet-filter reads a C# path under no configured root as a file under no project', (t) => {
+  const { change } = gitCheckout(t, [BACKEND, { id: 'other', kind: 'backend', root: 'other' }, { id: 'web', kind: 'web', root: 'web' }], {
+    'backend/Api/Api.csproj': '<Project Sdk="Microsoft.NET.Sdk.Web"><ItemGroup><ProjectReference Include="../../libs/Common/Common.csproj" /></ItemGroup></Project>\n',
+    'backend/Api/Controllers/ThingController.cs': controller('ThingController', 'things', [['Get', 'list', 'List']]),
+    'backend/Api.Tests/Api.Tests.csproj': '<Project Sdk="Microsoft.NET.Sdk"></Project>\n',
+    'backend/Api.Tests/ThingTests.cs': 'using Common;\nusing Xunit;\n\nnamespace Sample.Api.Tests\n{\n    public class ThingTests\n    {\n        [Fact]\n        public void MakesAThing() { var t = new Thing(); }\n    }\n}\n',
+    'libs/Common/Common.csproj': '<Project Sdk="Microsoft.NET.Sdk"></Project>\n',
+    'libs/Common/Thing.cs': 'namespace Common\n{\n    public class Thing { }\n}\n',
+    'libs/Common/generated/Thing.cs': 'namespace Common.Generated\n{\n    public class GeneratedThing { }\n}\n',
+    'Api/Shared.cs': 'namespace Sample.Api\n{\n    public class Shared { }\n}\n',
+    'other/src/Helper.cs': 'namespace Other\n{\n    public class Helper { }\n}\n',
+    'web/src/a.ts': 'export const a = 1;\n',
+    'web/src/a.spec.ts': PLAYWRIGHT_SPEC,
+  });
+  const outOfScope = (path) => `out-of-scope: ${path} — a changed file under no project of the solution, so which tests compile against it is unknown`;
+  const filter = (paths) => {
+    const json = change(paths, 'range', ['--dotnet-filter']);
+    return { ...answer(json), dotnet: json.dotnetFilter };
+  };
+  const unmappedLines = (got) => got.reasons.filter((line) => line.startsWith('unmapped:'));
+
+  const libs = filter(['libs/Common/Thing.cs']);
+  assert.deepEqual([libs.exit, libs.files, libs.dotnet.fallback, libs.dotnet.reason, libs.dotnet.expression, unmappedLines(libs)],
+    [4, ['null:libs/Common/Thing.cs:unmapped'], true, outOfScope('libs/Common/Thing.cs'), '', []]);
+  const shared = filter(['Api/Shared.cs']);
+  assert.deepEqual([shared.exit, shared.dotnet.reason, unmappedLines(shared)], [4, outOfScope('Api/Shared.cs'), []]);
+  const generated = filter(['libs/Common/generated/Thing.cs']);
+  assert.deepEqual([generated.exit, generated.fallbacks, generated.dotnet.reason, unmappedLines(generated)],
+    [4, ['config-only[backend]'], outOfScope('libs/Common/generated/Thing.cs'), []]);
+  const withSpec = filter(['libs/Common/generated/Thing.cs', 'web/src/a.spec.ts']);
+  assert.deepEqual([withSpec.exit, withSpec.specs, withSpec.dotnet.reason, unmappedLines(withSpec)],
+    [4, ['web:src/a.spec.ts'], outOfScope('libs/Common/generated/Thing.cs'), []]);
+  const withRoute = filter(['libs/Common/Thing.cs', 'backend/Api/Controllers/ThingController.cs']);
+  assert.deepEqual([withRoute.exit, withRoute.dotnet.reason, unmappedLines(withRoute)], [4, outOfScope('libs/Common/Thing.cs'), []]);
+  const helper = filter(['other/src/Helper.cs']);
+  assert.deepEqual([helper.files, unmappedLines(helper)], [['other:src/Helper.cs:source'], []],
+    'a path that another configured backend holds is a file of that backend');
+  const plain = answer(change(['libs/Common/Thing.cs']));
+  assert.deepEqual([plain.exit, plain.reasons], [3, [unmappedLine('libs/Common/Thing.cs')]]);
+});
+
+const UNMAPPED_SERVICE = { repo: null, path: 'src/Services/ContentService.cs', kind: 'unmapped' };
+
+/** A backend that declares `ContentService` at the relative path of the unmapped file, with a wide fan-in. */
+function twinFacts() {
+  const injectors = Array.from({ length: 30 }, (_, i) => ({ type: 'ctor_field', file: `src/C${i}.cs`, line: 1, class: `C${i}`, paramType: 'IContentService' }));
+  return [{
+    repo: 'backend',
+    facts: [
+      { type: 'method_span', file: 'src/Services/ContentService.cs', line: 1, endLine: 3, class: 'ContentService', method: 'Load' },
+      { type: 'di_binding', file: 'src/Startup.cs', line: 1, iface: 'IContentService', impl: 'ContentService' },
+      ...injectors,
+    ],
+  }];
+}
+
+test('Web extractor reach AC-20: an unmapped path calls no impact, adds no shared dependency and keeps the base report without diffRepo', () => {
+  const calls = [];
+  const impact = (root, path) => {
+    calls.push(`${root} ${path}`);
+    const edges = [{ file: 'src/Widened.cs', via: 'iface' }];
+    edges.braked = [{ iface: 'IContentService' }];
+    return edges;
+  };
+  const repos = [{ id: 'backend', kind: 'backend', root: '/checkout/backend' }];
+  const run = (changed, extra = {}) => affected(twinFacts(), {
+    changed, repos, stale: [], hops: 1, memberScoped: true, impact, diffRepo: 'backend', ...extra,
+  });
+
+  const unmapped = run([UNMAPPED_SERVICE]);
+  assert.deepEqual(calls, [], 'no impact call for an unmapped path, also with a backend file at the same relative path');
+  assert.deepEqual([unmapped.widened, unmapped.widenDropped, unmapped.braked], [[], [], []]);
+  assert.ok(!unmapped.reasons.some((line) => line.startsWith('shared-dependency:')), unmapped.reasons.join('\n'));
+  assert.deepEqual([unmapped.exit, unmapped.reasons.at(-1)], [3, unmappedLine('src/Services/ContentService.cs')]);
+
+  const owned = run([{ repo: 'backend', path: 'src/Services/ContentService.cs', kind: 'source' }]);
+  assert.deepEqual(calls, ['/checkout/backend src/Services/ContentService.cs'], 'the owned path keeps its impact call');
+  assert.ok(owned.reasons.some((line) => line.startsWith('shared-dependency: ContentService')), owned.reasons.join('\n'));
+  assert.deepEqual(owned.braked.map((entry) => entry.iface), ['IContentService'], 'the owned path keeps its brake entry');
+  assert.ok(!owned.reasons.some((line) => line.startsWith('unmapped:')));
+
+  const changed = [UNMAPPED_SERVICE, { repo: null, path: '.github/ci.yml', kind: 'unmapped' }];
+  const base = affected(twinFacts(), { changed, repos, stale: [] });
+  assert.deepEqual([base.exit, base.reasons, base.fallbacks], [3, [], []], 'without diffRepo an unmapped path reads as at the base');
+  assert.deepEqual(affected(twinFacts(), { changed, repos, stale: [], diffRepo: null }), base);
+
+  const stale = run([UNMAPPED_SERVICE], { stale: [{ kind: 'head', message: 'backend: the facts are behind the repository HEAD' }] });
+  assert.equal(stale.exit, 4);
+  assert.equal(stale.reasons.at(-1), unmappedLine('src/Services/ContentService.cs'));
+});
+
+test('Web extractor reach AC-20: the Nx union reads the same projects and the reason line comes last', (t) => {
+  const workspace = buildRepo(t, {
+    'nx.json': {},
+    'apps/shop/project.json': { name: 'shop', root: 'apps/shop', targets: { e2e: { options: { specs: 'apps/shop/e2e/a.cy.ts' } } } },
+  });
+  const nx = { repo: 'web', root: workspace, ref: 'HEAD~1', run: () => '["shop"]' };
+  const facts = [{ repo: 'backend', facts: [] }];
+  const report = affected(facts, { changed: [{ repo: null, path: 'tools/notes.ts', kind: 'unmapped' }], stale: [], nx, diffRepo: 'backend' });
+  const owned = affected(facts, { changed: [{ repo: 'backend', path: 'tools/notes.ts', kind: 'source' }], stale: [], nx });
+  assert.deepEqual(report.nx, owned.nx, 'the Nx union is the union of the base attribution');
+  assert.deepEqual(report.nx.added, ['apps/shop/e2e/a.cy.ts']);
+  assert.deepEqual(report.reasons, [...owned.reasons, unmappedLine('tools/notes.ts')]);
+
+  const spec = affected(facts, { changed: [{ repo: null, path: 'tools/a.spec.ts', kind: 'unmapped' }], stale: [], nx, diffRepo: 'backend' });
+  assert.deepEqual([spec.nx, spec.exit, spec.reasons], [undefined, 3, [unmappedLine('tools/a.spec.ts')]],
+    'an unmapped spec is no spec-only diff, and the return for a diff with no source comes before the union');
 });
