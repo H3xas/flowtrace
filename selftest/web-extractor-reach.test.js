@@ -1288,10 +1288,11 @@ function edited(path, text, n) {
  * One git checkout that holds `files`, with `repos` as its configuration. `change(paths, mode)`
  * edits each path (or adds it, when `files` has no text for it) and reads the diff in that
  * mode: a commit read as `HEAD~1..HEAD`, the index, or the working tree. The facts are
- * extracted at the commit that each read starts from, so no stale rung fires.
+ * extracted at the commit that each read starts from, so no stale rung fires. The universe is
+ * every route, unless `extra` names an `--area` file.
  */
-function gitCheckout(t, repos, files) {
-  const dir = buildRepo(t, { 'flowtrace.config.json': config(repos), '.gitignore': 'out/\n', ...files });
+function gitCheckout(t, repos, files, extraConfig = {}) {
+  const dir = buildRepo(t, { 'flowtrace.config.json': config(repos, extraConfig), '.gitignore': 'out/\n', ...files });
   const git = (...args) => {
     const result = spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
     assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
@@ -1328,7 +1329,8 @@ function gitCheckout(t, repos, files) {
     } else {
       args = [];
     }
-    const result = cli(dir, ['affected', ...args, '--all-routes', '--json', ...extra]);
+    const universe = extra.includes('--area') ? [] : ['--all-routes'];
+    const result = cli(dir, ['affected', ...args, ...universe, '--json', ...extra]);
     const json = JSON.parse(result.stdout);
     assert.equal(result.status, json.exit, result.stderr);
     if (mode !== 'range') {
@@ -1595,4 +1597,76 @@ test('Web extractor reach AC-20: the Nx union reads the same projects and the re
   const spec = affected(facts, { changed: [{ repo: null, path: 'tools/a.spec.ts', kind: 'unmapped' }], stale: [], nx, diffRepo: 'backend' });
   assert.deepEqual([spec.nx, spec.exit, spec.reasons], [undefined, 3, [unmappedLine('tools/a.spec.ts')]],
     'an unmapped spec is no spec-only diff, and the return for a diff with no source comes before the union');
+});
+
+const CALLER_FILES = {
+  'web/src/http/httpClient.ts': GATEWAY_CLIENT,
+  'web/src/api/revisionApi.ts': REVISION_API,
+  'web/src/api/legacyApi.ts': [
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'export function loadLegacyDraft() {',
+    "  return httpClient.getGatewayClient().get('/legacy/v1/drafts');",
+    '}',
+    '',
+  ].join('\n'),
+  'web/src/api/anyApi.ts': [
+    "import { httpClient } from '../http/httpClient';",
+    '',
+    'export function loadAnything(param: string) {',
+    '  const url = `${param}?a=1`;',
+    '  return httpClient.getGatewayClient().get(url);',
+    '}',
+    '',
+  ].join('\n'),
+  'backend/src/ContentController.cs': controller('ContentController', 'content/v1', [
+    ['Get', 'revisions', 'GetRevision'],
+    ['Get', 'drafts', 'GetDrafts'],
+    ['Get', 'unrelated', 'GetUnrelated'],
+  ]),
+  'unrelated.area.txt': 'GET content/v1/unrelated\n',
+};
+
+function routeRows(json) {
+  return json.routes.map((route) => `${route.key} <- ${route.changed.join(' ')}`);
+}
+
+test('Web extractor reach AC-7: a changed web file selects the route that join matches its gateway call to', (t) => {
+  const { change } = gitCheckout(t, [WEB, BACKEND], CALLER_FILES, { aliases: [{ from: 'legacy/', to: 'content/' }] });
+
+  const caller = change(['web/src/api/revisionApi.ts']);
+  assert.deepEqual(routeRows(caller), ['GET content/v1/revisions <- src/api/revisionApi.ts']);
+  assert.deepEqual(answer(caller).files, ['web:src/api/revisionApi.ts:source']);
+  assert.deepEqual([caller.exit, caller.fallbacks, caller.reasons], [0, [], []]);
+  assert.equal(Object.keys(caller).join(','), AFFECTED_KEYS);
+
+  const staged = change(['web/src/api/revisionApi.ts'], 'staged');
+  assert.deepEqual(routeRows(staged), ['GET content/v1/revisions <- src/api/revisionApi.ts']);
+  const worktree = change(['web/src/api/revisionApi.ts'], 'worktree');
+  assert.deepEqual(routeRows(worktree), ['GET content/v1/revisions <- src/api/revisionApi.ts']);
+
+  const aliased = change(['web/src/api/legacyApi.ts']);
+  assert.deepEqual(routeRows(aliased), ['GET content/v1/drafts <- src/api/legacyApi.ts'], 'a call that joins only through an alias');
+
+  const bare = change(['web/src/api/anyApi.ts']);
+  assert.deepEqual([bare.exit, bare.routes, bare.fallbacks, bare.reasons], [3, [], [], []], 'a URL that normalizes to bare * names no route');
+
+  const outside = change(['web/src/api/revisionApi.ts'], 'range', ['--area', 'unrelated.area.txt']);
+  assert.deepEqual([outside.exit, outside.routes, outside.universe.routes], [3, [], 1], 'a joined route outside the --area universe');
+
+  const backend = change(['backend/src/ContentController.cs']);
+  assert.deepEqual(routeRows(backend), [
+    'GET content/v1/drafts <- src/ContentController.cs',
+    'GET content/v1/revisions <- src/ContentController.cs',
+    'GET content/v1/unrelated <- src/ContentController.cs',
+  ], 'a backend-only diff gives the routes of the base walk, and no row names a web file');
+  assert.deepEqual([backend.exit, backend.fallbacks, backend.reasons], [0, [], []]);
+});
+
+test('Web extractor reach AC-7: the caller rule gives the same route with the backend root at the checkout top level', (t) => {
+  const { change } = gitCheckout(t, [WEB, { ...BACKEND, root: '.' }], CALLER_FILES);
+  const caller = change(['web/src/api/revisionApi.ts']);
+  assert.deepEqual(routeRows(caller), ['GET content/v1/revisions <- src/api/revisionApi.ts']);
+  assert.deepEqual([answer(caller).files, caller.exit, caller.fallbacks, caller.reasons], [['web:src/api/revisionApi.ts:source'], 0, [], []]);
+  assert.equal(Object.keys(caller).join(','), AFFECTED_KEYS);
 });
