@@ -237,6 +237,22 @@ test('Caller gates AC-9: the same forms in a mobile class give the same gates', 
   }
 });
 
+test('Caller gates AC-9: a static call of a plain class carries its gate on its hop', (t) => {
+  const env = extract(t);
+  const clerk = 'src/app/features/passages/passage-clerk.service.ts';
+  const { lineOf } = locate(env.lines('mobile', clerk));
+  const ifLine = lineOf('if (ready)');
+  const callLine = lineOf('PassageLedger.record(x);');
+  const record = env.read('mobile').facts.find((item) => item.type === 'caller_gate' && item.file === clerk);
+  assert.deepEqual([record.call, record.line, record.class, record.method], ['method_call', callLine, 'PassageClerkService', 'file']);
+  const doc = env.json(['trace', 'PassageClerkService.file', '--expand']);
+  const hops = doc.nodes.filter((node) => node.callerGates);
+  assert.deepEqual(hops.map((node) => node.ref), ['PassageLedger.record']);
+  assert.deepEqual(hops[0].callerGates.map((site) => [site.line, site.gates.map((gate) => [gate.decision, gate.arm, gate.outcomes])]), [
+    [callLine, [[`mobile:${clerk}:${ifLine}:if`, 'then', SENDS_TRUE]]],
+  ]);
+});
+
 function expectGates(env, table) {
   for (const side of SIDES) {
     const desk = deskSites(env, side);

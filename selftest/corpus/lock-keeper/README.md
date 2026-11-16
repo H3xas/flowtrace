@@ -15,6 +15,7 @@ the copy, and reads the `caller_gate` records and the gates and caller cases of 
 | `web/src/passages/HarborPanel.tsx` | Two handlers that reach one gated method, one of them under its own gate, and a call under a mixed `\|\|`/`&&` chain. |
 | `web/src/passages/BargePanel.tsx` | A method that calls one gated method from two sites, each under a different gate. The walk groups the two calls into one hop. |
 | `web/src/api.ts`, `web/src/http/httpClient.ts` | The module functions that send the two requests. |
+| `mobile/src/app/features/passages/passage-clerk.service.ts`, `passage-ledger.ts` | A static call of a plain class under an `if`. |
 | `mobile/src/app/features/passages/passage-api.service.ts`, `mobile/src/app/features/core/gateway.service.ts` | The mobile service and gateway that send the same two requests. |
 | `backend/` | The two routes, `POST lock/v1/passages` and `GET lock/v1/passages/{passageId}`. |
 
