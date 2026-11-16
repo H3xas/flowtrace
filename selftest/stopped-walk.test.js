@@ -590,7 +590,15 @@ test('Stopped walk AC-10: join --against skips a route whose walk boundary moved
   assert.ok(skipped, JSON.stringify(report.skipped));
   assert.match(JSON.stringify(skipped), /depth/);
   assert.ok(report.skipped.some((entry) => entry.route === CHECK && /seed/.test(JSON.stringify(entry))), 'the seed-cap skip stays');
-  assert.equal(run(dir, ['join', '--against', 'out/snapshot.json']).status, 0, 'without --fail-on, skipped is informational');
+  // A skipped route is still an item of the report, so its stopped walk keeps its mark.
+  const marked = (report.walks || []).find((entry) => entry.route === PLAN);
+  assert.ok(marked, JSON.stringify(report.walks));
+  assert.ok([marked.snapshot, marked.current].some((side) => side && side.traversal === 'partial' && side.stops.depth > 0), JSON.stringify(marked));
+  const text = run(dir, ['join', '--against', 'out/snapshot.json']);
+  assert.match(text.stdout, new RegExp(`walk ${PLAN.replace(/[/*]/g, '\\$&')}: [^\\n]*walk partial \\([^)]*depth \\d+`));
+  assert.doesNotMatch(text.stdout, /match the snapshot/, 'a route that was never compared backs no claim that it matches');
+  assert.match(text.stdout, /not compared/);
+  assert.equal(text.status, 0, 'without --fail-on, skipped is informational');
   assert.equal(run(dir, ['join', '--against', 'out/snapshot.json', '--fail-on', 'path']).status, 5);
   assert.notEqual(run(dir, ['join', '--against', 'out/snapshot.json', '--fail-on', 'path', '--allow-skipped']).status, 5);
 });
