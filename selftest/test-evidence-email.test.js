@@ -280,6 +280,70 @@ test('Test evidence AC-18: a configured read call gives one email read for each 
   assert.equal(web[1].testLine, 6);
 });
 
+test('Test evidence AC-18: a subject is the value of its literal or of the one const the call sees', (t) => {
+  const spec = [
+    "import { test } from '@playwright/test';",
+    '',
+    "test('a const joined to a name', async () => {",
+    "  const subject = 'Welcome ' + member;",
+    '  await readMail({ subject });',
+    '});',
+    '',
+    "test('a const beside an inner namesake', async () => {",
+    "  const subject = 'Outer';",
+    '  {',
+    "    const subject = 'Inner';",
+    '  }',
+    '  await readMail({ subject });',
+    '});',
+    '',
+    "test('a const behind a later inner namesake', async () => {",
+    "  const subject = 'Outer';",
+    '  if (ready) {',
+    "    const subject = 'Inner';",
+    '    await readMail({ subject });',
+    '  }',
+    '});',
+    '',
+    "test('escaped literals', async ({ page }) => {",
+    '  await readMail({ subject: "Hello \\u0041" });',
+    "  await readMail({ subject: `Tab\\tline ${code}` });",
+    "  await readMail({ subject: 'It\\'s \\x41\\u{42}' });",
+    "  await page.goto('/caf\\u00e9');",
+    '});',
+    '',
+    "test('a key with a dollar sign', async () => {",
+    "  await readDollar({ $subject: 'Welcome' });",
+    "  await readDollar({ subject: 'Not this key' });",
+    '});',
+    '',
+  ].join('\n');
+  const dir = writeRepo(t, { 'suite/e2e/values.pw.ts': spec }, {
+    repos: [{ id: 'suite', kind: 'playwright', root: 'suite' }],
+    email: {
+      reads: [
+        { call: 'readMail', subject: '0.subject' },
+        { call: 'readDollar', subject: '0.$subject' },
+      ],
+    },
+  });
+  const facts = extractRepoFacts(dir, 'suite');
+  assert.deepEqual(
+    facts.filter((fact) => fact.type === 'email_read').map((fact) => [fact.test, fact.call, fact.subject, fact.reason ?? null]),
+    [
+      ['a const joined to a name', 'readMail', null, 'unreadable-subject'],
+      ['a const beside an inner namesake', 'readMail', 'Outer', null],
+      ['a const behind a later inner namesake', 'readMail', 'Inner', null],
+      ['escaped literals', 'readMail', 'Hello A', null],
+      ['escaped literals', 'readMail', 'Tab\tline *', null],
+      ['escaped literals', 'readMail', "It's AB", null],
+      ['a key with a dollar sign', 'readDollar', 'Welcome', null],
+      ['a key with a dollar sign', 'readDollar', null, 'unreadable-subject'],
+    ],
+  );
+  assert.deepEqual(facts.filter((fact) => fact.type === 'pw_visit').map((fact) => fact.path), ['/café']);
+});
+
 test('Test evidence AC-18: the email key changes no fact but the email reads', (t) => {
   const withReads = readCorpus(t);
   const without = readCorpus(t, null);
