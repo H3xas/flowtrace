@@ -492,6 +492,43 @@ test('Test evidence AC-20: a configured sender member gives its email id, throug
   );
 });
 
+test('Test evidence AC-20: a sender id is the value of its C# literal, in each literal form', (t) => {
+  const senders = [
+    'namespace Club.Mail;',
+    'public class VerbatimEmail { public string EmailCode => @"club\\welcome ""vip"""; }',
+    'public class EscapedEmail { public string EmailCode => "club-\\x41\\u0042\\t"; }',
+    'public class RawEmail { public string EmailCode => """club "raw" id"""; }',
+    'public class ConstVerbatimEmail { public string EmailCode => Codes.Verbatim; }',
+    'public class ConstRawEmail { public string EmailCode { get; } = Codes.Raw; }',
+    '',
+  ].join('\n');
+  const codes = [
+    'namespace Club.Mail;',
+    'public static class Codes',
+    '{',
+    '    public const string Verbatim = @"club\\path";',
+    '    public const string Raw = """club-raw""";',
+    '}',
+    '',
+  ].join('\n');
+  const dir = writeRepo(
+    t,
+    { 'api/Mail/Senders.cs': senders, 'api/Mail/Codes.cs': codes },
+    { email: { senders: [{ member: 'EmailCode' }] }, repos: [{ id: 'api', kind: 'backend', root: 'api', role: ['api'] }] },
+  );
+  const found = extractRepoFacts(dir, 'api').filter((fact) => fact.type === 'email_sender');
+  assert.deepEqual(
+    found.map((fact) => [fact.class, fact.id, fact.reason ?? null]),
+    [
+      ['VerbatimEmail', 'club\\welcome "vip"', null],
+      ['EscapedEmail', 'club-AB\t', null],
+      ['RawEmail', 'club "raw" id', null],
+      ['ConstVerbatimEmail', 'club\\path', null],
+      ['ConstRawEmail', 'club-raw', null],
+    ],
+  );
+});
+
 const LINK_SPEC = `import { test } from '@playwright/test';
 
 test('a linked read', async ({ request }) => {

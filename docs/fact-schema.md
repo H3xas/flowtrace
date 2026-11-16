@@ -552,8 +552,10 @@ example `id-no-element`, `subject-two-elements` or `subject-not-a-string`. Two r
 with a space. A file that does not parse gives both values null and `reason: "unread-file"`.
 
 `email_sender` is written for a member written as `string <Member> => <value>;` or
-`string <Member> { get; } = <value>;`, nested classes included. A string literal value is the
-`id`. A `<Class>.<NAME>` value names a `public const string` in any file of the repository, and
+`string <Member> { get; } = <value>;`, nested classes included. The value of a string literal
+is the `id`: a regular literal with its escapes decoded, a verbatim `@"…"` literal or a raw
+literal. A literal the reader cannot read gives `id: null` and `reason: "unread-literal"`. A
+`<Class>.<NAME>` value names a `public const string` in any file of the repository, and
 `constant` keeps that reference. A reference to no constant gives `id: null` and
 `reason: "no-constant"`, and a reference to two gives `reason: "two-constants"`.
 
