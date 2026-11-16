@@ -2499,3 +2499,214 @@ test('Web extractor reach AC-21: without diffRepo the two keyed matches hold and
     'a changed routed controller with no spec keeps the release answer and no fallback',
   );
 });
+
+/**
+ * The closed list of receiver forms (R1 to R5) and binding forms (B1 to B8). Each gateway URL
+ * names its row, and `true` means the row gives a `gateway_call`. A receiver form has a row in
+ * its scope and a row where it does not reach. A binding form has a row that it hides and a row
+ * outside its scope, where the same name is still the receiver.
+ */
+const BINDING_ROWS = {
+  '/r1/visible': true,
+  '/r1/hidden-by-b1': false,
+  '/r2/visible': true,
+  '/r2/outside-its-scope': false,
+  '/r2/create-through-hidden-axios': false,
+  '/r3/field': true,
+  '/r3/param-property': true,
+  '/r3/other-class': false,
+  '/r4/visible': true,
+  '/r4/parameter': true,
+  '/b1/outside': true,
+  '/b1/function': false,
+  '/b1/method': false,
+  '/b1/arrow': false,
+  '/b1/destructured': false,
+  '/b1/generic-function': false,
+  '/b1/generic-method': false,
+  '/b1/generic-arrow': false,
+  '/b1/computed-method': false,
+  '/b1/computed-string-method': false,
+  '/b2/outside': true,
+  '/b2/hidden': false,
+  '/b3/outside': true,
+  '/b3/hidden': false,
+  '/b4/outside': true,
+  '/b4/const': false,
+  '/b4/let-pattern': false,
+  '/b4/const-pattern-second-name': false,
+  '/b4/const-pattern-default': false,
+  '/b4/const-pattern-nested': false,
+  '/b4/let-array-pattern': false,
+  '/b5/after-loop': true,
+  '/b5/hidden': false,
+  '/b5/hidden-pattern': false,
+  '/b6/other-function': true,
+  '/b6/hidden': false,
+  '/b6/hidden-pattern': false,
+  '/b7/outside': true,
+  '/b7/function': false,
+  '/b7/class': false,
+  '/b8/outside': true,
+  '/b8/function': false,
+  '/b8/class': false,
+  '/b8/generic-function': false,
+};
+
+const BINDING_SOURCE = `import axios from 'axios';
+import type { AxiosInstance } from 'axios';
+
+const api = axios.create({ baseURL: '/' });
+declare const key: string;
+declare const list: unknown[];
+declare const deps: { api: unknown; b: unknown; inner: { api: unknown } };
+declare function other(): unknown;
+
+export function r1Visible() { return axios.get('/r1/visible'); }
+export function r1Hidden(axios: unknown) { return axios.get('/r1/hidden-by-b1'); }
+
+export function r2Visible() { return api.get('/r2/visible'); }
+function r2Inner() { const local = axios.create({}); return local; }
+export function r2Outside() { return local.get('/r2/outside-its-scope'); }
+export function r2HiddenCreate(axios: unknown) { const inst = axios.create({}); return inst.get('/r2/create-through-hidden-axios'); }
+
+export class R3Field {
+  private http = axios.create({});
+  constructor(private client: AxiosInstance) {}
+  load() { return this.http.get('/r3/field'); }
+  send() { return this.client.get('/r3/param-property'); }
+}
+export class R3Other {
+  load() { return this.http.get('/r3/other-class'); }
+}
+
+export function r4Visible() { return apiClient.get('/r4/visible'); }
+export function r4Parameter(apiClient: unknown) { return apiClient.get('/r4/parameter'); }
+
+export function b1Outside() { return api.get('/b1/outside'); }
+export function b1Function(api: unknown) { return api.get('/b1/function'); }
+export class B1Methods {
+  plain(api: unknown) { return api.get('/b1/method'); }
+  run<T>(api: T) { return api.get('/b1/generic-method'); }
+  [key](api: unknown) { return api.get('/b1/computed-method'); }
+  async ['other'](api: unknown) { return api.get('/b1/computed-string-method'); }
+}
+export const b1Arrow = (api: unknown) => api.get('/b1/arrow');
+export function b1Destructured({ api }: { api: unknown }) { return api.get('/b1/destructured'); }
+export function b1Generic<T>(api: T) { return api.get('/b1/generic-function'); }
+export const b1GenericArrow = <T,>(api: T) => { return api.get('/b1/generic-arrow'); };
+
+export function b2Outside() { return api.get('/b2/outside'); }
+export const b2 = api => api.get('/b2/hidden');
+
+export function b3() {
+  try { return api.get('/b3/outside'); } catch (api) { return api.get('/b3/hidden'); }
+}
+
+export function b4() {
+  { const api = other(); api.get('/b4/const'); }
+  { let { api } = deps; api.get('/b4/let-pattern'); }
+  { const { b, api } = deps; api.get('/b4/const-pattern-second-name'); }
+  { const { api = other() } = deps; api.get('/b4/const-pattern-default'); }
+  { const { inner: { api } } = deps; api.get('/b4/const-pattern-nested'); }
+  { let [api] = list; api.get('/b4/let-array-pattern'); }
+  return api.get('/b4/outside');
+}
+
+export function b5() {
+  for (const api of list) { api.get('/b5/hidden'); }
+  for (const { api } of list) { api.get('/b5/hidden-pattern'); }
+  return api.get('/b5/after-loop');
+}
+
+export function b6() {
+  if (list) { var api = other(); }
+  return api.get('/b6/hidden');
+}
+export function b6Pattern() {
+  if (list) { var { api } = deps; }
+  return api.get('/b6/hidden-pattern');
+}
+export function b6Other() { return api.get('/b6/other-function'); }
+
+export function b7() {
+  { function api() {} api.get('/b7/function'); }
+  { class api {} api.get('/b7/class'); }
+  return api.get('/b7/outside');
+}
+
+export const b8 = function api() { return api.get('/b8/function'); };
+export const b8Class = class api { load() { return api.get('/b8/class'); } };
+export const b8Generic = function api<T>(x: T) { return api.get('/b8/generic-function'); };
+export function b8Outside() { return api.get('/b8/outside'); }
+`;
+
+const R5_SOURCE = `function request(path: string) { return path; }
+export const gateway = {
+  visible() { return request('a'); },
+  hidden(request: (p: string) => string) { return request('b'); },
+};
+`;
+
+test('Web extractor reach AC-22: each listed receiver and binding form gives the result the closed list names', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([{ ...WEB, httpClients: ['apiClient'] }]),
+    'web/src/rows.ts': BINDING_SOURCE,
+    'web/src/gateway.ts': R5_SOURCE,
+  });
+  const extracted = cli(dir, ['extract']);
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const facts = factsOf(dir);
+  const templates = new Set(ofType(facts, 'gateway_call').map((entry) => `/${entry.template.replace(/^\//, '')}`));
+  const results = Object.fromEntries(Object.keys(BINDING_ROWS).map((url) => [url, templates.has(url)]));
+  assert.deepEqual(results, BINDING_ROWS);
+
+  const services = ofType(facts, 'gateway_call')
+    .filter((entry) => /^\/?r[1-4]\//.test(entry.template))
+    .map((entry) => `${entry.template} ${entry.service}`)
+    .sort();
+  assert.deepEqual(services, [
+    '/r1/visible axios',
+    '/r2/visible api',
+    '/r3/field http',
+    '/r3/param-property client',
+    '/r4/parameter apiClient',
+    '/r4/visible apiClient',
+  ]);
+
+  const calls = ofType(facts, 'method_call')
+    .filter((entry) => entry.file === 'src/gateway.ts')
+    .map((entry) => `${entry.class}.${entry.method} -> ${entry.calledClass ?? '(none)'}.${entry.calledMethod}`);
+  assert.ok(calls.some((call) => /^gateway\.visible -> [^(]+\.request$/.test(call)), `R5 in scope: ${calls.join(', ')}`);
+  assert.ok(!calls.some((call) => call.startsWith('gateway.hidden ->') && !call.includes('(none)')), `R5 hidden by B1: ${calls.join(', ')}`);
+});
+
+test('Web extractor reach AC-11: an imported route tag from a module that the reader cannot resolve keeps the release reading by its local tag name', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/App.tsx': [
+      "import { Route, Routes } from 'react-router-dom';",
+      "import { Foo as Bar } from '@app/pages/foo';",
+      'export function App() {',
+      '  return (<Routes><Route path="/bar" element={<Bar />} /></Routes>);',
+      '}',
+      '',
+    ].join('\n'),
+    'web/src/one/Bar.tsx': 'export function Bar() { return <div>one</div>; }\n',
+    'web/src/two/Bar.tsx': 'export const Bar = () => <div>two</div>;\n',
+    'web/src/pages/foo.tsx': 'export function Foo() { return <div>foo</div>; }\n',
+  });
+  const extracted = cli(dir, ['extract']);
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const facts = factsOf(dir);
+  const components = ofType(facts, 'component')
+    .filter((entry) => ['Bar', 'Foo'].includes(entry.name))
+    .map((entry) => `${entry.file} ${entry.name} ${entry.role} ${entry.path ?? '-'}`)
+    .sort();
+  assert.deepEqual(components, [
+    'src/one/Bar.tsx Bar page /bar',
+    'src/pages/foo.tsx Foo component -',
+    'src/two/Bar.tsx Bar page /bar',
+  ]);
+  assert.deepEqual(ofType(facts, 'page_route').map((entry) => `${entry.path} ${entry.element}`), ['/bar Bar']);
+});
