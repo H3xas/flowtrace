@@ -41,3 +41,9 @@
 - Two answers change. A spec file under no configured root is no changed spec, so the run
   exits 3, not 0. With `--dotnet-filter`, a `.cs` file of another configured repository is not
   `out-of-scope`.
+- The `unindexed` rung and the `shared-dependency` lines match a changed file by its
+  repository and its path. A changed controller with no route fact, at the path of a routed
+  controller of another repository, gets `unindexed` for its own repository and exit 4, also
+  in a diff that selects specs. A class of one repository gives no `shared-dependency` line
+  for a changed file of another. The injectors of a changed class still count by its name.
+  These two answers also change when the backend root is the top level of its checkout.
