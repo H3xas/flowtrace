@@ -7,10 +7,10 @@
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import test from 'node:test';
+import test, { after } from 'node:test';
 import { affected } from '../lib/affected.js';
 import { runCli } from './helpers.js';
 
@@ -28,8 +28,30 @@ function buildRepo(t, files) {
   return dir;
 }
 
+/**
+ * A stand-in code index that answers `refs <Class> --out` with an empty outbound section, so
+ * every route walk of a backend repository completes. Without an index each walk stops, and
+ * the `incomplete-walk` rung of `affected` would hide the answer a test reads.
+ */
+const SCOUT_DIR = mkdtempSync(join(TEMP, 'flowtrace-reach-scout-'));
+after(() => rmSync(SCOUT_DIR, { recursive: true, force: true }));
+const SCOUT_BIN = join(SCOUT_DIR, 'scout.mjs');
+writeFileSync(
+  SCOUT_BIN,
+  [
+    '#!/usr/bin/env node',
+    'const [, , verb] = process.argv;',
+    "if (verb !== 'refs') process.exit(2);",
+    "process.stdout.write('outbound:\\n');",
+    'process.exit(0);',
+    '',
+  ].join('\n'),
+);
+chmodSync(SCOUT_BIN, 0o755);
+
 function config(repos, extra = {}) {
-  return { out: 'out', repos, ...extra };
+  const indexed = repos.map((repo) => (repo.kind === 'backend' ? { ...repo, scout: true } : repo));
+  return { out: 'out', scout: { bin: SCOUT_BIN }, repos: indexed, ...extra };
 }
 
 const WEB = { id: 'web', kind: 'web', root: 'web' };
