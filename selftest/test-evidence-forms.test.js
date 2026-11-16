@@ -254,3 +254,133 @@ test('Test evidence AC-19: the exclusion globs of walk and affected keep the rel
   const found = walk(root, { extensions: ['.ts'], exclude: ['**/mock'] }).map((path) => path.slice(root.length + 1)).sort();
   assert.deepEqual(found, ['src/kept/c.ts'], 'walk skips the directory src/automock');
 });
+
+const SENDERS_CS = [
+  'namespace Club.Mail',
+  '{',
+  '    public class RegularEmail { public string EmailCode => "club-welcome"; }',
+  '    public class EscapedEmail { public string EmailCode => "club-\\x41\\u0042\\t"; }',
+  '    public class RegularJoinedEmail { public string EmailCode => "club" + "-joined"; }',
+  '    public class VerbatimEmail { public string EmailCode => @"club\\path ""vip"""; }',
+  '    public class VerbatimJoinedEmail { public string EmailCode => @"club" + "-joined"; }',
+  '    public class RawEmail { public string EmailCode => """club "raw" id"""; }',
+  '    public class RawLinesEmail',
+  '    {',
+  '        public string EmailCode => """',
+  '            club-raw',
+  '            """;',
+  '    }',
+  '    public class GetterEmail { public override string EmailCode { get; } = "club-getter"; }',
+  '    public class ConstEmail { public string EmailCode => Codes.One; }',
+  '    public class ConstTwiceEmail { public string EmailCode => Twice.Code; }',
+  '    public class ConstMissingEmail { public string EmailCode => Codes.Missing; }',
+  '    public class ConstRawLinesEmail { public string EmailCode => Codes.RawLines; }',
+  '    public class ConstJoinedEmail { public string EmailCode => Codes.Joined; }',
+  '    public class ConstCommentedEmail { public string EmailCode => Codes.Commented; }',
+  '    public class ConstInRawEmail { public string EmailCode => Codes.InRaw; }',
+  '    public class QualifiedEmail { public string EmailCode => Club.Mail.Codes.One; }',
+  '    public class InterpolatedEmail { public string EmailCode => $"club-{Suffix}"; }',
+  '    public class CallEmail { public string EmailCode => Codes.Get("one"); }',
+  '    public class NameEmail { public string EmailCode => Welcome; }',
+  '    public class CommentedEmail',
+  '    {',
+  '        // public string EmailCode => "in a line comment";',
+  '        /* public string EmailCode => "in a block comment"; */',
+  '    }',
+  '    public class RawHoldsMemberEmail',
+  '    {',
+  '        public string EmailCode => "real";',
+  '        private const string Note = """ignored" string EmailCode => "fake"; "ignored""";',
+  '    }',
+  '    public class NullableEmail { public string? EmailCode => "nullable"; }',
+  '    public class BodyEmail { public string EmailCode { get { return "body"; } } }',
+  '}',
+  '',
+].join('\n');
+
+const CODES_CS = [
+  'namespace Club.Mail',
+  '{',
+  '    public static class Codes',
+  '    {',
+  '        public const string One = "club-one";',
+  '        public const string RawLines = """',
+  '            club-lines',
+  '            """;',
+  '        public const string Joined = "club" + "-joined";',
+  '        // public const string Commented = "in a comment";',
+  '        private const string Note = """public const string InRaw = "in a raw string";""";',
+  '    }',
+  '    public class Twice { public const string Code = "one"; }',
+  '}',
+  'namespace Club.Other',
+  '{',
+  '    public class Twice { public const string Code = "two"; }',
+  '}',
+  '',
+].join('\n');
+
+test('Test evidence AC-20: each listed sender value gives its id, and each named unlisted value gives its reason', (t) => {
+  const dir = writeRepo(
+    t,
+    { 'api/Mail/Senders.cs': SENDERS_CS, 'api/Mail/Codes.cs': CODES_CS },
+    { email: { senders: [{ member: 'EmailCode' }] }, repos: [{ id: 'api', kind: 'backend', root: 'api', role: ['api'] }] },
+  );
+  const senders = extractRepoFacts(dir, 'api')
+    .filter((fact) => fact.type === 'email_sender')
+    .map((fact) => [fact.class, fact.id, fact.constant ?? null, fact.reason ?? null]);
+  assert.deepEqual(senders, [
+    ['RegularEmail', 'club-welcome', null, null],
+    ['EscapedEmail', 'club-AB\t', null, null],
+    ['RegularJoinedEmail', null, null, 'unread-literal'],
+    ['VerbatimEmail', 'club\\path "vip"', null, null],
+    ['VerbatimJoinedEmail', null, null, 'unread-literal'],
+    ['RawEmail', 'club "raw" id', null, null],
+    ['RawLinesEmail', null, null, 'unread-literal'],
+    ['GetterEmail', 'club-getter', null, null],
+    ['ConstEmail', 'club-one', 'Codes.One', null],
+    ['ConstTwiceEmail', null, 'Twice.Code', 'two-constants'],
+    ['ConstMissingEmail', null, 'Codes.Missing', 'no-constant'],
+    ['ConstRawLinesEmail', null, 'Codes.RawLines', 'unread-literal'],
+    ['ConstJoinedEmail', null, 'Codes.Joined', 'no-constant'],
+    ['ConstCommentedEmail', null, 'Codes.Commented', 'no-constant'],
+    ['ConstInRawEmail', null, 'Codes.InRaw', 'no-constant'],
+    ['QualifiedEmail', null, null, 'unread-literal'],
+    ['InterpolatedEmail', null, null, 'unread-literal'],
+    ['CallEmail', null, null, 'unread-literal'],
+    ['NameEmail', null, null, 'unread-literal'],
+    ['RawHoldsMemberEmail', 'real', null, null],
+  ]);
+});
+
+const ROUTES_CS = (read) => `using Microsoft.AspNetCore.Mvc;
+
+namespace Tidepool.Api.Controllers
+{
+    public static class Routes
+    {
+        public const string Read = ${read};
+    }
+
+    [ApiController]
+    [Route("api/items")]
+    public class ItemController : ControllerBase
+    {
+        [HttpGet(Routes.Read)]
+        public IActionResult Read() { return Ok(); }
+    }
+}
+`;
+
+// The route fact holds the action template. With the class route `api/items`, a raw constant
+// leaves the action template empty with an unresolved argument, as the release reads it.
+test('Test evidence AC-20: a route constant reads a regular or verbatim literal as the release does, and a raw literal gives no value', (t) => {
+  const route = (read) => {
+    const dir = writeRepo(t, { 'api/Controllers/ItemController.cs': ROUTES_CS(read) }, { repos: [{ id: 'api', kind: 'backend', root: 'api', role: ['api'] }] });
+    const [fact] = extractRepoFacts(dir, 'api').filter((candidate) => candidate.type === 'route');
+    return [fact.template, fact.unresolvedArgument?.text ?? null];
+  };
+  assert.deepEqual(route('"read"'), ['read', null]);
+  assert.deepEqual(route('@"read"'), ['read', null]);
+  assert.deepEqual(route('"""read"""'), ['', 'Routes.Read']);
+});

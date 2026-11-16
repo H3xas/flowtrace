@@ -432,7 +432,7 @@ const SENDERS_CS = `namespace Kite.Mail
 
     public class TwiceEmail : EmailBase
     {
-        public string EmailCode => Mail.Twice.Code;
+        public string EmailCode => Twice.Code;
     }
 
     public class Quiet
