@@ -109,6 +109,44 @@ function fakeScout(t) {
   return { FLOWTRACE_SCOUT_BIN: bin };
 }
 
+/**
+ * A stand-in that answers in the form of the real `refs` reply: a symbol line, `def:`, an
+ * `inbound:` section, an `outbound:` section only when `--out` is given, rows that carry
+ * their source text after the target, and a `next:` line. `replies` maps a class to the
+ * reply for it; a class it does not name is a zero-hit. Each call's arguments go to a log.
+ */
+function contractScout(t, replies) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-contract-scout-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const bin = join(dir, 'scout.mjs');
+  const log = join(dir, 'calls.log');
+  writeFileSync(
+    bin,
+    [
+      '#!/usr/bin/env node',
+      "import { appendFileSync } from 'node:fs';",
+      'const args = process.argv.slice(2);',
+      `appendFileSync(${JSON.stringify(log)}, JSON.stringify(args) + '\\n');`,
+      `const replies = ${JSON.stringify(replies)};`,
+      'const [verb, name] = args;',
+      "if (verb !== 'refs') process.exit(2);",
+      'const reply = replies[name];',
+      'if (!reply) { process.stdout.write(`no symbol matches "${name}"\\n`); process.exit(3); }',
+      'if (reply.raw !== undefined) { process.stdout.write(reply.raw); process.exit(reply.status); }',
+      'const rows = (kinds) => Object.entries(kinds).flatMap(([kind, list]) => [`  ${kind} (${list.length}):`, ...list.map((row) => `    ${row}`)]);',
+      'const lines = [`Willow.Lending.Services.${name}  (class)  0 inbound (showing 0)`, `def: ${reply.def}`, \'inbound:\', ...rows({ inherits: [], \'uses-type\': [] })];',
+      "if (args.includes('--out')) lines.push('outbound:', ...rows(reply.outbound));",
+      'lines.push(`next: devscout tests Willow.Lending.Services.${name}`, \'\');',
+      "process.stdout.write(lines.join('\\n'));",
+      'process.exit(0);',
+      '',
+    ].join('\n'),
+  );
+  chmodSync(bin, 0o755);
+  const calls = () => readFileSync(log, 'utf8').trim().split('\n').map((line) => JSON.parse(line));
+  return { env: { FLOWTRACE_SCOUT_BIN: bin }, calls };
+}
+
 function willow(t) {
   const dir = gitFixture(t, 'willow-lending', WILLOW);
   return { dir, env: fakeScout(t) };
@@ -809,6 +847,55 @@ test('Stopped walk AC-15: a zero-hit for a class no repository declares is an ex
   const affected = runWithEnv(dir, ['affected', '--area', 'out/willow.area.txt', '--json', '--config', WILLOW], env);
   assert.doesNotMatch(affected.stderr, /provider-unavailable/);
   assert.equal(JSON.parse(affected.stdout).incompleteWalk, undefined);
+});
+
+test('Stopped walk AC-15: the walk asks the index for outbound references and reads them as the index prints them', (t) => {
+  const dir = gitFixture(t, 'willow-lending', WILLOW);
+  const scout = contractScout(t, {
+    SettlementBook: {
+      def: 'src/Services/SettlementBook.cs:3',
+      outbound: {
+        inherits: [],
+        'uses-type': ['src/Services/SettlementBook.cs:5  uses-type  -> src/Services/SettlementLedger.cs  private readonly SettlementLedger _ledger;'],
+      },
+    },
+  });
+  const settle = JSON.parse(runWithEnv(dir, ['trace', SETTLE, '--seeds', '--json', '--config', WILLOW], scout.env).stdout);
+  for (const args of scout.calls()) assert.ok(args.includes('--out'), JSON.stringify(args));
+  const ledger = settle.nodes.filter((node) => node.ref === 'SettlementLedger');
+  assert.equal(ledger.length, 1, JSON.stringify(settle.nodes.map((node) => node.ref)));
+  assert.equal(ledger[0].file, 'src/Services/SettlementLedger.cs');
+  assert.equal(settle.status.traversal, 'complete');
+  assert.equal(settle.status.stops['provider-unavailable'], undefined);
+});
+
+test('Stopped walk AC-15: a reply that is not an answer leaves the walk unknown, in trace, its gate and affected', (t) => {
+  for (const [label, reply] of [
+    ['exit 0 with a message', { raw: 'index unavailable\n', status: 0 }],
+    ['exit 3 with an error', { raw: 'error:\nindex unavailable\n', status: 3 }],
+    ['inbound only', { raw: 'Willow.Lending.Services.SettlementBook  (class)  0 inbound (showing 0)\ndef: src/Services/SettlementBook.cs:3\ninbound:\n  uses-type (0):\n', status: 0 }],
+    ['a row that does not read', { raw: 'outbound:\n  uses-type (1):\n    src/Services/SettlementBook.cs:5 uses-type SettlementLedger\n', status: 0 }],
+  ]) {
+    const dir = gitFixture(t, 'willow-lending', WILLOW);
+    const { env } = contractScout(t, { SettlementBook: reply });
+    const settle = JSON.parse(runWithEnv(dir, ['trace', SETTLE, '--seeds', '--json', '--config', WILLOW], env).stdout);
+    assert.equal(settle.status.traversal, 'unknown', label);
+    assert.equal(settle.status.stops['provider-unavailable'], 1, `${label}: ${JSON.stringify(settle.status.stops)}`);
+    const gated = runWithEnv(dir, ['trace', SETTLE, '--seeds', '--require-complete', '--config', WILLOW], env);
+    assert.equal(gated.status, 4, label);
+
+    writeFileSync(join(dir, 'out', 'willow.area.txt'), `${SETTLE}\n`);
+    appendFileSync(join(dir, 'backend', 'src', 'Startup.cs'), '\n// changed\n');
+    const affected = runWithEnv(dir, ['affected', '--area', 'out/willow.area.txt', '--json', '--config', WILLOW], env);
+    assert.equal(affected.status, 4, `${label}: ${affected.stderr}`);
+    const report = JSON.parse(affected.stdout);
+    assert.equal(report.incompleteWalk?.rung, 'incomplete-walk', `${label}: ${affected.stdout}`);
+    assert.deepEqual(report.incompleteWalk.routes, [SETTLE], label);
+  }
+  const dir = gitFixture(t, 'willow-lending', WILLOW);
+  const { env } = contractScout(t, { SettlementBook: { def: 'src/Services/SettlementBook.cs:3', outbound: { inherits: [], 'uses-type': [] } } });
+  const empty = JSON.parse(runWithEnv(dir, ['trace', SETTLE, '--seeds', '--json', '--config', WILLOW], env).stdout);
+  assert.equal(empty.status.traversal, 'complete', 'an outbound section with no rows is an empty answer');
 });
 
 test('Stopped walk AC-15: a class some fact declares is unresolved-target when the index finds no match', (t) => {

@@ -5,6 +5,10 @@
   The stop is listed, but the walk stays `complete` and no gate fails on it. A zero-hit for a
   class that a fact declares stays `unresolved-target`. A code index process that a signal
   ended, or a reply that names nothing, is an index that did not answer, never a zero-hit.
+- A graph hop now asks the code index with `refs <class> --out`. Without `--out` the index
+  printed no outbound references, so the hop found no edges. A reply with no whole
+  `outbound:` section and no zero-hit line is an index that did not answer. An edge target no
+  longer holds the source text that the index prints after it.
 - The result identity now holds each code index answer that the walk read, including the
   answers that gate walks read. If no index answered, it holds the reason. The same
   facts with different index answers give different identities.
