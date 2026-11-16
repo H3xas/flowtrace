@@ -5,7 +5,7 @@
  * the Playwright edges.
  */
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join as joinPath } from 'node:path';
 import test from 'node:test';
 import { copyFixture, REPO_ROOT, runCli, writeRepo } from './helpers.js';
@@ -59,6 +59,33 @@ test('Test evidence AC-1: an opaque stub, a pattern with no path and an unmatche
     'publish_without_consumer',
     'routes_without_caller',
   ]);
+});
+
+test('Test evidence AC-1: a request whose base the reader cannot read gives one unjoined entry with the unresolved-base reason', (t) => {
+  const dir = copyFixture(t, 'reef-ledger');
+  const config = ['--config', 'reef.config.json'];
+  const spec = joinPath(dir, 'suite', 'tests', 'sites.spec.ts');
+  const unknownBase = [
+    "  test('lists the sites of a gateway', async ({ request }) => {",
+    '    const response = await request.get(`${gateway()}/reef/v1/sites`);',
+    '    expect(response.status()).toBe(200);',
+    '  });',
+    '});',
+    '',
+  ].join('\n');
+  writeFileSync(spec, readFileSync(spec, 'utf8').replace(/\}\);\s*$/, unknownBase));
+  assert.equal(runCli(['extract', ...config], { cwd: dir }).status, 0);
+  assert.equal(runCli(['join', ...config], { cwd: dir }).status, 0);
+  const flow = JSON.parse(readFileSync(joinPath(dir, 'out', 'flow.json'), 'utf8'));
+  const entries = flow.unjoined.intercepts_without_route
+    .filter((entry) => entry.reason === 'unresolved-base')
+    .map((entry) => [entry.source, entry.fact.test, entry.fact.template]);
+  assert.deepEqual(entries, [['playwright-api', 'lists the sites of a gateway', '${gateway()}/reef/v1/sites']]);
+  assert.ok(!flow.edges.some((edge) => edge.kind === 'tests' && edge.from.ref === 'lists the sites of a gateway'));
+
+  const covered = runCli(['cover', '--area', 'reef.area.txt', '--json', ...config], { cwd: dir });
+  assert.equal(covered.status, 0, covered.stderr);
+  assert.equal(JSON.parse(covered.stdout).notes.intercepts.unresolvedBase, 1);
 });
 
 test('Test evidence AC-1: the join change moves no cover route state, evidence count or parity', (t) => {

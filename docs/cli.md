@@ -108,7 +108,8 @@ join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json
   a Playwright route stub each give one edge to the route they name, and each internal
   edge carries its source. An entry that names no route goes to intercepts_without_route
   with its source, and with reason "opaque" for an opaque stub, "no-path" for a
-  pattern with no path, or "ambiguous" with its candidates when two routes fit with
+  pattern with no path, "unresolved-base" for a request whose first segment is a value
+  the reader cannot read, or "ambiguous" with its candidates when two routes fit with
   equal rank. An intercept or stub pattern reads as a glob, segment by segment: a
   trailing * stays inside its segment and a ** takes one or more segments. A ${...} span
   is a value, not a glob: alone in its segment it meets only a route parameter, and at
