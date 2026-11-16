@@ -308,7 +308,9 @@ test('Caller gates AC-12: one caller case per distinct gate, with its prerequisi
   const harbor = locate(env.lines('web', HARBOR));
   const ready = harbor.lineOf('if (this.props.ready)');
   const fresh = harbor.lineOf('if (x.fresh)');
-  const cases = env.json(['trace', 'HarborPanel', '--seeds']).callerCases;
+  // The inventory walk folds the second way into `store` and then drops it, since a folded
+  // stub reaches no route; only the full walk keeps both paths.
+  const cases = env.json(['trace', 'HarborPanel', '--seeds', '--expand']).callerCases;
   assert.deepEqual(cases.map((entry) => [entry.id, entry.gate.text, entry.when, entry.outcome]), [
     ['C1', 'if (this.props.ready)', 'false', 'skips'],
     ['C2', 'if (x.fresh)', 'false', 'skips'],

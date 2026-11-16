@@ -54,6 +54,9 @@ extract [--repo <id>]
   schema, stamps each one provenance: { producer, version }, and merges it with the
   extraction under the configured merge mode; the header records both producers and
   how they compared. An invalid record refuses the whole run and names the record.
+  A C# route attribute whose argument has no single constant value keeps its route
+  fact with unresolvedArgument, and extract prints one stderr warning per route with
+  its file, line and argument text. Such a route never matches or joins a request.
 
 join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json]
             [--fail-on <kinds>] [--allow-skipped]
@@ -105,10 +108,17 @@ routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then
   an exact allowlisted literal. --symbol and --literal force one mode and never fall
   back. --repo scopes point resolution only; originating routes remain cross-repository.
+  A route that reaches the point only through a global filter has a witness whose
+  second hop is that filter, with via "gate". The walk also starts at each backend
+  entry with no route in front of it: a SignalR hub method, an actor message handler and
+  each entryPoints kind of the configuration. Entries that reach the point are listed
+  beside the routes, each with its kind, class, method, site and witness. The verdict
+  is routes when a route reaches the point, entries when only entries do, else empty.
   A resolved point with no routes exits 0. Unresolved or ambiguous input exits 2 and
-  returns no route set. An incomplete forward walk exits 4 and returns no partial set.
-  JSON output is deterministic and carries schemaVersion 1; neither renderer claims
-  that route-level test evidence proves execution of the resolved point.
+  returns no route set. An incomplete forward walk, of a route, a gate or an entry,
+  exits 4 and returns no partial set. JSON output is deterministic and carries
+  schemaVersion 2, with entries, entryCount and completeness.entriesWalked; neither
+  renderer claims that route-level test evidence proves execution of the resolved point.
 
 trace <start> [--depth N] [--max-nodes N] [--seeds] [--graph] [--json] [--expand]
             [--expand-infra] [--no-fold] [--mermaid] [--html <file>] [--unscoped]
@@ -149,6 +159,35 @@ trace --area <file> [--require-complete]
   externally supplied fact is stated prints [provider]; --json and --graph nodes carry
   provider: true for the same hops.
 
+  Pages of a component: a web component start also prints one [mount] hop for each page
+  that shows it, as "page <browser path>" at the file:line of its route, with the source
+  of the mount. The page is the route whose element is the component, a route whose
+  element holds a render of it, or a page of a component that renders it. A component
+  that no route reaches prints a "no-page" hop. A render that two innermost routes hold
+  prints a "page-ambiguous" hop with both route sites as candidates. --json gives the
+  same pages as root.pages. These hops add no route, and the status and the exit code
+  do not change.
+
+  Route trees: when two route trees declare the same page path, the start resolves in
+  the tree that a mount declares (a root render, a router basename or repos[].mounts).
+  If no tree or more than one declared tree matches, the start exits 2 with reason
+  ambiguous and lists each candidate with its composed path and file:line. A page path
+  start also walks each component that the element of its route holds as a child.
+
+  Web component walk: a request that no handler and no entry reaches is listed too. The
+  facts of the component body and of render are one "body" hop. An arrow bound to a
+  local name is one "arrow <name>" hop at its file:line:column. A member that nothing
+  enters is one hop. An inline handler arrow prints at its arrow site, file:line:column,
+  and walks only the dispatches and calls inside it. A "dispatch(c(x))" handler names
+  the creator c. A creator with no effect_handler walks its own dispatches, calls and
+  requests on its dispatch hop. Each nested dispatch spends one level of --depth.
+
+  Entries: an entry line starts with its kind word, mount, update, unmount, effect or
+  event, for example "mount RegattaHeader.componentDidMount@12:3". A mobile page or
+  component start lists each lifecycle hook that sends a request as a mount, update or
+  unmount entry, and each template handler walks in a scope of its own. --from-handler
+  lists no hook.
+
   Pipelines and filters: a backend loop over a step collection whose steps a DI factory
   registers, a literal typeof(...) list or an injected IEnumerable<T> names is walked in
   that order with no fan-out cap. Each step that can refuse the request (a stop-flag
@@ -160,13 +199,31 @@ trace --area <file> [--require-complete]
   a base controller, adds one outcome per context.Result it assigns, and a global
   filter's seeds carry gate.shared: true. A loop whose step list, order, stop rule or
   step overload the walk cannot read prints "pipeline unresolved: <reason>", adds no step
-  outcome and keeps the name-sorted fan-out; the trailer counts both kinds.
+  outcome and keeps the name-sorted fan-out; the trailer counts both kinds. When only the
+  stop rule is unreadable, the steps are still walked in registration order. A stop can
+  be a block that ends in its jump: the statements before the jump run under each step's
+  reject, and a reject seed prints them as "before the reject". Each step after the
+  first of a loop that can stop is marked conditional.
+
+  More hops: a Map call on an IMapper field reaches the converters, resolvers and actions
+  of the matching Profile maps (via mapper). Work handed to a background queue is one
+  queue node whose children are the delegate's calls (via queued); the queue is found
+  by its cancellation-token delegate parameter or by workerPatterns.backgroundCalls. A
+  call through a dictionary built from an injected IEnumerable<I> reaches the method of
+  each implementation (via keyed_dispatch, inferred, marked "keyed <key> (inferred)"); a
+  constant key keeps the implementations whose key property returns it. A route that a
+  gateway route table forwards has one gateway hop after its action: the middleware, the
+  global and the named delegating handlers, then the downstream call as an http_out sink.
 
   --from-handler <selector> restricts a mobile walk to the subtree rooted at one
   `template_handler` hop, matched by its display form ("(click) onLike()"), the
-  compact "click:onLike", or the bare method name "onLike". Several handlers matching
-  the selector, or none, is exit 2 — the first case lists what matched, the second
-  lists every handler the walk found. Seeds, folding, --graph, --mermaid and --html all
+  compact "click:onLike", or the bare method name "onLike". Each form takes an optional
+  "@<line>" or "@<line>:<column>" suffix ("onLike@14") that keeps only the binding written
+  at that template site; a mobile binding has no column. Any other suffix is a usage
+  error. Several handlers matching the selector, or none, is exit 2 — the first case
+  lists what matched, one line for each binding site, the second lists every handler the
+  walk found. One handler bound at two or more sites is one node for each site, and each
+  such node names its site. Seeds, folding, --graph, --mermaid and --html all
   run on the narrowed walk unchanged; the default walk is untouched without the flag.
 
   Folding: the first time a node (same repo, file, line, kind and ref) appears, it
@@ -278,10 +335,15 @@ span "<route key>" [--out <file>] [--specs <list|file>] [--verdict-facts <file>]
   seed cover lists appears exactly once and the three counts sum to that route's seed
   count, shared-gate seeds included: a row from a global filter carries a shared-gate
   mark, and the honesty strip names each pipeline the walk could not resolve, with its
-  reason. A tested row names the test
+  reason. A fault or reject row also lists the run-time conditions that decide it and
+  that a static read cannot evaluate: a feature toggle, the gate test a pipeline makes
+  of the step before it runs it, and a flag the step stores from a call, each with its
+  kind, file:line and source text. A tested row names the test
   by its resolved title, and by the case ids case_id facts resolve for
-  it when a case-id annotation, a configured call or a same-file table row carries
-  one — never by an id the tool invented.
+  it when a case-id annotation, a configured call, a same-file table row or a same-file
+  value the bounded reader evaluates carries one — never by an id the tool invented. A
+  configured call whose id no reader resolves shows as "case id not read: <expression>",
+  so the row never says it has no case id.
   --out defaults to <out>/span/<route-slug>.html; --specs narrows the evidence exactly as
   it does for trace --cover-overlay. Nothing is fetched and no timestamp is written, so
   two runs over the same facts produce byte-identical pages. Each page states the key it
@@ -331,25 +393,49 @@ span --from-component <name> [--file <path-substring>] [--entry <entry>] [--json
   declares prints as a `component-unresolved` arm. Neither is entered. A tag imported
   from a module outside the repository (react, react-router-dom, ...) is no arm.
   --json prints the same entries, arms and reasons without the per-route sections.
+  That model, schemaVersion 1, is one contract for web and mobile: the same fields with
+  the same meanings on both. Its top-level fields are component, status, header, entries,
+  selectedEntry, orphans, routes (each with key, arms and status), unresolved and limits.
+  A reached arm, under routes, has key, via, breadcrumb, entry, file, line and route. An
+  unresolved arm has reason, attempted, caller, breadcrumb, entry, file and line, and it
+  can also have candidates, source, cause, continuedBy and outcome. Each breadcrumb hop
+  has kind, ref and via. entry is the id of the entry that reached the arm, or null for
+  an arm without entry. A breadcrumb runs in walk order from the start
+  component through its entry to the request or to the node that failed. Two requests
+  that one entry reaches are two arms with two breadcrumbs under one entry id. Web hop
+  kinds are page, component, entry, method, store_action and route. Mobile hop kinds are
+  page, component, service, class, entry, method, store_action and route.
   On a mobile (Ionic) start, each template event binding of kind call is an `event`
-  entry with the handler it calls, and each lifecycle hook the class itself declares is
-  an entry with the hook as its trigger: ngOnInit, ngAfterContentInit, ngAfterViewInit,
+  entry with the handler it calls, and each lifecycle hook the class declares is an
+  entry with the hook as its trigger: ngOnInit, ngAfterContentInit, ngAfterViewInit,
   ionViewWillEnter and ionViewDidEnter (mount), ngOnChanges, ngDoCheck,
   ngAfterContentChecked and ngAfterViewChecked (update), ngOnDestroy, ionViewWillLeave
-  and ionViewDidLeave (unmount). The chain follows this. calls, injected service calls
-  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call on one
-  line, also inside pipe or mergeMap. A request no entry reaches, such as one a method
-  only a decorator, a subscription or an inherited hook runs, prints once as an arm
+  and ionViewDidLeave (unmount). A listed hook the class inherits is an entry too, at the
+  hook in the first base class up the extends chain that declares it. A base imported from
+  a package gives no entry, and a relative base that resolves to no one declaration prints
+  as one mobile-declaration-unresolved arm at the extends site. The chain follows this.
+  calls, injected service calls, static calls on a class the file declares or imports
+  and NgRx dispatch to effect, to a this.<GatewayService field>.<verb>(...) call, also
+  one written over more than one line or with comments between its tokens, and also
+  inside pipe or mergeMap. A request no entry reaches, such as one a method
+  only a decorator or a subscription runs, prints once as an arm
   without entry, and a request an entry reaches is never counted again there. A method,
-  service or component node the depth or node budget cut is a walk-limit arm too. A
-  gateway call written over more than one line states no fact, so its handler shows as
-  an entry that reaches no route; assign and prop bindings are no entries. --out defaults to
+  service or component node the depth or node budget cut is a walk-limit arm too. The
+  text of a walk-limit arm names the kind of node that was cut: action, method, service,
+  component, page or entry. Its JSON reason stays walk-limit.
+  Assign and prop bindings are no entries. --out defaults to
   <out>/span/component-<slug>.html, the slug naming the component, the file that declares
   it and, under --entry, the selected entry's own site; a name longer than the
   120-character cap ends in a digest of the whole name rather than losing that site, and
   a name already holding another selection's page sends this one to the next free name, so
   two selections never share a page; --repo scopes which component the name resolves to,
   never the routes behind it.
+
+  An arm without entry names the code that holds it: the body of the component or
+  render, an arrow bound to a local name, or a member that nothing enters, with its
+  file:line, and the column of an arrow. The page prints it under the arm, and --json
+  gives it as "holder" on the arm. An inline handler arrow is the entry of the requests
+  inside it.
 
   A mobile dependency or template owner resolves by declaration identity. When the facts
   state `source` and `imported`, the walk enters the declaration in exactly that relative
@@ -400,6 +486,13 @@ chains "<route key>" [--json] [--depth N] [--max-nodes N] [--require-complete]
     page-ambiguous         two routes with one line range hold a render
     no-page                no route and no render reaches a component
     walk-limit             the depth or the node budget stopped the climb
+  An inline handler arrow is the entry of each dispatch and call inside it, so its
+  requests climb to that handler, not to a no-entry gap. A no-entry gap of a dispatch
+  or a call inside an arrow bound to a local name names that arrow and its file:line. A
+  creator with no effect_handler climbs to each dispatch of its action, with no effect
+  hop. One "dispatch(c(x))" statement states a call of c and a dispatch of c. Its two
+  chains print as one chain in the dispatch form, also when the statement spans lines.
+
   An entry, a call, a dispatch, a bound prop and an effect each spend one level of
   --depth; renders, pages and self calls spend none. So a chain fits --depth N when the
   forward walk from its component reaches the request at --depth N. Every hop spends one
@@ -481,6 +574,16 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   Seeds from a globally registered filter count in their route's seeds and again, apart,
   as "shared-gate" in totals and the headline; a route whose pipeline the walk could not
   resolve names it with its reason, and totals count those pipelines.
+  A seed that a run-time condition decides (a feature toggle, a pipeline step gate
+  test, or a flag stored from a call) prints one "condition <kind> <file>:<line>
+  <text>" line per condition under it, and --json gives them as its conditions.
+  Only an eligible Playwright test runs: one whose pw_test eligibility is static-skip,
+  environment-skip or unknown counts as skipped, and its requests and stubs with it. A
+  fact set with no eligibility field keeps the skipped rule. Skip guards are read against
+  testEnvironment in the configuration, never against the shell.
+  A pw_request whose first path segment is an interpolation the extractor could not fold
+  gives no evidence: notes.intercepts.unresolvedBase counts it, and the intercepts line
+  names that count next to the requests with no path and those matching no route.
 
   --runtime <file> joins per-spec runtime line hits against the branch spans facts
   already carry: a cobertura or lcov artifact, or a JSON manifest naming one report
@@ -502,11 +605,14 @@ scope --area <file|name> [--json]
   the route's own cover-depth walk whose ref matches "scope.gatePatterns"
   (configuration.md), a naming heuristic that defaults to Authorize, Permission, Policy,
   Entitlement and Claims and both misses an unnamed check and over-reports a name that
-  merely contains one of these words. --json emits { schemaVersion: 1, area, routes:
-  [{key, repo, file, line, automation, serverGate}] }, deterministic and with no
-  timestamp. Exit 0 the area resolved, 2 a missing or unresolvable --area, 4 facts
-  behind the repository HEAD — facts that only predate an uncommitted edit at the same
-  commit are noted on stderr and never gate this verb, since it reads no diff of its own.
+  merely contains one of these words. The rows describe the fact snapshot, not the
+  source as it stands now, so stale facts warn on stderr in both modes and never change
+  the exit code. --json emits { schemaVersion: 1, area, freshness: { value, sets },
+  routes: [{key, repo, file, line, automation, serverGate}] }, deterministic and with
+  no timestamp. Freshness reuses the extraction witnesses: value is matching, mismatched
+  or unknown, and each set names its repo with matching, head-stale, worktree-stale,
+  no-witness or not-observed. Exit 0 the area resolved, 2 a missing or unresolvable
+  --area.
 
 affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo <id>]
             [--json] [--playwright-args] [--dotnet-filter] [--max-share F] [--hops N]

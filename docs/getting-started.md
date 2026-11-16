@@ -135,6 +135,11 @@ gaps  4 uncovered seeds in 4 groups, top 4
 A filled square is a seed some executing test reaches; an empty one is a gap. The `gaps`
 list at the end is ranked, so the first line is the most valuable missing test.
 
+The `intercepts skipped as evidence` line counts the test requests that `cover` does not use:
+those with no path, those that match no route, and those with an unknown base. A request has
+an unknown base when the first segment of its URL is a value that the extractor cannot read,
+such as `${process.env.API_BASE}/orders`.
+
 Three more commands turn that into work products, all under `out/`:
 
 ```

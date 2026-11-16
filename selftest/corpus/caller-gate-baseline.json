@@ -6,11 +6,11 @@
     },
     "e2e.json": {
       "kind": "playwright",
-      "sha1": "f86d6c490f9f3ae85d0d1e93375173a63c4a868a"
+      "sha1": "66b720675f6bf72c4e8bad0343fc1166d6b7f897"
     },
     "mobile.json": {
       "kind": "mobile",
-      "sha1": "a588da1bac1a66bc6aa08b4a8b2649fed4b3607b",
+      "sha1": "ef36c73d98a88c0bd87f28459d289280d97f29e7",
       "branchPoints": []
     },
     "shopfront.json": {
@@ -23,6 +23,21 @@
       "sha1": "17934dbda111d7c018d438b7f4ba0b3c747cb3f7"
     }
   },
+  "ferry-tickets/ferry.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "24d37ba634637e99058f1762668190cb61e4057a"
+    },
+    "ops.json": {
+      "kind": "backend",
+      "sha1": "f8b6a7a84b4ccc7a4655db79d5456148150e44ec"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "571920360c0728c153fc81976aad8d96261615c4",
+      "branchPoints": []
+    }
+  },
   "greenhouse-alerts/greenhouse.config.json": {
     "backend.json": {
       "kind": "backend",
@@ -30,7 +45,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "5789003f1cea29e68c5c9543a096773d3daf90c5",
+      "sha1": "0b1b20871057efc1209546aec665d2c2e7d4ed88",
       "branchPoints": [
         [
           "src/actions/primaryZone.ts",
@@ -280,7 +295,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "d98948d2cf48d5dccee43e477bba742834a43980",
+      "sha1": "f5cc934e69fcd93407a23272b4c1d1a57c17fcc3",
       "branchPoints": [
         [
           "src/forms/DecisionForms.ts",
@@ -516,16 +531,16 @@
     },
     "mobile.json": {
       "kind": "mobile",
-      "sha1": "6183402e73624d9115bb8224a514e08174117eb4",
+      "sha1": "65b65190be7d6fa4f9140998534a79f0ad40ea9c",
       "branchPoints": []
     },
     "suite.json": {
       "kind": "playwright",
-      "sha1": "4604d68fa494995a586a93b7b69e4d7f4eb81a4f"
+      "sha1": "6abd388c1eef73985161d4170c2f0f83646dea75"
     },
     "web.json": {
       "kind": "web",
-      "sha1": "8f5d48d4b1b014317a9ebd0ecc503637700bf15e",
+      "sha1": "41b33178f67acedb7e51ada42120df9cf6b6b6dc",
       "branchPoints": [
         [
           "src/http/httpClient.ts",
@@ -550,7 +565,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "809fc1627156adc3f49e588a7b4a65dc05f439f8",
+      "sha1": "280ac31ebace94d455bd3de1afa2eef1cbe3158a",
       "branchPoints": [
         [
           "src/http/httpClient.ts",
@@ -570,7 +585,7 @@
     },
     "mobile.json": {
       "kind": "mobile",
-      "sha1": "699c68e814372f0b27a969a8fac5cb5bff5d1247",
+      "sha1": "77603a731b15e4c95aa3663d81dfc5d306d4513c",
       "branchPoints": []
     }
   },
@@ -581,14 +596,14 @@
     },
     "mobile.json": {
       "kind": "mobile",
-      "sha1": "67c198b7a06792294e5e700a045773dd90eba503",
+      "sha1": "453933c6b4c0f97c4e9c534327a74c07e25f5062",
       "branchPoints": []
     }
   },
   "orchard-routes/orchard-mounted.config.json": {
     "web.json": {
       "kind": "web",
-      "sha1": "29d0e51e34df0f142c2eb9176f9f64f36a1fa6ab",
+      "sha1": "9b78b4ec0d447db9659c71c538b0bd9fb1a779b7",
       "branchPoints": [
         [
           "src/OrchardApp.tsx",
@@ -612,7 +627,7 @@
   "orchard-routes/orchard.config.json": {
     "web.json": {
       "kind": "web",
-      "sha1": "29d0e51e34df0f142c2eb9176f9f64f36a1fa6ab",
+      "sha1": "9b78b4ec0d447db9659c71c538b0bd9fb1a779b7",
       "branchPoints": [
         [
           "src/OrchardApp.tsx",
@@ -640,7 +655,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "8259d8035c72015170e02a577a0b5cf1c90656d8",
+      "sha1": "a8b084f87815bfaef6469d87b8e4b20a05c16679",
       "branchPoints": [
         [
           "src/http/httpClient.ts",
@@ -669,6 +684,247 @@
       ]
     }
   },
+  "regatta-desk/regatta-mounted.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "a4283be1e2c782c5c8a2e70a67a3732ace6e983b"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "cc0eb71baed1f5e84224ac20f6e6538b96af42d1",
+      "branchPoints": []
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "1fee660098ddf00b53efa2023c6dfe571d320f12",
+      "branchPoints": [
+        [
+          "src/crews/SignupPanel.tsx",
+          16,
+          20,
+          "SignupPanel.render",
+          "if",
+          "if (this.props.crewId)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ]
+      ]
+    }
+  },
+  "regatta-desk/regatta.config.json": {
+    "api.json": {
+      "kind": "backend",
+      "sha1": "a4283be1e2c782c5c8a2e70a67a3732ace6e983b"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "cc0eb71baed1f5e84224ac20f6e6538b96af42d1",
+      "branchPoints": []
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "1fee660098ddf00b53efa2023c6dfe571d320f12",
+      "branchPoints": [
+        [
+          "src/crews/SignupPanel.tsx",
+          16,
+          20,
+          "SignupPanel.render",
+          "if",
+          "if (this.props.crewId)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ]
+      ]
+    }
+  },
+  "tidepool-mobile/tidepool-mobile.config.json": {
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "6c7b0c61ddc08a63d69d57ffffe34ca20d993290",
+      "branchPoints": []
+    }
+  },
+  "tidepool-web/tidepool-web.config.json": {
+    "web.json": {
+      "kind": "web",
+      "sha1": "03caa2b7c3b20f89070048e57050d546e2f278de",
+      "branchPoints": [
+        [
+          "src/deck/Deck.tsx",
+          6,
+          6,
+          "Deck.Deck",
+          "if",
+          "if (loading)"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          7,
+          9,
+          "Deck.Deck",
+          "if",
+          "if (!ready || m)"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          12,
+          12,
+          "Deck.Deck",
+          "logical",
+          "flags.flagA && <Pier childFlag={flags.flagA} />"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          13,
+          13,
+          "Deck.Deck",
+          "logical",
+          "ready && (<Pier childFlag={ready} />)"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          14,
+          14,
+          "Deck.Deck",
+          "ternary",
+          "m ? <Pier childFlag={m} /> : <Empty />"
+        ],
+        [
+          "src/deck/Deck.tsx",
+          15,
+          15,
+          "Deck.Deck",
+          "ternary",
+          "inner ? <Pier childFlag={inner} /> : null"
+        ],
+        [
+          "src/deck/Pier.tsx",
+          4,
+          4,
+          "Pier.Pier",
+          "if",
+          "if (!spare)"
+        ],
+        [
+          "src/deck/Pier.tsx",
+          5,
+          5,
+          "Pier.Pier",
+          "logical",
+          "childFlag && (<span>lit</span>)"
+        ],
+        [
+          "src/deck/Skiff.tsx",
+          4,
+          4,
+          "Skiff.Skiff",
+          "logical",
+          "sail && (<span>sail</span>)"
+        ],
+        [
+          "src/quay/Jetty.tsx",
+          6,
+          6,
+          "Jetty.Jetty",
+          "if",
+          "if (open)"
+        ],
+        [
+          "src/quay/Jetty.tsx",
+          7,
+          7,
+          "Jetty.Jetty",
+          "logical",
+          "props.visible && (<span>jetty</span>)"
+        ],
+        [
+          "src/quay/Mooring.tsx",
+          7,
+          7,
+          "Mooring.render",
+          "logical",
+          "this.props.showRope && <span>rope</span>"
+        ],
+        [
+          "src/quay/Mooring.tsx",
+          8,
+          8,
+          "Mooring.render",
+          "logical",
+          "this.state.coiled && <span>coiled</span>"
+        ],
+        [
+          "src/quay/Quay.tsx",
+          7,
+          7,
+          "Quay.Quay",
+          "logical",
+          "latch && <span>latch</span>"
+        ],
+        [
+          "src/quay/Quay.tsx",
+          8,
+          8,
+          "Quay.Quay",
+          "ternary",
+          "level ? <span>level</span> : null"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          12,
+          14,
+          "Shoal.Shoal",
+          "if",
+          "if (mode)"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          17,
+          17,
+          "Shoal.Shoal",
+          "logical",
+          "picked && <span>picked</span>"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          18,
+          18,
+          "Shoal.Shoal",
+          "logical",
+          "captured && <span>captured</span>"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          19,
+          19,
+          "Shoal.Shoal",
+          "logical",
+          "twin && <span>twin</span>"
+        ],
+        [
+          "src/quay/Shoal.tsx",
+          20,
+          20,
+          "Shoal.Shoal",
+          "logical",
+          "mode || <span>fallback</span>"
+        ]
+      ]
+    }
+  },
   "tidewater-ferry/ferry.config.json": {
     "backend-mirrored.json": {
       "kind": "backend",
@@ -680,7 +936,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "679b7941c1672f9c5c913927accad1b51f402d17",
+      "sha1": "4598b6564cce0fe2b153d9cf6caa090598644122",
       "branchPoints": [
         [
           "src/actions/boarding.ts",

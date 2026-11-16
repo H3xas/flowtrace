@@ -56,6 +56,21 @@ npm test
   inside a body, a `test` reached through a member access, a title wrapped in a configured
   case-id call, and a title supplied as a table identifier — plus a listing whose positions
   sit below the source so nothing can resolve by line.
+- `corpus/widget-till/` — an invented Playwright suite and a one-route backend for case ids in
+  a configured call: a wrapper in title position on every declaration form and over several
+  lines, body calls, a same-file table, arguments no reader resolves, and a misaligned file.
+  It has three configurations (both callees, the body call alone, none) and `pw-list.json`, a
+  listing whose wrapped titles carry the text the wrapper adds; `title-wrapper-case-ids.test.js`
+  reads it.
+- `corpus/widget-ledger/` — an invented Playwright suite for case ids that the bounded reader
+  evaluates: a same-file map read in nested loops, literal and ternary keys, a block-local
+  `const`, an array element and a destructured row, and each argument it refuses, with a loop
+  product at the 64-instance limit and one past it. `case-id-maps.test.js` reads it.
+- `corpus/widget-gate/` — an invented Playwright suite and a four-route backend for test
+  eligibility: static skips, environment guards at file, describe, hook and test scope, guards
+  that cannot be read, and a `test.describe.fixme(` stub spec. It has three configurations (no
+  `testEnvironment`, `E2E_ENV` set to `dev`, set to `stage`) and `gate.area.txt`;
+  `test-eligibility.test.js` reads it.
 - `corpus/greenhouse-alerts/` — the journey pack: an invented React + Redux client and
   ASP.NET Core service, the expected ledger (`expected.json`), the committed observed projection
   (`observed.json`) and a README with the formats, the replay commands and the rules for tickets
@@ -83,6 +98,20 @@ npm test
   `runtimeSummary` of `lib/runtime-cover.js`, because a corpus with more than 200 decisions
   would be too large to read. `decisions-verb.test.js` builds its own git working trees in a
   temporary directory, one `Decisions verb AC-n:` test for each acceptance rule.
+- `corpus/ferry-tickets/`: an invented ferry ticket office, with two backend repositories and
+  one web client. Each file group holds one C# form the backend extractor reads: attribute
+  sections, constant route arguments, expression bodies and chain links, expression
+  decisions, sentinel fallthroughs, one-line branch labels, configured exception statuses
+  and a gated pipeline. `csharp-reading.test.js` runs it through the CLI, one `CSharp
+  reading AC-n:` test for each acceptance rule. The corpus README lists its file groups.
+- `corpus/tidepool-mobile/` and `corpus/tidepool-web/`: an invented Angular app and an
+  invented React app. Their templates hold each display condition form, transfer form and
+  trace step that the client condition reader reads, each trace reason, and each region
+  state. `client-conditions.test.js` runs both through the extractors, one `Client conditions
+  AC-n:` test for each acceptance rule. It also imports `lib/extract/client-conditions.js`
+  for the hop limit and the trace limit, because a corpus that reaches those limits is too
+  large to read. `client-conditions-outputs.test.js` runs the query verbs on each corpus
+  and on the worked example, with and without the new facts, and compares the outputs.
 - `corpus/bakery-orders/` and `corpus/bakery-gates/`: an invented bakery backend. Its
   pipelines take their steps from a DI factory, a `typeof(...)` list or an injected
   `IEnumerable<T>`. Their steps write a stop flag, return `false` or `null`, or throw. The
@@ -119,13 +148,21 @@ npm test
   AC-n:` test for each acceptance rule. One case imports `callersOf` of `lib/span.js`,
   because no command prints the callers of a route as data. The corpus README lists each
   shape and the chain it gives.
+- `corpus/regatta-desk/`: an invented race office, with an ASP.NET Core backend, a React and
+  Redux client and an Ionic app with NgRx. It holds the component shapes of the web
+  journeys: body and `render` dispatches, inline and named arrows, nested thunks, pages of a
+  component, two route trees and Ionic lifecycle hooks. `web-journeys.test.js` runs it
+  through the CLI, one `Web journeys AC-n:` test for each acceptance rule. `base-facts/` and
+  `base-capture.json` hold what the base code wrote and printed for it. The corpus README
+  lists each shape and the rule that reads it.
 - `corpus/lantern-console/`: an invented settings console with an ASP.NET Core backend, a
   React service, an Ionic service, and Cypress suites for both clients. One app request and
   five Cypress requests name the same route, so `cypress-evidence.test.js` can count the
   `calls` edges and the `tests` edges apart. A second route is intercepted only by a page
   model. The corpus README lists its files.
 - `dependency-goldens.js` and `corpus/dependency-goldens.json`: the dependency answer of each
-  corpus, as the release before the source-flow work wrote it. The record holds the exit
+  corpus, as the release branch renders it. A change that moves the dependency view on purpose
+  writes the golden again with `--write`. The record holds the exit
   status and the sha256 of stdout and stderr for six outputs of every start. `--write` captures
   it and `--check` compares it. The label line and the `view` key are the only stated
   additions, so both are taken off before the comparison.

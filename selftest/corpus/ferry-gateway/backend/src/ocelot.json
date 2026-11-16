@@ -1,0 +1,30 @@
+{
+  "Aggregates": [ { "UpstreamPathTemplate": "/fleet", "RouteKeys": [ "boats" ] } ],
+  // Routes the gateway forwards; the stubs in Controllers document them.
+  "Routes": [
+    {
+      "UpstreamPathTemplate": "/boats/{id}",
+      "UpstreamHttpMethod": [ "Get" ],
+      "DownstreamPathTemplate": "/api/boats/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [ { "Host": "boats-api", "Port": 8080 } ],
+      "DelegatingHandlers": [ "TicketHandler" ],
+    },
+    /* Cargo writes go to one downstream verb, and "UpstreamPathTemplate" stays one entry. */
+    {
+      "UpstreamPathTemplate": "/Cargo",
+      "UpstreamHttpMethod": [ "Post", "Put" ],
+      "DownstreamPathTemplate": "/api/cargo",
+      "DownstreamHttpMethod": "Post",
+      "DownstreamHostAndPorts": [ { "Host": "cargo-api", "Port": 80 } ],
+      "DelegatingHandlers": [ "GhostHandler" ]
+    },
+    {
+      "UpstreamPathTemplate": "/harbor",
+      "UpstreamHttpMethod": [ "Get" ],
+      "DownstreamPathTemplate": "/api/harbor",
+      "DownstreamHostAndPorts": [ { "Host": "harbor-api" } ]
+    }
+  ],
+  "GlobalConfiguration": { "BaseUrl": "https://ferry.example" }
+}

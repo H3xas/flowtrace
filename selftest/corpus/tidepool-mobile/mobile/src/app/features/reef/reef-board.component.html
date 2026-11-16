@@ -1,0 +1,19 @@
+<div *ngIf="flags[key]">dynamic</div>
+<div *ngIf="flags['flagA']">literal key</div>
+<div *ngIf="pick$ | async">picked</div>
+<div *ngIf="isOpen()">open</div>
+<div *ngIf="session.active">session</div>
+<div *ngIf="depth">depth</div>
+<input #probe />
+<b *ngIf="probe.value">probe</b>
+<ng-template let-row><b *ngIf="row.on">row</b></ng-template>
+<ul><li *ngFor="let cell of cells; index as i"><b *ngIf="i">index</b></li></ul>
+<div *ngIf="first">loop</div>
+<div *ngIf="orphan">orphan</div>
+<div *ngIf="mirror">mirror</div>
+<tp-twin [shown]="ready"></tp-twin>
+<div *ngIf="count > 1 + 2">sum</div>
+<div [ngSwitch]="count"></div>
+@if (ready) {
+  <p>control flow</p>
+}

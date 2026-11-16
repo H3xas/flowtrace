@@ -70,8 +70,12 @@ test('a skipped declaration keeps its skipped flag and its three-argument form c
   const { facts } = joinInputs(t);
   const byTitle = new Map(facts.filter((fact) => fact.type === 'pw_test').map((fact) => [fact.test, fact]));
   assert.equal(byTitle.get('reprints a receipt').skipped, true);
-  assert.equal(byTitle.get('scans a label').skipped, false);
-  assert.equal(byTitle.get('tops up the float').skipped, false);
+  // The bare `test.skip()` at the top of the file skips every test in it, the three-argument
+  // form included, so each one reads as a static skip.
+  for (const title of ['scans a label', 'tops up the float']) {
+    assert.equal(byTitle.get(title).skipped, true, title);
+    assert.equal(byTitle.get(title).eligibility, 'static-skip', title);
+  }
 });
 
 test('every declaration resolves its own title', (t) => {
