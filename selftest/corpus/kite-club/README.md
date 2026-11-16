@@ -20,9 +20,9 @@ the route and the Playwright spec posts to it, and neither is a caller.
 | Components passed as element props of one route | `<Shell main={<ClubFeed />} side={<ClubSidebar />} />` in `web/src/app.tsx` | Their page is the route whose line range holds the render. |
 | A component that binds the bound prop straight to `onClick`, rendered twice by `ClubFeed` and once through `Panel` | `JoinButton` | One chain with 3 render variants, through the `ClubFeed -> JoinButton` render on the lower line. |
 | A function component that calls the bound prop in its body, with no event | `ClubSidebar` | A `no-entry` gap, and the chain still ends at `clubs/:clubId/*`. |
-| A page that dispatches the thunk in a `useEffect` | `JoinPage` | The `join` route by its element, with the `useEffect` entry. Two chains: the call of the thunk and its dispatch. |
-| A name two files declare, rendered through a barrel that settles neither | `web/src/cards/Badge.tsx`, `web/src/legacy/Badge.tsx` | The legacy one calls the thunk in its body: a `no-entry` gap, then `component-ambiguous` with both files and no hop above it. Two chains, call and dispatch. |
-| A component that calls the thunk in its body and that nothing renders | `OrphanNotice` | `no-entry`, then `no-page`. Two chains, call and dispatch. |
+| A page that dispatches the thunk in a `useEffect` | `JoinPage` | The `join` route by its element, with the `useEffect` entry. One chain: the call of the thunk and its dispatch are one statement, so it prints in the dispatch form. |
+| A name two files declare, rendered through a barrel that settles neither | `web/src/cards/Badge.tsx`, `web/src/legacy/Badge.tsx` | The legacy one calls the thunk in its body: a `no-entry` gap, then `component-ambiguous` with both files and no hop above it. One chain, in the dispatch form. |
+| A component that calls the thunk in its body and that nothing renders | `OrphanNotice` | `no-entry`, then `no-page`. One chain, in the dispatch form. |
 | A function that posts to the route and that nothing calls | `legacyJoin` | `no-caller`. |
 | An Ionic page whose `(click)` handler dispatches an action that an NgRx effect answers | `ClubAboutPage.onJoin`, `ClubEffects.joinClub$` | The page, the event entry, the dispatch, the effect, the call of `ClubService.join` and the request. |
 | A component the page template renders, whose handler calls the service | `JoinChipComponent` | Page `ClubAboutPage`, one render to `app-join-chip`, its event entry, the call and the request. |
@@ -46,5 +46,5 @@ The test rewrites one thing in a disposable copy for a shape this directory does
 The default run of `chains "POST clubs/v1/join/{id}" --json`:
 
 ```json
-{ "callers": 3, "chains": 13, "complete": 7, "withGap": 6 }
+{ "callers": 3, "chains": 10, "complete": 6, "withGap": 4 }
 ```

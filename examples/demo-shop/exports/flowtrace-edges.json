@@ -6,7 +6,7 @@
     "version": "0.5.1"
   },
   "provenance": {
-    "id": "13be9edc5d77f293",
+    "id": "ab9da87b81b55c83",
     "producer": "flowtrace-cli 0.5.1",
     "formatVersion": 1,
     "config": {
@@ -76,7 +76,7 @@
           "status": "failed",
           "reason": "@playwright/test not resolvable from the repository root"
         },
-        "digest": "60756e44d06dfbf7d62bb781618d5159db8c288c"
+        "digest": "ab04bfcc284272abf01432a3aeac6a39e601ccbc"
       },
       {
         "repo": "mobile",
@@ -86,7 +86,7 @@
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 4,
-        "digest": "a588da1bac1a66bc6aa08b4a8b2649fed4b3607b"
+        "digest": "ef36c73d98a88c0bd87f28459d289280d97f29e7"
       },
       {
         "repo": "shopfront",
@@ -127,7 +127,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "calls",
@@ -144,7 +144,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "consumes",
@@ -161,7 +161,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "consumes",
@@ -178,7 +178,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "consumes",
@@ -195,7 +195,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "consumes",
@@ -212,7 +212,7 @@
         "line": 7
       },
       "key": "StockReservedEvent",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "publishes",
@@ -229,7 +229,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "publishes",
@@ -246,7 +246,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "publishes",
@@ -263,7 +263,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "publishes",
@@ -280,7 +280,7 @@
         "line": null
       },
       "key": "StockReservedEvent",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "tests",
@@ -297,7 +297,7 @@
         "line": 17
       },
       "key": "GET catalog/v1/products",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "tests",
@@ -314,7 +314,7 @@
         "line": 17
       },
       "key": "GET catalog/v1/products",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "tests",
@@ -331,7 +331,7 @@
         "line": 17
       },
       "key": "GET catalog/v1/products",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "tests",
@@ -348,7 +348,7 @@
         "line": 17
       },
       "key": "GET orders/v1/cart",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "tests",
@@ -365,7 +365,7 @@
         "line": 24
       },
       "key": "POST orders/v1/cart/items",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "tests",
@@ -382,7 +382,7 @@
         "line": 36
       },
       "key": "POST orders/v1/checkout",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "tests",
@@ -399,7 +399,7 @@
         "line": 36
       },
       "key": "POST orders/v1/checkout",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     },
     {
       "kind": "tests",
@@ -416,7 +416,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "13be9edc5d77f293"
+      "provenance": "ab9da87b81b55c83"
     }
   ]
 }

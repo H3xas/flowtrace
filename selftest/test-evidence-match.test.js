@@ -60,6 +60,15 @@ test('Test evidence AC-3: a caller segment that is an unread value never matches
   assert.equal(outcome(index, 'users/${userId}/orders'), null);
 });
 
+test('Test evidence AC-3: a suffix match must meet a literal route segment, so a tail of parameters only joins no route', () => {
+  const index = routeIndex(['sailings/{id}', 'decks/{deck}/hold', 'ports/{port}/{berth}']);
+  assert.equal(outcome(index, 'fares'), null);
+  assert.equal(outcome(index, 'north/b4'), null);
+  assert.equal(outcome(index, 'fares', { glob: true }), null);
+  assert.equal(matchRouteDetailed(index, 'GET', 'north/b4'), null);
+  assert.deepEqual(outcome(index, '7/hold'), { key: 'GET decks/*/hold', match: 'suffix' });
+});
+
 test('Test evidence AC-4: a trailing glob in suffix matching stays inside its segment', () => {
   const index = routeIndex(['api/drafts/my/count', 'api/drafts/my/count/total', 'api/drafts/{id}']);
   assert.deepEqual(outcome(index, 'drafts/my/count*', { glob: true }), { key: 'GET api/drafts/my/count', match: 'suffix' });

@@ -212,7 +212,7 @@ test('Test evidence AC-29: cover counts a value pattern that fits no route param
   const covered = runCli(['cover', '--area', 'harbour.area.txt', '--json', ...config], { cwd: dir });
   assert.equal(covered.status, 0, covered.stderr);
   const report = JSON.parse(covered.stdout);
-  assert.deepEqual(report.notes.intercepts, { noPath: 0, unmatched: 1, ambiguous: 2 });
+  assert.deepEqual(report.notes.intercepts, { noPath: 0, unmatched: 1, unresolvedBase: 0, ambiguous: 2 });
   assert.deepEqual(
     report.routes.map((route) => [route.key, route.evidence.intercepts, route.evidence.match]),
     [
@@ -224,9 +224,9 @@ test('Test evidence AC-29: cover counts a value pattern that fits no route param
   );
   const text = runCli(['cover', '--area', 'harbour.area.txt', '--md', 'cover.md', ...config], { cwd: dir });
   assert.equal(text.status, 0, text.stderr);
-  assert.match(text.stdout, /intercepts skipped as evidence: 0 with no path · 1 matching no route · 2 ambiguous/);
+  assert.match(text.stdout, /intercepts skipped as evidence: 0 with no path · 1 matching no route · 0 with an unknown base · 2 ambiguous/);
   const markdown = readFileSync(joinPath(dir, 'cover.md'), 'utf8');
-  assert.match(markdown, /Intercepts skipped as evidence: 0 with no path, 1 matching no route, 2 ambiguous\./);
+  assert.match(markdown, /Intercepts skipped as evidence: 0 with no path, 1 matching no route, 0 with an unknown base, 2 ambiguous\./);
 });
 
 test('Test evidence AC-7: cover places a route stub with a literal segment on its parameter route', (t) => {

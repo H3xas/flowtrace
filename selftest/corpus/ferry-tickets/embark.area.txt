@@ -1,0 +1,3 @@
+# ferry-tickets: the routes that run the gated embark pipeline.
+POST embark/{ticket}
+POST embark/{ticket}/fast

@@ -220,7 +220,7 @@ const READ_COMMANDS = `Cypress.Commands.add('checkWelcome', () => {
 
 const READS = [
   { call: 'readMail', subject: '0.subject' },
-  { call: 'inbox.latest', subject: 1 },
+  { call: 'this.inbox.latest', subject: 1 },
 ];
 
 function readCorpus(t, email = { reads: READS }) {
@@ -252,7 +252,7 @@ test('Test evidence AC-18: a configured read call gives one email read for each 
     ['a literal subject', 'readMail', 'Welcome to the club', null, 'test', false],
     ['a template subject', 'readMail', 'Code * for *', null, 'test', false],
     ['a const subject', 'readMail', 'Your invite', null, 'test', false],
-    ['a const subject', 'inbox.latest', 'Reset *', null, 'test', false],
+    ['a const subject', 'this.inbox.latest', 'Reset *', null, 'test', false],
     ['an unreadable subject', 'readMail', null, 'unreadable-subject', 'test', false],
     ['an unreadable subject', 'readMail', null, 'unreadable-subject', 'test', false],
     [null, 'readMail', 'Hello', null, 'test', false],
