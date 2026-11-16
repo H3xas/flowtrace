@@ -2246,3 +2246,256 @@ test('Web extractor reach AC-11: a route array entry imported through a default 
     .sort();
   assert.deepEqual(pages, ['src/Foo.jsx Foo /foo']);
 });
+
+function twinRouted(name, n) {
+  return [
+    'using Microsoft.AspNetCore.Mvc;',
+    '',
+    'namespace Sample.Api.Controllers',
+    '{',
+    '    [ApiController]',
+    `    [Route("${name.toLowerCase()}/v1")]`,
+    `    public class ${name}Controller : ControllerBase`,
+    '    {',
+    '        private readonly IItemsService _items;',
+    '',
+    `        public ${name}Controller(IItemsService items)`,
+    '        {',
+    '            _items = items;',
+    '        }',
+    '',
+    '        [HttpGet("list")]',
+    `        public IActionResult List${n}(string id)`,
+    '        {',
+    '            return Ok();',
+    '        }',
+    '    }',
+    '}',
+    '',
+  ].join('\n');
+}
+
+function twinUnrouted(n) {
+  return `namespace Other.Controllers\n{\n    public class ItemsController\n    {\n        public int Value${n}() => ${n};\n    }\n}\n`;
+}
+
+function twinClass(name, n) {
+  return `namespace Other.Services\n{\n    public class ${name} { public int V() => ${n}; }\n}\n`;
+}
+
+const TWIN_SERVICE = [
+  'namespace Sample.Api.Services',
+  '{',
+  '    public interface IItemsService { int Count(); }',
+  '',
+  '    public class ItemsService : IItemsService',
+  '    {',
+  '        public int Count() => 0;',
+  '    }',
+  '}',
+  '',
+].join('\n');
+
+const TWIN_PROGRAM = [
+  'using Sample.Api.Services;',
+  '',
+  'var builder = WebApplication.CreateBuilder(args);',
+  'builder.Services.AddScoped<IItemsService, ItemsService>();',
+  'var app = builder.Build();',
+  'app.Run();',
+  '',
+].join('\n');
+
+/**
+ * One git checkout with the backend roots `backend` and `other`, which hold a file at the same
+ * repository-relative path. `layout` is `sibling` (`backend/` beside `other/`) or `top-level`
+ * (the `backend` root is the checkout). The first commit holds `files(prefix)`, the second
+ * applies `edits(prefix)`, and the report is `affected --diff HEAD~1..HEAD --all-routes`.
+ */
+function twinCheckout(t, layout, files, edits, extraRepos = []) {
+  const prefix = layout === 'sibling' ? 'backend/' : '';
+  const repos = [
+    { ...BACKEND, root: layout === 'sibling' ? 'backend' : '.' },
+    { id: 'other', kind: 'backend', root: 'other', role: ['api'] },
+    ...extraRepos,
+  ];
+  const dir = buildRepo(t, { 'flowtrace.config.json': config(repos), '.gitignore': 'out/\n', ...files(prefix) });
+  const git = (...args) => {
+    const result = spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+    assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
+  };
+  const extract = () => {
+    const result = cli(dir, ['extract']);
+    assert.equal(result.status, 0, result.stderr);
+  };
+  git('init', '-q');
+  git('config', 'user.email', 'selftest@example.invalid');
+  git('config', 'user.name', 'flowtrace selftest');
+  git('add', '-A');
+  git('commit', '-q', '-m', 'initial');
+  extract();
+  for (const [path, text] of Object.entries(edits(prefix))) writeFileSync(join(dir, ...path.split('/')), text);
+  git('commit', '-q', '-am', 'change');
+  extract();
+  const result = cli(dir, ['affected', '--diff', 'HEAD~1..HEAD', '--all-routes', '--json']);
+  const json = JSON.parse(result.stdout);
+  assert.equal(result.status, json.exit, result.stderr);
+  return json;
+}
+
+function keyedAnswer(json) {
+  return {
+    exit: json.exit,
+    fallbacks: json.fallbacks.map((entry) => `${entry.rung}[${entry.scope}]`),
+    shared: json.reasons.filter((line) => line.startsWith('shared-dependency:')),
+    incompleteWalk: Object.hasOwn(json, 'incompleteWalk'),
+  };
+}
+
+const SHARED_LINE = 'shared-dependency: ItemsService (fanIn 30 on IItemsService) — an edit here widens by construction';
+
+function twinServiceFiles(otherClass) {
+  return (prefix) => {
+    const files = {
+      [`${prefix}src/Services/ItemsService.cs`]: TWIN_SERVICE,
+      [`${prefix}src/Program.cs`]: TWIN_PROGRAM,
+      'other/src/Services/ItemsService.cs': twinClass(otherClass, 0),
+    };
+    for (let i = 0; i < 30; i += 1) files[`${prefix}src/Controllers/C${i}Controller.cs`] = twinRouted(`C${i}`, i);
+    return files;
+  };
+}
+
+test('Web extractor reach AC-21: the unindexed rung matches a route fact by repository id and path, in both layouts', (t) => {
+  const changedOther = (prefix) => ({ [`${prefix}src/ItemsController.cs`]: twinRouted('Items', 0), 'other/src/ItemsController.cs': twinUnrouted(0) });
+  const editOther = () => ({ 'other/src/ItemsController.cs': twinUnrouted(1) });
+  const released = { sibling: 'unindexed[backend], exit 4', 'top-level': 'no fallback, exit 3' };
+  for (const layout of ['sibling', 'top-level']) {
+    const json = twinCheckout(t, layout, changedOther, editOther);
+    assert.deepEqual(
+      keyedAnswer(json),
+      { exit: 4, fallbacks: ['unindexed[other]'], shared: [], incompleteWalk: false },
+      `${layout}: a changed other controller with no route fact beside a routed backend controller; release: ${released[layout]}, now: unindexed[other], exit 4`,
+    );
+    assert.deepEqual(json.fallbacks.map((entry) => entry.reason), ['unindexed: src/ItemsController.cs — a controller declaring no route fact']);
+  }
+
+  const changedInside = (prefix) => ({ [`${prefix}src/ItemsController.cs`]: twinUnrouted(0), 'other/src/ItemsController.cs': twinRouted('Items', 0) });
+  for (const layout of ['sibling', 'top-level']) {
+    const json = twinCheckout(t, layout, changedInside, (prefix) => ({ [`${prefix}src/ItemsController.cs`]: twinUnrouted(1) }));
+    assert.deepEqual(
+      keyedAnswer(json),
+      { exit: 4, fallbacks: ['unindexed[backend]'], shared: [], incompleteWalk: false },
+      `${layout}: a changed backend controller with no route fact beside a routed other controller; release: no fallback, exit 3, now: unindexed[backend], exit 4`,
+    );
+  }
+});
+
+test('Web extractor reach AC-21: the shared-dependency file match reads a changed file by repository id and path, and the class-name join stays', (t) => {
+  const editHelper = () => ({ 'other/src/Services/ItemsService.cs': twinClass('Helper', 1) });
+  const releasedHelper = { sibling: 'no line, exit 3', 'top-level': `the line "${SHARED_LINE}", exit 3` };
+  for (const layout of ['sibling', 'top-level']) {
+    const json = twinCheckout(t, layout, twinServiceFiles('Helper'), editHelper);
+    assert.deepEqual(
+      keyedAnswer(json),
+      { exit: 3, fallbacks: [], shared: [], incompleteWalk: false },
+      `${layout}: a changed other file that declares only Helper at the path of the backend ItemsService; release: ${releasedHelper[layout]}, now: no line, exit 3`,
+    );
+  }
+
+  const editJoined = () => ({ 'other/src/Services/ItemsService.cs': twinClass('ItemsService', 1) });
+  const releasedJoined = { sibling: 'no line, exit 3', 'top-level': `the line, exit 3` };
+  for (const layout of ['sibling', 'top-level']) {
+    const json = twinCheckout(t, layout, twinServiceFiles('ItemsService'), editJoined);
+    assert.deepEqual(
+      keyedAnswer(json),
+      { exit: 3, fallbacks: [], shared: [SHARED_LINE], incompleteWalk: false },
+      `${layout}: a changed other file that declares ItemsService joins the backend binding by class name; release: ${releasedJoined[layout]}, now: the line, exit 3`,
+    );
+  }
+});
+
+test('Web extractor reach AC-21: a mixed diff keeps its selected spec and gains the unindexed rung of the other controller', (t) => {
+  const web = { id: 'web', kind: 'web', root: 'web', cypressSubpath: 'cypress' };
+  const files = (prefix) => {
+    const spec = (name, url) => `describe('${name}', () => {\n  it('runs', () => {\n    cy.intercept('GET', '${url}');\n  });\n});\n`;
+    const tree = {
+      [`${prefix}src/ItemsController.cs`]: twinRouted('Items', 0),
+      'other/src/ItemsController.cs': twinUnrouted(0),
+      'web/src/a.ts': 'export const a = 1;\n',
+      'web/cypress/e2e/items.cy.ts': spec('items', '/items/v1/list*'),
+    };
+    for (let i = 0; i < 4; i += 1) tree[`web/cypress/e2e/other${i}.cy.ts`] = spec(`o${i}`, `/unrelated/v${i}/x*`);
+    return tree;
+  };
+  const edits = (prefix) => ({ 'other/src/ItemsController.cs': twinUnrouted(1), [`${prefix}src/ItemsController.cs`]: twinRouted('Items', 1) });
+  const released = { sibling: 'items.cy.ts selected, unindexed[backend], exit 4', 'top-level': 'items.cy.ts selected, no fallback, exit 0' };
+  for (const layout of ['sibling', 'top-level']) {
+    const json = twinCheckout(t, layout, files, edits, [web]);
+    assert.deepEqual(
+      { ...keyedAnswer(json), routes: json.routes.map((route) => route.key), specs: json.specs.map((spec) => spec.spec) },
+      { exit: 4, fallbacks: ['unindexed[other]'], shared: [], incompleteWalk: false, routes: ['GET items/v1/list'], specs: ['e2e/items.cy.ts'] },
+      `${layout}: release: ${released[layout]}, now: items.cy.ts selected, unindexed[other], exit 4`,
+    );
+  }
+});
+
+test('Web extractor reach AC-21: without diffRepo the two keyed matches hold and a run with no shared path keeps its report', () => {
+  const repos = [{ id: 'backend', kind: 'backend', root: '/c/backend' }, { id: 'other', kind: 'backend', root: '/c/other' }];
+  const route = { type: 'route', file: 'src/ItemsController.cs', line: 5, controller: 'ItemsController', action: 'List', verb: 'GET', template: 'items/v1/list' };
+  const injectors = Array.from({ length: 30 }, (_, i) => ({ type: 'ctor_field', file: `src/C${i}.cs`, line: 1, class: `C${i}`, paramType: 'IItemsService' }));
+  const backend = {
+    repo: 'backend',
+    facts: [
+      route,
+      { type: 'method_span', file: 'src/Services/ItemsService.cs', line: 1, endLine: 3, class: 'ItemsService', method: 'Count' },
+      { type: 'di_binding', file: 'src/Program.cs', line: 1, iface: 'IItemsService', impl: 'ItemsService' },
+      ...injectors,
+    ],
+  };
+  const other = (cls, file = 'src/Services/ItemsService.cs') => ({
+    repo: 'other',
+    facts: [{ type: 'method_span', file, line: 1, endLine: 3, class: cls, method: 'V' }],
+  });
+  const run = (changed, sets) => {
+    const report = affected(sets, { changed, repos, stale: [] });
+    return {
+      exit: report.exit,
+      fallbacks: report.fallbacks.map((entry) => `${entry.rung}[${entry.scope}]`),
+      shared: report.reasons.filter((line) => line.startsWith('shared-dependency:')),
+    };
+  };
+  const source = (repo, path) => [{ repo, path, kind: 'source' }];
+
+  assert.deepEqual(
+    run(source('other', 'src/ItemsController.cs'), [backend, other('Helper')]),
+    { exit: 4, fallbacks: ['unindexed[other]'], shared: [] },
+    'a changed other controller beside a backend route fact at the same path; release: exit 3, now: unindexed[other], exit 4',
+  );
+  assert.deepEqual(
+    run(source('other', 'src/Services/ItemsService.cs'), [backend, other('Helper')]),
+    { exit: 3, fallbacks: [], shared: [] },
+    'a changed other file that declares Helper; release: the shared-dependency line, now: no line',
+  );
+  assert.deepEqual(
+    run(source('other', 'src/Services/ItemsService.cs'), [backend, other('ItemsService')]),
+    { exit: 3, fallbacks: [], shared: [SHARED_LINE] },
+    'a changed other file that declares ItemsService keeps the line of the class-name join',
+  );
+
+  assert.deepEqual(
+    run(source('other', 'src/Lone/LoneController.cs'), [backend, other('Helper')]),
+    { exit: 4, fallbacks: ['unindexed[other]'], shared: [] },
+    'a changed controller with no twin path keeps the unindexed rung of the release',
+  );
+  assert.deepEqual(
+    run(source('backend', 'src/Services/ItemsService.cs'), [backend, other('Helper', 'src/Lone/Helper.cs')]),
+    { exit: 3, fallbacks: [], shared: [SHARED_LINE] },
+    'a changed backend service with no twin path keeps the shared-dependency line of the release',
+  );
+  assert.deepEqual(
+    run(source('backend', 'src/ItemsController.cs'), [backend, other('Helper')]),
+    { exit: 3, fallbacks: [], shared: [] },
+    'a changed routed controller with no spec keeps the release answer and no fallback',
+  );
+});
