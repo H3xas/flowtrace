@@ -1125,6 +1125,15 @@
               "endLine": 58
             },
             {
+              "file": "src/forms/DecisionForms.ts",
+              "line": 84,
+              "kind": "ternary",
+              "class": "helpers",
+              "method": "pick",
+              "text": "x ? 1 : 2",
+              "endLine": 84
+            },
+            {
               "file": "src/forms/FormsPanel.tsx",
               "line": 5,
               "kind": "if",
