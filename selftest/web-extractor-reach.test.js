@@ -2073,3 +2073,154 @@ test('Web extractor reach AC-7: without diffRepo a changed web caller differs fr
   }, 'the route, its seed, its uncovered line and the exit code are the change the caller rule makes');
   assert.match(report.uncovered[0].scaffold, /^flowtrace scaffold --seed [0-9a-f]{8}$/);
 });
+
+/** The enclosing method and the receiver of each gateway call, so a fixture needs no line arithmetic. */
+function gatewayCallers(dir) {
+  return ofType(factsOf(dir), 'gateway_call').map((entry) => `${entry.method} ${entry.service}`).sort();
+}
+
+test('Web extractor reach AC-2: an axios default import with a non-ASCII or $ name is a receiver, also beside named imports', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([BACKEND, WEB]),
+    'backend/src/ItemsController.cs': ITEMS_BACKEND,
+    'web/src/café.js': "import café from 'axios';\nexport function load() {\n  return café.get('/api/items');\n}\n",
+    'web/src/both.js': "import $ax, { AxiosError } from 'axios';\nexport function add() {\n  return $ax.post('/api/items');\n}\n",
+    'web/src/named.js': "import { create } from 'axios';\nexport function none(create) {\n  return create.get('/api/items');\n}\n",
+  });
+  extractAndJoin(dir);
+  assert.deepEqual(gatewayCallers(dir), ['add $ax', 'load café']);
+});
+
+test('Web extractor reach AC-2: a receiver binds in its own scope, through every declarator, and a function or class expression name binds only inside it', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([BACKEND, WEB]),
+    'backend/src/ItemsController.cs': ITEMS_BACKEND,
+    'web/src/scopes.js': [
+      "import http from 'axios';",
+      '',
+      'export function shadowedCreate(http) {',
+      '  const api = http.create();',
+      "  return api.get('/api/items');",
+      '}',
+      'export function second() {',
+      '  const first = 1, http = makeClient();',
+      "  return http.get('/api/items') || first;",
+      '}',
+      'export function multiLine() {',
+      '  let first = 1,',
+      '    http = makeClient();',
+      "  return http.get('/api/items') || first;",
+      '}',
+      'export function varScope() {',
+      '  if (first) {',
+      '    var http = makeClient();',
+      '  }',
+      "  return http.get('/api/items');",
+      '}',
+      'export function named() {',
+      '  const cb = function http() {',
+      "    return http.get('/api/items');",
+      '  };',
+      "  return http.get('/api/items') || cb;",
+      '}',
+      'export function namedClass() {',
+      '  const K = class http {};',
+      "  return http.get('/api/items') || K;",
+      '}',
+      'export function own() {',
+      '  const local = http.create();',
+      "  return local.get('/api/items');",
+      '}',
+      'export function elsewhere() {',
+      "  return local.get('/api/items');",
+      '}',
+      'export class A {',
+      '  constructor() {',
+      '    this.client = http.create();',
+      '  }',
+      '  load() {',
+      "    return this.client.get('/api/items');",
+      '  }',
+      '}',
+      'export class B {',
+      '  load() {',
+      "    return this.client.get('/api/items');",
+      '  }',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  extractAndJoin(dir);
+  assert.deepEqual(gatewayCallers(dir), ['load client', 'named http', 'namedClass http', 'own local']);
+});
+
+test('Web extractor reach AC-13: a member body local through a later declarator or a var in a block names no module function', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/api/helper.ts': [
+      'export function request() {',
+      '  return 1;',
+      '}',
+      'export const helper = {',
+      '  second() {',
+      '    const first = 1, request = () => 2;',
+      '    return request() + first;',
+      '  },',
+      '  hoisted(flag) {',
+      '    if (flag) {',
+      '      var request = () => 2;',
+      '    }',
+      '    return request();',
+      '  },',
+      '  named() {',
+      '    const cb = function request() {',
+      '      return 3;',
+      '    };',
+      '    return request() + cb();',
+      '  },',
+      '};',
+      '',
+    ].join('\n'),
+  });
+  const extracted = cli(dir, ['extract']);
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const calls = ofType(factsOf(dir), 'method_call')
+    .filter((entry) => entry.calledClass !== undefined)
+    .map((entry) => `${entry.class}.${entry.method} ${entry.calledMethod} ${entry.calledClass}`);
+  assert.deepEqual(calls, ['helper.named request Helper']);
+});
+
+test('Web extractor reach AC-11: a route array entry imported through a default re-export marks the component that the chain reaches', (t) => {
+  const page = (name) => `import React from 'react';\nexport function ${name}() {\n  return <div>${name}</div>;\n}\n`;
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([WEB]),
+    'web/src/Foo.jsx': page('Foo'),
+    'web/src/Other.jsx': page('Bar'),
+    'web/src/barrel.js': "export { Foo as default } from './Foo';\n",
+    'web/src/App.jsx': [
+      "import React from 'react';",
+      "import { Route, Routes } from 'react-router-dom';",
+      "import Bar from './barrel';",
+      '',
+      "const entries = [{ path: '/foo', component: <Bar /> }];",
+      '',
+      'export function App() {',
+      '  return (',
+      '    <Routes>',
+      '      {entries.map((entry) => (',
+      '        <Route key={entry.path} path={entry.path} element={entry.component} />',
+      '      ))}',
+      '    </Routes>',
+      '  );',
+      '}',
+      '',
+    ].join('\n'),
+  });
+  const extracted = cli(dir, ['extract']);
+  assert.equal(extracted.status, 0, extracted.stderr);
+  const pages = ofType(factsOf(dir), 'component')
+    .filter((entry) => entry.role === 'page')
+    .map((entry) => `${entry.file} ${entry.name} ${entry.path}`)
+    .sort();
+  assert.deepEqual(pages, ['src/Foo.jsx Foo /foo']);
+});
