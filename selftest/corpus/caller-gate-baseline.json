@@ -1,4 +1,158 @@
 {
+  "buoy-signals/harbor.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "7a995c77ef06884d550fe774f0e238910c413889"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "4346aee530f6572bdb6f3855ba0ab3c678c74493",
+      "branchPoints": []
+    },
+    "suite.json": {
+      "kind": "playwright",
+      "sha1": "6e3dc65277284406948a687c36cce06d6f62ebcd"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "0b1b20871057efc1209546aec665d2c2e7d4ed88",
+      "branchPoints": [
+        [
+          "src/actions/primaryZone.ts",
+          12,
+          14,
+          "PrimaryZone.loadPrimaryZone",
+          "if",
+          "if (growers.length > 0)"
+        ],
+        [
+          "src/actions/watchers.ts",
+          18,
+          21,
+          "Watchers.saveWatchers",
+          "if",
+          "if (!response.stored)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ],
+        [
+          "src/zones/ZoneOverviewPanel.tsx",
+          16,
+          18,
+          "ZoneOverviewPanel.componentDidMount",
+          "if",
+          "if (this.props.zoneId)"
+        ],
+        [
+          "src/zones/ZonesLandingPanel.tsx",
+          14,
+          16,
+          "ZonesLandingPanel.componentDidMount",
+          "if",
+          "if (this.props.growerId)"
+        ]
+      ]
+    }
+  },
+  "buoy-signals/harbor.scout.config.json": {
+    "backend.json": {
+      "kind": "backend",
+      "sha1": "7a995c77ef06884d550fe774f0e238910c413889"
+    },
+    "mobile.json": {
+      "kind": "mobile",
+      "sha1": "4346aee530f6572bdb6f3855ba0ab3c678c74493",
+      "branchPoints": []
+    },
+    "suite.json": {
+      "kind": "playwright",
+      "sha1": "6e3dc65277284406948a687c36cce06d6f62ebcd"
+    },
+    "web.json": {
+      "kind": "web",
+      "sha1": "0b1b20871057efc1209546aec665d2c2e7d4ed88",
+      "branchPoints": [
+        [
+          "src/actions/primaryZone.ts",
+          12,
+          14,
+          "PrimaryZone.loadPrimaryZone",
+          "if",
+          "if (growers.length > 0)"
+        ],
+        [
+          "src/actions/watchers.ts",
+          18,
+          21,
+          "Watchers.saveWatchers",
+          "if",
+          "if (!response.stored)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          2,
+          2,
+          "HttpClient.request",
+          "ternary",
+          "body === undefined ? undefined : JSON.stringify(body)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          3,
+          3,
+          "HttpClient.request",
+          "if",
+          "if (!response.ok)"
+        ],
+        [
+          "src/http/httpClient.ts",
+          4,
+          4,
+          "HttpClient.request",
+          "ternary",
+          "response.status === 204 ? null : response.json()"
+        ],
+        [
+          "src/zones/ZoneOverviewPanel.tsx",
+          16,
+          18,
+          "ZoneOverviewPanel.componentDidMount",
+          "if",
+          "if (this.props.zoneId)"
+        ],
+        [
+          "src/zones/ZonesLandingPanel.tsx",
+          14,
+          16,
+          "ZonesLandingPanel.componentDidMount",
+          "if",
+          "if (this.props.growerId)"
+        ]
+      ]
+    }
+  },
   "demo-shop/flowtrace.config.json": {
     "api.json": {
       "kind": "backend",

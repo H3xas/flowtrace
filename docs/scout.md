@@ -9,7 +9,7 @@ a standalone code-index CLI, for three questions:
 
 | question | scout command | used by |
 |---|---|---|
-| what does this symbol reference? | `refs <symbol>` | `trace`, to continue past an unresolved node |
+| what does this symbol reference? | `refs <symbol> --out` | `trace`, to continue past an unresolved node |
 | who references this symbol? | `refs <symbol> --json` | `affected --dotnet-filter`, to find test classes |
 | what does changing this file reach? | `impact <file> --hops N --json` | `affected --hops`, to widen a changed set |
 
@@ -39,6 +39,26 @@ Then mark the repositories the index covers:
 
 Only a repository with `scout: true` is ever consulted.
 
+## Concurrent lookups
+
+The query verbs that read the index run their lookups as child processes, a bounded number at
+the same time. A walk that needs a lookup the cache does not hold answers it from the index in
+the next pass, until a pass needs nothing new. The verb output does not change: the walk order,
+the depth, the fan-out caps and the printed lines stay as they are.
+
+Two inputs set the limit:
+
+| input | meaning |
+|---|---|
+| `scout.concurrency` in the configuration file | the limit, when the file sets it |
+| `FLOWTRACE_SCOUT_CONCURRENCY` in the environment | the limit, when the file does not set `scout.concurrency` |
+
+The file value wins over the variable. A blank variable counts as absent. When neither sets the
+limit, it is `min(8, os.availableParallelism())`. A limit of 1 runs one lookup at a time, which
+gives the serial order back without a release. Each value must be an integer of at least 1, and
+a value that is not one fails the configuration load with one message that names the key or the
+variable, before any verb runs.
+
 ## Isolation
 
 Every invocation runs with `SCOUT_REGISTRY` and `SCOUT_CONTENT_DB` forced to files under
@@ -51,3 +71,8 @@ The wrapper never throws. A missing binary, a repository with no index, a non-ze
 unknown symbol — all produce an empty edge list marked `unavailable`, and the walk prints
 the node as unresolved with `graph: unavailable` beside it. A trace without an index is a
 smaller trace, not a failed one.
+
+A `refs --out` reply is an answer only in two forms. The first is the index's own
+`no symbol matches` line. The second is an `outbound:` section in which each kind lists as
+many rows as its header line shows. Any other reply, also one with exit 0, is a lookup that
+the index did not answer.

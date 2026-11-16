@@ -1,0 +1,3 @@
+GET glasshouse/v1/zones/*/watchers
+GET glasshouse/v1/zones/*/readings
+POST glasshouse/v1/zones/*/harvest-plan
