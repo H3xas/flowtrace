@@ -226,7 +226,13 @@ inside the loop.
 | `pw_stub` | `spec`, `test`, `kind` | a test stubs a response; `handler` says what its route handler does |
 | `pw_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `pw_test`: whether the test runs on a real backend, on patched responses or on a mocked backend |
 | `cypress_test` | `spec`, `test`, `skipped` | a Cypress test is declared |
-| `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL |
+| `cypress_intercept` | `spec`, `test`, `verb`, `pattern` | a Cypress spec or support file intercepts a URL; `handler` says what its handler does |
+| `cypress_backend` | `spec`, `test`, `skipped`, `backend`, `sites` | one per `cypress_test`, in the shape of `pw_backend` |
+| `pw_visit` | `spec`, `test`, `testLine`, `skipped` | a Playwright test visits a page with `page.goto(` |
+| `cypress_visit` | `spec`, `test`, `testLine`, `skipped` | a Cypress test visits a page with `cy.visit(` |
+| `email_read` | `spec`, `test`, `testLine`, `call`, `subject`, `skipped` | a test reaches a read call that `email.reads` names |
+| `email_template` | `id`, `subject` | one template file of an `email-templates` repository |
+| `email_sender` | `class`, `member`, `id` | a backend class member that `email.senders` names |
 | `case_id` | `spec`, `ids`, `source` | a test names test-management case ids — `source` is `annotation` for a `case-id` annotation push, `literal` for a literal argument of a configured case-id call, `table` for one row of a same-file data table the test iterates |
 | `pw_title` | `spec`, `titles` | *(optional)* the titles a collector resolved for one `pw_test` declaration, one per parameter instance; its `line` is that declaration's *source* line |
 
@@ -305,7 +311,57 @@ holds it, else the line of the test's call into `via`.
 `pw_stub.handler` comes from the same reader: `fulfill`, `fetch-fulfill`, `abort`, `spy` or
 `unresolved`. A direct `page.route(` stub takes the kind of its own handler. A stub helper call
 takes the kind that every repo-wide helper of that name agrees on, else `unresolved`. The field
-adds nothing to the set of `pw_stub` facts, and `cover` reads neither field.
+adds nothing to the set of `pw_stub` facts.
+
+`cypress_intercept.handler` uses the same words. It is `spy` for no handler, for a
+`req.continue()` that changes nothing, and for a handler that only reads the request. It is
+`fulfill` for a static response or a `req.reply(`, and `fetch-fulfill` for a `res.send(` in a
+`req.continue(` callback or in a `response` or `before:response` listener. It is `abort` for
+`req.destroy(` or `forceNetworkError`. It is `unresolved` for a handler that the file does not
+define, or for a handler that gives the request to other code.
+
+`cypress_backend` has the classes, precedence, `sites` and `reason` of `pw_backend`. The reader
+follows the test body, the `before` and `beforeEach` hooks of the file and of each enclosing
+`describe` or `context`, the functions of the same file and the custom commands that
+`Cypress.Commands.add(` defines in the suite. A `backend.mockCalls` or `backend.patchCalls` name
+matches `cy.<name>(`. A `cy.intercept(` counts by its handler, as a `.route(` handler does.
+
+`pw_request`, `pw_stub` and `cypress_intercept` can carry `testLine`: the declaration line of
+the test that holds the call, or `null` outside a test. Two tests with the same title in one
+spec have different owner lines, so `cover` joins a fact to the class fact of its own test by
+repository, spec and `testLine`.
+
+A `pw_stub` pattern keeps a part of its URL that the reader cannot read as one `${…}` span with
+the source text of the part, as a `cypress_intercept` pattern does. The reader never writes a
+`*` for such a part, because a `*` is a glob that the test author wrote. A stub whose span holds
+a call, an index, an operator or a member chain longer than `name.prop` has `resolved: false`.
+A bare name or a `name.prop` span keeps `resolved: true`, because it reads as a path parameter.
+A stub that the endpoint registry names and a `pw_request` template keep their own rule.
+
+`pw_visit` and `cypress_visit` are read from the regions that decide the backend class of the
+test: its body, its hooks, and the functions and Cypress commands those call. `path` is the
+literal page path, or `null` with `reason: "not-literal"`. `where` is `test`, `hook` or
+`helper`, and `file` and `line` name the visit call.
+
+`email_read` is written for each test that reaches a configured read call, at the call, with
+`where` as above. A Cypress read is the command `cy.<call>(`. `subject` is the text of a string
+literal, the text of a template literal with each `${…}` as `*`, or the value of a `const` of
+the same function bound to one of these. Another expression gives `subject: null` and
+`reason: "unreadable-subject"`. A test whose title is not a literal gives `test: null`, and
+`testLine` still names the test. A read records no assertion.
+
+`email_template` has the `id` and `subject` that the `templates` selectors pick
+([configuration.md](configuration.md#email-templates)), and `line` is the line of the subject
+value. Each `{{…}}` and `{{{…}}}` placeholder of the subject becomes `*`. A selector that matches
+no element, two elements or a value that is not a string gives a null value and a reason, for
+example `id-no-element`, `subject-two-elements` or `subject-not-a-string`. Two reasons are joined
+with a space. A file that does not parse gives both values null and `reason: "unread-file"`.
+
+`email_sender` is written for a member written as `string <Member> => <value>;` or
+`string <Member> { get; } = <value>;`, nested classes included. A string literal value is the
+`id`. A `<Class>.<NAME>` value names a `public const string` in any file of the repository, and
+`constant` keeps that reference. A reference to no constant gives `id: null` and
+`reason: "no-constant"`, and a reference to two gives `reason: "two-constants"`.
 
 `case_id` resolves only three shapes and refuses the rest: a
 `test.info().annotations.push({ type: 'case-id', description: '…' })` whose description is

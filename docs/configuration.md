@@ -39,6 +39,7 @@ checkouts named as siblings of the file.
 | `sinks` | no | what makes a class a data sink, below |
 | `caseId` | no | call shapes whose literal arguments are test-management case ids, below |
 | `backend` | no | the calls that mock or patch the backend of a browser test, below |
+| `email` | no | the test calls that read an email and the backend members that name one, below |
 | `workerPatterns` | no | a worker-queue framework's own extraction patterns, below |
 | `scout` | no | `{ "bin": "<path or command>" }` — the code index used for graph hops |
 | `scaffold` | no | the target harness's conventions, used by `scaffold` |
@@ -49,7 +50,7 @@ checkouts named as siblings of the file.
 | key | required | meaning |
 |---|---|---|
 | `id` | yes | unique short name; names the fact file and `--repo` |
-| `kind` | yes | `backend` · `mobile` · `contracts` · `playwright` · `web` |
+| `kind` | yes | `backend` · `mobile` · `contracts` · `playwright` · `web` · `email-templates` |
 | `root` | yes | path to the checkout |
 | `exclude` | no | glob patterns skipped during the walk |
 | `role` | no | `["api"]` · `["worker"]` · `["contracts"]` — what this repository *is*, when one kind serves two purposes |
@@ -62,6 +63,7 @@ checkouts named as siblings of the file.
 | `routeAssumptions` | no | `web` only: the value of a condition a `<Route>` sits under; see [Web page mounts and assumptions](#web-page-mounts-and-assumptions) |
 | `featureRoots` | no | `mobile` only: source roots to walk instead of the single default |
 | `cypress` | no | `mobile` only: allowlisted Cypress discovery roots, below |
+| `templates` | yes for `email-templates` | `email-templates` only: the template files and the selectors of their id and subject; see [Email templates](#email-templates) |
 
 ### Kinds
 
@@ -76,6 +78,8 @@ checkouts named as siblings of the file.
   handlers, action creators that issue HTTP, and a sibling Cypress suite.
 - **`playwright`** — a spec suite. Tests, skips, case ids, requests, assertions, stubs, and
   with `"titles": true` the resolved titles of parameterised tests.
+- **`email-templates`** — a repository of JSON email templates. One `email_template` fact for
+  each file that `templates.files` matches.
 
 ### Web page mounts and assumptions
 
@@ -194,6 +198,27 @@ output is not the JSON reporter's — extraction still succeeds. The extract lin
 success the header carries `"titles": { "status": "ok", "facts": N, "refused": M }`, where
 `M` counts the spec files the guards above refused. Without the option the header has no
 `titles` field and nothing is spawned.
+
+### Email templates
+
+An `email-templates` repository has a `templates` object. `files` is a non-empty array of
+globs, relative to `root`, and only `.json` files are read. `id` and `subject` are selectors.
+
+```json
+{ "id": "mail", "kind": "email-templates", "root": "shop-mail",
+  "templates": {
+    "files": ["templates/**/*.json"],
+    "id": "meta.template.code",
+    "subject": "channels[kind=email].sections[role=subject].text"
+  } }
+```
+
+A selector is dotted keys. A key can carry a `[field=value]` filter. The filter picks the one
+element of an array whose `field` holds `value`. A selector that matches no element or two, or
+a value that is not a string, gives a null value and a reason
+([fact-schema.md](fact-schema.md#test-evidence)). The loader refuses, with one message that
+names `templates`, a value that is not of this shape. A `templates` key on another kind is
+refused.
 
 ### External fact provider
 
@@ -365,6 +390,32 @@ a comment or in a string never matches.
 The loader refuses, with one message that names `backend`, a value that is not an object, a
 key other than `mockCalls` and `patchCalls`, a list that is not an array of call names, and a
 name in both lists. A repeated name in one list counts once.
+
+The Cypress readers use the same lists. A name matches the command `cy.<name>(`, and the class
+goes into a `cypress_backend` fact for each Cypress test.
+
+## `email`
+
+`email` names the test calls that read an email and the backend members that name one. Without
+the key, no extractor gives an email fact.
+
+```json
+"email": {
+  "reads": [{ "call": "readMail", "subject": "0.subject" }],
+  "senders": [{ "member": "EmailCode" }]
+}
+```
+
+- `reads`: each entry has a `call` and the position of its subject. A `call` is a callee as
+  written, as in `backend`. A Cypress test reads with the command `cy.<call>(`. `subject` is an
+  argument index, or `"<index>.<key>"` for a key of an object argument. Each test that reaches
+  the call gives one `email_read` fact.
+- `senders`: each entry names a class `member`. A backend repository gives one `email_sender`
+  fact for each class that defines the member as a string.
+
+`cover` links each email read to one template by its subject and to one sender by the template
+id ([cli.md](cli.md)). The loader refuses, with one message that names `email`, a value that is
+not an object, an unknown key, and an entry that is not of this shape.
 
 ## `workerPatterns`
 

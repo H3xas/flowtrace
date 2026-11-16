@@ -101,6 +101,17 @@ join [--snapshot <file>] [--export-edges <file>] | join --against <file> [--json
   (the snapshot at schemaVersion 2, the drift report and the export at schemaVersion 1)
   and may change between minor versions.
 
+  Test evidence joins as tests edges: a Cypress intercept, a Playwright API request and
+  a Playwright route stub each give one edge to the route they name, and each internal
+  edge carries its source. An entry that names no route goes to intercepts_without_route
+  with its source, and with reason "opaque" for an opaque stub, "no-path" for a
+  pattern with no path, or "ambiguous" with its candidates when two routes fit with
+  equal rank. An intercept or stub pattern reads as a glob, segment by segment: a
+  trailing * stays inside its segment and a ** takes one or more segments. A ${...} span
+  is a value, not a glob: alone in its segment it meets only a route parameter, and at
+  the end of literal text it stands for that route and a longer one. A Playwright
+  request template is read as before.
+
 routes-of <point> [--symbol | --literal] [--repo <id>] [--max-nodes N] [--json]
   Resolves <point> as repository-relative file:line, then exact method symbol, then
   an exact allowlisted literal. --symbol and --literal force one mode and never fall
@@ -462,6 +473,20 @@ cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <di
   Seeds from a globally registered filter count in their route's seeds and again, apart,
   as "shared-gate" in totals and the headline; a route whose pipeline the walk could not
   resolve names it with its reason, and totals count those pipelines.
+
+  Each route also carries three views that change no route state, level, evidence count
+  or parity. realism gives each named evidence entry the backend class of its own test
+  (real, patched, mocked, unknown or none), its handler and its reach (stubbed, backend,
+  blocked or unknown), with executing and skipped entries counted apart; --json adds a
+  realism total. pageReach counts, by backend class, the tests that visit a page whose
+  page walk reaches the route; it is inferred, not named evidence, and notes.visits
+  counts the visits that matched, matched no page, matched two or could not be read.
+  emails lists the email reads whose test has named evidence on an area route or whose
+  sender is on an area route walk, each linked to one template and one sender or with
+  its state: linked, no-subject, no-template, ambiguous-template, no-sender or
+  ambiguous-sender, an ambiguous state with its candidates; emails.outsideArea counts
+  the other reads. A link is a static match, not proof of delivery. The intercepts note
+  counts the patterns that two routes fit with equal rank as ambiguous.
 
   --runtime <file> joins per-spec runtime line hits against the branch spans facts
   already carry: a cobertura or lcov artifact, or a JSON manifest naming one report
