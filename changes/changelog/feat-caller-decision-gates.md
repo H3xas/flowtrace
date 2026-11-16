@@ -17,8 +17,11 @@
   outcome of each value and the decision id. `--json` adds `callerGates` to the node. With
   `--seeds`, a `caller cases` block follows the seeds, and `--json` adds `callerCases`. There
   is one case for each distinct gate. A case holds the value that skips the call, the gates
-  each path passes first and the routes below the skipped call. Gates change no seed and no
-  other reader. `--view source-flow`, `--graph` and `--mermaid` show none.
+  each walk path passes first and the routes below the skipped call. The call sites of one
+  hop with different gates are the alternatives of one step, `one of (A | B)` in the text and
+  `anyOf` in `--json`. A case lists at most 32 paths and counts the rest in `pathsTruncated`.
+  Gates change no seed and no other reader. `--view source-flow`, `--graph` and `--mermaid`
+  show none.
 
 ### Decisions
 
