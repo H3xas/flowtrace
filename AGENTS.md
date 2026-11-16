@@ -25,3 +25,11 @@ literal `Signed-off-by:` trailer before it ever reaches the DCO check in CI,
 which reads the trailer out of the commit object. That check skips a merge
 commit, which is a commit with more than one parent. The host writes the
 merge commit of a pull request without a trailer.
+
+# Changelog fragments
+
+A change never edits `CHANGELOG.md`. It adds its entry as
+`changes/changelog/<branch name with each / as ->.md`, holding only
+`### <Label>` blocks with their list items. The release folds the fragments
+into `## Unreleased` (see RELEASING.md and the Documentation section of
+CONTRIBUTING.md).

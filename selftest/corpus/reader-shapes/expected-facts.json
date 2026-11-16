@@ -1,0 +1,629 @@
+[
+  {
+    "type": "pw_test",
+    "file": "tests/kilns.spec.ts",
+    "line": 10,
+    "spec": "tests/kilns.spec.ts",
+    "test": "lists the kilns",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "case_id",
+    "file": "tests/kilns.spec.ts",
+    "line": 10,
+    "spec": "tests/kilns.spec.ts",
+    "ids": [
+      "C-11"
+    ],
+    "source": "annotation"
+  },
+  {
+    "type": "pw_request",
+    "file": "tests/kilns.spec.ts",
+    "line": 13,
+    "spec": "tests/kilns.spec.ts",
+    "test": "lists the kilns",
+    "verb": "GET",
+    "template": "studio/v1/kilns/all",
+    "resolved": true,
+    "via": "helper",
+    "receiver": "KilnClient",
+    "chain": [
+      {
+        "file": "tests/kilns.spec.ts",
+        "line": 13,
+        "call": "kilns.list"
+      },
+      {
+        "file": "clients/kiln-client.ts",
+        "line": 10,
+        "call": "this.ctx.get"
+      }
+    ]
+  },
+  {
+    "type": "pw_assert",
+    "file": "tests/kilns.spec.ts",
+    "line": 14,
+    "spec": "tests/kilns.spec.ts",
+    "test": "lists the kilns",
+    "kind": "status",
+    "value": 200
+  },
+  {
+    "type": "pw_backend",
+    "file": "tests/kilns.spec.ts",
+    "line": 10,
+    "spec": "tests/kilns.spec.ts",
+    "test": "lists the kilns",
+    "skipped": false,
+    "backend": "real",
+    "sites": []
+  },
+  {
+    "type": "pw_test",
+    "file": "tests/kilns.spec.ts",
+    "line": 17,
+    "spec": "tests/kilns.spec.ts",
+    "test": "fires one kiln",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_request",
+    "file": "tests/kilns.spec.ts",
+    "line": 19,
+    "spec": "tests/kilns.spec.ts",
+    "test": "fires one kiln",
+    "verb": "PUT",
+    "template": "studio/v1/doors/open",
+    "resolved": true,
+    "via": "helper",
+    "chain": [
+      {
+        "file": "tests/kilns.spec.ts",
+        "line": 19,
+        "call": "openStudio"
+      },
+      {
+        "file": "helpers/steps.ts",
+        "line": 4,
+        "call": "request.put"
+      }
+    ]
+  },
+  {
+    "type": "pw_request",
+    "file": "tests/kilns.spec.ts",
+    "line": 20,
+    "spec": "tests/kilns.spec.ts",
+    "test": "fires one kiln",
+    "verb": "POST",
+    "template": "studio/v1/kilns/${id}/fire",
+    "resolved": true,
+    "via": "helper",
+    "receiver": "KilnClient",
+    "chain": [
+      {
+        "file": "tests/kilns.spec.ts",
+        "line": 20,
+        "call": "kilns.fire"
+      },
+      {
+        "file": "clients/kiln-client.ts",
+        "line": 14,
+        "call": "this.ctx.post"
+      }
+    ]
+  },
+  {
+    "type": "pw_request",
+    "file": "tests/kilns.spec.ts",
+    "line": 22,
+    "spec": "tests/kilns.spec.ts",
+    "test": "fires one kiln",
+    "verb": "GET",
+    "template": "studio/v1/kilns/k1",
+    "resolved": true
+  },
+  {
+    "type": "pw_assert",
+    "file": "tests/kilns.spec.ts",
+    "line": 21,
+    "spec": "tests/kilns.spec.ts",
+    "test": "fires one kiln",
+    "kind": "effect",
+    "value": 204
+  },
+  {
+    "type": "pw_assert",
+    "file": "tests/kilns.spec.ts",
+    "line": 23,
+    "spec": "tests/kilns.spec.ts",
+    "test": "fires one kiln",
+    "kind": "effect",
+    "value": 200
+  },
+  {
+    "type": "pw_backend",
+    "file": "tests/kilns.spec.ts",
+    "line": 17,
+    "spec": "tests/kilns.spec.ts",
+    "test": "fires one kiln",
+    "skipped": false,
+    "backend": "real",
+    "sites": []
+  },
+  {
+    "type": "pw_test",
+    "file": "tests/kilns.spec.ts",
+    "line": 26,
+    "spec": "tests/kilns.spec.ts",
+    "test": "cools down through a helper",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_request",
+    "file": "tests/kilns.spec.ts",
+    "line": 28,
+    "spec": "tests/kilns.spec.ts",
+    "test": "cools down through a helper",
+    "verb": "GET",
+    "template": "studio/v1/kilns/all",
+    "resolved": true,
+    "via": "helper",
+    "receiver": "KilnClient",
+    "chain": [
+      {
+        "file": "tests/kilns.spec.ts",
+        "line": 28,
+        "call": "coolDown"
+      },
+      {
+        "file": "helpers/steps.ts",
+        "line": 8,
+        "call": "client.list"
+      },
+      {
+        "file": "clients/kiln-client.ts",
+        "line": 10,
+        "call": "this.ctx.get"
+      }
+    ]
+  },
+  {
+    "type": "pw_request",
+    "file": "tests/kilns.spec.ts",
+    "line": 29,
+    "spec": "tests/kilns.spec.ts",
+    "test": "cools down through a helper",
+    "verb": "GET",
+    "template": "studio/v1/glazes/list",
+    "resolved": true,
+    "via": "helper",
+    "receiver": "KilnClient",
+    "chain": [
+      {
+        "file": "tests/kilns.spec.ts",
+        "line": 29,
+        "call": "kilns.glazes"
+      },
+      {
+        "file": "clients/kiln-client.ts",
+        "line": 18,
+        "call": "this.ctx.get"
+      }
+    ]
+  },
+  {
+    "type": "pw_backend",
+    "file": "tests/kilns.spec.ts",
+    "line": 26,
+    "spec": "tests/kilns.spec.ts",
+    "test": "cools down through a helper",
+    "skipped": false,
+    "backend": "real",
+    "sites": []
+  },
+  {
+    "type": "pw_test",
+    "file": "tests/kilns.spec.ts",
+    "line": 33,
+    "spec": "tests/kilns.spec.ts",
+    "test": "reads the ${row.name} kiln",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "case_id",
+    "file": "tests/kilns.spec.ts",
+    "line": 33,
+    "spec": "tests/kilns.spec.ts",
+    "ids": [
+      "K-101"
+    ],
+    "source": "evaluated",
+    "instance": {
+      "row.id": "K-101"
+    }
+  },
+  {
+    "type": "case_id",
+    "file": "tests/kilns.spec.ts",
+    "line": 33,
+    "spec": "tests/kilns.spec.ts",
+    "ids": [
+      "K-102"
+    ],
+    "source": "evaluated",
+    "instance": {
+      "row.id": "K-102"
+    }
+  },
+  {
+    "type": "pw_request",
+    "file": "tests/kilns.spec.ts",
+    "line": 35,
+    "spec": "tests/kilns.spec.ts",
+    "test": "reads the ${row.name} kiln",
+    "verb": "GET",
+    "template": "studio/v1/kilns/${row.id}",
+    "resolved": true
+  },
+  {
+    "type": "pw_assert",
+    "file": "tests/kilns.spec.ts",
+    "line": 36,
+    "spec": "tests/kilns.spec.ts",
+    "test": "reads the ${row.name} kiln",
+    "kind": "body"
+  },
+  {
+    "type": "pw_backend",
+    "file": "tests/kilns.spec.ts",
+    "line": 33,
+    "spec": "tests/kilns.spec.ts",
+    "test": "reads the ${row.name} kiln",
+    "skipped": false,
+    "backend": "real",
+    "sites": []
+  },
+  {
+    "type": "pw_test",
+    "file": "tests/kilns.spec.ts",
+    "line": 41,
+    "spec": "tests/kilns.spec.ts",
+    "test": "waits for the new kiln",
+    "skipped": true,
+    "eligibility": "static-skip",
+    "guards": []
+  },
+  {
+    "type": "pw_request",
+    "file": "tests/kilns.spec.ts",
+    "line": 42,
+    "spec": "tests/kilns.spec.ts",
+    "test": "waits for the new kiln",
+    "verb": "DELETE",
+    "template": "studio/v1/kilns/old",
+    "resolved": true
+  },
+  {
+    "type": "pw_backend",
+    "file": "tests/kilns.spec.ts",
+    "line": 41,
+    "spec": "tests/kilns.spec.ts",
+    "test": "waits for the new kiln",
+    "skipped": true,
+    "backend": "real",
+    "sites": []
+  },
+  {
+    "type": "pw_test",
+    "file": "tests/kilns.spec.ts",
+    "line": 46,
+    "spec": "tests/kilns.spec.ts",
+    "test": "skipped on its own",
+    "skipped": true,
+    "eligibility": "static-skip",
+    "guards": []
+  },
+  {
+    "type": "pw_backend",
+    "file": "tests/kilns.spec.ts",
+    "line": 46,
+    "spec": "tests/kilns.spec.ts",
+    "test": "skipped on its own",
+    "skipped": true,
+    "backend": "real",
+    "sites": []
+  },
+  {
+    "type": "pw_test",
+    "file": "e2e/studio.pw.ts",
+    "line": 8,
+    "spec": "e2e/studio.pw.ts",
+    "test": "shows the stubbed kilns",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_backend",
+    "file": "e2e/studio.pw.ts",
+    "line": 8,
+    "spec": "e2e/studio.pw.ts",
+    "test": "shows the stubbed kilns",
+    "skipped": false,
+    "backend": "patched",
+    "sites": [
+      {
+        "line": 5,
+        "where": "hook",
+        "kind": "abort",
+        "call": "page.route"
+      },
+      {
+        "line": 9,
+        "where": "helper",
+        "kind": "fulfill",
+        "call": "page.route",
+        "via": [
+          "stubKilns"
+        ],
+        "at": {
+          "file": "helpers/steps.ts",
+          "line": 12
+        }
+      }
+    ]
+  },
+  {
+    "type": "pw_test",
+    "file": "e2e/studio.pw.ts",
+    "line": 13,
+    "spec": "e2e/studio.pw.ts",
+    "test": "mocks everything",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_backend",
+    "file": "e2e/studio.pw.ts",
+    "line": 13,
+    "spec": "e2e/studio.pw.ts",
+    "test": "mocks everything",
+    "skipped": false,
+    "backend": "mocked",
+    "sites": [
+      {
+        "line": 5,
+        "where": "hook",
+        "kind": "abort",
+        "call": "page.route"
+      },
+      {
+        "line": 14,
+        "where": "test",
+        "kind": "mock",
+        "call": "stubEverything"
+      }
+    ]
+  },
+  {
+    "type": "pw_test",
+    "file": "e2e/studio.pw.ts",
+    "line": 18,
+    "spec": "e2e/studio.pw.ts",
+    "test": "seeds the kilns",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_backend",
+    "file": "e2e/studio.pw.ts",
+    "line": 18,
+    "spec": "e2e/studio.pw.ts",
+    "test": "seeds the kilns",
+    "skipped": false,
+    "backend": "patched",
+    "sites": [
+      {
+        "line": 5,
+        "where": "hook",
+        "kind": "abort",
+        "call": "page.route"
+      },
+      {
+        "line": 19,
+        "where": "test",
+        "kind": "patch",
+        "call": "seedKilns"
+      }
+    ]
+  },
+  {
+    "type": "pw_test",
+    "file": "e2e/studio.pw.ts",
+    "line": 22,
+    "spec": "e2e/studio.pw.ts",
+    "test": "watches the glazes",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_backend",
+    "file": "e2e/studio.pw.ts",
+    "line": 22,
+    "spec": "e2e/studio.pw.ts",
+    "test": "watches the glazes",
+    "skipped": false,
+    "backend": "real",
+    "sites": [
+      {
+        "line": 5,
+        "where": "hook",
+        "kind": "abort",
+        "call": "page.route"
+      },
+      {
+        "line": 23,
+        "where": "helper",
+        "kind": "spy",
+        "call": "page.route",
+        "via": [
+          "watchGlazes"
+        ],
+        "at": {
+          "file": "helpers/steps.ts",
+          "line": 16
+        }
+      }
+    ]
+  },
+  {
+    "type": "pw_test",
+    "file": "e2e/studio.pw.ts",
+    "line": 27,
+    "spec": "e2e/studio.pw.ts",
+    "test": "patches the prices",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_backend",
+    "file": "e2e/studio.pw.ts",
+    "line": 27,
+    "spec": "e2e/studio.pw.ts",
+    "test": "patches the prices",
+    "skipped": false,
+    "backend": "patched",
+    "sites": [
+      {
+        "line": 5,
+        "where": "hook",
+        "kind": "abort",
+        "call": "page.route"
+      },
+      {
+        "line": 28,
+        "where": "test",
+        "kind": "fetch-fulfill",
+        "call": "page.route"
+      }
+    ]
+  },
+  {
+    "type": "pw_test",
+    "file": "e2e/studio.pw.ts",
+    "line": 34,
+    "spec": "e2e/studio.pw.ts",
+    "test": "reads a real backend",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_backend",
+    "file": "e2e/studio.pw.ts",
+    "line": 34,
+    "spec": "e2e/studio.pw.ts",
+    "test": "reads a real backend",
+    "skipped": false,
+    "backend": "real",
+    "sites": [
+      {
+        "line": 5,
+        "where": "hook",
+        "kind": "abort",
+        "call": "page.route"
+      }
+    ]
+  },
+  {
+    "type": "pw_test",
+    "file": "e2e/studio.pw.ts",
+    "line": 40,
+    "spec": "e2e/studio.pw.ts",
+    "test": "passes a body by name",
+    "skipped": false,
+    "eligibility": "eligible",
+    "guards": []
+  },
+  {
+    "type": "pw_backend",
+    "file": "e2e/studio.pw.ts",
+    "line": 40,
+    "spec": "e2e/studio.pw.ts",
+    "test": "passes a body by name",
+    "skipped": false,
+    "backend": "unknown",
+    "sites": [
+      {
+        "line": 5,
+        "where": "hook",
+        "kind": "abort",
+        "call": "page.route"
+      }
+    ],
+    "reason": "body-by-reference"
+  },
+  {
+    "type": "pw_stub",
+    "file": "e2e/studio.pw.ts",
+    "line": 5,
+    "spec": "e2e/studio.pw.ts",
+    "test": "",
+    "kind": "route",
+    "skipped": false,
+    "verb": "ANY",
+    "pattern": "**/studio/v1/banner",
+    "resolved": true,
+    "handler": "abort"
+  },
+  {
+    "type": "pw_stub",
+    "file": "e2e/studio.pw.ts",
+    "line": 28,
+    "spec": "e2e/studio.pw.ts",
+    "test": "patches the prices",
+    "kind": "route",
+    "skipped": false,
+    "verb": "ANY",
+    "pattern": "**/studio/v1/prices",
+    "resolved": true,
+    "handler": "fetch-fulfill"
+  },
+  {
+    "type": "pw_stub",
+    "file": "e2e/studio.pw.ts",
+    "line": 9,
+    "spec": "e2e/studio.pw.ts",
+    "test": "shows the stubbed kilns",
+    "kind": "opaque",
+    "skipped": false,
+    "helper": "stubKilns",
+    "handler": "fulfill"
+  },
+  {
+    "type": "pw_stub",
+    "file": "e2e/studio.pw.ts",
+    "line": 23,
+    "spec": "e2e/studio.pw.ts",
+    "test": "watches the glazes",
+    "kind": "opaque",
+    "skipped": false,
+    "helper": "watchGlazes",
+    "handler": "spy"
+  }
+]

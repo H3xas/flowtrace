@@ -1,0 +1,35 @@
+{
+  "out": "out",
+  "repos": [
+    {
+      "id": "api",
+      "kind": "backend",
+      "root": "api",
+      "role": [
+        "api"
+      ],
+      "exceptionStatuses": {
+        "TicketBadRequestException": 400,
+        "SeatUnauthorizedException": 401,
+        "GateClosedException": 400,
+        "PierDownException": 503
+      }
+    },
+    {
+      "id": "ops",
+      "kind": "backend",
+      "root": "ops",
+      "role": [
+        "api"
+      ],
+      "exceptionStatuses": {
+        "TicketLostException": 404
+      }
+    },
+    {
+      "id": "web",
+      "kind": "web",
+      "root": "web"
+    }
+  ]
+}

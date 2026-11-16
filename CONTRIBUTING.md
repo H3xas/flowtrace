@@ -81,9 +81,10 @@ in the pull request. A change nobody can see in the worked example is hard to re
 
 Alongside that, `selftest/` holds a public, synthetic suite over invented fixtures that
 exercises the CLI's outer contract — argument parsing, `--help`, exit codes, `--json` shapes,
-error envelopes — run with `npm test`. `npm run verify` runs it as its first stage, and fails
-before running anything when the `test` script omits a file the suite holds. It does not
-replace the private regression suite or
+error envelopes — run with `npm test`. The `test` script finds the suite by the glob `selftest/*.test.js`, so a
+new test file needs no edit to `package.json`. `npm run verify` runs it as its first stage, and
+fails before running anything when the `test` script is not exactly
+`node --test selftest/*.test.js`. It does not replace the private regression suite or
 the worked example; it is the layer a stranger's pull request is verified against before a
 maintainer looks at it. See [selftest/README.md](selftest/README.md).
 
@@ -96,7 +97,7 @@ the suite.
 
 | stage | what it proves |
 |---|---|
-| `suite` | every test file under `selftest/` is named by the `test` script, and all of them pass with none skipped |
+| `suite` | the `test` script is `node --test selftest/*.test.js`, and every file that glob matches passes with none skipped |
 | `cli-smoke` | `node bin/flowtrace.js --help` answers from a checkout with no install step |
 | `worked-example` | `examples/demo-shop` extracts, joins, exports twice byte-identically, matches its pinned export, writes the checkout packets and compares each golden packet under `calibration/` byte for byte with the written packet of its route, and runs cover, span, surface, skeleton, check and calibrate |
 | `machine-paths` | no absolute home path, Windows user path or `file://` URL anywhere in the tree |
@@ -145,6 +146,13 @@ Everything else about the documentation set is listed in [docs/README.md](docs/R
 New prose belongs in one of those documents or in `--help`; a new measurement belongs under
 `docs/benchmarks/` with its method and environment, as
 [docs/benchmarks/README.md](docs/benchmarks/README.md) requires.
+
+A change does not edit `CHANGELOG.md`. It adds its entry as its own file,
+`changes/changelog/<branch name>.md`, with each `/` of the branch name written as `-`. The file
+holds only `### <Label>` blocks, such as `### Extraction` with its list items, and each label is
+a group of `## Unreleased`. Two changes then never edit the same lines. The release folds every
+file under its heading in `## Unreleased` and deletes it; see [RELEASING.md](RELEASING.md). The
+package never carries `changes/`.
 
 ## Extending an extractor
 

@@ -36,6 +36,11 @@ Templates on either side are normalised before comparison — a `{productId}` on
 and a `${id}` on the caller are the same segment. `aliases` in the configuration file
 rewrite a route prefix when a gateway serves one path under another name.
 
+Only a `calls` edge, built from a `gateway_call` fact, is an app caller. A `tests` edge
+comes from a `cypress_intercept` written in a Cypress spec, a support file or a page model.
+It is test evidence that `cover` counts, and no caller list reads it. A route that only a
+test requests stays in `routes_without_caller`.
+
 ## The walk
 
 `flowtrace trace <start>` walks forward from a start to everything it reaches: the
@@ -56,6 +61,12 @@ When facts run out — an interface with no registration, a call into a reposito
 not extracted — the walk can consult a code index (see [scout.md](scout.md)) for one more
 hop. Without one, the node prints `unresolved`, which is an answer too.
 
+Some hops are not a plain call on an injected field. A mapper call reaches the classes that
+its map names. Work handed to a background queue hangs under one queue node. A call through a
+keyed collection reaches each implementation, and the walk marks that hop as inferred,
+because the key is known only at run time. A route that a gateway forwards walks the gateway
+stages and ends at the downstream call.
+
 ### Walking back to routes
 
 `flowtrace routes-of <point>` resolves a repository-relative `file:line`, an exact method
@@ -64,6 +75,11 @@ that fact-backed point. The membership authority is still the forward walk above
 reachability does not reinterpret the graph or add an extraction pass. It disables the normal
 depth and interface-fan-out display limits, uses no optional code-index hop, and refuses the
 whole route set if its explicit node safety budget is reached.
+
+The walk also starts at each backend entry that no route is in front of: a SignalR hub
+method, an actor message handler, or a method that the `entryPoints` configuration names. An
+entry that reaches the point is listed beside the routes. A route that reaches the point only
+through a global filter counts as well, and its witness shows the filter as a `gate` hop.
 
 One shortest witness is kept per route, every hop carrying repository-relative provenance;
 other valid paths are counted. Seeds and evidence keep their existing meanings. In particular,

@@ -1,0 +1,15 @@
+{
+  "out": "out",
+  "entryPoints": [
+    { "kind": "change-feed", "bases": ["IChangeHandler"], "methods": ["Handle"] },
+    { "kind": "relay", "bases": ["RelayTransformer"], "methods": ["Transform"] }
+  ],
+  "repos": [
+    {
+      "id": "harbor",
+      "kind": "backend",
+      "root": "backend",
+      "role": ["api"]
+    }
+  ]
+}
