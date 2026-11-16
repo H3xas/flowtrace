@@ -24,3 +24,20 @@
 - `trace <name>` and `trace <Owner>.<name>` start at a web module-level function when no
   page, component, service, route, method or class matches. Two such functions give the
   ambiguous answer.
+
+### Affected
+
+- A changed web source file that holds a `gateway_call` selects each route of the universe
+  that `join` matches the call to, with the configured aliases. The route row names the web
+  file.
+- A `web` repository whose root is in another git checkout is read there too, in the mode of
+  the run. A checkout that git cannot read gives one `checkout-not-read [<repo id>]: <cause>`
+  reason line for each of its `web` repositories.
+- The diff is read at the top level of the git checkout that holds the backend root. A path
+  under no configured root selects no route. It keeps each whole-suite answer: `no-facts`,
+  `config-only`, `unindexed` and the `--dotnet-filter` `out-of-scope` answer. Otherwise it gets
+  the reason line `unmapped: <path> — no configured root holds this path, so it selects
+  nothing`.
+- Two answers change. A spec file under no configured root is no changed spec, so the run
+  exits 3, not 0. With `--dotnet-filter`, a `.cs` file of another configured repository is not
+  `out-of-scope`.
