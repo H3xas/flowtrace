@@ -6,6 +6,7 @@
   "repos": [
     { "id": "backend", "kind": "backend", "root": "backend", "role": ["api"] },
     { "id": "web", "kind": "web", "root": "web" },
-    { "id": "mobile", "kind": "mobile", "root": "mobile" }
+    { "id": "mobile", "kind": "mobile", "root": "mobile" },
+    { "id": "suite", "kind": "playwright", "root": "suite" }
   ]
 }

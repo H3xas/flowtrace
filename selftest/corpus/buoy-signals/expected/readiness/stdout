@@ -12,7 +12,7 @@ Unreachable-only (JWT/body-gated, needs fixture data): none
 
 | Route | Reachable | Edge | Unreachable | Unknown | DB write | DB read | Publish | Worker | SignalR | Push (other) | Infra-only | Coverage |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| GET glasshouse/v1/zones/*/watchers | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | n/a |
+| GET glasshouse/v1/zones/*/watchers | 1 | 0 | 0 | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | route |
 
 ## Area: readings
 
@@ -27,7 +27,7 @@ _No backend route reached by this area's components._
 
 | Area | Components | Routes | Zero-reach | Unreachable-only | Reachable | Edge | Unreachable | Unknown | Coverage |
 |---|---|---|---|---|---|---|---|---|---|
-| zones | 2 | 1 | 0 | 0 | 1 | 0 | 0 | 0 | n/a |
-| readings | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | n/a |
-| **Estate** | 2 | 1 | 0 | 0 | 1 | 0 | 0 | 0 | n/a |
+| zones | 2 | 1 | 0 | 0 | 1 | 0 | 0 | 1 | 1 route · 0 skipped · 0 none |
+| readings | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 route · 0 skipped · 0 none |
+| **Estate** | 2 | 1 | 0 | 0 | 1 | 0 | 0 | 1 | 1 route · 0 skipped · 0 none |
 

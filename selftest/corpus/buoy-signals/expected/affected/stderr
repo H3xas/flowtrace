@@ -1,1 +1,1 @@
-flowtrace: affected: 5 of 7 walks did not complete (unresolved-target 24, provider-unavailable 1); its answer can miss what they did not reach
+flowtrace: affected: 4 of 7 walks did not complete (unresolved-target 24); its answer can miss what they did not reach

@@ -2,9 +2,11 @@
   "out": "out",
   "aliases": [{ "from": "greenhouse/", "to": "glasshouse/" }],
   "scout": { "bin": "scout/scout-stub.mjs" },
+  "scope": { "gatePatterns": ["^RelayGate$"] },
   "repos": [
     { "id": "backend", "kind": "backend", "root": "backend", "role": ["api"], "scout": true },
     { "id": "web", "kind": "web", "root": "web" },
-    { "id": "mobile", "kind": "mobile", "root": "mobile" }
+    { "id": "mobile", "kind": "mobile", "root": "mobile" },
+    { "id": "suite", "kind": "playwright", "root": "suite" }
   ]
 }

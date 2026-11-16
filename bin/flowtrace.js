@@ -2511,6 +2511,10 @@ async function runCover(config, options) {
   const verdictEntries = options.verdicts ? readVerdicts(resolve(options.verdicts)) : null;
   const packetsDir = options.packets ? resolve(options.packets) : null;
   const mobileRepo = config.repos.find((repo) => repo.kind === 'mobile');
+  // Built once for the whole run, outside the passes: they read the fact sets and the
+  // aliases but no lookup answer, so a later pass would only build them again.
+  const traceIndex = traceModule.buildTraceIndex(factSets);
+  const prepared = coverModule.prepareCover(factSets, { aliases: config.aliases });
 
   const outcome = await scout.passes((lookups) => {
     const traceOptions = {
@@ -2524,7 +2528,14 @@ async function runCover(config, options) {
       repos: config.repos,
       outbound: lookups.outbound,
     };
-    const walked = cover(factSets, { area: area.name, keys, aliases: config.aliases, traceOptions, runtime });
+    const walked = cover(factSets, {
+      area: area.name,
+      keys,
+      aliases: config.aliases,
+      traceOptions: { ...traceOptions, index: traceIndex },
+      runtime,
+      prepared,
+    });
     const merge = verdictEntries ? mergeVerdicts(walked, verdictEntries) : null;
     const counted = countWalks(traceModule.trace);
     const packets = packetsDir
@@ -2620,6 +2631,10 @@ async function runScope(config, options) {
     if (notice) warn(notice);
     return code;
   };
+  // Built once for the whole run, outside the passes: they read the fact sets and the
+  // aliases but no lookup answer, so a later pass would only build them again.
+  const traceIndex = traceModule.buildTraceIndex(factSets);
+  const prepared = coverModule.prepareCover(factSets, { aliases: config.aliases });
   const passed = await scout.passes((lookups) => {
     const counted = countWalks(traceModule.trace);
     const scoped = scope(factSets, {
@@ -2633,10 +2648,12 @@ async function runScope(config, options) {
         consumerEntryMethods: config.workerPatterns.consumerEntryMethods,
         repos: config.repos,
         outbound: lookups.outbound,
+        index: traceIndex,
       },
       repos: config.repos,
       gatePatterns: config.scope.gatePatterns,
       freshness: { value: facts.value, sets: facts.sets },
+      prepared,
     });
     return { scoped, walkCounts: counted.counts };
   });

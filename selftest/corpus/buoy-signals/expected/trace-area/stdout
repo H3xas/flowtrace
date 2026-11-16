@@ -89,13 +89,40 @@
         "line": 1,
         "via": "graph",
         "hops": 4,
-        "graph": "unavailable",
         "class": "RelaySink",
         "homeRepo": "backend",
         "methodDepth": 1
       },
       {
         "id": "n7",
+        "repo": "backend",
+        "kind": "class",
+        "ref": "RelayGate",
+        "file": "backend/src/Services/RelayGate.cs",
+        "line": 1,
+        "via": "graph",
+        "hops": 5,
+        "class": "RelayGate",
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n8",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "ReadingRepository",
+        "file": "src/DataAccess/ReadingRepository.cs",
+        "line": 14,
+        "via": "graph",
+        "hops": 6,
+        "sink": true,
+        "access": "unknown",
+        "accessUnknown": true,
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n9",
         "repo": "backend",
         "kind": "class",
         "ref": "IWatcherService",
@@ -108,7 +135,7 @@
         "methodDepth": 0
       },
       {
-        "id": "n8",
+        "id": "n10",
         "repo": "backend",
         "kind": "class",
         "ref": "WatcherService",
@@ -121,7 +148,7 @@
         "methodDepth": 0
       },
       {
-        "id": "n9",
+        "id": "n11",
         "repo": "backend",
         "kind": "method",
         "ref": "WatcherService.ListWatchers",
@@ -135,7 +162,7 @@
         "methodDepth": 1
       },
       {
-        "id": "n10",
+        "id": "n12",
         "repo": "backend",
         "kind": "class",
         "ref": "IWatcherRepository",
@@ -148,7 +175,7 @@
         "methodDepth": 1
       },
       {
-        "id": "n11",
+        "id": "n13",
         "repo": "backend",
         "kind": "db",
         "ref": "WatcherRepository",
@@ -221,22 +248,36 @@
         "toRepo": "backend"
       },
       {
-        "from": "n2",
+        "from": "n6",
         "to": "n7",
-        "via": "ctor",
+        "via": "graph",
         "fromRepo": "backend",
         "toRepo": "backend"
       },
       {
         "from": "n7",
         "to": "n8",
+        "via": "graph",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n2",
+        "to": "n9",
+        "via": "ctor",
+        "fromRepo": "backend",
+        "toRepo": "backend"
+      },
+      {
+        "from": "n9",
+        "to": "n10",
         "via": "di",
         "fromRepo": "backend",
         "toRepo": "backend"
       },
       {
-        "from": "n8",
-        "to": "n9",
+        "from": "n10",
+        "to": "n11",
         "via": "body",
         "fromRepo": "backend",
         "toRepo": "backend",
@@ -251,15 +292,15 @@
         ]
       },
       {
-        "from": "n9",
-        "to": "n10",
+        "from": "n11",
+        "to": "n12",
         "via": "ctor",
         "fromRepo": "backend",
         "toRepo": "backend"
       },
       {
-        "from": "n10",
-        "to": "n11",
+        "from": "n12",
+        "to": "n13",
         "via": "di",
         "fromRepo": "backend",
         "toRepo": "backend",
@@ -276,7 +317,22 @@
     ],
     "sinks": [
       {
-        "id": "n11",
+        "id": "n8",
+        "repo": "backend",
+        "kind": "db",
+        "ref": "ReadingRepository",
+        "file": "src/DataAccess/ReadingRepository.cs",
+        "line": 14,
+        "via": "graph",
+        "hops": 6,
+        "sink": true,
+        "access": "unknown",
+        "accessUnknown": true,
+        "homeRepo": "backend",
+        "methodDepth": 1
+      },
+      {
+        "id": "n13",
         "repo": "backend",
         "kind": "db",
         "ref": "WatcherRepository",
@@ -298,6 +354,58 @@
     "seeds": [
       {
         "id": "U1",
+        "key": "456045ba",
+        "kind": "reject",
+        "reachability": "unknown",
+        "reachabilityReason": "context ← unresolved",
+        "dispositions": [
+          {
+            "kind": "reject",
+            "line": 23,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "context.Result → 403 Forbidden",
+            "response": "403 Forbidden",
+            "responseKind": "reject",
+            "rejectForm": "filter-result",
+            "statusVia": {
+              "file": "src/Filters/RelayCheckFilter.cs",
+              "line": 23
+            },
+            "disposition": "taken",
+            "file": "src/Filters/RelayCheckFilter.cs",
+            "reachability": "unknown",
+            "reachabilityReason": "context ← unresolved"
+          }
+        ],
+        "response": "403 Forbidden",
+        "statusVia": {
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 23
+        },
+        "outcomes": [],
+        "always": [],
+        "alsoOnPath": [
+          {
+            "kind": "if",
+            "line": 21,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "if (!allowed)"
+          }
+        ],
+        "infrastructure": [],
+        "gate": {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true
+        }
+      },
+      {
+        "id": "U2",
         "key": "0a764c91",
         "kind": "effect",
         "reachability": "reachable",
@@ -324,12 +432,12 @@
     ],
     "seedsTruncated": 0,
     "stats": {
-      "nodes": 11,
-      "edges": 10,
-      "sinks": 1,
+      "nodes": 13,
+      "edges": 12,
+      "sinks": 2,
       "branches": 0,
       "primaryBranches": 0,
-      "seedCount": 1,
+      "seedCount": 2,
       "routes": 1,
       "inventory": false,
       "repos": [
@@ -339,18 +447,31 @@
         "literal": 1,
         "ctor": 3,
         "body": 2,
-        "graph": 2,
+        "graph": 4,
         "di": 2
       },
       "depth": 6,
       "crossings": 0,
       "budgetHit": false,
-      "graphUnavailable": 1,
-      "graphUnknownKinds": []
+      "graphUnavailable": 0,
+      "graphUnknownKinds": [],
+      "gates": [
+        {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 18,
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true,
+          "seeds": 1
+        }
+      ]
     },
     "status": {
       "schemaVersion": 1,
-      "traversal": "unknown",
+      "traversal": "complete",
       "freshness": "matching",
       "factSets": [
         {
@@ -362,13 +483,17 @@
           "freshness": "matching"
         },
         {
+          "repo": "suite",
+          "freshness": "matching"
+        },
+        {
           "repo": "web",
           "freshness": "matching"
         }
       ],
       "evidence": {
         "source-supported": 8,
-        "inferred": 2,
+        "inferred": 4,
         "runtime": "not supplied"
       },
       "scope": {
@@ -396,29 +521,9 @@
       "schedule": {
         "order": "depth-first"
       },
-      "stops": {
-        "provider-unavailable": 1
-      },
-      "frontier": [
-        {
-          "reason": "provider-unavailable",
-          "repo": "backend",
-          "target": "RelaySink",
-          "caller": {
-            "ref": "HarborBridge.Forward",
-            "file": "src/Controllers/ZoneWatchersController.cs",
-            "line": 19
-          },
-          "callSite": {
-            "file": "backend/src/Services/RelaySink.cs",
-            "line": 1
-          },
-          "via": "graph",
-          "remaining": null,
-          "raisedBy": null
-        }
-      ],
-      "identity": "sha256:b6cf5b55a94ffb0b77895fd991182a5c0fc5be1d023de5b27cbeca91a5634a4c"
+      "stops": {},
+      "frontier": [],
+      "identity": "sha256:fe962528af4679f6097861ea2effc417b79c6dae7d83ff295a0331a4b05a252e"
     }
   },
   {
@@ -629,6 +734,58 @@
     "seeds": [
       {
         "id": "U1",
+        "key": "c288f95f",
+        "kind": "reject",
+        "reachability": "unknown",
+        "reachabilityReason": "context ← unresolved",
+        "dispositions": [
+          {
+            "kind": "reject",
+            "line": 23,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "context.Result → 403 Forbidden",
+            "response": "403 Forbidden",
+            "responseKind": "reject",
+            "rejectForm": "filter-result",
+            "statusVia": {
+              "file": "src/Filters/RelayCheckFilter.cs",
+              "line": 23
+            },
+            "disposition": "taken",
+            "file": "src/Filters/RelayCheckFilter.cs",
+            "reachability": "unknown",
+            "reachabilityReason": "context ← unresolved"
+          }
+        ],
+        "response": "403 Forbidden",
+        "statusVia": {
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 23
+        },
+        "outcomes": [],
+        "always": [],
+        "alsoOnPath": [
+          {
+            "kind": "if",
+            "line": 21,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "if (!allowed)"
+          }
+        ],
+        "infrastructure": [],
+        "gate": {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true
+        }
+      },
+      {
+        "id": "U2",
         "key": "66026a0d",
         "kind": "effect",
         "reachability": "reachable",
@@ -660,7 +817,7 @@
       "sinks": 1,
       "branches": 0,
       "primaryBranches": 0,
-      "seedCount": 1,
+      "seedCount": 2,
       "routes": 1,
       "inventory": false,
       "repos": [
@@ -676,7 +833,20 @@
       "crossings": 0,
       "budgetHit": false,
       "graphUnavailable": 0,
-      "graphUnknownKinds": []
+      "graphUnknownKinds": [],
+      "gates": [
+        {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 18,
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true,
+          "seeds": 1
+        }
+      ]
     },
     "status": {
       "schemaVersion": 1,
@@ -689,6 +859,10 @@
         },
         {
           "repo": "mobile",
+          "freshness": "matching"
+        },
+        {
+          "repo": "suite",
           "freshness": "matching"
         },
         {
@@ -728,7 +902,7 @@
       },
       "stops": {},
       "frontier": [],
-      "identity": "sha256:1da2855106bf0129f6381a3fb5797327f3d3677472fa4fbf3e3769b5fa35f464"
+      "identity": "sha256:7de078fcb674e4e4794a996b3718dc92b0f11e1a1d3ddb4178de51ca726afeea"
     }
   },
   {
@@ -2713,6 +2887,58 @@
     "seeds": [
       {
         "id": "U1",
+        "key": "1580c88e",
+        "kind": "reject",
+        "reachability": "unknown",
+        "reachabilityReason": "context ← unresolved",
+        "dispositions": [
+          {
+            "kind": "reject",
+            "line": 23,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "context.Result → 403 Forbidden",
+            "response": "403 Forbidden",
+            "responseKind": "reject",
+            "rejectForm": "filter-result",
+            "statusVia": {
+              "file": "src/Filters/RelayCheckFilter.cs",
+              "line": 23
+            },
+            "disposition": "taken",
+            "file": "src/Filters/RelayCheckFilter.cs",
+            "reachability": "unknown",
+            "reachabilityReason": "context ← unresolved"
+          }
+        ],
+        "response": "403 Forbidden",
+        "statusVia": {
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 23
+        },
+        "outcomes": [],
+        "always": [],
+        "alsoOnPath": [
+          {
+            "kind": "if",
+            "line": 21,
+            "class": "RelayCheckFilter",
+            "method": "OnAuthorizationAsync",
+            "text": "if (!allowed)"
+          }
+        ],
+        "infrastructure": [],
+        "gate": {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true
+        }
+      },
+      {
+        "id": "U2",
         "key": "3d18d80b",
         "kind": "effect",
         "reachability": "reachable",
@@ -2888,7 +3114,7 @@
       "sinks": 13,
       "branches": 0,
       "primaryBranches": 0,
-      "seedCount": 1,
+      "seedCount": 2,
       "routes": 1,
       "inventory": false,
       "repos": [
@@ -2904,7 +3130,20 @@
       "crossings": 0,
       "budgetHit": false,
       "graphUnavailable": 0,
-      "graphUnknownKinds": []
+      "graphUnknownKinds": [],
+      "gates": [
+        {
+          "filter": "RelayCheckFilter",
+          "class": "RelayCheckFilter",
+          "method": "OnAuthorizationAsync",
+          "file": "src/Filters/RelayCheckFilter.cs",
+          "line": 18,
+          "scope": "global",
+          "stage": "authorization",
+          "shared": true,
+          "seeds": 1
+        }
+      ]
     },
     "status": {
       "schemaVersion": 1,
@@ -2917,6 +3156,10 @@
         },
         {
           "repo": "mobile",
+          "freshness": "matching"
+        },
+        {
+          "repo": "suite",
           "freshness": "matching"
         },
         {
@@ -2956,7 +3199,7 @@
       },
       "stops": {},
       "frontier": [],
-      "identity": "sha256:00e83db6c0387cc192f953e473d9d6974036b215942f86bff623261d599effc5"
+      "identity": "sha256:06a8589e3f71d3b7eed20680913aeb7c6371bc6983f84ce5503b1b0be7fe014c"
     }
   }
 ]

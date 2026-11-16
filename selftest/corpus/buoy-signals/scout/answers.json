@@ -15,6 +15,30 @@
         "line": 4,
         "target": "backend/src/Services/RelaySink.cs"
       }
+    ],
+    "RelaySink": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/RelaySink.cs",
+        "line": 6,
+        "target": "backend/src/Services/RelayGate.cs"
+      }
+    ],
+    "RelayGate": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/RelayGate.cs",
+        "line": 5,
+        "target": "backend/src/DataAccess/ReadingRepository.cs"
+      }
+    ],
+    "RelayLedger": [
+      {
+        "kind": "uses-type",
+        "file": "backend/src/Services/RelayLedger.cs",
+        "line": 7,
+        "target": "backend/src/DataAccess/ZoneRepository.cs"
+      }
     ]
   },
   "inbound": {

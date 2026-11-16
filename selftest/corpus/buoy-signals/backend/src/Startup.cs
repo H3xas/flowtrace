@@ -3,6 +3,7 @@ using Greenhouse.Alerts.Audit;
 using Greenhouse.Alerts.Caching;
 using Greenhouse.Alerts.DataAccess;
 using Greenhouse.Alerts.Eligibility;
+using Greenhouse.Alerts.Filters;
 using Greenhouse.Alerts.Identity;
 using Greenhouse.Alerts.Scheduling;
 using Greenhouse.Alerts.Services;
@@ -14,6 +15,11 @@ namespace Greenhouse.Alerts
     {
         public static void AddGreenhouseAlerts(this IServiceCollection services)
         {
+            services.AddControllers(options =>
+            {
+                options.Filters.Add(typeof(RelayCheckFilter));
+            });
+
             services.AddScoped<IWatcherService, WatcherService>();
             services.AddScoped<IZoneReadingService, ZoneReadingService>();
             services.AddScoped<IHarvestPlanner, HarvestPlanner>();

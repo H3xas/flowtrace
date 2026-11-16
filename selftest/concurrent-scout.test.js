@@ -3,9 +3,10 @@
  * passes, and the answer does not change.
  *
  * The fixture is `corpus/buoy-signals`. Its stub index answers one chain of outbound
- * lookups (`HarborBridge` to `SignalRelay` to `RelaySink`), which the backend route reaches
- * from the web app and from the mobile app, so a verb that follows it needs at least three
- * passes. A changed controller widens through `impact` to `WatcherService`, and only the
+ * lookups (`HarborBridge` to `SignalRelay` to `RelaySink` to `RelayGate`), which the
+ * backend route reaches from the web app and from the mobile app, so a verb that follows it
+ * needs at least four passes. Only the last two answers reach the `RelayGate` gate and the
+ * repository behind it, so a walk kept from an early pass shows neither. A changed controller widens through `impact` to `WatcherService`, and only the
  * inbound answer for that class selects a test class. Every other lookup answers the
  * indexer's own "no symbol matches" page. `expected/` holds the serial pins, written by the
  * corpus's own `pin.mjs` against the base commit, and `pinned.mjs` holds what both read.
@@ -483,4 +484,243 @@ test('Concurrent scout lookups AC-8: both documents state the key, the variable,
   assert.match(scoutDoc, /file value wins/i, 'the document says which input wins');
   assert.match(scoutDoc, /min\(8, os\.availableParallelism\(\)\)/, 'the document states the default');
   assert.match(scoutDoc, /one lookup at a time/i, 'the document states what a limit of 1 does');
+});
+
+/**
+ * Written into the instrumented copy as `lib/holder-record.js`. It counts each build of a
+ * shared value with the pass it ran in and the lookups asked while it ran, tags every walk
+ * result, gate memo and pass result with the pass that first returned it, and writes what
+ * it saw to `FLOWTRACE_HOLDER_LOG` when the process ends. After the last pass it builds each
+ * value again from the same arguments and compares the two.
+ */
+const HOLDER_RECORD = `
+import { writeFileSync } from 'node:fs';
+import { isDeepStrictEqual } from 'node:util';
+
+const state = {
+  pass: 0, building: 0, lookups: 0, thrown: false, failed: 0, builds: [], kept: [], tags: new WeakMap(), reused: [], seen: {}, walks: [],
+};
+
+function tag(kind, value) {
+  if (!value || typeof value !== 'object') return value;
+  state.seen[kind] = (state.seen[kind] || 0) + 1;
+  const from = state.tags.get(value);
+  if (from === undefined) state.tags.set(value, state.pass);
+  else if (from < state.pass) state.reused.push({ kind, pass: state.pass, from });
+  return value;
+}
+
+export const record = {
+  build(name, raw, args) {
+    const before = state.lookups;
+    state.building += 1;
+    let value;
+    try {
+      value = raw(...args);
+    } finally {
+      state.building -= 1;
+    }
+    state.builds.push({ name, pass: state.pass, lookups: state.lookups - before });
+    state.kept.push({ name, raw, args, value });
+    return value;
+  },
+  lookup() {
+    state.lookups += 1;
+  },
+  pass() {
+    state.pass += 1;
+  },
+  miss() {
+    if (process.env.FLOWTRACE_HOLDER_THROW && !state.thrown) {
+      state.thrown = true;
+      throw new Error('the first pass ends in an error');
+    }
+  },
+  failed() {
+    state.failed += 1;
+  },
+  result(value) {
+    if (value && typeof value === 'object') for (const [key, part] of Object.entries(value)) tag('result ' + key, part);
+    return value;
+  },
+  walk(args, value) {
+    const traceIndex = state.kept.find((entry) => entry.name === 'traceIndex');
+    const options = args[2] || {};
+    if (typeof args[1] === 'string') {
+      state.walks.push({ pass: state.pass, start: args[1], shared: Boolean(traceIndex) && options.index === traceIndex.value });
+    }
+    return tag('walk', value);
+  },
+  tag,
+};
+
+process.on('exit', () => {
+  const file = process.env.FLOWTRACE_HOLDER_LOG;
+  if (!file) return;
+  const keys = (name, value) => {
+    if (name === 'evidenceIndex') return [...value.byRoute.keys()];
+    if (name === 'dispositionCandidates') return [...value.keys()];
+    return null;
+  };
+  writeFileSync(file, JSON.stringify({
+    passes: state.pass,
+    failed: state.failed,
+    builds: state.builds,
+    fresh: state.kept.map((entry) => ({ name: entry.name, equal: isDeepStrictEqual(entry.value, entry.raw(...entry.args)), keys: keys(entry.name, entry.value) })),
+    reused: state.reused,
+    seen: state.seen,
+    walks: state.walks,
+  }));
+});
+`;
+
+/** Each edit the instrumented copy makes, as `[file, original text, replacement]`. */
+const HOLDER_EDITS = [
+  ['lib/trace.js', 'export function buildTraceIndex(factSets) {',
+    "export function buildTraceIndex(...args) {\n  return record.build('traceIndex', buildTraceIndexRaw, args);\n}\nfunction buildTraceIndexRaw(factSets) {"],
+  ['lib/trace.js', 'export function trace(factSets, start, options = {}) {',
+    'export function trace(...args) {\n  return record.walk(args, traceRaw(...args));\n}\nfunction traceRaw(factSets, start, options = {}) {'],
+  ['lib/trace.js', 'const memo = byLookup.get(lookupKey);', "const memo = record.tag('gate memo', byLookup.get(lookupKey));"],
+  ['lib/trace.js', 'if (memo.has(signature)) return memo.get(signature);', "if (memo.has(signature)) return record.tag('gate', memo.get(signature));"],
+  ['lib/trace.js', 'memo.set(signature, kept);', "memo.set(signature, record.tag('gate', kept));"],
+  ['lib/cover.js', 'export function buildEvidenceIndex(factSets, options = {}) {',
+    "export function buildEvidenceIndex(...args) {\n  return record.build('evidenceIndex', buildEvidenceIndexRaw, args);\n}\nfunction buildEvidenceIndexRaw(factSets, options = {}) {"],
+  ['lib/cover.js', 'export function buildDispositionCandidates(factSets, evidenceIndex) {',
+    "export function buildDispositionCandidates(...args) {\n  return record.build('dispositionCandidates', buildDispositionCandidatesRaw, args);\n}\nfunction buildDispositionCandidatesRaw(factSets, evidenceIndex) {"],
+  ['lib/scout.js', 'result = await compute(lookups);', 'record.pass();\n        result = record.result(await compute(lookups));'],
+  ['lib/scout.js', 'function lookupInPass(kind, repoRoot, argument, extra, misses) {',
+    'function lookupInPass(kind, repoRoot, argument, extra, misses) {\n    record.lookup();'],
+  ['lib/scout.js', "return markUnavailable([], 'lookup pending');", "record.miss();\n    return markUnavailable([], 'lookup pending');"],
+  ['lib/scout.js', 'if (misses.size === 0) throw error;', 'record.failed();\n        if (misses.size === 0) throw error;'],
+  ['bin/flowtrace.js', 'main().then(', '(process.env.FLOWTRACE_HOLDER_TWICE ? main().then(() => main()) : main()).then('],
+];
+
+let holderCopy = null;
+/** A copy of `bin/` and `lib/` with the edits above, made once for the file. */
+function instrumentedCli() {
+  if (holderCopy) return holderCopy;
+  const root = makeDir('flowtrace-concurrent-holder-');
+  for (const part of ['bin', 'lib', 'package.json']) cpSync(join(HERE, '..', part), join(root, part), { recursive: true });
+  writeFileSync(join(root, 'lib', 'holder-record.js'), HOLDER_RECORD);
+  const touched = new Set();
+  for (const [file, original, replacement] of HOLDER_EDITS) {
+    const path = join(root, file);
+    const text = readFileSync(path, 'utf8');
+    assert.equal(text.split(original).length, 2, `${file} holds exactly one "${original}"`);
+    writeFileSync(path, text.replace(original, () => replacement));
+    touched.add(file);
+  }
+  for (const file of touched) {
+    if (file.startsWith('bin/')) continue;
+    const path = join(root, file);
+    writeFileSync(path, `import { record } from './holder-record.js';\n${readFileSync(path, 'utf8')}`);
+  }
+  holderCopy = join(root, 'bin', 'flowtrace.js');
+  return holderCopy;
+}
+
+/** Run a verb through the instrumented copy in a fresh fixture copy, and read its record. */
+function holderRun(args, { limit, twice = false, env = {} } = {}) {
+  const dir = makeDir('flowtrace-concurrent-holder-run-');
+  cpSync(base(), dir, { recursive: true });
+  const logPath = join(dir, 'holder.json');
+  const stubLog = join(dir, 'stub.log');
+  const result = spawnSync(process.execPath, [instrumentedCli(), ...args, '--config', CONFIG], {
+    cwd: dir,
+    encoding: 'utf8',
+    env: cleanEnv({
+      FLOWTRACE_HOLDER_LOG: logPath,
+      FLOWTRACE_STUB_LOG: stubLog,
+      ...(twice ? { FLOWTRACE_HOLDER_TWICE: '1' } : {}),
+      ...env,
+      ...(limit === undefined ? {} : { FLOWTRACE_SCOUT_CONCURRENCY: limit }),
+    }),
+  });
+  assert.equal(result.status, 0, `${args[0]}: ${result.stderr}`);
+  return { dir, stdout: unroot(result.stdout, dir), record: JSON.parse(readFileSync(logPath, 'utf8')), lookups: readLog(stubLog) };
+}
+
+const SHARED = ['traceIndex', 'evidenceIndex', 'dispositionCandidates'];
+const HOLDER_VERBS = [
+  { name: 'scope', args: ['scope', '--area', 'harbor.area.txt'] },
+  { name: 'cover', args: ['cover', '--area', 'harbor.area.txt'] },
+];
+
+test('Concurrent scout lookups AC-10: each shared value is built once per invocation, with no lookup, and equals a new build', () => {
+  for (const verb of HOLDER_VERBS) {
+    for (const limit of [undefined, '1']) {
+      const label = `${verb.name} at ${limit ?? 'default'}`;
+      const { record } = holderRun(verb.args, { limit });
+      assert.ok(record.passes >= 4, `${label} ran ${record.passes} passes`);
+      for (const name of SHARED) {
+        const builds = record.builds.filter((build) => build.name === name);
+        assert.equal(builds.length, 1, `${label} built ${name} ${builds.length} times`);
+        assert.equal(builds[0].pass, 0, `${label} built ${name} before the first pass`);
+        assert.equal(builds[0].lookups, 0, `${label} asked a lookup while it built ${name}`);
+        const fresh = record.fresh.filter((entry) => entry.name === name);
+        assert.equal(fresh.length, 1, `${label} kept one ${name}`);
+        assert.equal(fresh[0].equal, true, `${label} ${name} equals a new build after the last pass`);
+      }
+    }
+  }
+
+  const twice = holderRun(HOLDER_VERBS[0].args, { twice: true }).record;
+  for (const name of SHARED) {
+    const builds = twice.builds.filter((build) => build.name === name);
+    assert.equal(builds.length, 2, `two invocations built ${name} ${builds.length} times`);
+    assert.ok(builds[1].pass > builds[0].pass, `the second invocation built its own ${name} after the passes of the first`);
+  }
+});
+
+test('Concurrent scout lookups AC-10: the last pass gets no walk result, gate memo entry or walk counter of an earlier pass', () => {
+  for (const verb of HOLDER_VERBS) {
+    for (const limit of [undefined, '1']) {
+      const label = `${verb.name} at ${limit ?? 'default'}`;
+      const { record } = holderRun(verb.args, { limit });
+      assert.ok(record.passes >= 2, `${label} ran ${record.passes} passes`);
+      assert.ok(record.seen.walk > 0, `${label} tagged its walks`);
+      assert.ok(record.seen['gate memo'] > 0, `${label} reached the gate memo ${JSON.stringify(record.seen)}`);
+      assert.deepEqual(record.reused, [], `${label} handed a value of an earlier pass to a later one`);
+    }
+  }
+  const scoped = holderRun(HOLDER_VERBS[0].args).record;
+  assert.ok(scoped.seen['result walkCounts'] >= scoped.passes, 'scope returned a walk counter from each pass');
+
+  const budget = holderRun(['cover', '--area', 'harbor.area.txt', '--max-nodes', '6']);
+  assert.match(budget.stdout, /node-budget/, 'cover under a small node budget stopped on it');
+  assert.deepEqual(budget.record.reused, [], 'cover under a node budget handed a value of an earlier pass to a later one');
+
+  const failed = holderRun(HOLDER_VERBS[0].args, { env: { FLOWTRACE_HOLDER_THROW: '1' } });
+  assert.equal(failed.record.failed, 1, 'the first pass ended in an error and the passes went on');
+  assert.deepEqual(failed.record.reused, [], 'scope after a failed pass handed a value of an earlier pass to a later one');
+  for (const name of SHARED) {
+    assert.equal(failed.record.builds.filter((build) => build.name === name).length, 1, `scope after a failed pass built ${name} once`);
+  }
+  assert.equal(failed.stdout, readPin('scope', 'stdout'), 'scope after a failed pass prints the serial pin');
+});
+
+test('Concurrent scout lookups AC-11: an answer only a later pass asks for reaches the scope and cover output', () => {
+  const late = CHAINS.outbound[CHAINS.outbound.length - 1];
+  for (const verb of HOLDER_VERBS) {
+    const invocation = INVOCATIONS.find((entry) => entry.name === verb.name);
+    assert.ok(invocation, `${verb.name} has a serial pin`);
+    for (const limit of [undefined, '1']) {
+      const label = `${verb.name} at ${limit ?? 'default'}`;
+      const { log } = pinnedRun(invocation, limit);
+      assert.ok(log.some((entry) => entry.args.join(' ') === late), `${label} asked the index for ${late}`);
+
+      const { record } = holderRun(verb.args, { limit });
+      const lastPass = record.passes;
+      const watchers = record.walks.filter((walk) => walk.pass === lastPass && walk.start === 'GET glasshouse/v1/zones/*/watchers');
+      assert.ok(watchers.length > 0, `${label} walked the watchers route in its last pass`);
+      assert.ok(watchers.every((walk) => walk.shared), `${label} walked the watchers route over the shared trace index`);
+      for (const name of ['evidenceIndex', 'dispositionCandidates']) {
+        const kept = record.fresh.find((entry) => entry.name === name);
+        assert.ok(kept.keys.includes('GET glasshouse/v1/zones/*/watchers'), `${label} ${name} holds the watchers route`);
+      }
+    }
+  }
+  assert.match(readPin('scope', 'stdout'), /watchers — .* — automation: yes — server-gate: backend:backend\/src\/Services\/RelayGate\.cs:1$/m);
+  const coverPin = readPin('cover', 'stdout').split('\n').find((line) => line.includes('GET glasshouse/v1/zones/*/watchers  '));
+  assert.ok(coverPin && !coverPin.includes('seed count partial'), `the cover pin holds a complete watchers walk: ${coverPin}`);
 });

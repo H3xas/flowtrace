@@ -37,7 +37,7 @@ export const INVOCATIONS = [
 
 /** The stub's dependent lookups, in the order each answer makes the next one known. */
 export const CHAINS = {
-  outbound: ['refs HarborBridge', 'refs SignalRelay', 'refs RelaySink'],
+  outbound: ['refs HarborBridge', 'refs SignalRelay', 'refs RelaySink', 'refs RelayGate'],
   'impact-inbound': [
     'impact src/Controllers/ZoneWatchersController.cs --hops 2 --json',
     'refs WatcherService --json',

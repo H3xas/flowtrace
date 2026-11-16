@@ -1,5 +1,4 @@
 surface GET glasshouse/v1/zones/*/watchers: 0 states written, 0 with a read surface, 1 gap
   gap (no-write) — the route walk reaches no store write, so there is no changed state to read back
-    index-unavailable: RelaySink (backend/src/Services/RelaySink.cs:1)
   reverse walk bounded at 3 hops; observation verbs: GET, HEAD
   a surface names an endpoint that reads the same state, never a claim that a particular response field reflects this write — that correlation is a cached verdict, not a walk
