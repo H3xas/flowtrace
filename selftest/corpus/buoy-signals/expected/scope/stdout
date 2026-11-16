@@ -1,0 +1,4 @@
+scope harbor.area: 3 routes — freshness: matching
+GET glasshouse/v1/zones/*/watchers — backend:src/Controllers/ZoneWatchersController.cs:22 — automation: no — server-gate: none
+GET glasshouse/v1/zones/*/readings — backend:src/Controllers/ZoneReadingsController.cs:19 — automation: no — server-gate: none
+POST glasshouse/v1/zones/*/harvest-plan — backend:src/Controllers/HarvestPlanController.cs:19 — automation: no — server-gate: none

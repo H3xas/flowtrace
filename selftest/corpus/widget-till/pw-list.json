@@ -1,0 +1,405 @@
+{
+  "config": {
+    "testDir": "tests"
+  },
+  "suites": [
+    {
+      "title": "tests/body.spec.ts",
+      "file": "tests/body.spec.ts",
+      "line": 0,
+      "column": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "till/v1/refunds in a body",
+          "file": "tests/body.spec.ts",
+          "line": 8,
+          "column": 6,
+          "suites": [],
+          "specs": [
+            {
+              "title": "refunds a store credit",
+              "ok": true,
+              "tags": [],
+              "id": "till0000",
+              "file": "tests/body.spec.ts",
+              "line": 9,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds a coupon",
+              "ok": true,
+              "tags": [],
+              "id": "till0001",
+              "file": "tests/body.spec.ts",
+              "line": 15,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds a voucher (Case 9012)",
+              "ok": true,
+              "tags": [],
+              "id": "till0002",
+              "file": "tests/body.spec.ts",
+              "line": 21,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds a deposit",
+              "ok": true,
+              "tags": [],
+              "id": "till0003",
+              "file": "tests/body.spec.ts",
+              "line": 27,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds with no reference",
+              "ok": true,
+              "tags": [],
+              "id": "till0004",
+              "file": "tests/body.spec.ts",
+              "line": 33,
+              "column": 8,
+              "tests": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/misaligned.spec.ts",
+      "file": "tests/misaligned.spec.ts",
+      "line": 0,
+      "column": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "till/v1/drawer in order",
+          "file": "tests/misaligned.spec.ts",
+          "line": 8,
+          "column": 6,
+          "suites": [],
+          "specs": [
+            {
+              "title": "opens the drawer (Case 1)",
+              "ok": true,
+              "tags": [],
+              "id": "till0005",
+              "file": "tests/misaligned.spec.ts",
+              "line": 9,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "closes the till (Case 2)",
+              "ok": true,
+              "tags": [],
+              "id": "till0006",
+              "file": "tests/misaligned.spec.ts",
+              "line": 11,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "counts the float (Case 3)",
+              "ok": true,
+              "tags": [],
+              "id": "till0007",
+              "file": "tests/misaligned.spec.ts",
+              "line": 13,
+              "column": 8,
+              "tests": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/positions.spec.ts",
+      "file": "tests/positions.spec.ts",
+      "line": 0,
+      "column": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "till/v1/refunds",
+          "file": "tests/positions.spec.ts",
+          "line": 8,
+          "column": 6,
+          "suites": [],
+          "specs": [
+            {
+              "title": "refunds a sale (Case 9001)",
+              "ok": true,
+              "tags": [],
+              "id": "till0008",
+              "file": "tests/positions.spec.ts",
+              "line": 9,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "[9002] refunds a voided sale",
+              "ok": true,
+              "tags": [],
+              "id": "till0009",
+              "file": "tests/positions.spec.ts",
+              "line": 14,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds a split tender (Case 9005)",
+              "ok": true,
+              "tags": [],
+              "id": "till0010",
+              "file": "tests/positions.spec.ts",
+              "line": 19,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds two lines (Case 9003,9004)",
+              "ok": true,
+              "tags": [],
+              "id": "till0011",
+              "file": "tests/positions.spec.ts",
+              "line": 24,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds a gift card (Case TC-3)",
+              "ok": true,
+              "tags": [],
+              "id": "till0012",
+              "file": "tests/positions.spec.ts",
+              "line": 29,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds a sale over several lines (Case 9006)",
+              "ok": true,
+              "tags": [],
+              "id": "till0013",
+              "file": "tests/positions.spec.ts",
+              "line": 34,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "refunds by reference (Case 9007)",
+              "ok": true,
+              "tags": [],
+              "id": "till0014",
+              "file": "tests/positions.spec.ts",
+              "line": 45,
+              "column": 8,
+              "tests": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/table.spec.ts",
+      "file": "tests/table.spec.ts",
+      "line": 0,
+      "column": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "till/v1/refunds by row",
+          "file": "tests/table.spec.ts",
+          "line": 8,
+          "column": 6,
+          "suites": [],
+          "specs": [
+            {
+              "title": "refunds by tender (Case 9020)",
+              "ok": true,
+              "tags": [],
+              "id": "till0015",
+              "file": "tests/table.spec.ts",
+              "line": 16,
+              "column": 41,
+              "tests": []
+            },
+            {
+              "title": "refunds by tender (Case 9021)",
+              "ok": true,
+              "tags": [],
+              "id": "till0016",
+              "file": "tests/table.spec.ts",
+              "line": 16,
+              "column": 41,
+              "tests": []
+            },
+            {
+              "title": "refunds a pending row (Case 9022)",
+              "ok": true,
+              "tags": [],
+              "id": "till0017",
+              "file": "tests/table.spec.ts",
+              "line": 22,
+              "column": 41,
+              "tests": []
+            },
+            {
+              "title": "refunds a pending row (Case later)",
+              "ok": true,
+              "tags": [],
+              "id": "till0018",
+              "file": "tests/table.spec.ts",
+              "line": 22,
+              "column": 41,
+              "tests": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/text.spec.ts",
+      "file": "tests/text.spec.ts",
+      "line": 0,
+      "column": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "till/v1/drawer by text",
+          "file": "tests/text.spec.ts",
+          "line": 8,
+          "column": 6,
+          "suites": [],
+          "specs": [
+            {
+              "title": "4012 opens the drawer (Case 9030)",
+              "ok": true,
+              "tags": [],
+              "id": "till0019",
+              "file": "tests/text.spec.ts",
+              "line": 13,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "opens the drawer again (Case 9031)",
+              "ok": true,
+              "tags": [],
+              "id": "till0020",
+              "file": "tests/text.spec.ts",
+              "line": 15,
+              "column": 8,
+              "tests": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/unresolved.spec.ts",
+      "file": "tests/unresolved.spec.ts",
+      "line": 0,
+      "column": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "till/v1/refunds unread",
+          "file": "tests/unresolved.spec.ts",
+          "line": 8,
+          "column": 6,
+          "suites": [],
+          "specs": [
+            {
+              "title": "reads an identifier (Case 9042)",
+              "ok": true,
+              "tags": [],
+              "id": "till0021",
+              "file": "tests/unresolved.spec.ts",
+              "line": 18,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "reads a subscript (Case 9041)",
+              "ok": true,
+              "tags": [],
+              "id": "till0022",
+              "file": "tests/unresolved.spec.ts",
+              "line": 20,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "reads a call (Case 6)",
+              "ok": true,
+              "tags": [],
+              "id": "till0023",
+              "file": "tests/unresolved.spec.ts",
+              "line": 22,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "reads a template (Case 9043)",
+              "ok": true,
+              "tags": [],
+              "id": "till0024",
+              "file": "tests/unresolved.spec.ts",
+              "line": 24,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "reads a conditional (Case 9044)",
+              "ok": true,
+              "tags": [],
+              "id": "till0025",
+              "file": "tests/unresolved.spec.ts",
+              "line": 26,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "reads them in a body",
+              "ok": true,
+              "tags": [],
+              "id": "till0026",
+              "file": "tests/unresolved.spec.ts",
+              "line": 28,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "keeps a placeholder (Case TODO)",
+              "ok": true,
+              "tags": [],
+              "id": "till0027",
+              "file": "tests/unresolved.spec.ts",
+              "line": 41,
+              "column": 8,
+              "tests": []
+            },
+            {
+              "title": "holds a title only",
+              "ok": true,
+              "tags": [],
+              "id": "till0028",
+              "file": "tests/unresolved.spec.ts",
+              "line": 45,
+              "column": 8,
+              "tests": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

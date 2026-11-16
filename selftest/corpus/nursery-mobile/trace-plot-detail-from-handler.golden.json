@@ -1,5 +1,6 @@
 {
   "schemaVersion": 1,
+  "view": "dependency",
   "root": {
     "id": "n24",
     "repo": "mobile",
@@ -194,6 +195,6 @@
     },
     "stops": {},
     "frontier": [],
-    "identity": "sha256:76b6d876db7490d57ad85c1e6894ffcb51cbe677133ed1e330100c0da4604f4a"
+    "identity": "sha256:fd47e92c91243feb5add306a3b4552c96566b36c57138fb8201294d4c30d4a54"
   }
 }

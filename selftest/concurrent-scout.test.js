@@ -2,7 +2,7 @@
  * Concurrent code-index lookups: the query verbs answer their lookups in bounded parallel
  * passes, and the answer does not change.
  *
- * The fixture is `corpus/harbor-signals`. Its stub index answers one chain of outbound
+ * The fixture is `corpus/buoy-signals`. Its stub index answers one chain of outbound
  * lookups (`HarborBridge` to `SignalRelay` to `RelaySink`), which the backend route reaches
  * from the web app and from the mobile app, so a verb that follows it needs at least three
  * passes. A changed controller widens through `impact` to `WatcherService`, and only the
@@ -26,11 +26,11 @@ import {
 import {
   ARGUMENT, BARE_BIN, BARE_REPO, BIN, CASES, CHAINS, CONFIG, INVOCATIONS, REPO, ROOT,
   bareSerial, caseRunner, missingSerial, serialCase, shape,
-} from './corpus/harbor-signals/pinned.mjs';
+} from './corpus/buoy-signals/pinned.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CLI = join(HERE, '..', 'bin', 'flowtrace.js');
-const FIXTURE = join(HERE, 'corpus', 'harbor-signals');
+const FIXTURE = join(HERE, 'corpus', 'buoy-signals');
 const EXPECTED = join(FIXTURE, 'expected');
 const STUB = join(FIXTURE, 'scout', 'scout-stub.mjs');
 const TEMP = tmpdir();
