@@ -95,4 +95,87 @@ export class ScannerForms {
   elseChain(a: boolean, b: boolean, c: boolean) {
     if (a) if (b) x(); else if (c) y(); else z();
   }
+
+  asType(y: unknown) {
+    const a = y as { size?(): number };
+    const b = y as { size? (): number };
+    return [a, b];
+  }
+
+  satisfiesType(y: object) {
+    const a = y satisfies { size?(): number };
+    const b = y satisfies { size? (): number };
+    return [a, b];
+  }
+
+  keyofType() {
+    let a: keyof { size?(): number };
+    let b: keyof { size? (): number };
+    return [a, b];
+  }
+
+  readonlyType() {
+    let a: readonly { size?(): number }[] = [];
+    let b: readonly { size? (): number }[] = [];
+    return [a, b];
+  }
+
+  predicateType() {
+    function sized(v: unknown): v is { size?(): number } {
+      return true;
+    }
+    function spaced(v: unknown): v is { size? (): number } {
+      return true;
+    }
+    return [sized, spaced];
+  }
+
+  arrowReturnType() {
+    let f: () => { size?(): number };
+    return f;
+  }
+
+  tupleType() {
+    const t: [{ size?(): number }] = [];
+    return t;
+  }
+
+  angleAssertion(y: unknown) {
+    const s = <{ size?(): number }>y;
+    return s;
+  }
+
+  angleSpaced(y: unknown) {
+    const s = <{ size? (): number }>y;
+    return s;
+  }
+
+  typeParamDefault() {
+    type L<T = { a?(): void }> = T;
+    return 0;
+  }
+
+  plainGroup(a: boolean, b: number, c: number, x: number) {
+    a?(x):b;
+    f(c, a?(x):b);
+    a?(x+1):b;
+  }
+
+  hiddenElse(a: boolean) {
+    if (a) run(); // else stop();
+  }
+
+  nameBeforeBlock(x: boolean) {
+    const is = 1
+    is
+    { x ? a() : b(); }
+    let as = 1
+    as
+    { x ? c() : d(); }
+  }
+
+  callGroups(a: boolean, b: number, fs: Array<() => number>) {
+    a?(fs[0]()):b;
+    a?(new Date()):b;
+  }
 }

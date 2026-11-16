@@ -119,6 +119,7 @@ const ARM_GATES = [
   ['ternaryAnd', 'save(x)', [['open ? held && kept : $save(x)', 'ternary', 'alternate', SKIPS_TRUE, 'known', null]]],
   ['display', 'save({', []],
   ['inCondition', 'load(x.id)', []],
+  ['hiddenArm', 'save(x)', []],
 ];
 
 /** The gates an early exit before the call gives it, in the same shape. */
@@ -146,6 +147,12 @@ const EXIT_GATES = [
   ['staticBlockExit', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-one-arm']]],
   ['tryExit', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-try']]],
   ['catchExit', 'save(x)', [['if (form.strict)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-try']]],
+  ['labeledBreak', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'loop-exit']]],
+  ['labeledContinue', 'save(rows[0])', [['if (row.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'loop-exit']]],
+  ['labelBefore', 'save(x)', []],
+  ['nestedLabel', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'loop-exit']]],
+  ['predicateHelperExit', 'save(x)', []],
+  ['hiddenExit', 'save(x)', []],
 ];
 
 const DESK_GATES = [...ARM_GATES, ...EXIT_GATES];

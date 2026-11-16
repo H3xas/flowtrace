@@ -306,4 +306,100 @@ export class PassageDesk {
     api.load(x.id);
     open && api.save(x) || api.load(x.id);
   }
+
+  labeledBreak(form: PassageForm, x: Passage) {
+    out: {
+      if (form.invalid) {
+        break out;
+      }
+      api.save(x);
+    }
+  }
+
+  labeledContinue(groups: Passage[][]) {
+    outer: for (const rows of groups) {
+      for (const row of rows) {
+        if (row.invalid) {
+          continue outer;
+        }
+      }
+      api.save(rows[0]);
+    }
+  }
+
+  labelBefore(form: PassageForm, x: Passage) {
+    out: {
+      if (form.invalid) {
+        break out;
+      }
+    }
+    api.save(x);
+  }
+
+  predicateHelperExit(form: PassageForm, x: Passage) {
+    const helper = {
+      isOpen(v: unknown): v is { open: boolean } {
+        if (form.invalid) {
+          return false;
+        }
+        return true;
+      },
+      assertOpen(v: unknown): asserts v is { open: boolean } {
+        if (form.stale) {
+          throw new Error('stale');
+        }
+      },
+      field(): keyof { open: boolean } {
+        if (form.strict) {
+          return 'open';
+        }
+        return 'open';
+      },
+      rows(): readonly { open: boolean }[] {
+        if (form.ready) {
+          return [];
+        }
+        return [];
+      },
+    };
+    function guard(v: unknown): asserts v is { open: boolean } {
+      if (form.held) {
+        throw new Error('held');
+      }
+    }
+    class Check {
+      keys(): keyof { open: boolean } {
+        if (form.closed) {
+          return 'open';
+        }
+        return 'open';
+      }
+    }
+    api.save(x);
+    return [helper, guard, Check];
+  }
+
+  hiddenExit(form: PassageForm, x: Passage) {
+    // if (form.invalid) { return; }
+    const note = 'if (form.invalid) { return; }';
+    api.save(x);
+    return note;
+  }
+
+  hiddenArm(x: Passage) {
+    /* if (open) { */ api.save(x); /* } */
+    const note = 'open && held ? kept : cached || held';
+    return note;
+  }
+
+  nestedLabel(form: PassageForm, x: Passage) {
+    outer: {
+      inner: {
+        if (form.invalid) {
+          break outer;
+        }
+      }
+      api.save(x);
+    }
+  }
 }
