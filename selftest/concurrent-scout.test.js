@@ -14,10 +14,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import {
-  cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync,
+  cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 import { SCOUT_CONCURRENCY_ENV, validateConfig } from '../lib/config.js';
@@ -104,32 +104,38 @@ function runCli(args, { cwd, env = {}, nodeArgs = [] } = {}) {
   return { status: result.status, stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 }
 
-/** Every regular file under `dir`, relative to it, in sorted order. */
-function walk(dir, prefix = '') {
+/** Every regular file under `dir`, relative to it, in sorted order; logs and `.git` are no answer. */
+function walkFiles(dir, prefix = '') {
   const files = [];
   for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.name === '.git' || entry.name === 'stub.log' || entry.name.endsWith('.log')) continue;
+    if (entry.name === '.git' || entry.name.endsWith('.log')) continue;
     const path = join(dir, entry.name);
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) files.push(...walk(path, rel));
+    if (entry.isDirectory()) files.push(...walkFiles(path, rel));
     else if (entry.isFile()) files.push(rel);
   }
   return files;
 }
 
-function snapshot(dir) {
+function readFiles(dir) {
   const map = new Map();
-  for (const rel of walk(dir)) map.set(rel, readFileSync(join(dir, rel)));
+  for (const rel of walkFiles(dir)) map.set(rel, readFileSync(join(dir, rel)));
   return map;
 }
 
-function changedFiles(dir, before) {
+/**
+ * What a run did to its directory: each file it created or changed, and each file it
+ * deleted, which `pin.mjs` records in a `removed` pin with one path per line. A rename is
+ * both.
+ */
+function fileDelta(before, after) {
   const changed = new Map();
-  for (const [rel, body] of snapshot(dir)) {
+  for (const [rel, body] of after) {
     const old = before.get(rel);
     if (!old || !old.equals(body)) changed.set(rel, body);
   }
-  return changed;
+  const removed = [...before.keys()].filter((rel) => !after.has(rel)).sort();
+  return { changed, removed };
 }
 
 function unroot(text, dir) {
@@ -145,6 +151,25 @@ function readPin(name, file) {
   return readFileSync(join(EXPECTED, name, file), 'utf8');
 }
 
+/**
+ * The files a run created, changed and deleted, against the pin of `name`: every pinned
+ * file with its pinned body, no other created or changed file, and exactly the pinned
+ * deletions.
+ */
+function assertPinnedFiles(name, dir, before, expected = EXPECTED) {
+  const { changed, removed } = fileDelta(before, readFiles(dir));
+  const filesDir = join(expected, name, 'files');
+  const pinned = existsSync(filesDir) ? readFiles(filesDir) : new Map();
+  for (const [rel, body] of pinned) {
+    assert.ok(changed.has(rel), `${name} wrote no ${rel}`);
+    assert.equal(unroot(changed.get(rel).toString('utf8'), dir), body.toString('utf8'), `${name} file ${rel}`);
+  }
+  for (const rel of changed.keys()) assert.ok(pinned.has(rel), `${name} wrote unexpected ${rel}`);
+  const removedPin = join(expected, name, 'removed');
+  const pinnedRemoved = existsSync(removedPin) ? readFileSync(removedPin, 'utf8').split('\n').filter(Boolean) : [];
+  assert.deepEqual(removed, pinnedRemoved, `${name} deleted files`);
+}
+
 const PREPARE = { clean: null, diff: null };
 function base(touch = false) {
   if (touch && !PREPARE.diff) PREPARE.diff = prepare({ touch: true });
@@ -157,7 +182,7 @@ function pinnedRun(invocation, limit) {
   const source = invocation.touch ? base(true) : base();
   const dir = makeDir(`flowtrace-concurrent-${invocation.name}-`);
   cpSync(source, dir, { recursive: true });
-  const before = snapshot(dir);
+  const before = readFiles(dir);
   const logPath = join(dir, 'stub.log');
   const run = runCli(invocation.args, {
     cwd: dir,
@@ -169,15 +194,7 @@ function pinnedRun(invocation, limit) {
   assert.equal(run.status, Number(readPin(invocation.name, 'status').trim()), `${invocation.name} exit status`);
   assert.equal(unroot(run.stdout, dir), readPin(invocation.name, 'stdout'), `${invocation.name} stdout`);
   assert.equal(unroot(run.stderr, dir), readPin(invocation.name, 'stderr'), `${invocation.name} stderr`);
-  const changed = changedFiles(dir, before);
-  const pinned = new Set();
-  const filesDir = join(EXPECTED, invocation.name, 'files');
-  for (const rel of existsSync(filesDir) ? walk(filesDir) : []) {
-    pinned.add(rel);
-    assert.ok(changed.has(rel), `${invocation.name} wrote no ${rel}`);
-    assert.equal(unroot(changed.get(rel).toString('utf8'), dir), readFileSync(join(filesDir, rel), 'utf8'), `${invocation.name} file ${rel}`);
-  }
-  for (const rel of changed.keys()) assert.ok(pinned.has(rel), `${invocation.name} wrote unexpected ${rel}`);
+  assertPinnedFiles(invocation.name, dir, before);
   LOOKUP_LOGS.push({ name: invocation.name, limit: limit ?? 'default', entries: readLog(logPath) });
   return { dir, log: readLog(logPath) };
 }
@@ -203,6 +220,57 @@ test('Concurrent scout lookups AC-1: every verb prints and writes the serial pin
       }
     }
   }
+});
+
+test('Concurrent scout lookups AC-1: the file comparison sees a deleted file and a renamed file', () => {
+  const run = makeDir('flowtrace-concurrent-delta-run-');
+  const expected = makeDir('flowtrace-concurrent-delta-pins-');
+  const reset = () => {
+    rmSync(run, { recursive: true, force: true });
+    mkdirSync(run, { recursive: true });
+    writeFileSync(join(run, 'kept.txt'), 'kept\n');
+    writeFileSync(join(run, 'gone.txt'), 'gone\n');
+    return readFiles(run);
+  };
+  const pin = (name, files, removed) => {
+    mkdirSync(join(expected, name, 'files'), { recursive: true });
+    for (const [rel, body] of Object.entries(files)) writeFileSync(join(expected, name, 'files', rel), body);
+    if (removed) writeFileSync(join(expected, name, 'removed'), removed);
+  };
+  pin('untouched', {});
+  pin('deletes', {}, 'gone.txt\n');
+  pin('renames', { 'moved.txt': 'gone\n' }, 'gone.txt\n');
+  pin('renames-unpinned', { 'moved.txt': 'gone\n' });
+
+  let before = reset();
+  rmSync(join(run, 'gone.txt'));
+  assert.throws(() => assertPinnedFiles('untouched', run, before, expected), /untouched deleted files/);
+  assertPinnedFiles('deletes', run, before, expected);
+
+  before = reset();
+  cpSync(join(run, 'gone.txt'), join(run, 'moved.txt'));
+  rmSync(join(run, 'gone.txt'));
+  assert.throws(() => assertPinnedFiles('renames-unpinned', run, before, expected), /renames-unpinned deleted files/);
+  assert.throws(() => assertPinnedFiles('deletes', run, before, expected), /deletes wrote unexpected moved\.txt/);
+  assertPinnedFiles('renames', run, before, expected);
+
+  before = reset();
+  assert.throws(() => assertPinnedFiles('deletes', run, before, expected), /deletes deleted files/);
+  assertPinnedFiles('untouched', run, before, expected);
+});
+
+test('Concurrent scout lookups AC-1: git ignores no pinned file, so a clean checkout holds every pin', (t) => {
+  const inside = spawnSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: EXPECTED, encoding: 'utf8' });
+  if (inside.status !== 0 || inside.stdout.trim() !== 'true') {
+    t.skip('not a git checkout');
+    return;
+  }
+  const pins = walkFiles(EXPECTED);
+  assert.ok(pins.some((rel) => rel.includes('/files/out/')), 'the pins hold files a verb writes under out/');
+  const ignored = spawnSync('git', ['check-ignore', '--stdin'], {
+    cwd: EXPECTED, encoding: 'utf8', input: `${pins.join('\n')}\n`,
+  });
+  assert.equal(ignored.status, 1, `git ignores these pins: ${ignored.stdout}${ignored.stderr}`);
 });
 
 test('Concurrent scout lookups AC-2: the peak number of processes is bounded by the limit', () => {
@@ -308,6 +376,24 @@ test('Concurrent scout lookups AC-4: every lookup kind keeps the base serial edg
   }
 });
 
+// A preload that writes as many bytes on stderr as the index writes on stdout. Each stream
+// then holds exactly a limit equal to the answer's length, and the two together pass it.
+const ECHO = `
+const write = process.stdout.write.bind(process.stdout);
+process.stdout.write = (chunk, ...rest) => {
+  process.stderr.write('e'.repeat(Buffer.byteLength(chunk)));
+  return write(chunk, ...rest);
+};
+`;
+let echoFile = null;
+function echoPreload() {
+  if (!echoFile) {
+    echoFile = join(makeDir('flowtrace-concurrent-echo-'), 'echo.mjs');
+    writeFileSync(echoFile, ECHO);
+  }
+  return pathToFileURL(echoFile).href;
+}
+
 test('Concurrent scout lookups AC-4: the async runner gives the same result as spawnSync', async () => {
   const pair = (args, options) => ({
     sync: spawnSync(process.execPath, [STUB, ...args], { encoding: 'utf8', ...options }),
@@ -335,6 +421,25 @@ test('Concurrent scout lookups AC-4: the async runner gives the same result as s
   assert.equal(code(floodAsync), code(flood.sync));
   assert.equal(code(floodAsync), 'ENOBUFS');
 
+  // Both streams count against one limit, as spawnSync counts them: here each stream holds
+  // exactly the limit, which alone is allowed, and the two together pass it.
+  const answerBytes = Buffer.byteLength(normal.sync.stdout);
+  const atLimit = pair(['refs', 'HarborBridge'], { cwd: FIXTURE, timeout: 30000, maxBuffer: answerBytes });
+  const atLimitAsync = await atLimit.async;
+  assert.equal(code(atLimit.sync), null, 'one stream at the limit is allowed');
+  assert.equal(code(atLimitAsync), null);
+  assert.equal(atLimitAsync.stdout, atLimit.sync.stdout);
+  const echoArgs = ['--import', echoPreload(), STUB, 'refs', 'HarborBridge'];
+  const split = {
+    sync: spawnSync(process.execPath, echoArgs, { cwd: FIXTURE, encoding: 'utf8', timeout: 30000, maxBuffer: answerBytes }),
+    async: runLookupAsync(process.execPath, echoArgs, { cwd: FIXTURE, timeout: 30000, maxBuffer: answerBytes }),
+  };
+  const splitAsync = await split.async;
+  assert.equal(code(split.sync), 'ENOBUFS', 'spawnSync counts both streams together');
+  assert.equal(code(splitAsync), code(split.sync));
+  assert.equal(splitAsync.status, split.sync.status);
+  assert.equal(splitAsync.signal, split.sync.signal);
+
   const timeout = pair(['refs', 'AnySymbol__timeout'], { cwd: FIXTURE, timeout: 300, maxBuffer: LOOKUP_MAX_BUFFER });
   const timeoutAsync = await timeout.async;
   assert.equal(timeoutAsync.status, timeout.sync.status);
@@ -346,6 +451,52 @@ test('Concurrent scout lookups AC-4: the async runner gives the same result as s
   const missingAsync = await runLookupAsync(process.execPath, [join(FIXTURE, 'no-such-script.mjs')], { cwd: FIXTURE });
   assert.equal(missingAsync.status, missing.status);
   assert.equal(code(missingAsync), code(missing));
+});
+
+test('Concurrent scout lookups AC-4: every lookup kind marks output above the limit across both streams unavailable', async () => {
+  const preload = echoPreload();
+  const stub = (args, env, maxBuffer, echo = false) => {
+    const argv = [...(echo ? ['--import', preload] : []), STUB, ...args];
+    return {
+      sync: () => spawnSync(process.execPath, argv, { cwd: FIXTURE, env, encoding: 'utf8', timeout: 30000, maxBuffer }),
+      async: () => runLookupAsync(process.execPath, argv, { cwd: FIXTURE, env, timeout: 30000, maxBuffer }),
+    };
+  };
+  const lookups = [
+    ['outbound', 'HarborBridge'],
+    ['inbound', 'WatcherService'],
+    ['impact', 'src/Controllers/ZoneWatchersController.cs', { hops: 2 }],
+  ];
+  for (const [kind, argument, extra] of lookups) {
+    const asked = [];
+    const probe = createScout({
+      bin: BIN, outDir: 'out', repos: [REPO], fileExists: () => true,
+      run: (bin, args) => { asked.push(args); return { status: 0, stdout: '' }; },
+    });
+    probe[kind](ROOT, argument, extra);
+    const [args] = asked;
+    const plain = stub(args, process.env, LOOKUP_MAX_BUFFER).sync();
+    assert.equal(plain.status, 0, `${kind}: the stub answers ${args.join(' ')}`);
+    const limit = Buffer.byteLength(plain.stdout);
+
+    const answered = (runner) => createScout({
+      bin: BIN, outDir: 'out', repos: [REPO], fileExists: () => true,
+      run: (bin, lookupArgs, options) => runner(lookupArgs, options.env).sync(),
+      runAsync: (bin, lookupArgs, options) => runner(lookupArgs, options.env).async(),
+    });
+    const within = (lookupArgs, env) => stub(lookupArgs, env, limit);
+    const serialWithin = shape(answered(within)[kind](ROOT, argument, extra));
+    assert.ok(serialWithin.edges.length > 0 && !serialWithin.unavailable, `${kind}: one stream at the limit answers edges`);
+    const sharedWithin = shape(await answered(within).passes((scoutLookups) => scoutLookups[kind](ROOT, argument, extra)));
+    assert.deepEqual(sharedWithin, serialWithin, `${kind}: one stream at the limit, shared path`);
+
+    const over = (lookupArgs, env) => stub(lookupArgs, env, limit, true);
+    const serialOver = shape(answered(over)[kind](ROOT, argument, extra));
+    assert.equal(serialOver.unavailable, true, `${kind}: the serial path marks both streams above the limit unavailable`);
+    assert.equal(serialOver.reason, 'indexer exited with an error');
+    const sharedOver = shape(await answered(over).passes((scoutLookups) => scoutLookups[kind](ROOT, argument, extra)));
+    assert.deepEqual(sharedOver, serialOver, `${kind}: both streams above the limit, shared path`);
+  }
 });
 
 test('Concurrent scout lookups AC-4: the default timeout and output limit are the documented constants', () => {
@@ -375,14 +526,12 @@ syncBuiltinESMExports();
 test('Concurrent scout lookups AC-5: a verb writes each file once, after the last pass', () => {
   const recorder = join(makeDir('flowtrace-concurrent-recorder-'), 'recorder.mjs');
   writeFileSync(recorder, RECORDER);
-  const observed = [
-    { name: 'cases', args: ['cases', '--area', 'harbor.area.txt'] },
-    { name: 'scaffold', args: ['scaffold', '--area', 'harbor.area.txt'] },
-    { name: 'cover --packets', args: ['cover', '--area', 'harbor.area.txt', '--packets', 'packets'] },
-    { name: 'span page', args: ['span', 'GET glasshouse/v1/zones/{zoneId}/watchers', '--out', 'span/page.html'] },
-  ];
+  // The last pass starts only after the last lookup answered, so a write or a print before
+  // that moment belongs to an earlier pass, whether it falls before, between or after the
+  // lookups of that pass.
+  const observed = ['cases', 'scaffold', 'cover', 'span'].map((name) => INVOCATIONS.find((entry) => entry.name === name));
   for (const invocation of observed) {
-    const dir = makeDir(`flowtrace-concurrent-io-${invocation.name.split(' ')[0]}-`);
+    const dir = makeDir(`flowtrace-concurrent-io-${invocation.name}-`);
     cpSync(base(), dir, { recursive: true });
     const ioLog = join(dir, 'io.jsonl');
     const stubLog = join(dir, 'stub.log');
@@ -396,15 +545,19 @@ test('Concurrent scout lookups AC-5: a verb writes each file once, after the las
     const lookups = readLog(stubLog);
     assert.ok(lookups.length >= 2, `${invocation.name} reached the index`);
 
-    const written = events.filter((event) => event.kind === 'file').map((event) => event.path);
+    const real = realpathSync(dir);
+    const written = events.filter((event) => event.kind === 'file').map((event) => relative(real, resolve(real, event.path)).split(sep).join('/'));
     const counts = new Map();
     for (const path of written) counts.set(path, (counts.get(path) || 0) + 1);
     for (const [path, count] of counts) assert.equal(count, 1, `${invocation.name} wrote ${path} ${count} times`);
+    const filesDir = join(EXPECTED, invocation.name, 'files');
+    const pinned = existsSync(filesDir) ? walkFiles(filesDir) : [];
+    assert.ok(pinned.length > 0, `${invocation.name} has pinned files`);
+    assert.deepEqual([...counts.keys()].sort(), [...pinned].sort(), `${invocation.name} wrote each pinned file`);
 
-    const first = Math.min(...lookups.map((entry) => entry.start));
     const last = Math.max(...lookups.map((entry) => entry.end));
-    const during = events.filter((event) => event.at > first && event.at < last);
-    assert.deepEqual(during, [], `${invocation.name} wrote or printed between the first and last lookup`);
+    const early = events.filter((event) => event.at < last);
+    assert.deepEqual(early, [], `${invocation.name} wrote or printed before its last lookup answered`);
 
     const starts = lookups.map((entry) => entry.start).sort((a, b) => a - b);
     const lateStarts = lookups.filter((entry) => entry.start > starts[0]);
