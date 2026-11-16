@@ -29,6 +29,7 @@ const MOBILE_DESK = 'src/app/features/passages/passage-desk.service.ts';
 const PANEL = 'src/passages/PassagePanel.tsx';
 const KEEPER = 'src/passages/KeeperPanel.tsx';
 const HARBOR = 'src/passages/HarborPanel.tsx';
+const BARGE = 'src/passages/BargePanel.tsx';
 
 const SIDES = [
   { repo: 'web', file: WEB_DESK, start: 'PassageDesk', call: 'api.' },
@@ -322,27 +323,110 @@ test('Caller gates AC-12: one caller case per distinct gate, with its prerequisi
   assert.deepEqual(cases[2].skipped.map((site) => site.routes), [[LOAD_REACHED]]);
 });
 
-test('Caller gates AC-12: a case lists at most 32 paths and counts the rest', () => {
-  const gate = (name) => ({
-    decision: `web:src/Fork.ts:${name}:if`, kind: 'if', text: `if (${name})`, file: 'src/Fork.ts',
-    line: 1, arm: 'then', status: 'known', outcomes: { true: 'sends', false: 'skips' },
-  });
-  const site = (name) => ({ file: 'src/Fork.ts', line: 1, column: name.length, gates: [gate(name)] });
-  // Six hops of two gated sites each give 2^6 distinct paths to the last gate.
-  const callerGates = new Map();
-  let top = { id: 'last', kind: 'route', ref: 'POST fork/v1/end', children: [] };
-  callerGates.set('last', [site('end')]);
-  for (let level = 6; level >= 1; level -= 1) {
+const forkGate = (name) => ({
+  decision: `web:src/Fork.ts:${name}:if`, kind: 'if', text: `if (${name})`, file: 'src/Fork.ts',
+  line: 1, arm: 'then', status: 'known', outcomes: { true: 'sends', false: 'skips' },
+});
+const forkSite = (column, ...names) => ({ file: 'src/Fork.ts', line: 1, column, gates: names.map(forkGate) });
+const passed = (name) => ({ decision: `web:src/Fork.ts:${name}:if`, text: `if (${name})`, when: 'true' });
+const END = 'POST fork/v1/end';
+const forkCase = (cases, name) => cases.find((item) => item.gate.text === `if (${name})`);
+
+/** A chain of `depth` hops of `width` gated sites each, above one hop gated by `if (end)`. */
+function forkChain(depth, width) {
+  const callerGates = new Map([['last', [forkSite(1, 'end')]]]);
+  let top = { id: 'last', kind: 'route', ref: END, children: [] };
+  for (let level = depth; level >= 1; level -= 1) {
     const id = `h${level}`;
-    callerGates.set(id, [site(`a${level}`), site(`bb${level}`)]);
+    callerGates.set(id, Array.from({ length: width }, (_, k) => forkSite(k + 1, `s${level}x${k}`)));
     top = { id, kind: 'method', children: [top] };
   }
-  const cases = buildCallerCases({ id: 'root', kind: 'component', children: [top] }, callerGates);
-  const last = cases.find((item) => item.gate.text === 'if (end)');
+  return { root: { id: 'root', kind: 'component', children: [top] }, callerGates };
+}
+
+test('Caller gates AC-12: the call sites of one hop are one step of a path', () => {
+  for (const depth of [6, 12]) {
+    const { root, callerGates } = forkChain(depth, 4);
+    const started = process.hrtime.bigint();
+    const cases = buildCallerCases(root, callerGates);
+    const ms = Number(process.hrtime.bigint() - started) / 1e6;
+    const last = forkCase(cases, 'end');
+    const steps = Array.from({ length: depth }, (_, k) => ({
+      anyOf: [0, 1, 2, 3].map((n) => [passed(`s${k + 1}x${n}`)]),
+    }));
+    assert.deepEqual(last.prerequisites, [steps], `${depth} hops of 4 sites give one walk path`);
+    assert.equal(last.pathsTruncated, undefined, `${depth} hops`);
+    assert.deepEqual(last.skipped.map((item) => item.routes), [[END]]);
+    assert.ok(ms < 1000, `${depth} hops of 4 sites take ${ms} ms`);
+  }
+});
+
+test('Caller gates AC-12: a case lists at most 32 walk paths and counts the rest exactly', () => {
+  const callerGates = new Map();
+  const callers = [];
+  for (let k = 0; k < 45; k += 1) {
+    const below = { id: `t${k}`, kind: 'route', ref: END, children: [] };
+    callerGates.set(below.id, [forkSite(1, 'end')]);
+    // The first five callers reach the gated method under no gate of their own.
+    if (k >= 5) callerGates.set(`c${k}`, [forkSite(1, `c${k}`)]);
+    callers.push({ id: `c${k}`, kind: 'method', children: [below] });
+  }
+  const cases = buildCallerCases({ id: 'root', kind: 'component', children: callers }, callerGates);
+  const last = forkCase(cases, 'end');
   assert.equal(last.prerequisites.length, 32);
-  assert.equal(last.pathsTruncated, 32);
-  assert.deepEqual(last.skipped.map((item) => item.routes), [['POST fork/v1/end']]);
-  assert.equal(cases.find((item) => item.gate.text === 'if (a1)').pathsTruncated, undefined);
+  assert.equal(last.pathsTruncated, 9, '40 gated paths and one ungated path, less the 32 listed');
+  assert.deepEqual(last.prerequisites.filter((path) => path.length === 0), [[]], 'the ungated callers give one entry');
+  assert.deepEqual(last.prerequisites[1], [passed('c5')]);
+  assert.equal(forkCase(cases, 'c5').pathsTruncated, undefined);
+});
+
+test('Caller gates AC-12: one gate list stays flat, more lists give anyOf', () => {
+  const below = (sites) => {
+    const callerGates = new Map([['h', sites], ['last', [forkSite(1, 'end')]]]);
+    const last = { id: 'last', kind: 'route', ref: END, children: [] };
+    return buildCallerCases({ id: 'root', kind: 'component', children: [{ id: 'h', kind: 'method', children: [last] }] }, callerGates);
+  };
+  assert.deepEqual(forkCase(below([forkSite(1, 'a'), forkSite(9, 'a')]), 'end').prerequisites, [[passed('a')]], 'two sites, one gate list');
+  assert.deepEqual(forkCase(below([forkSite(1, 'a'), forkSite(9)]), 'end').prerequisites, [[{ anyOf: [[passed('a')], []] }]], 'a gated and an ungated site');
+  assert.deepEqual(forkCase(below([forkSite(1, 'a', 'b'), forkSite(9, 'c', 'd')]), 'end').prerequisites, [[{ anyOf: [[passed('a'), passed('b')], [passed('c'), passed('d')]] }]], 'two lists of two gates');
+
+  const held = below([forkSite(1, 'p', 'e'), forkSite(9, 'q', 'e')]);
+  assert.deepEqual(forkCase(held, 'e').prerequisites, [[{ anyOf: [[passed('p')], [passed('q')]] }]], 'two sites hold the case gate after different gates');
+  assert.deepEqual(forkCase(held, 'p').prerequisites, [[]]);
+  assert.deepEqual(forkCase(held, 'e').skipped.map((item) => item.column), [1, 9]);
+  assert.deepEqual(forkCase(below([forkSite(1, 'p', 'e'), forkSite(9, 'p', 'e')]), 'e').prerequisites, [[passed('p')]], 'the same earlier gates stay flat');
+});
+
+test('Caller gates AC-12: a hop with two gated sites lists them as alternatives', (t) => {
+  const env = extract(t);
+  const barge = locate(env.lines('web', BARGE));
+  const high = barge.lineOf('if (tide.high)');
+  const ready = barge.lineOf('if (crew.ready)');
+  const moored = barge.lineOf('if (x.moored)');
+  const call = barge.lineOf('api.save(x);');
+  const column = env.lines('web', BARGE)[call - 1].indexOf('api.save') + 1;
+  const doc = env.json(['trace', 'BargePanel', '--seeds']);
+  const berth = doc.nodes.filter((node) => node.ref === 'BargePanel.berth');
+  assert.equal(berth.length, 1, 'the walk groups the two calls of berth into one hop');
+  assert.deepEqual(berth[0].callerGates.map((site) => site.gates.map((gate) => gate.text)), [['if (tide.high)'], ['if (crew.ready)']]);
+  const prerequisite = (line, text) => ({ decision: `web:${BARGE}:${line}:if`, text, when: 'true' });
+  assert.deepEqual(doc.callerCases.map((entry) => [entry.id, entry.gate.text, entry.prerequisites]), [
+    ['C1', 'if (tide.high)', [[]]],
+    ['C2', 'if (crew.ready)', [[]]],
+    ['C3', 'if (x.moored)', [[{ anyOf: [[prerequisite(high, 'if (tide.high)')], [prerequisite(ready, 'if (crew.ready)')]] }]]],
+  ]);
+  assert.equal(doc.callerCases[2].gate.line, moored);
+  assert.deepEqual(doc.callerCases[2].skipped, [{ file: BARGE, line: call, column, routes: [SAVE] }]);
+
+  const text = env.ok(['trace', 'BargePanel', '--seeds']).stdout.split('\n');
+  const block = text.slice(text.indexOf('caller cases (3):'));
+  const at = block.findIndex((line) => line.startsWith('C3  '));
+  assert.deepEqual(block.slice(at, at + 4), [
+    `C3  if (x.moored) = false  → skips ${BARGE}:${call}:${column}`,
+    `    gate web:${BARGE}:${moored}:if then`,
+    '    after: one of (if (tide.high) = true | if (crew.ready) = true)',
+    `    call ${BARGE}:${call}:${column}: ${SAVE}`,
+  ]);
 });
 
 test('Caller gates AC-14: each call site keeps its own gates, and an unreadable record stays on its hop', (t) => {

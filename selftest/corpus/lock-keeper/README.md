@@ -13,6 +13,7 @@ the copy, and reads the `caller_gate` records and the gates and caller cases of 
 | `web/src/passages/PassagePanel.tsx` | A component whose `submit()` holds `if (form.valid) { api.save(x); }`, a handler that calls inside a condition, and a display ternary in `render()`. |
 | `web/src/passages/KeeperPanel.tsx` | A component with two nested `if` statements around one call, which give two caller cases. |
 | `web/src/passages/HarborPanel.tsx` | Two handlers that reach one gated method, one of them under its own gate, and a call under a mixed `\|\|`/`&&` chain. |
+| `web/src/passages/BargePanel.tsx` | A method that calls one gated method from two sites, each under a different gate. The walk groups the two calls into one hop. |
 | `web/src/api.ts`, `web/src/http/httpClient.ts` | The module functions that send the two requests. |
 | `mobile/src/app/features/passages/passage-api.service.ts`, `mobile/src/app/features/core/gateway.service.ts` | The mobile service and gateway that send the same two requests. |
 | `backend/` | The two routes, `POST lock/v1/passages` and `GET lock/v1/passages/{passageId}`. |
