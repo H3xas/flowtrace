@@ -161,14 +161,17 @@ extractor finds the site by the source offset of the call, never by its line. On
 - `arm`: `then`, `else`, `case`, `consequent`, `alternate`, `right` or `exit`.
 - `outcomes`: each value of the decision mapped to `sends`, `skips` or `unknown`. The keys
   are `true` and `false`, `match` and `other` for a `case`, and `nullish` and `set` for a
-  `??`.
+  `??`. A known gate maps one value to `sends` and the other to `skips`. A gate with an
+  `unknown` value has no `skips` value.
 - `reason` when an outcome is `unknown`: `fall-through`, `mixed-operators`,
   `exit-in-one-arm`, `loop-exit` or `exit-in-try`.
 
 The decision id of a gate is `<repo>:<file>:<line>:<kind>`, with `#<repeat>` added when
 `repeat` is more than 1. This is the id form of `decisions`. `trace` attaches a record to the
 one call fact of its set that has the same site fields and ordinal. A record whose site
-fields do not parse, or name no call fact, attaches to nothing. A record whose `gates` do not
+fields do not parse, or name no call fact, attaches to nothing. A gate entry does not parse
+when its `arm` does not fit its `kind` (`case` only for a `case`, `right` only for a chain) or
+its `outcomes` break the rules above. A record whose `gates` do not
 parse, and two records of one site, give that call one `unknown` gate with the reason
 `gate-record-unreadable`. The walk, the seeds and every other reader skip the records. A
 fact set from an older extraction has no records, so its walks show no gates until the next

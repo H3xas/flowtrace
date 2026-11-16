@@ -15,7 +15,8 @@
 - In the dependency view, `trace` from a web or mobile start prints a `◇ gate` line under
   each hop that a caller decision gates. The line holds the condition, the kind and arm, the
   outcome of each value and the decision id. `--json` adds `callerGates` to the node. With
-  `--seeds`, a `caller cases` block follows the seeds, and `--json` adds `callerCases`. There
+  `--seeds`, a `caller cases` block follows the seeds, the `--html` page prints the same block
+  after the tree, and `--json` adds `callerCases`. There
   is one case for each distinct gate. A case holds the value that skips the call, the gates
   each walk path passes first and the routes below the skipped call. The call sites of one
   hop with different gates are the alternatives of one step, `one of (A | B)` in the text and

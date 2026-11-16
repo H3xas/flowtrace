@@ -41,6 +41,22 @@ export class ScannerForms {
     return Sized;
   }
 
+  genericInterface() {
+    interface Sized<T> { size?(): T }
+    return 0;
+  }
+
+  genericClass() {
+    class Sized<T> { size?(): T; }
+    return Sized;
+  }
+
+  genericHeritage() {
+    interface Sized extends Array<number> { size?(): number }
+    class Kept extends Map<string, number> { size?(): number; }
+    return Kept;
+  }
+
   typeArgument() {
     const sized = new Map<string, { size?(): number }>();
     return sized;

@@ -190,4 +190,51 @@ export class PassageDeskService {
   lineMix(open: boolean, x: Passage) {
     if (open) { this.api.save(x); } this.api.load(x.id);
   }
+
+  groupedAnd(open: boolean, held: boolean, x: Passage) {
+    (open && this.api.save(x)) || held;
+  }
+
+  groupedCoalesce(held: Passage | null, kept: Passage | null, x: Passage) {
+    (held ?? this.api.save(x)) ?? kept;
+  }
+
+  elseBlockExit(form: PassageForm, x: Passage) {
+    if (form.invalid) {
+      return;
+    } else {
+      if (form.stale) {
+        return;
+      }
+    }
+    this.api.save(x);
+  }
+
+  helperExit(form: PassageForm, x: Passage) {
+    const helper = {
+      check() {
+        if (form.invalid) {
+          return;
+        }
+      },
+      get ready() {
+        if (form.stale) {
+          return false;
+        }
+        return true;
+      },
+    };
+    this.api.save(x);
+  }
+
+  classExit(form: PassageForm, x: Passage) {
+    class Check {
+      run() {
+        if (form.invalid) {
+          return;
+        }
+      }
+    }
+    this.api.save(x);
+  }
 }

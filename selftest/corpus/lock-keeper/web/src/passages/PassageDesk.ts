@@ -186,4 +186,51 @@ export class PassageDesk {
   lineMix(open: boolean, x: Passage) {
     if (open) { api.save(x); } api.load(x.id);
   }
+
+  groupedAnd(open: boolean, held: boolean, x: Passage) {
+    (open && api.save(x)) || held;
+  }
+
+  groupedCoalesce(held: Passage | null, kept: Passage | null, x: Passage) {
+    (held ?? api.save(x)) ?? kept;
+  }
+
+  elseBlockExit(form: PassageForm, x: Passage) {
+    if (form.invalid) {
+      return;
+    } else {
+      if (form.stale) {
+        return;
+      }
+    }
+    api.save(x);
+  }
+
+  helperExit(form: PassageForm, x: Passage) {
+    const helper = {
+      check() {
+        if (form.invalid) {
+          return;
+        }
+      },
+      get ready() {
+        if (form.stale) {
+          return false;
+        }
+        return true;
+      },
+    };
+    api.save(x);
+  }
+
+  classExit(form: PassageForm, x: Passage) {
+    class Check {
+      run() {
+        if (form.invalid) {
+          return;
+        }
+      }
+    }
+    api.save(x);
+  }
 }

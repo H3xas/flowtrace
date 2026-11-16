@@ -112,6 +112,8 @@ const ARM_GATES = [
   ['coalesceRight', 'save(x)', [['held ?? $save(x)', 'coalesce', 'right', { nullish: 'sends', set: 'skips' }, 'known', null]]],
   ['ranked', 'save(x)', [['first && second || $save(x)', 'logical', 'right', SKIPS_TRUE, 'known', null]]],
   ['mixed', 'save(x)', [['first || second && $save(x)', 'logical', 'right', UNKNOWN, 'unknown', 'mixed-operators']]],
+  ['groupedAnd', 'save(x)', [['(open && $save(x)) || held', 'logical', 'right', UNKNOWN, 'unknown', 'mixed-operators']]],
+  ['groupedCoalesce', 'save(x)', [['(held ?? $save(x)) ?? kept', 'coalesce', 'right', { nullish: 'unknown', set: 'unknown' }, 'unknown', 'mixed-operators']]],
   ['display', 'save({', []],
   ['inCondition', 'load(x.id)', []],
 ];
@@ -130,6 +132,12 @@ const EXIT_GATES = [
   ['oneArmExit', 'save(x)', [['if (form.valid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-one-arm']]],
   ['breakExit', 'save(row)', [['if (row.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'loop-exit']]],
   ['continueExit', 'save(row)', [['if (row.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'loop-exit']]],
+  ['elseBlockExit', 'save(x)', [
+    ['if (form.invalid)', 'if', 'exit', SKIPS_TRUE, 'known', null],
+    ['if (form.stale)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-one-arm'],
+  ]],
+  ['helperExit', 'save(x)', []],
+  ['classExit', 'save(x)', []],
   ['tryExit', 'save(x)', [['if (form.invalid)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-try']]],
   ['catchExit', 'save(x)', [['if (form.strict)', 'if', 'exit', UNKNOWN, 'unknown', 'exit-in-try']]],
 ];
@@ -321,6 +329,14 @@ test('Caller gates AC-12: one caller case per distinct gate, with its prerequisi
   ]);
   assert.ok(text.indexOf('caller cases (2):') > text.findIndex((line) => line.startsWith('use-case seeds')), 'the cases follow the seeds');
 
+  env.ok(['trace', 'KeeperPanel', '--seeds', '--html', 'keeper.html']);
+  const page = readFileSync(join(env.dir, 'keeper.html'), 'utf8');
+  const caseBlock = block.slice(0, block.indexOf(''));
+  assert.equal(caseBlock.length, 9);
+  for (const line of caseBlock) assert.ok(page.includes(line), `the page prints ${line}`);
+  env.ok(['trace', 'KeeperPanel', '--html', 'plain.html']);
+  assert.ok(!readFileSync(join(env.dir, 'plain.html'), 'utf8').includes('caller cases'), 'the page lists cases only with --seeds');
+
   const harbor = locate(env.lines('web', HARBOR));
   const ready = harbor.lineOf('if (this.props.ready)');
   const fresh = harbor.lineOf('if (x.fresh)');
@@ -415,6 +431,15 @@ test('Caller gates AC-12: one gate list stays flat, more lists give anyOf', () =
   assert.deepEqual(forkCase(below([forkSite(1, 'p', 'e'), forkSite(9, 'p', 'e')]), 'e').prerequisites, [[passed('p')]], 'the same earlier gates stay flat');
 });
 
+test('Caller gates AC-12: a case whose gate is unknown has outcome unknown', () => {
+  const gate = {
+    ...forkGate('a'), arm: 'exit', outcomes: { true: 'unknown', false: 'skips' }, status: 'unknown', reason: 'exit-in-one-arm',
+  };
+  const root = { id: 'root', children: [{ id: 'hop', kind: 'method', children: [{ id: 'end', kind: 'route', ref: END, children: [] }] }] };
+  const [only] = buildCallerCases(root, new Map([['hop', [{ file: 'src/Fork.ts', line: 1, column: 1, gates: [gate] }]]]));
+  assert.deepEqual([only.when, only.outcome, only.reason], ['true', 'unknown', 'exit-in-one-arm']);
+});
+
 test('Caller gates AC-12: a hop with two gated sites lists them as alternatives', (t) => {
   const env = extract(t);
   const barge = locate(env.lines('web', BARGE));
@@ -483,6 +508,9 @@ test('Caller gates AC-14: each call site keeps its own gates, and an unreadable 
   const submit = baseline.siteAt('submit', 'save(x)');
   const elseArm = baseline.siteAt('elseArm', 'save(x)');
   const returnExit = baseline.siteAt('returnExit', 'save(x)');
+  const andRight = baseline.siteAt('andRight', 'save(x)');
+  const orRight = baseline.siteAt('orRight', 'save(x)');
+  const clause = baseline.siteAt('clause', 'save(x)');
   const broken = extract(t, ({ read, write }) => {
     const set = read('web');
     const records = set.facts.filter((item) => item.type === 'caller_gate' && item.file === WEB_DESK);
@@ -490,6 +518,9 @@ test('Caller gates AC-14: each call site keeps its own gates, and an unreadable 
     at(submit.line).gates = [{ line: 'six' }];
     set.facts.push({ ...at(elseArm.line) });
     at(returnExit.line).line = 0;
+    at(andRight.line).gates[0].outcomes = { banana: 'sends' };
+    at(orRight.line).gates[0] = { ...at(orRight.line).gates[0], outcomes: { true: 'unknown', false: 'skips' }, reason: 'loop-exit' };
+    at(clause.line).gates[0].outcomes = { true: 'sends', false: 'skips' };
     set.facts.push({ ...at(elseArm.line), line: 9999 });
     write('web', set);
   });
@@ -501,8 +532,11 @@ test('Caller gates AC-14: each call site keeps its own gates, and an unreadable 
   assert.deepEqual(desk.siteAt('submit', 'save(x)').site.gates, unreadable(submit), 'a payload that does not parse');
   assert.deepEqual(desk.siteAt('elseArm', 'save(x)').site.gates, unreadable(elseArm), 'two records of one site');
   assert.equal(desk.siteAt('returnExit', 'save(x)').site, undefined, 'a site that does not parse attaches nothing');
+  assert.deepEqual(desk.siteAt('andRight', 'save(x)').site.gates, unreadable(andRight), 'an outcome key the kind does not have');
+  assert.deepEqual(desk.siteAt('orRight', 'save(x)').site.gates, unreadable(orRight), 'an unknown outcome beside a skips outcome');
+  assert.deepEqual(desk.siteAt('clause', 'save(x)').site.gates, unreadable(clause), 'a case gate with the outcome keys of an if');
   for (const [key, site] of baseline.sites) {
-    if ([submit, elseArm, returnExit].some((entry) => `${entry.line}:${entry.column}` === key)) continue;
+    if ([submit, elseArm, returnExit, andRight, orRight, clause].some((entry) => `${entry.line}:${entry.column}` === key)) continue;
     assert.deepEqual(desk.sites.get(key), site, `site ${key} keeps its gates`);
   }
   assert.equal(desk.sites.size, baseline.sites.size - 1, 'a record that names no fact attaches to no hop');
