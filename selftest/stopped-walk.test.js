@@ -403,6 +403,56 @@ test('Stopped walk AC-3: without the flag, the exit codes stay as they were', (t
   assert.match(gated.stderr, /^flowtrace: not complete: readiness .*: provider-unavailable 1$/m);
 });
 
+test('Stopped walk AC-3: the walk counts and --require-complete read only the last lookup pass', (t) => {
+  const BUOY = 'harbor.scout.config.json';
+  const pinned = (name) => readFileSync(join(HERE, 'corpus', 'buoy-signals', 'expected', name, 'stderr'), 'utf8');
+  const clean = gitFixture(t, 'buoy-signals', BUOY);
+  const touched = gitFixture(t, 'buoy-signals', BUOY);
+  const changed = join(touched, 'backend', 'src', 'Controllers', 'ZoneWatchersController.cs');
+  writeFileSync(changed, `${readFileSync(changed, 'utf8')}// changed\n`);
+  const route = 'GET glasshouse/v1/zones/{zoneId}/watchers';
+  const runs = [
+    { name: 'check', exit: 4, dir: clean, args: ['check', '--area', 'harbor.area.txt'] },
+    { name: 'affected', exit: 4, dir: touched, args: ['affected', '--area', 'harbor.area.txt', '--json'] },
+    { name: 'readiness', exit: 4, dir: clean, args: ['readiness', '--areas', 'harbor.areas.txt'] },
+    // Packets go under the ignored output folder, so one run cannot dirty the checkout of the next.
+    { name: 'cover', exit: 4, dir: clean, args: ['cover', '--area', 'harbor.area.txt', '--packets', 'out/packets'] },
+    { name: 'scope', exit: 4, dir: clean, args: ['scope', '--area', 'harbor.area.txt'] },
+    { name: 'surface', exit: 0, dir: clean, args: ['surface', route] },
+    { name: 'skeleton', exit: 0, dir: clean, args: ['skeleton', route, '--stub'] },
+  ];
+  const logDir = mkdtempSync(join(tmpdir(), 'flowtrace-stub-log-'));
+  t.after(() => rmSync(logDir, { recursive: true, force: true }));
+  const chain = ['refs HarborBridge --out', 'refs SignalRelay --out', 'refs RelaySink --out', 'refs RelayGate --out'];
+  // A walk that is still waiting on a lookup is not a stopped walk, so it never fails the gate.
+  for (const { name, exit, dir, args } of runs) {
+    const results = ['', '1'].map((limit) => {
+      const log = join(logDir, `${name}-${limit || 'default'}.log`);
+      const env = { FLOWTRACE_STUB_LOG: log, FLOWTRACE_SCOUT_CONCURRENCY: limit };
+      const result = runWithEnv(dir, [...args, '--require-complete', '--config', BUOY], env);
+      const lookups = existsSync(log)
+        ? readFileSync(log, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line).args.join(' '))
+        : [];
+      return { ...result, lookups };
+    });
+    const [pooled, serial] = results;
+    assert.equal(pooled.status, exit, `${name}: ${pooled.stderr}`);
+    assert.equal(serial.status, pooled.status, name);
+    assert.equal(serial.stdout, pooled.stdout, name);
+    assert.equal(serial.stderr, pooled.stderr, name);
+    for (const result of results) {
+      assert.doesNotMatch(result.stdout + result.stderr, /provider-unavailable|lookup pending/, name);
+      for (const lookup of chain) assert.ok(result.lookups.includes(lookup), `${name}: ${lookup}`);
+      assert.equal(new Set(result.lookups).size, result.lookups.length, `${name}: one process per lookup`);
+    }
+    const notice = pooled.stderr.match(NOTICE);
+    if (exit === 4 && name !== 'cover') {
+      assert.ok(notice, `${name}: ${pooled.stderr}`);
+      assert.equal(`${notice[0]}\n`, pinned(name), `${name}: the notice counts the walks of one pass`);
+    }
+  }
+});
+
 test('Stopped walk AC-4: affected selects a stopped route that reached no changed file', (t) => {
   const dir = quarry(t);
   appendFileSync(join(dir, 'backend', 'src', 'Repositories', 'DispatchLedger.cs'), '\n// changed\n');
@@ -757,6 +807,68 @@ test('Stopped walk AC-13: a lookup made inside a gate walk changes the route ide
   assert.equal(identity(answering('no-match'), shared), miss, 'on a memo hit');
 });
 
+test('Stopped walk AC-13: a walk through the lookup passes gets the identity of the serial walk', async (t) => {
+  const dir = quarry(t);
+  const repos = [
+    { id: 'api', kind: 'backend', root: join(dir, 'backend'), role: ['api'], scout: true },
+    { id: 'web', kind: 'web', root: join(dir, 'web') },
+  ];
+  const reply = (target) => ({
+    status: 0,
+    stdout: `outbound:\n  uses-type (1):\n    backend/src/Services/SurveyChain.cs:1  uses-type  -> ${target}\n`,
+  });
+  let started = 0;
+  const scoutFor = (target) => createScout({
+    bin: '/fixture/bin/scout',
+    fileExists: () => true,
+    repos,
+    run: () => reply(target),
+    runAsync: async () => {
+      started += 1;
+      return reply(target);
+    },
+  });
+  const serial = (target) =>
+    trace(factSetsOf(dir, ['api', 'web']), QUIET, { repos, outbound: scoutFor(target).outbound }).status.identity;
+  // The command line reads its fact sets once and walks them again in each pass, so the
+  // gate walk memo of a pass that waited on a lookup must not reach the last pass.
+  const pooled = async (target) => {
+    const sets = factSetsOf(dir, ['api', 'web']);
+    const model = await scoutFor(target).passes((lookups) => trace(sets, QUIET, { repos, outbound: lookups.outbound }));
+    return model.status.identity;
+  };
+  const chain = 'backend/src/Services/SurveyChain.cs';
+  const ledger = 'backend/src/Services/DispatchLedger.cs';
+  assert.equal(await pooled(chain), serial(chain));
+  assert.ok(started > 0, 'the passes ran their lookups');
+  assert.equal(await pooled(ledger), serial(ledger));
+  assert.notEqual(await pooled(chain), await pooled(ledger), 'another answer set gives another identity');
+});
+
+test('Stopped walk AC-13: an area route with no lookup of its own binds the answer of the gate walk it reads', (t) => {
+  const BUOY = 'harbor.scout.config.json';
+  const readings = 'GET glasshouse/v1/zones/{zoneId}/readings';
+  const identities = (ledgerTarget) => {
+    const dir = copyFixture(t, 'buoy-signals');
+    const path = join(dir, 'scout', 'answers.json');
+    const answers = JSON.parse(readFileSync(path, 'utf8'));
+    answers.outbound.RelayLedger[0].target = ledgerTarget;
+    writeFileSync(path, JSON.stringify(answers));
+    for (const verb of ['extract', 'join']) assert.equal(run(dir, [verb], BUOY).status, 0);
+    const area = json(run(dir, ['trace', '--area', 'harbor.area.txt', '--json'], BUOY));
+    const alone = json(run(dir, ['trace', readings, '--json'], BUOY));
+    return { area: area.map((model) => [model.key, model.status.identity]), alone: alone.status.identity };
+  };
+  const first = identities('backend/src/DataAccess/ZoneRepository.cs');
+  const second = identities('backend/src/DataAccess/ReadingRepository.cs');
+  assert.equal(first.area.length, 3);
+  for (const [index, [key, identity]] of first.area.entries()) {
+    assert.equal(second.area[index][0], key);
+    assert.notEqual(second.area[index][1], identity, key);
+  }
+  assert.equal(second.alone, first.alone, 'the route walked alone reads no answer of that class');
+});
+
 test('Stopped walk AC-14: a route summary marks its own stopped walk, and the outer walk keeps its stops', (t) => {
   const dir = gitFixture(t, 'nursery-mobile', 'nursery.config.json');
   const config = 'nursery.config.json';
@@ -922,4 +1034,50 @@ test('Stopped walk AC-15: a class some fact declares is unresolved-target when t
 
   const stats = trace(factSetsOf(dir, ['backend']), SETTLE, { repos, outbound: noMatch }).stats;
   assert.equal(stats.graphUnavailable, 0, 'a zero-hit is an answer, not an unavailable index');
+});
+
+test('Stopped walk AC-15: each index reply reads the same through the lookup passes as through one lookup', async () => {
+  const repos = [{ root: '/repo', scout: true }];
+  const read = (answer) => ({
+    edges: Array.from(answer, (edge) => ({ ...edge })),
+    noMatch: answer.noMatch === true,
+    unavailable: answer.unavailable === true,
+    reason: answer.reason || null,
+    counts: answer.counts === undefined ? null : answer.counts,
+  });
+  const replies = [
+    ['zero-hit at exit 3', { status: 3, stdout: "no symbol matches 'A'\n" }, { noMatch: true, counts: {} }],
+    ['killed', { status: null, signal: 'SIGTERM', stdout: '' }, { reason: 'indexer exited with an error' }],
+    ['blank', { status: 0, stdout: '' }, { reason: 'indexer gave no answer' }],
+    [
+      'an outbound section short of its rows',
+      { status: 0, stdout: 'outbound:\n  uses-type (2):\n    src/A.cs:3  uses-type  -> src/B.cs\n' },
+      { reason: 'indexer gave no answer' },
+    ],
+  ];
+  for (const [label, result, expected] of replies) {
+    const one = read(createScout({ bin: '/bin/scout', fileExists: () => true, repos, run: () => result }).outbound('/repo', 'A'));
+    let started = 0;
+    const scout = createScout({
+      bin: '/bin/scout',
+      fileExists: () => true,
+      repos,
+      runAsync: async () => {
+        started += 1;
+        return result;
+      },
+    });
+    const pooled = read(await scout.passes((lookups) => lookups.outbound('/repo', 'A')));
+    assert.deepEqual(pooled, one, label);
+    assert.equal(started, 1, label);
+    if (expected.noMatch) {
+      assert.equal(one.noMatch, true, label);
+      assert.equal(one.unavailable, false, label);
+      assert.deepEqual(one.counts, expected.counts, label);
+    } else {
+      assert.equal(one.noMatch, false, label);
+      assert.equal(one.unavailable, true, label);
+      assert.equal(one.reason, expected.reason, label);
+    }
+  }
 });
