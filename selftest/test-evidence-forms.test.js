@@ -4,7 +4,12 @@
  * shape that the list leaves out, which gives the safe result of its fact.
  */
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import test from 'node:test';
+import { isExcluded } from '../lib/affected.js';
+import { walk } from '../lib/walk.js';
 import { extractRepoFacts, writeRepo } from './helpers.js';
 
 const CONTROLLER = `using Microsoft.AspNetCore.Mvc;
@@ -236,3 +241,16 @@ test('Test evidence AC-18: each listed subject form gives its subject, and each 
   }
 });
 
+test('Test evidence AC-19: the exclusion globs of walk and affected keep the release answers', (t) => {
+  assert.equal(isExcluded('a.stories.ts', ['**/*.stories.ts']), false, 'affected keeps the root file a.stories.ts');
+  assert.equal(isExcluded('src/b.ts', ['src/**/b.ts']), false, 'affected keeps src/b.ts');
+  assert.equal(isExcluded('src/c/b.ts', ['src/**/b.ts']), true, 'affected excludes a nested src/c/b.ts');
+  const root = mkdtempSync(join(tmpdir(), 'flowtrace-walk-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  for (const path of ['src/automock/a.ts', 'src/mock/b.ts', 'src/kept/c.ts']) {
+    mkdirSync(join(root, path, '..'), { recursive: true });
+    writeFileSync(join(root, path), 'export {};\n');
+  }
+  const found = walk(root, { extensions: ['.ts'], exclude: ['**/mock'] }).map((path) => path.slice(root.length + 1)).sort();
+  assert.deepEqual(found, ['src/kept/c.ts'], 'walk skips the directory src/automock');
+});

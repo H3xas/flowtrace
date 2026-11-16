@@ -2,10 +2,9 @@ import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { isExcluded } from '../lib/affected.js';
 import { validateConfig } from '../lib/config.js';
 import { factIdentity, validateFacts } from '../lib/facts.js';
-import { globToRegExp } from '../lib/walk.js';
+import { templateGlob } from '../lib/extract/email-templates.js';
 import { copyFixture, extractRepoFacts, runCli, writeRepo } from './helpers.js';
 
 const EMAIL_REFUSAL =
@@ -558,11 +557,11 @@ test('Test evidence AC-19: a ** segment of a template path takes whole directori
       ['templates/welcome.json', 'club-welcome'],
     ],
   );
-  assert.equal(globToRegExp('**/welcome.json').test('welcome.json'), true);
-  assert.equal(globToRegExp('**/welcome.json').test('notwelcome.json'), false);
-  assert.equal(globToRegExp('a/**').test('a/b/c'), true);
-  assert.equal(isExcluded('templates/notwelcome.json', ['templates/**/welcome.json']), false);
-  assert.equal(isExcluded('templates/x/welcome.json', ['templates/**/welcome.json']), true);
+  assert.equal(templateGlob('**/welcome.json').test('welcome.json'), true);
+  assert.equal(templateGlob('**/welcome.json').test('notwelcome.json'), false);
+  assert.equal(templateGlob('a/**').test('a/b/c'), true);
+  assert.equal(templateGlob('a/*.json').test('a/b/c.json'), false);
+  assert.equal(templateGlob('a/?.json').test('a/b.json'), true);
 });
 
 const LINK_SPEC = `import { test } from '@playwright/test';
