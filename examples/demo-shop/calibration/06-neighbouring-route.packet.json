@@ -147,5 +147,12 @@
   "rules": {
     "path": "an assertion on a response field only produced on that path, a follow-up read that observes the effect, or an assertion on a push effect",
     "disposition": "an asserted status or body that maps to exactly one error_return, validation or guard, or a toggle set and read with the toggled assertion"
+  },
+  "walk": {
+    "traversal": "unknown",
+    "stops": {
+      "unresolved-target": 2,
+      "provider-unavailable": 1
+    }
   }
 }

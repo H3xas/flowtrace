@@ -25,7 +25,8 @@
             "bin": "/fixture/bin/scout",
             "args": [
               "refs",
-              "ZoneWatchersController"
+              "ZoneWatchersController",
+              "--out"
             ],
             "cwd": "/fixture/backend"
           }
@@ -43,7 +44,8 @@
             "bin": "/fixture/bin/scout",
             "args": [
               "refs",
-              "ZoneWatchersController"
+              "ZoneWatchersController",
+              "--out"
             ],
             "cwd": "/fixture/backend"
           }
@@ -52,7 +54,7 @@
       "exit 3": {
         "edges": [],
         "unavailable": true,
-        "reason": "indexer exited with an error",
+        "reason": "indexer gave no answer",
         "counts": null,
         "dropped": null,
         "braked": null,
@@ -61,7 +63,8 @@
             "bin": "/fixture/bin/scout",
             "args": [
               "refs",
-              "ZoneWatchersController"
+              "ZoneWatchersController",
+              "--out"
             ],
             "cwd": "/fixture/backend"
           }
@@ -69,9 +72,9 @@
       },
       "no symbol matches": {
         "edges": [],
-        "unavailable": true,
-        "reason": "no symbol matches",
-        "counts": null,
+        "unavailable": false,
+        "reason": null,
+        "counts": {},
         "dropped": null,
         "braked": null,
         "calls": [
@@ -79,7 +82,8 @@
             "bin": "/fixture/bin/scout",
             "args": [
               "refs",
-              "ZoneWatchersController"
+              "ZoneWatchersController",
+              "--out"
             ],
             "cwd": "/fixture/backend"
           }
@@ -97,7 +101,8 @@
             "bin": "/fixture/bin/scout",
             "args": [
               "refs",
-              "ZoneWatchersController"
+              "ZoneWatchersController",
+              "--out"
             ],
             "cwd": "/fixture/backend"
           }
@@ -115,7 +120,8 @@
             "bin": "/fixture/bin/scout",
             "args": [
               "refs",
-              "ZoneWatchersController"
+              "ZoneWatchersController",
+              "--out"
             ],
             "cwd": "/fixture/backend"
           }
@@ -124,7 +130,7 @@
       "exit by signal": {
         "edges": [],
         "unavailable": true,
-        "reason": "no symbol matches",
+        "reason": "indexer exited with an error",
         "counts": null,
         "dropped": null,
         "braked": null,
@@ -133,7 +139,8 @@
             "bin": "/fixture/bin/scout",
             "args": [
               "refs",
-              "ZoneWatchersController"
+              "ZoneWatchersController",
+              "--out"
             ],
             "cwd": "/fixture/backend"
           }
@@ -151,7 +158,8 @@
             "bin": "/fixture/bin/scout",
             "args": [
               "refs",
-              "ZoneWatchersController"
+              "ZoneWatchersController",
+              "--out"
             ],
             "cwd": "/fixture/backend"
           }
