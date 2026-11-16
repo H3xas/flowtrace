@@ -262,3 +262,54 @@ test('Test evidence AC-13: cover joins an entry to the class of its own test whe
     ['mocked', 'real'],
   );
 });
+
+test('Test evidence AC-13: a skipped test and an executing namesake keep their own skip, in one spec and across repositories', (t) => {
+  const spec = `import { test } from '@playwright/test';
+
+test.skip('a namesake', async ({ page }) => {
+  await page.route('**/api/items', (route) => route.fulfill({ json: [] }));
+});
+
+test('a namesake', async ({ page }) => {
+  await page.route('**/api/items', (route) => route.fulfill({ json: [] }));
+});
+`;
+  const other = `import { test } from '@playwright/test';
+
+test('a namesake', async ({ page }) => {
+  await page.route('**/api/items', (route) => route.fulfill({ json: [] }));
+});
+`;
+  const skippedOther = other.replace("test('a namesake'", "test.skip('a namesake'");
+  const dir = writeRepo(
+    t,
+    {
+      'backend/src/Controllers/ItemController.cs': ITEMS_CONTROLLER,
+      'suite/e2e/twins.pw.ts': spec,
+      'second/e2e/twins.pw.ts': skippedOther,
+      'third/e2e/twins.pw.ts': other,
+      'items.area.txt': AREA,
+    },
+    {
+      repos: [
+        { id: 'api', kind: 'backend', root: 'backend', role: ['api'] },
+        { id: 'suite', kind: 'playwright', root: 'suite' },
+        { id: 'second', kind: 'playwright', root: 'second' },
+        { id: 'third', kind: 'playwright', root: 'third' },
+      ],
+    },
+  );
+  extractRepoFacts(dir, 'suite');
+  const items = cover(dir).routes.find((route) => route.key === 'GET api/items');
+  assert.deepEqual(
+    items.realism.entries.map((entry) => [entry.spec, entry.testLine, entry.skipped]).sort((a, b) => a[1] - b[1] || (a[2] ? 1 : -1)),
+    [
+      ['e2e/twins.pw.ts', 3, false],
+      ['e2e/twins.pw.ts', 3, true],
+      ['e2e/twins.pw.ts', 3, true],
+      ['e2e/twins.pw.ts', 7, false],
+    ],
+  );
+  assert.deepEqual(items.realism.executing.stubbed, 2);
+  assert.deepEqual(items.realism.skipped.stubbed, 2);
+});

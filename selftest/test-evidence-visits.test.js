@@ -240,6 +240,17 @@ test('Test evidence AC-16: a visiting test with no class fact counts as none', (
   assert.deepEqual(route.pageReach, { executing: { ...zero(), none: 8 }, skipped: { ...zero(), none: 1 } });
 });
 
+test('Test evidence AC-16: a test that an environment guard skips, or whose guard is unknown, counts as skipped', (t) => {
+  const dir = visitCorpus(t);
+  const states = { 'a real visit': 'environment-skip', 'a mocked visit': 'unknown' };
+  rewriteFacts(dir, (fact) => (fact.type === 'pw_test' && states[fact.test] ? { ...fact, eligibility: states[fact.test], skipped: false } : fact));
+  const route = cover(dir).routes.find((candidate) => candidate.key === ROUTE);
+  assert.deepEqual(route.pageReach, {
+    executing: { real: 4, patched: 1, mocked: 0, unknown: 1, none: 0 },
+    skipped: { ...zero(), real: 2, mocked: 1 },
+  });
+});
+
 test('Test evidence AC-17: cover shows a page-reach line labelled inferred', (t) => {
   const dir = visitCorpus(t);
   assert.match(

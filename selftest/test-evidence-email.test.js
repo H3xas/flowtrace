@@ -570,6 +570,19 @@ test('Test evidence AC-21: cover links each area email read to one template and 
   assert.deepEqual(without.emails, { entries: [], outsideArea: 0 });
 });
 
+test('Test evidence AC-21: a read of a test that an environment guard skips, or whose guard is unknown, is skipped', (t) => {
+  const dir = linkCorpus(t);
+  const states = { 'a linked read': 'environment-skip', 'a read that no template matches': 'unknown' };
+  const path = join(dir, 'out', 'facts', 'suite.json');
+  const document = JSON.parse(readFileSync(path, 'utf8'));
+  document.facts = document.facts.map((fact) =>
+    fact.type === 'pw_test' && states[fact.test] ? { ...fact, eligibility: states[fact.test], skipped: false } : fact,
+  );
+  writeFileSync(path, JSON.stringify(document));
+  const skipped = linkCover(dir).emails.entries.filter((email) => email.skipped).map((email) => email.test);
+  assert.deepEqual(skipped, ['a linked read', 'a read that no template matches']);
+});
+
 test('Test evidence AC-21: the reports label an email link as a static match, not proof of delivery', (t) => {
   const dir = linkCorpus(t);
   const text = linkCover(dir, null);
