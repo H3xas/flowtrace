@@ -112,3 +112,11 @@
   fact with `class`, `member` and `id`, nested classes included. A value is a string literal, or a
   `<Class>.<NAME>` reference to a `public const string` in any file of the repository, named in
   `constant`. A reference to no constant or to two gives `id: null` and a `reason`.
+- `cover` lists the email reads of the area under `emails.entries`. Each read links to one
+  `email_template` by its subject and to one `email_sender` by the template id. The link state is
+  `linked`, `no-subject`, `no-template`, `ambiguous-template`, `no-sender` or `ambiguous-sender`,
+  and an ambiguous state names its candidates. A `*` of a read matches only a `*` of a template. A
+  read is in the area when its test has named evidence on an area route, or when its sender is a
+  node of an area route walk. `emails.outsideArea` counts the other reads. The text and markdown
+  reports label a link as a static match, not proof of delivery. No route state, level or parity
+  changes.

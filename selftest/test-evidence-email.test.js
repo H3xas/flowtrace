@@ -427,3 +427,166 @@ test('Test evidence AC-20: a configured sender member gives its email id, throug
     'senders add their facts and change no other',
   );
 });
+
+const LINK_SPEC = `import { test } from '@playwright/test';
+
+test('a linked read', async ({ request }) => {
+  await request.post('/clubs/v1/join/c1');
+  await readMail({ subject: \`You joined \${club}\` });
+});
+
+test('a read whose template has two senders', async ({ request }) => {
+  await request.post('/clubs/v1/join/c1');
+  await readMail({ subject: \`Welcome to \${club}\` });
+});
+
+test('a read whose template has no sender', async ({ request }) => {
+  await request.post('/clubs/v1/join/c1');
+  await readMail({ subject: \`Reset \${code}\` });
+});
+
+test('a read that two templates match', async ({ request }) => {
+  await request.post('/clubs/v1/join/c1');
+  await readMail({ subject: \`Invite \${code}\` });
+});
+
+test('a read with no subject', async ({ request }) => {
+  await request.post('/clubs/v1/join/c1');
+  await readMail({ subject: subjectFor('join') });
+});
+
+test('a read that no template matches', async ({ request }) => {
+  await request.post('/clubs/v1/join/c1');
+  await readMail({ subject: 'Goodbye' });
+});
+
+test('a read outside the area whose sender the route walk reaches', async () => {
+  await readMail({ subject: \`You joined \${club}\` });
+});
+
+test('a read outside the area', async () => {
+  await readMail({ subject: \`Welcome to \${club}\` });
+});
+`;
+
+const LINK_SENDERS = `namespace Kite.Mail
+{
+    public class WelcomeEmail
+    {
+        public string EmailCode => "club-welcome";
+    }
+
+    public class WelcomeAgainEmail
+    {
+        public string EmailCode => "club-welcome";
+    }
+}
+`;
+
+const mailTemplate = (code, subject) => template(code, [emailChannel(subjectSection(subject))]);
+
+function linkCorpus(t) {
+  const dir = copyFixture(t, 'kite-club');
+  const controller = join(dir, 'backend', 'src', 'Controllers', 'ClubsController.cs');
+  writeFileSync(
+    controller,
+    readFileSync(controller, 'utf8').replace(
+      '    public class ClubsController : ControllerBase\n    {\n',
+      '    public class ClubsController : ControllerBase\n    {\n        public string EmailCode => "club-join";\n\n',
+    ),
+  );
+  const files = {
+    'suite/e2e/links.pw.ts': LINK_SPEC,
+    'backend/src/Mail/Welcome.cs': LINK_SENDERS,
+    'mail/templates/join.json': mailTemplate('club-join', 'You joined {{club}}'),
+    'mail/templates/welcome.json': mailTemplate('club-welcome', 'Welcome to {{club}}'),
+    'mail/templates/welcome-kites.json': mailTemplate('club-welcome-kites', 'Welcome to Kites'),
+    'mail/templates/reset.json': mailTemplate('club-reset', 'Reset {{{code}}}'),
+    'mail/templates/invite-a.json': mailTemplate('club-invite-a', 'Invite {{code}}'),
+    'mail/templates/invite-b.json': mailTemplate('club-invite-b', 'Invite {{token}}'),
+    'links.area.txt': 'POST clubs/v1/join/*\n',
+  };
+  for (const [path, text] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, path)), { recursive: true });
+    writeFileSync(join(dir, path), text);
+  }
+  const config = JSON.parse(readFileSync(join(dir, 'kite.config.json'), 'utf8'));
+  config.repos.push({ id: 'mail', kind: 'email-templates', root: 'mail', templates: { ...TEMPLATES, id: 'meta.template.code' } });
+  config.email = { reads: [{ call: 'readMail', subject: '0.subject' }], senders: [{ member: 'EmailCode' }] };
+  writeFileSync(join(dir, 'links.config.json'), JSON.stringify(config, null, 2));
+  const extracted = runCli(['extract', '--config', 'links.config.json'], { cwd: dir });
+  assert.equal(extracted.status, 0, extracted.stderr);
+  return dir;
+}
+
+function linkCover(dir, format = '--json') {
+  const result = runCli(['cover', '--area', 'links.area.txt', ...(format ? [format] : []), '--config', 'links.config.json'], { cwd: dir });
+  assert.equal(result.status, 0, result.stderr);
+  return format === '--json' ? JSON.parse(result.stdout) : result.stdout;
+}
+
+test('Test evidence AC-21: cover links each area email read to one template and one sender, or says why not', (t) => {
+  const dir = linkCorpus(t);
+  const report = linkCover(dir);
+  const ROUTE_KEY = 'POST clubs/v1/join/*';
+  assert.deepEqual(
+    report.emails.entries.map((email) => [
+      email.test,
+      email.state,
+      email.template ? email.template.id : null,
+      email.sender ? `${email.sender.class}.${email.sender.member}` : null,
+      (email.candidates || []).map((candidate) => candidate.id ?? candidate.class),
+      email.routes,
+      email.senderRoutes,
+    ]),
+    [
+      ['a linked read', 'linked', 'club-join', 'ClubsController.EmailCode', [], [ROUTE_KEY], [ROUTE_KEY]],
+      ['a read whose template has two senders', 'ambiguous-sender', 'club-welcome', null, ['WelcomeEmail', 'WelcomeAgainEmail'], [ROUTE_KEY], []],
+      ['a read whose template has no sender', 'no-sender', 'club-reset', null, [], [ROUTE_KEY], []],
+      ['a read that two templates match', 'ambiguous-template', null, null, ['club-invite-a', 'club-invite-b'], [ROUTE_KEY], []],
+      ['a read with no subject', 'no-subject', null, null, [], [ROUTE_KEY], []],
+      ['a read that no template matches', 'no-template', null, null, [], [ROUTE_KEY], []],
+      ['a read outside the area whose sender the route walk reaches', 'linked', 'club-join', 'ClubsController.EmailCode', [], [], [ROUTE_KEY]],
+    ],
+  );
+  assert.equal(report.emails.outsideArea, 1);
+  assert.equal(
+    report.emails.entries[1].template.subject,
+    'Welcome to *',
+    'the narrower template "Welcome to Kites" does not take a read of "Welcome to *"',
+  );
+
+  const shape = (route) => ({ key: route.key, state: route.state, levels: route.levels, parity: route.parity, evidence: route.evidence });
+  const factsDir = join(dir, 'out', 'facts');
+  for (const repo of ['suite', 'api', 'mail']) {
+    const path = join(factsDir, `${repo}.json`);
+    const document = JSON.parse(readFileSync(path, 'utf8'));
+    document.facts = document.facts.filter((fact) => !fact.type.startsWith('email_'));
+    writeFileSync(path, JSON.stringify(document));
+  }
+  const without = linkCover(dir);
+  assert.deepEqual(without.routes.map(shape), report.routes.map(shape));
+  assert.deepEqual(without.totals, report.totals);
+  assert.deepEqual(without.emails, { entries: [], outsideArea: 0 });
+});
+
+test('Test evidence AC-21: the reports label an email link as a static match, not proof of delivery', (t) => {
+  const dir = linkCorpus(t);
+  const text = linkCover(dir, null);
+  assert.match(text, /\nemails {2}7 read in the area · 1 outside · a link is a static match, not proof of delivery\n/);
+  assert.match(text, /e2e\/links\.pw\.ts :: a linked read \(5\) — readMail "You joined \*" — linked · template club-join/);
+  const md = join(dir, 'cover.md');
+  const written = runCli(['cover', '--area', 'links.area.txt', '--md', md, '--config', 'links.config.json'], { cwd: dir });
+  assert.equal(written.status, 0, written.stderr);
+  assert.match(readFileSync(md, 'utf8'), /## Email reads\n\n7 read in the area, 1 outside it\. A link from a read to a template and a sender is a static match, not proof of delivery\./);
+});
+
+test('Test evidence AC-21: a read pattern star matches only a template star', async () => {
+  const { subjectMatches } = await import('../lib/emails.js');
+  assert.equal(subjectMatches('Welcome to *', 'Welcome to *'), true);
+  assert.equal(subjectMatches('Welcome to *', 'Welcome to Kites'), true);
+  assert.equal(subjectMatches('* *', 'Reset *'), true);
+  assert.equal(subjectMatches('Welcome to Kites', 'Welcome to *'), false);
+  assert.equal(subjectMatches('Reset * now', 'Reset *'), false);
+  assert.equal(subjectMatches('Cost (*)', 'Cost (12)'), true);
+});
