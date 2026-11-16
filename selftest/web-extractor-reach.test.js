@@ -1670,3 +1670,166 @@ test('Web extractor reach AC-7: the caller rule gives the same route with the ba
   assert.deepEqual([answer(caller).files, caller.exit, caller.fallbacks, caller.reasons], [['web:src/api/revisionApi.ts:source'], 0, [], []]);
   assert.equal(Object.keys(caller).join(','), AFFECTED_KEYS);
 });
+
+function gitIn(dir) {
+  return (...args) => {
+    const result = spawnSync('git', args, { cwd: dir, encoding: 'utf8' });
+    assert.equal(result.status, 0, `git ${args.join(' ')}: ${result.stderr}`);
+    return result.stdout;
+  };
+}
+
+/** A git checkout of the folder `dir`, with one commit of all its files and a local test identity. */
+function initCheckout(dir) {
+  const git = gitIn(dir);
+  git('init', '-q');
+  git('config', 'user.email', 'selftest@example.invalid');
+  git('config', 'user.name', 'flowtrace selftest');
+  git('add', '-A');
+  git('commit', '-q', '-m', 'initial');
+  return git;
+}
+
+function touch(dir, path, n) {
+  const target = join(dir, ...path.split('/'));
+  mkdirSync(dirname(target), { recursive: true });
+  let text = '';
+  try {
+    text = readFileSync(target, 'utf8');
+  } catch {
+    text = '';
+  }
+  writeFileSync(target, `${text}// edit ${n}\n`);
+}
+
+const UNRELATED_CS = 'namespace Sample.Api\n{\n    public class Unrelated { }\n}\n';
+
+/**
+ * A workspace that is no git checkout, with `backend/` and `front/` as two git checkouts side by
+ * side and the configuration at its top. `front/` holds two web roots and a Playwright root.
+ */
+function sideBySide(t) {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([
+      BACKEND,
+      { id: 'web', kind: 'web', root: 'front/app' },
+      { id: 'admin', kind: 'web', root: 'front/admin' },
+      { id: 'e2e', kind: 'playwright', root: 'front/e2e' },
+    ]),
+    'backend/src/ContentController.cs': REVISION_BACKEND,
+    'backend/src/Unrelated.cs': UNRELATED_CS,
+    'front/app/src/http/httpClient.ts': GATEWAY_CLIENT,
+    'front/app/src/api/revisionApi.ts': REVISION_API,
+    'front/admin/src/http/httpClient.ts': GATEWAY_CLIENT,
+    'front/admin/src/api/adminApi.ts': 'export const admin = 1;\n',
+    'front/e2e/tests/a.spec.ts': PLAYWRIGHT_SPEC,
+  });
+  const backend = initCheckout(join(dir, 'backend'));
+  const front = initCheckout(join(dir, 'front'));
+  const extract = () => {
+    const result = cli(dir, ['extract']);
+    assert.equal(result.status, 0, result.stderr);
+  };
+  extract();
+  const run = (args) => {
+    const result = cli(dir, ['affected', ...args, '--all-routes', '--json']);
+    const json = JSON.parse(result.stdout);
+    assert.equal(result.status, json.exit, result.stderr);
+    assert.equal(Object.keys(json).join(','), AFFECTED_KEYS);
+    return json;
+  };
+  return { dir, backend, front, extract, run };
+}
+
+test('Web extractor reach AC-19: affected reads the git checkout of a web repository beside the diff checkout, in the three modes', (t) => {
+  const { dir, backend, front, extract, run } = sideBySide(t);
+  touch(dir, 'backend/src/Unrelated.cs', 1);
+  backend('commit', '-q', '-am', 'backend edit');
+  touch(dir, 'front/app/src/api/revisionApi.ts', 1);
+  front('commit', '-q', '-am', 'web edit');
+  extract();
+  const range = run(['--diff', 'HEAD~1..HEAD']);
+  assert.deepEqual(answer(range).files, ['backend:src/Unrelated.cs:source', 'web:src/api/revisionApi.ts:source']);
+  assert.deepEqual(routeRows(range), ['GET content/v1/revisions <- src/api/revisionApi.ts']);
+  assert.deepEqual([range.exit, range.fallbacks, range.reasons], [0, [], []]);
+
+  touch(dir, 'front/app/src/api/revisionApi.ts', 2);
+  front('add', '-A');
+  const staged = run(['--staged']);
+  assert.deepEqual(answer(staged).files, ['web:src/api/revisionApi.ts:source']);
+  assert.deepEqual(routeRows(staged), ['GET content/v1/revisions <- src/api/revisionApi.ts']);
+  front('commit', '-q', '-m', 'web edit kept');
+  extract();
+
+  touch(dir, 'front/app/src/api/revisionApi.ts', 3);
+  const worktree = run([]);
+  assert.deepEqual(answer(worktree).files, ['web:src/api/revisionApi.ts:source']);
+  assert.deepEqual(routeRows(worktree), ['GET content/v1/revisions <- src/api/revisionApi.ts']);
+  front('commit', '-q', '-am', 'web edit kept again');
+  extract();
+
+  touch(dir, 'front/app/src/api/revisionApi.ts', 4);
+  touch(dir, 'front/admin/src/api/adminApi.ts', 4);
+  touch(dir, 'front/e2e/tests/a.spec.ts', 4);
+  front('commit', '-q', '-am', 'two web roots and a spec');
+  touch(dir, 'backend/src/Unrelated.cs', 4);
+  backend('commit', '-q', '-am', 'backend edit again');
+  extract();
+  const both = run(['--diff', 'HEAD~1..HEAD']);
+  assert.deepEqual(answer(both).files, [
+    'admin:src/api/adminApi.ts:source',
+    'backend:src/Unrelated.cs:source',
+    'web:src/api/revisionApi.ts:source',
+  ], 'two web roots of one other checkout each get their file once, and the Playwright root of that checkout gets none');
+  assert.deepEqual(answer(both).specs, []);
+  assert.deepEqual(routeRows(both), ['GET content/v1/revisions <- src/api/revisionApi.ts']);
+
+  touch(dir, 'backend/src/ContentController.cs', 5);
+  backend('commit', '-q', '-am', 'backend only');
+  front('commit', '-q', '--allow-empty', '-m', 'nothing');
+  extract();
+  const backendOnly = run(['--diff', 'HEAD~1..HEAD']);
+  assert.deepEqual(answer(backendOnly).files, ['backend:src/ContentController.cs:source']);
+  assert.deepEqual(routeRows(backendOnly), ['GET content/v1/revisions <- src/ContentController.cs']);
+  assert.deepEqual([backendOnly.exit, backendOnly.fallbacks, backendOnly.reasons], [0, [], []]);
+});
+
+test('Web extractor reach AC-19: a web checkout that git cannot read gives one checkout-not-read line for each of its repositories', (t) => {
+  const { dir, backend, front, extract, run } = sideBySide(t);
+  backend('tag', 'start');
+  touch(dir, 'backend/src/Unrelated.cs', 1);
+  backend('commit', '-q', '-am', 'backend edit');
+  touch(dir, 'front/app/src/api/revisionApi.ts', 1);
+  front('commit', '-q', '-am', 'web edit');
+  extract();
+  const report = run(['--diff', 'start..HEAD']);
+  assert.deepEqual(answer(report).files, ['backend:src/Unrelated.cs:source']);
+  assert.deepEqual([report.exit, report.routes, report.fallbacks], [3, [], []], 'the routes and the exit code of the run without that read');
+  assert.deepEqual(report.reasons, [
+    'checkout-not-read [admin]: git cannot read the range start..HEAD in its checkout — its changed files select nothing',
+    'checkout-not-read [web]: git cannot read the range start..HEAD in its checkout — its changed files select nothing',
+  ]);
+});
+
+test('Web extractor reach AC-19: a web root in no git checkout gives the checkout-not-read line', (t) => {
+  const dir = buildRepo(t, {
+    'flowtrace.config.json': config([BACKEND, WEB]),
+    'backend/src/ContentController.cs': REVISION_BACKEND,
+    'web/src/http/httpClient.ts': GATEWAY_CLIENT,
+    'web/src/api/revisionApi.ts': REVISION_API,
+  });
+  const backend = initCheckout(join(dir, 'backend'));
+  assert.notEqual(spawnSync('git', ['rev-parse', '--show-toplevel'], { cwd: join(dir, 'web'), encoding: 'utf8' }).status, 0);
+  const extracted = cli(dir, ['extract']);
+  assert.equal(extracted.status, 0, extracted.stderr);
+  touch(dir, 'backend/src/ContentController.cs', 1);
+  backend('commit', '-q', '-am', 'backend edit');
+  const rebuilt = cli(dir, ['extract']);
+  assert.equal(rebuilt.status, 0, rebuilt.stderr);
+  const result = cli(dir, ['affected', '--diff', 'HEAD~1..HEAD', '--all-routes', '--json']);
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(routeRows(report), ['GET content/v1/revisions <- src/ContentController.cs']);
+  assert.deepEqual([report.exit, report.fallbacks, report.reasons], [0, [], [
+    'checkout-not-read [web]: no git checkout holds the repository root — its changed files select nothing',
+  ]]);
+});

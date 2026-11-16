@@ -2683,6 +2683,51 @@ function diffSourceRepo(config, repoFilter) {
 }
 
 /**
+ * The changed files of each `web` repository whose root is outside the diff checkout `top`,
+ * read in the mode of the run from the git checkout that holds that root: one read for each
+ * such checkout. Only a path that one of those `web` repositories owns gives an entry, so the
+ * entries of the other kinds and the input of each rung stay as without the read. A checkout
+ * that git cannot read gives one `unread` entry for each of its `web` repositories.
+ */
+function readWebCheckouts(repos, top, changed, { diff, staged }) {
+  const { attributeChanges, changedPaths, gitTopLevel } = affectedModule;
+  const groups = new Map();
+  const unread = [];
+  for (const repo of repos.filter((entry) => entry.kind === 'web')) {
+    const level = gitTopLevel(repo.root);
+    if (level === top) continue;
+    if (level === null) {
+      unread.push({ repo: repo.id, cause: 'no git checkout holds the repository root' });
+      continue;
+    }
+    if (!groups.has(level)) groups.set(level, []);
+    groups.get(level).push(repo.id);
+  }
+  const mode = diff
+    ? `the range ${diff} in its checkout`
+    : staged ? 'the index of its checkout' : 'the working tree of its checkout';
+  const seen = new Set(changed.map((file) => `${file.repo}\0${file.path}`));
+  const merged = [...changed];
+  for (const [level, ids] of groups) {
+    const paths = changedPaths(level, { diff, staged });
+    if (paths === null) {
+      for (const id of ids) unread.push({ repo: id, cause: `git cannot read ${mode}` });
+      continue;
+    }
+    for (const file of attributeChanges(paths, repos, { root: level, prefix: '' })) {
+      const key = `${file.repo}\0${file.path}`;
+      if (!ids.includes(file.repo) || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(file);
+    }
+  }
+  const order = (a, b) => ((a || '') === (b || '') ? 0 : (a || '') < (b || '') ? -1 : 1);
+  merged.sort((a, b) => order(a.repo, b.repo) || order(a.path, b.path));
+  unread.sort((a, b) => order(a.repo, b.repo));
+  return { changed: merged, unread };
+}
+
+/**
  * Each fact set is read by the repository a revision touches, not through `loadFactSets`,
  * so a missing one is refused by name rather than as an empty facts directory.
  */
@@ -2745,7 +2790,9 @@ async function runAffected(config, options) {
   if (paths === null) {
     throw new Error(`cannot read a diff in ${source.id}: not a git repository, or git is unavailable`);
   }
-  const changed = attributeChanges(paths, withRealRoots(config.repos), { root: top, prefix: '' });
+  const realRepos = withRealRoots(config.repos);
+  const changed = attributeChanges(paths, realRepos, { root: top, prefix: '' });
+  const others = readWebCheckouts(realRepos, top, changed, { diff: options.diff, staged: options.staged });
 
   const area = options.allRoutes ? null : resolveAreaFile(options.area);
   const keys = area
@@ -2782,7 +2829,8 @@ async function runAffected(config, options) {
       area: area ? area.name : null,
       universeSource: area ? 'area' : 'all-routes',
       keys,
-      changed,
+      changed: others.changed,
+      unread: others.unread,
       aliases: config.aliases,
       repos: config.repos,
       maxShare: options.maxShare,
