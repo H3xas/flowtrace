@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { matchPagePath } from '../lib/join.js';
-import { copyFixture, runCli } from './helpers.js';
+import { copyFixture, extractRepoFacts, runCli, writeRepo } from './helpers.js';
 
 const ROUTE = 'POST clubs/v1/join/*';
 
@@ -187,6 +187,43 @@ test('Test evidence AC-15: a page visit gives a visit fact from the regions of i
 
   const report = cover(dir);
   assert.deepEqual(report.notes.visits, { matched: 12, unmatched: 1, ambiguous: 1, unread: 1 });
+});
+
+test('Test evidence AC-15: a fixture that a test uses gives its visits and email reads, as it gives its stubs', (t) => {
+  const fixtures = [
+    "import { test as base } from '@playwright/test';",
+    'export const test = base.extend({',
+    '  onJoin: async ({ page }, use) => {',
+    "    await page.route('**/clubs/v1/join/*', (route) => route.fulfill({ json: {} }));",
+    "    await page.goto('/join');",
+    "    await readMail({ subject: 'Welcome aboard' });",
+    '    await use();',
+    '  },',
+    '  unused: async ({ page }, use) => {',
+    "    await page.goto('/elsewhere');",
+    '    await use();',
+    '  },',
+    '});',
+    '',
+  ].join('\n');
+  const spec = [
+    "import { test } from '../support/fixtures';",
+    '',
+    "test('a fixture visit', async ({ onJoin }) => {});",
+    '',
+  ].join('\n');
+  const dir = writeRepo(t, { 'suite/support/fixtures.ts': fixtures, 'suite/e2e/fixture.pw.ts': spec }, {
+    repos: [{ id: 'suite', kind: 'playwright', root: 'suite' }],
+    email: { reads: [{ call: 'readMail', subject: '0.subject' }] },
+  });
+  const facts = extractRepoFacts(dir, 'suite').filter((fact) => fact.spec === 'e2e/fixture.pw.ts');
+  const backend = facts.find((fact) => fact.type === 'pw_backend');
+  assert.ok(backend.sites.some((site) => site.where === 'fixture'), JSON.stringify(backend.sites));
+  const row = (fact) => [fact.type, fact.test, fact.testLine, fact.file, fact.line, fact.where, fact.path ?? fact.subject];
+  assert.deepEqual(facts.filter((fact) => fact.type === 'pw_visit' || fact.type === 'email_read').map(row), [
+    ['pw_visit', 'a fixture visit', 3, 'support/fixtures.ts', 5, 'fixture', '/join'],
+    ['email_read', 'a fixture visit', 3, 'support/fixtures.ts', 6, 'fixture', 'Welcome aboard'],
+  ]);
 });
 
 test('Test evidence AC-15: a visit path meets the page that ranks first, by the route comparator', () => {

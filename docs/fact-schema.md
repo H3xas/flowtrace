@@ -532,9 +532,10 @@ A bare name or a `name.prop` span keeps `resolved: true`, because it reads as a 
 A stub that the endpoint registry names and a `pw_request` template keep their own rule.
 
 `pw_visit` and `cypress_visit` are read from the regions that decide the backend class of the
-test: its body, its hooks, and the functions and Cypress commands those call. `path` is the
-literal page path, or `null` with `reason: "not-literal"`. `where` is `test`, `hook` or
-`helper`, and `file` and `line` name the visit call.
+test: its body, its hooks, the Playwright fixtures it uses, and the functions and Cypress
+commands those call. `path` is the literal page path, or `null` with `reason: "not-literal"`.
+`where` is `test`, `hook`, `helper` or `fixture`, and `file` and `line` name the visit call,
+also when a fixture in another file holds it.
 
 `email_read` is written for each test that reaches a configured read call, at the call, with
 `where` as above. A Cypress read is the command `cy.<call>(`. `subject` is the text of a string
