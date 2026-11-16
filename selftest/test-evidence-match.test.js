@@ -89,6 +89,18 @@ test('Test evidence AC-5: a glob prefix keeps segment boundaries, and a caller w
   assert.equal(matchRoute(index, 'GET', 'api/users*').route.key, 'GET api/users/*');
 });
 
+test('Test evidence AC-5: a trailing ** attached to literal text also crosses segments', () => {
+  const one = routeIndex(['api/items/{id}']);
+  assert.deepEqual(outcome(one, 'api/items**', { glob: true }), { key: 'GET api/items/*', match: 'prefix' });
+  const deep = routeIndex(['api/items/{id}/orders']);
+  assert.deepEqual(outcome(deep, 'api/items**', { glob: true }), { key: 'GET api/items/*/orders', match: 'prefix' });
+  const both = routeIndex(['api/items', 'api/items/{id}']);
+  assert.deepEqual(outcome(both, 'api/items**', { glob: true }), { ambiguous: ['GET api/items', 'GET api/items/*'] });
+  const longer = routeIndex(['api/itemsets']);
+  assert.deepEqual(outcome(longer, 'api/items**', { glob: true }), { key: 'GET api/itemsets', match: 'prefix' });
+  assert.deepEqual(outcome(one, 'items**', { glob: true }), { key: 'GET api/items/*', match: 'suffix' });
+});
+
 test('Test evidence AC-6: equal candidates of a new tier give no route, and the detailed result names them', () => {
   const index = routeIndex(['shop/v1/carts/{cartId}/lines', 'depot/v1/carts/{binId}/lines']);
   assert.deepEqual(outcome(index, 'carts/c-9/lines'), {
