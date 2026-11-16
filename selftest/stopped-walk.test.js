@@ -157,8 +157,15 @@ test('Stopped walk AC-1: each reading verb marks an item from a stopped walk, in
   const skeleton = run(dir, ['skeleton', PLAN, '--stub']);
   assert.equal(skeleton.status, 0, skeleton.stderr);
   assert.match(skeleton.stdout, /test\('walk stopped 1: depth SurveyD\.Probe'/);
+  assert.match(skeleton.stdout, /^\/\/ walk partial \(depth 3\)$/m);
   assert.match(skeleton.stderr, NOTICE);
-  assert.equal(json(run(dir, ['skeleton', PLAN, '--stub', '--json'])).plan.counts.stops, 3);
+  const skeletonJson = json(run(dir, ['skeleton', PLAN, '--stub', '--json']));
+  assert.equal(skeletonJson.plan.counts.stops, 3);
+  assert.deepEqual(skeletonJson.plan.walk, PLAN_MARK);
+  assert.match(skeletonJson.spec, /^\/\/ walk partial \(depth 3\)$/m);
+  const skeletonOut = run(dir, ['skeleton', PLAN, '--stub', '--out', 'out/plans.spec.ts']);
+  assert.equal(skeletonOut.status, 0, skeletonOut.stderr);
+  assert.match(skeletonOut.stdout, / · walk partial \(depth 3\)$/m);
 
   const snapshot = run(dir, ['join', '--snapshot', 'out/snapshot.json']);
   assert.equal(snapshot.status, 0, snapshot.stderr);
@@ -543,12 +550,21 @@ test('Stopped walk AC-8: surface states the walk after its first line, and --out
   assert.equal(text.filter((line) => /^ {2}depth {2}api {2}SurveyD\.Probe/.test(line)).length, 3);
   const model = json(run(dir, ['surface', PLAN, '--json']));
   assert.equal(model.status.traversal, 'partial');
-  run(dir, ['surface', PLAN, '--out', 'out/surface.json']);
+  const saved = run(dir, ['surface', PLAN, '--out', 'out/surface.json']);
+  assert.equal(saved.status, 0, saved.stderr);
   assert.doesNotMatch(readFileSync(join(dir, 'out', 'surface.json'), 'utf8'), /"traversal"|"frontier"|"identity"/);
+  const savedLines = saved.stdout.split('\n');
+  assert.match(savedLines[0], /^surface POST dispatch\/v1\/plans: \d+ facts? -> /);
+  assert.match(savedLines[1], /^start: /);
+  assert.match(saved.stdout, /^status: traversal partial/m);
+  assert.ok(savedLines.includes('frontier: 3 stopped places'), saved.stdout);
+  assert.equal(savedLines.filter((line) => /^ {2}depth {2}api {2}SurveyD\.Probe/.test(line)).length, 3);
 
   const kiln = gitFixture(t, 'kiln-yard', KILN);
   const complete = run(kiln, ['surface', FIRINGS], KILN);
   assert.doesNotMatch(complete.stdout, /^start: |^status: /m);
+  const completeSaved = run(kiln, ['surface', FIRINGS, '--out', 'out/surface.json'], KILN);
+  assert.equal(completeSaved.stdout.trimEnd().split('\n').length, 1, completeSaved.stdout);
   assert.equal('status' in json(run(kiln, ['surface', FIRINGS, '--json'], KILN)), true, 'json states the status of a complete walk too');
 });
 

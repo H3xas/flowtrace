@@ -15,6 +15,7 @@ import {
 } from '../lib/facts.js';
 import {
   countWalks, frontierLines, noticeLine, requireCompleteFailures, requireCompleteLines, statusLines, walkFails, walkMark,
+  walkMarkText,
 } from '../lib/result-status.js';
 
 import * as affectedModule from '../lib/affected.js';
@@ -149,7 +150,9 @@ const USAGE = [
   '  A route whose walk boundary (see check) on the snapshot side differs from the one on',
   '  the current side is skipped too. Its reason names the boundary records added and',
   '  removed, and its seeds, effects and evidence are not compared. A route with the same',
-  '  boundary on both sides is compared and carries the walk mark. --depth N and',
+  '  boundary on both sides is compared and carries the walk mark. A skipped route whose',
+  '  walk stopped carries the walk mark too, and if no finding is left, the last line names',
+  '  the skipped routes that were not compared in place of "no drift". --depth N and',
   '  --max-nodes N bound the walks of both sides. The current side reads its freshness',
   '  against the configured repositories, as trace does. A --fail-on value with an item',
   '  that is empty after trimming (--fail-on "", --fail-on ",", --fail-on "path,") is a',
@@ -609,8 +612,8 @@ const USAGE = [
   '  the assertion_surface facts beside it; --out writes that fact set to a file. Nothing is',
   '  fetched and no timestamp is written, so two runs over the same facts agree byte for byte.',
   '  If the walk of the route stopped, the status lines and one line for each frontier',
-  '  entry, in the form of the trace header, follow the first line, and --json adds',
-  '  status. The facts that --out writes do not change.',
+  '  entry, in the form of the trace header, follow the first line, also with --out, and',
+  '  --json adds status. The facts that --out writes do not change.',
   '',
   'skeleton "<route key>" [--observe <template>] [--helpers <file>] [--verdict-facts <file>]',
   '            [--drafts <dir>] [--out <file>] [--json] [--hops N] [--stub]',
@@ -653,7 +656,9 @@ const USAGE = [
   '  A walk with frontier entries adds one parked test.fixme block for each entry,',
   '  external-boundary included. The block names the stop reason, the target and the call',
   '  site, and it asserts nothing. With --out, the summary line adds ", <n> stopped", and',
-  '  --json gives the number in plan.counts.stops.',
+  '  --json gives the number in plan.counts.stops. A walk with traversal partial or unknown',
+  '  adds the walk mark as a comment above the describe block, as plan.walk in --json, and',
+  '  at the end of the --out summary line.',
   '',
   'cover --area <file|name> [--json] [--md <out>] [--packets <dir>] [--verdicts <dir>]',
   '            [--runtime <file>] [--require-complete]',
@@ -2540,6 +2545,10 @@ async function runSurface(config, options) {
       facts,
     }));
     log(`surface ${model.route.key}: ${plural(facts.length, 'fact')} -> ${display(target)}`);
+    // The saved facts hold no status, so the summary line is where a stopped walk shows.
+    if (!options.json && result.status && result.status.frontier.length > 0) {
+      log(renderTreeModule.statusHeaderLines(result.status).filter((line) => line !== '').join('\n'));
+    }
   }
   if (options.json) {
     process.stdout.write(`${JSON.stringify({ ...model, facts, ...(result.status ? { status: result.status } : {}) }, null, 2)}\n`);
@@ -2618,6 +2627,7 @@ async function runSkeleton(config, options) {
     observe: options.observe,
     stub: options.stub,
     frontier: result.status ? result.status.frontier : [],
+    status: result.status,
   });
   if (options.json) {
     process.stdout.write(`${JSON.stringify({ plan, spec, placeholders: counted ?? null }, null, 2)}\n`);
@@ -2625,6 +2635,7 @@ async function runSkeleton(config, options) {
   }
   if (spec === null) {
     process.stderr.write(`flowtrace: ${plan.refusal}\n`);
+    if (plan.walk) process.stderr.write(`  ${walkMarkText(plan.walk)}\n`);
     for (const block of plan.blocks) {
       process.stderr.write(`  gap ${block.reason}: ${block.state || 'no state'} (${block.file}:${block.line})\n`);
     }
@@ -2641,7 +2652,8 @@ async function runSkeleton(config, options) {
         (plan.counts.deduped > 0 ? `, ${plan.counts.deduped} deduped` : '') +
         (plan.counts.stops > 0 ? `, ${plan.counts.stops} stopped` : '') +
         (draftsDir ? `, ${plan.counts.drafted} titled from the drafted AC` : '') +
-        ` -> ${display(target)}`,
+        ` -> ${display(target)}` +
+        (plan.walk ? ` · ${walkMarkText(plan.walk)}` : ''),
     );
     return finish(0);
   }

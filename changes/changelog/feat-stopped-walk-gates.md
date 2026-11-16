@@ -3,7 +3,8 @@
 - A walk that stops at the edge of the configured repositories now reads `external-boundary`.
   This is a zero-hit code index lookup for a class that no fact of any repository declares.
   The stop is listed, but the walk stays `complete` and no gate fails on it. A zero-hit for a
-  class that a fact declares stays `unresolved-target`.
+  class that a fact declares stays `unresolved-target`. A code index process that a signal
+  ended, or a reply that names nothing, is an index that did not answer, never a zero-hit.
 - The result identity now holds each code index answer that the walk read, including the
   answers that gate walks read. If no index answered, it holds the reason. The same
   facts with different index answers give different identities.
@@ -36,10 +37,12 @@
   request to write it again. `--write-baseline --require-complete` writes no baseline over a
   stopped walk.
 - `join --against` compares the walk boundary of the snapshot with the current one, and skips
-  a route whose boundary moved. An empty item in `--fail-on` is a usage error.
+  a route whose boundary moved. A skipped route whose walk stopped keeps its mark, and if no
+  finding is left, the last line names the routes that were not compared in place of
+  "no drift". An empty item in `--fail-on` is a usage error.
 - `check`, `scope` and `join --against` take `--depth` and `--max-nodes`.
 - A packet from a stopped walk carries `walk` as its last key. The packet hash does not
   change.
-- If the walk stopped, `surface` prints the walk status after its first line. `--json`
-  carries `status`. `skeleton` writes one parked `test.fixme` block for each place the walk
+- If the walk stopped, `surface` prints the walk status after its first line, also with
+  `--out`. `--json` carries `status`. `skeleton` writes one parked `test.fixme` block for each place the walk
   stopped, after the plan blocks.
