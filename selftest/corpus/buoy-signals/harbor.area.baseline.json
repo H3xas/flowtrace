@@ -24,21 +24,27 @@
       "state": "none",
       "seeds": 1,
       "parityCypress": "none",
-      "parityPlaywright": "none"
+      "parityPlaywright": "none",
+      "traversal": "complete",
+      "boundary": []
     },
     {
       "key": "GET glasshouse/v1/zones/*/watchers",
       "state": "none",
       "seeds": 1,
       "parityCypress": "none",
-      "parityPlaywright": "none"
+      "parityPlaywright": "none",
+      "traversal": "complete",
+      "boundary": []
     },
     {
       "key": "POST glasshouse/v1/zones/*/harvest-plan",
       "state": "none",
       "seeds": 1,
       "parityCypress": "none",
-      "parityPlaywright": "none"
+      "parityPlaywright": "none",
+      "traversal": "complete",
+      "boundary": []
     }
   ]
 }

@@ -9,7 +9,7 @@
  * repository behind it, so a walk kept from an early pass shows neither. A changed controller widens through `impact` to `WatcherService`, and only the
  * inbound answer for that class selects a test class. Every other lookup answers the
  * indexer's own "no symbol matches" page. `expected/` holds the serial pins, written by the
- * corpus's own `pin.mjs` against the base commit, and `pinned.mjs` holds what both read.
+ * corpus's own `pin.mjs` against a serial reference commit, and `pinned.mjs` holds what both read.
  */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -352,7 +352,15 @@ test('Concurrent scout lookups AC-4: every lookup kind keeps the base serial edg
     for (const reason of ['indexer exited with an error', 'indexer could not be started']) {
       assert.ok(reasons.has(reason), `${kind}: a case answers "${reason}"`);
     }
-    assert.ok(reasons.has(kind === 'impact' ? 'no file match' : 'no symbol matches'), `${kind}: a case answers no match`);
+    if (kind === 'outbound') {
+      // The outbound index answers a symbol it does not hold with an empty, available answer.
+      const none = LOOKUPS.cases.outbound['no symbol matches'];
+      assert.deepEqual(none.edges, [], 'outbound: the no-match case answers no edges');
+      assert.equal(none.unavailable, false, 'outbound: the no-match case is an answer');
+      assert.equal(none.reason, null, 'outbound: the no-match case carries no reason');
+    } else {
+      assert.ok(reasons.has(kind === 'impact' ? 'no file match' : 'no symbol matches'), `${kind}: a case answers no match`);
+    }
   }
 
   // A path binary that is not on disk never reaches a process, on either path.
