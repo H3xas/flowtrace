@@ -348,6 +348,11 @@ describe('handlers', () => {
     });
     cy.intercept('GET', '**/api/network-error', { forceNetworkError: true });
     cy.intercept('GET', '**/api/reply-network-error', (req) => req.reply({ forceNetworkError: true }));
+    cy.intercept('GET', '**/api/quoted-network-error', { "forceNetworkError": true });
+    cy.intercept('GET', '**/api/no-network-error', { forceNetworkError: false, body: [] });
+    cy.intercept('GET', '**/api/nested-network-error', { body: { forceNetworkError: true } });
+    cy.intercept('GET', '**/api/reply-no-network-error', (req) => req.reply({ forceNetworkError: false }));
+    cy.intercept('GET', '**/api/unread-network-error', { forceNetworkError: offline });
     cy.intercept('GET', '**/api/named', replyWithItems);
     cy.intercept('GET', '**/api/named-arrow', dropRequest);
     cy.intercept('GET', '**/api/imported', importedHandler);
@@ -398,6 +403,11 @@ test('Test evidence AC-10: both Cypress readers give each intercept handler form
     ['destroy', 'abort'],
     ['network-error', 'abort'],
     ['reply-network-error', 'abort'],
+    ['quoted-network-error', 'abort'],
+    ['no-network-error', 'fulfill'],
+    ['nested-network-error', 'fulfill'],
+    ['reply-no-network-error', 'fulfill'],
+    ['unread-network-error', 'unresolved'],
     ['named', 'fulfill'],
     ['named-arrow', 'abort'],
     ['imported', 'unresolved'],
