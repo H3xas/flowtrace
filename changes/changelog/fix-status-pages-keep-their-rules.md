@@ -9,3 +9,9 @@
   without its `file:line`. The location sits in its own expander, "where the walk starts",
   next to the frontier expander. Two runs over the same facts give the same bytes. No flag
   changes.
+
+### Repository
+
+- `docs/scout.md` no longer lists an unknown symbol among the replies that mark an outbound
+  lookup `unavailable`. The index answers an unknown symbol, and the lookup is empty and not
+  marked `unavailable`. The inbound and impact lookups keep their rule. No answer changes.
