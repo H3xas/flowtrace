@@ -3,8 +3,9 @@
  * writes, that the walk and its readers do not see them, and how `cover --runtime` joins them.
  *
  * Every comparison runs one fact set twice: as extracted, and with each web and mobile
- * `branch_point` removed. The walk's status identity hashes the facts it read, so it differs
- * between the two by design; every other byte has to stay the same.
+ * `branch_point` and `caller_gate` removed. The walk's status identity hashes the facts it
+ * read, so it differs between the two by design. A web or mobile start also shows its caller
+ * gates in the dependency view; once those are taken away, every other byte has to stay the same.
  */
 import { cpSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -12,6 +13,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { copyFixture, runCli } from './helpers.js';
+import { withoutGateFields, withoutGateLines } from './gate-output.js';
 import { callerDecisions } from '../lib/extract/caller-decisions.js';
 import { BRANCH_ROW_CAP, buildRuntimeIndex, runtimeSummary } from '../lib/runtime-cover.js';
 
@@ -31,7 +33,9 @@ function corpus(t) {
   mkdirSync(join(dir, 'out-plain', 'facts'), { recursive: true });
   for (const name of readdirSync(join(dir, 'out', 'facts'))) {
     const set = JSON.parse(readFileSync(join(dir, 'out', 'facts', name), 'utf8'));
-    if (set.kind === 'web' || set.kind === 'mobile') set.facts = set.facts.filter((item) => item.type !== 'branch_point');
+    if (set.kind === 'web' || set.kind === 'mobile') {
+      set.facts = set.facts.filter((item) => item.type !== 'branch_point' && item.type !== 'caller_gate');
+    }
     writeFileSync(join(dir, 'out-plain', 'facts', name), JSON.stringify(set, null, 2));
   }
   writeFileSync(join(dir, 'area.txt'), `${ROUTE}\n`);
@@ -136,12 +140,12 @@ function same(env, args, { json = false } = {}) {
   assert.equal(withFacts.status, 0, withFacts.stderr);
   assert.equal(plain.status, 0, plain.stderr);
   if (!json) {
-    assert.equal(withFacts.stdout, plain.stdout, args.join(' '));
+    assert.equal(withoutGateLines(withFacts.stdout), plain.stdout, args.join(' '));
     return withFacts;
   }
   const left = withoutIdentity(withFacts.stdout);
   const right = withoutIdentity(plain.stdout);
-  assert.deepEqual(left.value, right.value, args.join(' '));
+  assert.deepEqual(withoutGateFields(left.value), right.value, args.join(' '));
   assert.ok(left.identities.length > 0, `${args.join(' ')} states an identity`);
   assert.notDeepEqual(left.identities, right.identities, `${args.join(' ')}: the two runs read different facts`);
   return withFacts;

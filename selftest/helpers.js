@@ -69,6 +69,18 @@ export function asEarlierFacts(facts) {
     .map(({ testLine, ...rest }) => rest);
 }
 
+const ADDED_FACT_TYPES = new Set(['cypress_backend', 'pw_visit', 'cypress_visit', 'email_read', 'email_sender', 'email_template']);
+
+/** The facts as the release extractors wrote them: `asEarlierFacts`, no fact kind that the test evidence added, and no
+ * `handler` on a Cypress intercept. A baseline or a plain run that the release made compares with these. */
+export function asReleaseFacts(facts) {
+  return asEarlierFacts(facts.filter((candidate) => !ADDED_FACT_TYPES.has(candidate.type))).map((candidate) => {
+    if (candidate.type !== 'cypress_intercept' || candidate.handler === undefined) return candidate;
+    const { handler, ...rest } = candidate;
+    return rest;
+  });
+}
+
 /** Copies the synthetic corpus into a fresh temp directory, registered for cleanup on
  * `t` (a node:test TestContext). Returns the directory. */
 export function copyCorpus(t) {

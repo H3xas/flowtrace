@@ -258,6 +258,27 @@ trace --area <file> [--require-complete]
   occurrence in full. The trailer names the reduction,
   "folded 40 → 25 nodes", when folding actually removed something.
 
+  Caller gates: in the dependency view, a web or mobile call that a caller decision
+  guards prints one "◇ gate" line under its hop for each gate. The line holds the
+  condition text, the kind and arm, the outcome of each value (sends, skips or unknown,
+  with the reason), the decision's file:line and its id in the form the decisions verb
+  lists. A hop with more than one call site names the site of each gate and prints
+  "◇ no gate" for a site no decision guards. An arm of if, else or case, a ternary arm and
+  the right operand of &&, || or ?? gate a call. An if before the call whose then arm
+  always returns or throws gates it too. An exit in one arm only, a break or continue, an
+  exit in a try, a case an earlier clause falls into, an unparenthesized || before && and
+  a call inside a parenthesized chain of the same operator, as in (a && save()) || b,
+  read unknown. --json gives the node a callerGates list of { file, line, column, gates }.
+  With --seeds, a "caller cases" block follows the seeds, the --html page prints it after
+  the tree, and --json adds callerCases: one case per distinct gate, with the value that
+  skips the call, the gates each walk path to it passes first, the later gates of the
+  same site it leaves unevaluated, and the routes below each skipped call. The sites of
+  one hop with different gates are alternatives of one step: "one of (A | B)" in the
+  block, { anyOf: [[...], [...]] } in --json, and an ungated site is "no gate" or []. A
+  case lists at most 32 paths and counts the rest in "+N more paths" and pathsTruncated.
+  Gates change no seed, no stat and no other reader.
+  --view source-flow, --graph and --mermaid show no gates and no caller cases.
+
   --graph forces the code-index hop everywhere the walk would otherwise leave a
   reference unresolved. Used alone, it prints one JSON object `{ nodes, edges }`
   instead of the tree — every node
@@ -800,10 +821,13 @@ decisions --revs <sha>[,<sha>...] [--repo <id>] [--json]
   the facts cannot read under "not extracted" (no-root, excluded, not-source, no-facts);
   and a line a revision added that blame no longer gives back under "unmapped"
   (changed-later, with the last commit that held it), with deletion-only hunks and
-  file-gone files. --json emits { schemaVersion: 1, revisions, repos, units,
-  outsideUnits, notExtracted, unmapped }, with no timestamp. A fact set that is missing,
-  has no headSha or is stamped dirty is refused: run extract on a clean checkout. A fact
-  set with no branch_point fact prints a warning to extract again.
+  file-gone files. A changed-later row also has replacedBy: the first commit after
+  the last holder that replaced the line, and the first listed revision that holds that
+  commit, or null when no listed revision holds it. The text row then adds
+  "replaced by <commit> in <revision>". --json emits { schemaVersion: 1, revisions,
+  repos, units, outsideUnits, notExtracted, unmapped }, with no timestamp. A fact set
+  that is missing, has no headSha or is stamped dirty is refused: run extract on a clean
+  checkout. A fact set with no branch_point fact prints a warning to extract again.
   Exit 0 a listing was produced, 1 refusal, 2 usage.
 
 scaffold --area <file|name> [--seed KEY ...] [--max-level L] [--out DIR] [--dry-run]
