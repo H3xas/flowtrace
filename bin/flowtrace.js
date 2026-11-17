@@ -208,7 +208,8 @@ const USAGE = [
   '  the view and, under source-flow, a sourceFlow member carrying the same invocations.',
   '  --graph and --mermaid have no source-flow view and exit 2 with it.',
   '  <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),',
-  '  a backend Class.Method, a backend class, a web component name, or a web page path',
+  '  a backend Class.Method, a backend class, a web component name, a web module-level',
+  '  function (name or Owner.name, when nothing else matches), or a web page path',
   '  ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page',
   '  path is composed from the <Route> declarations the facts record: JSX-nested routes, a',
   '  component\'s own <Routes> under the route that renders it, a route array that component',
@@ -755,6 +756,34 @@ const USAGE = [
   '  fallbacks, widened }. Affected routes holding no evidence at all are printed as',
   '  "uncovered-change" — the signal no coverage report gives at the moment of the diff.',
   '',
+  '  A changed web source file that holds a gateway call also selects each route of the',
+  '  universe that join matches the call to, with the configured aliases. The route row',
+  '  names the web file. A web repository whose root is in another git checkout is read',
+  '  there too, one read for each such checkout, with the same --diff range, the index or',
+  '  the working tree. Only a path that a web repository owns counts. If git cannot read',
+  '  that checkout, the reason line "checkout-not-read [<repo id>]: <cause>" names each web',
+  '  repository of it, and nothing else changes.',
+  '',
+  '  The diff is read at the top level of the git checkout that holds the backend root, and',
+  '  each path goes to the configured repository with the longest root that holds it. A path',
+  '  under no configured root selects no route, also when the backend holds a file at the',
+  '  same relative path. It keeps each whole-suite answer: no-facts, config-only for a',
+  '  configuration or generated file, unindexed for a controller file, and the',
+  '  --dotnet-filter out-of-scope answer for a .cs file. Otherwise it gets the reason line',
+  '  "unmapped: <path> — no configured root holds this path, so it selects nothing". Two',
+  '  answers change. A spec file under no configured root is no changed spec, so the run',
+  '  exits 3, not 0. With --dotnet-filter, a .cs file of another configured repository is',
+  '  not out-of-scope, because the filter reads only the backend repository.',
+  '',
+  '  The unindexed rung and the shared-dependency lines match a changed file by its',
+  '  repository and its path, as the route walk does. So a route fact of one repository',
+  '  never hides a changed controller of another at the same relative path: that controller',
+  '  gets unindexed for its own repository and exit 4. A class that a file of one',
+  '  repository declares gives no shared-dependency line for a changed file of another.',
+  '  The injectors of a changed class still count by its name in every repository. These',
+  '  two answers change in each layout. They are the one exception to the rule that a run',
+  '  with the backend root at the top level of its checkout keeps its earlier report.',
+  '',
   '  --dotnet-filter prints the one expression `dotnet test --filter` takes instead of a',
   '  spec list: the C# test classes whose files reference a changed (or widened) type,',
   '  as "FullyQualifiedName~A|FullyQualifiedName~B", deduplicated and sorted. The index',
@@ -764,6 +793,8 @@ const USAGE = [
   '  is how `dotnet test` is asked to run everything — printed with its reason on stderr',
   '  when an interface was braked, a changed file sits under no project of the solution,',
   '  or the selection is above --max-share (0.3 of the suite\'s classes by default here).',
+  '  A changed `.cs` file under no configured root counts as a file under no project of the',
+  '  solution.',
   '  --json carries the same answer as dotnetFilter: { classes, expression, fallback,',
   '  reason, source, suite, share, notes }.',
   '',
@@ -1598,6 +1629,7 @@ async function runExtract(config, repoFilter) {
       cypress: repo.cypress,
       srcSubpath: repo.srcSubpath,
       cypressSubpath: repo.cypressSubpath,
+      httpClients: repo.httpClients,
       caseIdCalls: config.caseId ? config.caseId.calls : [],
       testEnvironment: config.testEnvironment || null,
       backendCalls: config.backend,
@@ -2915,6 +2947,51 @@ function diffSourceRepo(config, repoFilter) {
 }
 
 /**
+ * The changed files of each `web` repository whose root is outside the diff checkout `top`,
+ * read in the mode of the run from the git checkout that holds that root: one read for each
+ * such checkout. Only a path that one of those `web` repositories owns gives an entry, so the
+ * entries of the other kinds and the input of each rung stay as without the read. A checkout
+ * that git cannot read gives one `unread` entry for each of its `web` repositories.
+ */
+function readWebCheckouts(repos, top, changed, { diff, staged }) {
+  const { attributeChanges, changedPaths, gitTopLevel } = affectedModule;
+  const groups = new Map();
+  const unread = [];
+  for (const repo of repos.filter((entry) => entry.kind === 'web')) {
+    const level = gitTopLevel(repo.root);
+    if (level === top) continue;
+    if (level === null) {
+      unread.push({ repo: repo.id, cause: 'no git checkout holds the repository root' });
+      continue;
+    }
+    if (!groups.has(level)) groups.set(level, []);
+    groups.get(level).push(repo.id);
+  }
+  const mode = diff
+    ? `the range ${diff} in its checkout`
+    : staged ? 'the index of its checkout' : 'the working tree of its checkout';
+  const seen = new Set(changed.map((file) => `${file.repo}\0${file.path}`));
+  const merged = [...changed];
+  for (const [level, ids] of groups) {
+    const paths = changedPaths(level, { diff, staged });
+    if (paths === null) {
+      for (const id of ids) unread.push({ repo: id, cause: `git cannot read ${mode}` });
+      continue;
+    }
+    for (const file of attributeChanges(paths, repos, { root: level, prefix: '' })) {
+      const key = `${file.repo}\0${file.path}`;
+      if (!ids.includes(file.repo) || seen.has(key)) continue;
+      seen.add(key);
+      merged.push(file);
+    }
+  }
+  const order = (a, b) => ((a || '') === (b || '') ? 0 : (a || '') < (b || '') ? -1 : 1);
+  merged.sort((a, b) => order(a.repo, b.repo) || order(a.path, b.path));
+  unread.sort((a, b) => order(a.repo, b.repo));
+  return { changed: merged, unread };
+}
+
+/**
  * Each fact set is read by the repository a revision touches, not through `loadFactSets`,
  * so a missing one is refused by name rather than as an empty facts directory.
  */
@@ -2952,9 +3029,11 @@ async function runAffected(config, options) {
     attributeChanges,
     changedPaths,
     dotnetArgs,
+    gitTopLevel,
     nxBaseRef,
     playwrightArgs,
     renderAffected,
+    withRealRoots,
   } = affectedModule;
   const { readAreaKeys } = coverModule;
 
@@ -2968,11 +3047,17 @@ async function runAffected(config, options) {
 
   const source = diffSourceRepo(config, options.repo);
   if (!source) throw new Error('no repository configured to read a diff from');
-  const paths = changedPaths(source.root, { diff: options.diff, staged: options.staged });
+  // The diff is read at the top level of the checkout, because `git ls-files --others`
+  // lists only the files under the folder in which it runs, and a web root beside the
+  // backend root is outside that folder.
+  const top = gitTopLevel(source.root);
+  const paths = top === null ? null : changedPaths(top, { diff: options.diff, staged: options.staged });
   if (paths === null) {
     throw new Error(`cannot read a diff in ${source.id}: not a git repository, or git is unavailable`);
   }
-  const changed = attributeChanges(paths, config.repos, { root: source.root });
+  const realRepos = withRealRoots(config.repos);
+  const changed = attributeChanges(paths, realRepos, { root: top, prefix: '' });
+  const others = readWebCheckouts(realRepos, top, changed, { diff: options.diff, staged: options.staged });
 
   const area = options.allRoutes ? null : resolveAreaFile(options.area);
   const keys = area
@@ -3009,7 +3094,8 @@ async function runAffected(config, options) {
       area: area ? area.name : null,
       universeSource: area ? 'area' : 'all-routes',
       keys,
-      changed,
+      changed: others.changed,
+      unread: others.unread,
       aliases: config.aliases,
       repos: config.repos,
       maxShare: options.maxShare,
@@ -3018,6 +3104,7 @@ async function runAffected(config, options) {
       impact: lookups.impact,
       dotnet,
       nx,
+      diffRepo: source.id,
       trace: counted,
       // `--repo` names the suite to print, never the repository a route is resolved in:
       // scoping the walk to a test repository would resolve no route at all.

@@ -201,7 +201,9 @@ published as exactly that.
   handler interfaces, sagas, and sends through a bus variable — is read once its interface and
   verb names are given in the configuration; only one idiom is recognised without that.
 - `affected` and `decisions` read diffs and blame through `git`, so the repository they read must
-  be a git checkout. `decisions` also needs fact sets extracted from a clean checkout.
+  be a git checkout. `affected` reads the checkout that holds the backend root, and the checkout
+  of each `web` repository whose root is outside it. `decisions` also needs fact sets extracted
+  from a clean checkout.
 - `cover --runtime` joins web and mobile decisions to line coverage too, and skips a web or
   mobile repository that no coverage snapshot covers.
 - Coverage is evidence overlay, not instrumentation. It reports what the tests *say* they

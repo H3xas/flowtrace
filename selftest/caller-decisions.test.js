@@ -72,10 +72,13 @@ const FORM_FACTS = [
   [58, 58, 'DecisionForms.conditions', 'ternary', 'entry.open && entry.pinned ? 2 : 3'],
 ];
 
+/** The web reader also reads the method of a module-level object literal; the mobile reader does not. */
+const WEB_FORM_FACTS = [...FORM_FACTS, [84, 84, 'helpers.pick', 'ternary', 'x ? 1 : 2']];
+
 test('Caller decisions AC-1: web extraction writes one branch_point per decision inside a method body', (t) => {
   const env = corpus(t);
   const web = env.facts('web');
-  assert.deepEqual(decisionsOf(web, FORMS), FORM_FACTS);
+  assert.deepEqual(decisionsOf(web, FORMS), WEB_FORM_FACTS);
 
   assert.deepEqual(decisionsOf(web, 'src/forms/FormsPanel.tsx'), [
     [5, 5, 'FormsPanel.close', 'if', 'if (open)'],
@@ -89,7 +92,7 @@ test('Caller decisions AC-1: web extraction writes one branch_point per decision
   const quiet = web.find((item) => item.type === 'method_span' && item.file === FORMS && item.method === 'quiet');
   const inQuiet = web.filter((item) => item.type === 'branch_point' && item.line >= quiet.line && item.line <= quiet.endLine);
   assert.deepEqual(inQuiet, [], 'strings, templates, comments, regex literals, optional chaining, logical assignments and type syntax give no decision');
-  const outside = [lineOf("private mode = OPEN"), lineOf('export const LIMIT'), lineOf('return x ? 1 : 2;')];
+  const outside = [lineOf("private mode = OPEN"), lineOf('export const LIMIT')];
   for (const line of outside) {
     assert.equal(web.some((item) => item.type === 'branch_point' && item.file === FORMS && item.line === line), false, `line ${line} is outside every method_span`);
   }

@@ -6,7 +6,7 @@
     "version": "0.5.1"
   },
   "provenance": {
-    "id": "04570091eb8f8ef3",
+    "id": "bffda6503fe62818",
     "producer": "flowtrace-cli 0.5.1",
     "formatVersion": 1,
     "config": {
@@ -58,7 +58,7 @@
         "repo": "api",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "4d742517f65de95d5e3339d501eacff138b4c492",
+        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 17,
@@ -68,7 +68,7 @@
         "repo": "e2e",
         "kind": "playwright",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "4d742517f65de95d5e3339d501eacff138b4c492",
+        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
@@ -82,7 +82,7 @@
         "repo": "mobile",
         "kind": "mobile",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "4d742517f65de95d5e3339d501eacff138b4c492",
+        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 4,
@@ -92,17 +92,17 @@
         "repo": "shopfront",
         "kind": "web",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "4d742517f65de95d5e3339d501eacff138b4c492",
+        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 3,
-        "digest": "bd524681433af6aae7d1766f717406a069970033"
+        "digest": "fbaa138be70d08470a352902f269fd71e6b3d8da"
       },
       {
         "repo": "stock",
         "kind": "backend",
         "generatedFrom": "flowtrace 0.5.1",
-        "headSha": "4d742517f65de95d5e3339d501eacff138b4c492",
+        "headSha": "89815e37ad1d563cdd273306b5145054d696ad2a",
         "dirty": false,
         "dirtyDigest": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
         "fileCount": 5,
@@ -129,7 +129,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "calls",
@@ -146,7 +146,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "consumes",
@@ -163,7 +163,7 @@
         "line": 7
       },
       "key": "FulfilOrderJob",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "consumes",
@@ -180,7 +180,7 @@
         "line": 8
       },
       "key": "FulfilOrderJob",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "consumes",
@@ -197,7 +197,7 @@
         "line": 10
       },
       "key": "OrderPlacedEvent",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "consumes",
@@ -214,7 +214,7 @@
         "line": 7
       },
       "key": "StockReservedEvent",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "publishes",
@@ -231,7 +231,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "publishes",
@@ -248,7 +248,7 @@
         "line": null
       },
       "key": "FulfilOrderJob",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "publishes",
@@ -265,7 +265,7 @@
         "line": null
       },
       "key": "OrderPlacedEvent",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "publishes",
@@ -282,7 +282,7 @@
         "line": null
       },
       "key": "StockReservedEvent",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     },
     {
       "kind": "tests",
@@ -299,7 +299,7 @@
         "line": 18
       },
       "key": "POST stock/v1/reservations",
-      "provenance": "04570091eb8f8ef3"
+      "provenance": "bffda6503fe62818"
     }
   ]
 }

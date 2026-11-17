@@ -15,7 +15,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "0b1b20871057efc1209546aec665d2c2e7d4ed88",
+      "sha1": "3a5a852ab0f11255e4d80bdc25732e72a37b445b",
       "branchPoints": [
         [
           "src/actions/primaryZone.ts",
@@ -92,7 +92,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "0b1b20871057efc1209546aec665d2c2e7d4ed88",
+      "sha1": "3a5a852ab0f11255e4d80bdc25732e72a37b445b",
       "branchPoints": [
         [
           "src/actions/primaryZone.ts",
@@ -169,7 +169,7 @@
     },
     "shopfront.json": {
       "kind": "web",
-      "sha1": "bd524681433af6aae7d1766f717406a069970033",
+      "sha1": "fbaa138be70d08470a352902f269fd71e6b3d8da",
       "branchPoints": []
     },
     "stock.json": {
@@ -188,7 +188,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "571920360c0728c153fc81976aad8d96261615c4",
+      "sha1": "2c7e29749686c91b1c46312c384e2e031e1e4763",
       "branchPoints": []
     }
   },
@@ -199,7 +199,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "0b1b20871057efc1209546aec665d2c2e7d4ed88",
+      "sha1": "3a5a852ab0f11255e4d80bdc25732e72a37b445b",
       "branchPoints": [
         [
           "src/actions/primaryZone.ts",
@@ -449,7 +449,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "f5cc934e69fcd93407a23272b4c1d1a57c17fcc3",
+      "sha1": "8457091092836c60c3d439fde4d8222b391a136d",
       "branchPoints": [
         [
           "src/forms/DecisionForms.ts",
@@ -620,6 +620,14 @@
           "entry.open && entry.pinned ? 2 : 3"
         ],
         [
+          "src/forms/DecisionForms.ts",
+          84,
+          84,
+          "helpers.pick",
+          "ternary",
+          "x ? 1 : 2"
+        ],
+        [
           "src/forms/FormsPanel.tsx",
           5,
           5,
@@ -694,7 +702,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "41b33178f67acedb7e51ada42120df9cf6b6b6dc",
+      "sha1": "00b4e5dbbf099e03ee0ebb4c637a290d6a0e198c",
       "branchPoints": [
         [
           "src/http/httpClient.ts",
@@ -719,7 +727,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "280ac31ebace94d455bd3de1afa2eef1cbe3158a",
+      "sha1": "9a24e107f0b449a764943bf94bbc5aaa14070541",
       "branchPoints": [
         [
           "src/http/httpClient.ts",
@@ -757,7 +765,7 @@
   "orchard-routes/orchard-mounted.config.json": {
     "web.json": {
       "kind": "web",
-      "sha1": "9b78b4ec0d447db9659c71c538b0bd9fb1a779b7",
+      "sha1": "c202bfc9fe49a760387e0af691718b888e8e6146",
       "branchPoints": [
         [
           "src/OrchardApp.tsx",
@@ -781,7 +789,7 @@
   "orchard-routes/orchard.config.json": {
     "web.json": {
       "kind": "web",
-      "sha1": "9b78b4ec0d447db9659c71c538b0bd9fb1a779b7",
+      "sha1": "c202bfc9fe49a760387e0af691718b888e8e6146",
       "branchPoints": [
         [
           "src/OrchardApp.tsx",
@@ -809,7 +817,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "a8b084f87815bfaef6469d87b8e4b20a05c16679",
+      "sha1": "8c6e263e526aeb5874ed455314adb4992e0a9172",
       "branchPoints": [
         [
           "src/http/httpClient.ts",
@@ -850,7 +858,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "1fee660098ddf00b53efa2023c6dfe571d320f12",
+      "sha1": "de6698625827a0a4966291e5ad4409ca50d51aac",
       "branchPoints": [
         [
           "src/crews/SignupPanel.tsx",
@@ -883,7 +891,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "1fee660098ddf00b53efa2023c6dfe571d320f12",
+      "sha1": "de6698625827a0a4966291e5ad4409ca50d51aac",
       "branchPoints": [
         [
           "src/crews/SignupPanel.tsx",
@@ -1090,7 +1098,7 @@
     },
     "web.json": {
       "kind": "web",
-      "sha1": "4598b6564cce0fe2b153d9cf6caa090598644122",
+      "sha1": "041e4c71162225027546a85a91f0995492dce46f",
       "branchPoints": [
         [
           "src/actions/boarding.ts",
