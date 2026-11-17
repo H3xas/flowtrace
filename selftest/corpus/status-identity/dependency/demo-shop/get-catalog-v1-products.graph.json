@@ -1,0 +1,255 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "api",
+      "kind": "route",
+      "ref": "GET catalog/v1/products",
+      "file": "src/Controllers/CatalogController.cs",
+      "line": 17,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "api"
+    },
+    {
+      "id": "n2",
+      "repo": "api",
+      "kind": "action",
+      "ref": "CatalogController.GetProducts",
+      "file": "src/Controllers/CatalogController.cs",
+      "line": 17,
+      "via": "literal",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "CatalogController",
+      "method": "GetProducts",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n3",
+      "repo": "api",
+      "kind": "branch",
+      "ref": "CatalogController.GetProducts@20",
+      "file": "src/Controllers/CatalogController.cs",
+      "line": 20,
+      "via": "body",
+      "hops": 2,
+      "branchKind": "error_return",
+      "primary": true,
+      "responseKind": "reject",
+      "text": "if (string.IsNullOrEmpty(category))",
+      "class": "CatalogController",
+      "method": "GetProducts",
+      "homeRepo": "api",
+      "endLine": 23,
+      "methodDepth": 0
+    },
+    {
+      "id": "n4",
+      "repo": "api",
+      "kind": "class",
+      "ref": "ICatalogService",
+      "file": "src/Controllers/CatalogController.cs",
+      "line": 14,
+      "via": "ctor",
+      "hops": 1,
+      "class": "ICatalogService",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n5",
+      "repo": "api",
+      "kind": "class",
+      "ref": "CatalogService",
+      "file": "src/Services/CatalogService.cs",
+      "line": 18,
+      "via": "di",
+      "hops": 1,
+      "class": "CatalogService",
+      "homeRepo": "api",
+      "methodDepth": 0
+    },
+    {
+      "id": "n6",
+      "repo": "api",
+      "kind": "method",
+      "ref": "CatalogService.FindProducts",
+      "file": "src/Services/CatalogService.cs",
+      "line": 21,
+      "via": "body",
+      "hops": 2,
+      "graph": "unavailable",
+      "class": "CatalogService",
+      "method": "FindProducts",
+      "homeRepo": "api",
+      "methodDepth": 1
+    },
+    {
+      "id": "n7",
+      "repo": "api",
+      "kind": "class",
+      "ref": "IProductRepository",
+      "file": "src/Services/CatalogService.cs",
+      "line": 18,
+      "via": "ctor",
+      "hops": 2,
+      "class": "IProductRepository",
+      "homeRepo": "api",
+      "methodDepth": 1
+    },
+    {
+      "id": "n8",
+      "repo": "api",
+      "kind": "db",
+      "ref": "ProductRepository",
+      "file": "src/DataAccess/ProductRepository.cs",
+      "line": 13,
+      "via": "di",
+      "hops": 2,
+      "sink": true,
+      "access": "read",
+      "class": "ProductRepository",
+      "homeRepo": "api",
+      "methods": [
+        "FindByCategory"
+      ],
+      "methodDepth": 1
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "literal"
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "via": "body"
+    },
+    {
+      "from": "n2",
+      "to": "n4",
+      "via": "ctor"
+    },
+    {
+      "from": "n4",
+      "to": "n5",
+      "via": "di"
+    },
+    {
+      "from": "n5",
+      "to": "n6",
+      "via": "body"
+    },
+    {
+      "from": "n6",
+      "to": "n7",
+      "via": "ctor"
+    },
+    {
+      "from": "n7",
+      "to": "n8",
+      "via": "di"
+    }
+  ],
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "unknown",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "e2e",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "mobile",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "shopfront",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "stock",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 7,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "api",
+        "kind": "route",
+        "ref": "GET catalog/v1/products",
+        "file": "src/Controllers/CatalogController.cs",
+        "line": 17
+      },
+      "mode": "full",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": true,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {
+      "provider-unavailable": 2
+    },
+    "frontier": [
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "CatalogController.GetProducts",
+        "caller": {
+          "ref": "GET catalog/v1/products",
+          "file": "src/Controllers/CatalogController.cs",
+          "line": 17
+        },
+        "callSite": {
+          "file": "src/Controllers/CatalogController.cs",
+          "line": 17
+        },
+        "via": "literal",
+        "remaining": 1,
+        "raisedBy": null
+      },
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "CatalogService.FindProducts",
+        "caller": {
+          "ref": "CatalogController.GetProducts",
+          "file": "src/Controllers/CatalogController.cs",
+          "line": 17
+        },
+        "callSite": {
+          "file": "src/Controllers/CatalogController.cs",
+          "line": 25
+        },
+        "via": "body",
+        "remaining": 1,
+        "raisedBy": null
+      }
+    ],
+    "identity": "sha256:41d978eee7c67efa6af5032c466f213f3a5499f1e24b0e3980fd2198a41409d1"
+  }
+}

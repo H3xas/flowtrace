@@ -1,0 +1,178 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "mobile",
+      "kind": "page",
+      "ref": "ReservationPage",
+      "file": "src/app/features/reservations/reservation.page.ts",
+      "line": 4,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "mobile"
+    },
+    {
+      "id": "n2",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "ReservationPage.reserve",
+      "file": "src/app/features/reservations/reservation.page.ts",
+      "line": 11,
+      "via": "handler",
+      "hops": 1,
+      "class": "ReservationPage",
+      "method": "reserve",
+      "homeRepo": "mobile",
+      "event": "click",
+      "methodDepth": 0
+    },
+    {
+      "id": "n3",
+      "repo": "mobile",
+      "kind": "service",
+      "ref": "ReservationService",
+      "file": "src/app/features/reservations/reservation.service.ts",
+      "line": 4,
+      "via": "di",
+      "hops": 1,
+      "class": "ReservationService",
+      "homeRepo": "mobile",
+      "methodDepth": 0
+    },
+    {
+      "id": "n4",
+      "repo": "mobile",
+      "kind": "method",
+      "ref": "ReservationService.reserve",
+      "file": "src/app/features/reservations/reservation.service.ts",
+      "line": 8,
+      "via": "body",
+      "hops": 2,
+      "class": "ReservationService",
+      "method": "reserve",
+      "homeRepo": "mobile",
+      "methodDepth": 1
+    },
+    {
+      "id": "n5",
+      "repo": "stock",
+      "kind": "route",
+      "ref": "POST stock/v1/reservations",
+      "file": "src/Controllers/ReservationsController.cs",
+      "line": 18,
+      "via": "literal",
+      "hops": 0,
+      "caller": "ReservationService.reserve",
+      "crossRepo": {
+        "from": "mobile",
+        "to": "stock",
+        "role": []
+      },
+      "homeRepo": "stock",
+      "methodDepth": 1,
+      "summaryWalk": {
+        "traversal": "unknown",
+        "stops": {
+          "unresolved-target": 2,
+          "provider-unavailable": 4
+        }
+      }
+    },
+    {
+      "id": "n6",
+      "ref": "n3"
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "handler"
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "via": "di"
+    },
+    {
+      "from": "n3",
+      "to": "n4",
+      "via": "body"
+    },
+    {
+      "from": "n4",
+      "to": "n5",
+      "via": "literal"
+    },
+    {
+      "from": "n1",
+      "to": "n6",
+      "via": "ctor"
+    }
+  ],
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "complete",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "e2e",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "mobile",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "shopfront",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "stock",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 7,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "mobile",
+        "kind": "page",
+        "ref": "ReservationPage",
+        "file": "src/app/features/reservations/reservation.page.ts",
+        "line": 4
+      },
+      "mode": "inventory",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": true,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {},
+    "frontier": [],
+    "identity": "sha256:203eeaa1c3969e5273e3806e39d605b87f64d52a5a284fec78e474eb7c66bcb9"
+  },
+  "display": {
+    "fold": {
+      "stubs": 1
+    }
+  }
+}

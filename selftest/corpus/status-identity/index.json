@@ -1,0 +1,399 @@
+[
+  {
+    "file": "buoy-signals/trace-area.json",
+    "group": "buoy-signals",
+    "output": "trace-area"
+  },
+  {
+    "file": "seed/demo-shop/get-catalog-v1-products.json",
+    "group": "seed",
+    "corpus": "demo-shop",
+    "start": "GET catalog/v1/products",
+    "output": "trace"
+  },
+  {
+    "file": "seed/demo-shop/get-catalog-v1-products-productid.json",
+    "group": "seed",
+    "corpus": "demo-shop",
+    "start": "GET catalog/v1/products/{productId}",
+    "output": "trace"
+  },
+  {
+    "file": "seed/demo-shop/get-orders-v1-cart.json",
+    "group": "seed",
+    "corpus": "demo-shop",
+    "start": "GET orders/v1/cart",
+    "output": "trace"
+  },
+  {
+    "file": "seed/demo-shop/post-orders-v1-cart-items.json",
+    "group": "seed",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/cart/items",
+    "output": "trace"
+  },
+  {
+    "file": "seed/demo-shop/post-orders-v1-checkout.json",
+    "group": "seed",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/checkout",
+    "output": "trace"
+  },
+  {
+    "file": "seed/demo-shop/post-orders-v1-replay.json",
+    "group": "seed",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/replay",
+    "output": "trace"
+  },
+  {
+    "file": "seed/demo-shop/post-stock-v1-reservations.json",
+    "group": "seed",
+    "corpus": "demo-shop",
+    "start": "POST stock/v1/reservations",
+    "output": "trace"
+  },
+  {
+    "file": "seed/kettle-market/get-market-v1-banner.json",
+    "group": "seed",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/banner",
+    "output": "trace"
+  },
+  {
+    "file": "seed/kettle-market/get-market-v1-basket.json",
+    "group": "seed",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/basket",
+    "output": "trace"
+  },
+  {
+    "file": "seed/kettle-market/get-market-v1-prices.json",
+    "group": "seed",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/prices",
+    "output": "trace"
+  },
+  {
+    "file": "seed/kettle-market/get-market-v1-stock.json",
+    "group": "seed",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/stock",
+    "output": "trace"
+  },
+  {
+    "file": "seed/kettle-market/post-market-v1-orders.json",
+    "group": "seed",
+    "corpus": "kettle-market",
+    "start": "POST market/v1/orders",
+    "output": "trace"
+  },
+  {
+    "file": "dependency/demo-shop/get-catalog-v1-products.graph.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "GET catalog/v1/products",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/demo-shop/get-catalog-v1-products.json.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "GET catalog/v1/products",
+    "output": "json"
+  },
+  {
+    "file": "dependency/demo-shop/get-catalog-v1-products-productid.graph.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "GET catalog/v1/products/{productId}",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/demo-shop/get-catalog-v1-products-productid.json.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "GET catalog/v1/products/{productId}",
+    "output": "json"
+  },
+  {
+    "file": "dependency/demo-shop/get-orders-v1-cart.graph.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "GET orders/v1/cart",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/demo-shop/get-orders-v1-cart.json.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "GET orders/v1/cart",
+    "output": "json"
+  },
+  {
+    "file": "dependency/demo-shop/post-orders-v1-cart-items.graph.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/cart/items",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/demo-shop/post-orders-v1-cart-items.json.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/cart/items",
+    "output": "json"
+  },
+  {
+    "file": "dependency/demo-shop/post-orders-v1-checkout.graph.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/checkout",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/demo-shop/post-orders-v1-checkout.json.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/checkout",
+    "output": "json"
+  },
+  {
+    "file": "dependency/demo-shop/post-orders-v1-replay.graph.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/replay",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/demo-shop/post-orders-v1-replay.json.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "POST orders/v1/replay",
+    "output": "json"
+  },
+  {
+    "file": "dependency/demo-shop/post-stock-v1-reservations.graph.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "POST stock/v1/reservations",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/demo-shop/post-stock-v1-reservations.json.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "POST stock/v1/reservations",
+    "output": "json"
+  },
+  {
+    "file": "dependency/demo-shop/reservationpage.graph.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "ReservationPage",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/demo-shop/reservationpage.json.json",
+    "group": "dependency",
+    "corpus": "demo-shop",
+    "start": "ReservationPage",
+    "output": "json"
+  },
+  {
+    "file": "dependency/kettle-market/get-market-v1-banner.graph.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/banner",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/kettle-market/get-market-v1-banner.json.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/banner",
+    "output": "json"
+  },
+  {
+    "file": "dependency/kettle-market/get-market-v1-basket.graph.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/basket",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/kettle-market/get-market-v1-basket.json.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/basket",
+    "output": "json"
+  },
+  {
+    "file": "dependency/kettle-market/get-market-v1-prices.graph.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/prices",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/kettle-market/get-market-v1-prices.json.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/prices",
+    "output": "json"
+  },
+  {
+    "file": "dependency/kettle-market/get-market-v1-stock.graph.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/stock",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/kettle-market/get-market-v1-stock.json.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "GET market/v1/stock",
+    "output": "json"
+  },
+  {
+    "file": "dependency/kettle-market/post-market-v1-orders.graph.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "POST market/v1/orders",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/kettle-market/post-market-v1-orders.json.json",
+    "group": "dependency",
+    "corpus": "kettle-market",
+    "start": "POST market/v1/orders",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/delete-depot-v1-shelves-id.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "DELETE depot/v1/shelves/{id}",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/delete-depot-v1-shelves-id.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "DELETE depot/v1/shelves/{id}",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/delete-depot-v2-crates-id.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "DELETE depot/v2/crates/{id}",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/delete-depot-v2-crates-id.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "DELETE depot/v2/crates/{id}",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/get-depot-v1-shelves-count.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "GET depot/v1/shelves/count",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/get-depot-v1-shelves-count.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "GET depot/v1/shelves/count",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/post-depot-v1-audit-id.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "POST depot/v1/audit/{id}",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/post-depot-v1-audit-id.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "POST depot/v1/audit/{id}",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/post-depot-v1-bins-id-close.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "POST depot/v1/bins/{id}/close",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/post-depot-v1-bins-id-close.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "POST depot/v1/bins/{id}/close",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/post-depot-v1-bins-id-open.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "POST depot/v1/bins/{id}/open",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/post-depot-v1-bins-id-open.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "POST depot/v1/bins/{id}/open",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/post-depot-v2-crates-id-close.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "POST depot/v2/crates/{id}/close",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/post-depot-v2-crates-id-close.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "POST depot/v2/crates/{id}/close",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/put-depot-v1-bins-id-label.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "PUT depot/v1/bins/{id}/label",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/put-depot-v1-bins-id-label.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "PUT depot/v1/bins/{id}/label",
+    "output": "json"
+  },
+  {
+    "file": "dependency/lantern-depot/put-depot-v1-shelves-id.graph.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "PUT depot/v1/shelves/{id}",
+    "output": "graph"
+  },
+  {
+    "file": "dependency/lantern-depot/put-depot-v1-shelves-id.json.json",
+    "group": "dependency",
+    "corpus": "lantern-depot",
+    "start": "PUT depot/v1/shelves/{id}",
+    "output": "json"
+  }
+]

@@ -1,0 +1,105 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "api",
+      "kind": "route",
+      "ref": "DELETE depot/v1/shelves/*",
+      "file": "src/Controllers/DepotController.cs",
+      "line": 21,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "api"
+    },
+    {
+      "id": "n2",
+      "repo": "api",
+      "kind": "action",
+      "ref": "DepotController.RemoveShelf",
+      "file": "src/Controllers/DepotController.cs",
+      "line": 21,
+      "via": "literal",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "DepotController",
+      "method": "RemoveShelf",
+      "homeRepo": "api",
+      "methodDepth": 0
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "literal"
+    }
+  ],
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "unknown",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "depot",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 1,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "api",
+        "kind": "route",
+        "ref": "DELETE depot/v1/shelves/*",
+        "file": "src/Controllers/DepotController.cs",
+        "line": 21
+      },
+      "mode": "full",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": true,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {
+      "provider-unavailable": 1
+    },
+    "frontier": [
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "DepotController.RemoveShelf",
+        "caller": {
+          "ref": "DELETE depot/v1/shelves/*",
+          "file": "src/Controllers/DepotController.cs",
+          "line": 21
+        },
+        "callSite": {
+          "file": "src/Controllers/DepotController.cs",
+          "line": 21
+        },
+        "via": "literal",
+        "remaining": 0,
+        "raisedBy": null
+      }
+    ],
+    "identity": "sha256:56e7d9db84c25123efe34a818e20bd4ceafc048f86962b07fc298bfe76ce9e9d"
+  }
+}

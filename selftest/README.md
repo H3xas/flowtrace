@@ -171,6 +171,12 @@ npm test
   five Cypress requests name the same route, so `cypress-evidence.test.js` can count the
   `calls` edges and the `tests` edges apart. A second route is intercepted only by a page
   model. The corpus README lists its files.
+- `corpus/status-identity/`: the walk answers that the release branch wrote for the starts whose
+  status identity the test evidence facts move: the `buoy-signals` area trace, the seed traces of
+  `demo-shop` and `kettle-market`, and the `json` and `graph` answers of 22 dependency starts.
+  `test-evidence-identity.test.js` runs the same starts with and without the facts that the
+  release does not write, and compares each answer with these files apart from
+  `status.identity`. The corpus README lists each group.
 - `dependency-goldens.js` and `corpus/dependency-goldens.json`: the dependency answer of each
   corpus, as the release branch renders it. A change that moves the dependency view on purpose
   writes the golden again with `--write`. The record holds the exit

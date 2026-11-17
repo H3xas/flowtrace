@@ -1,0 +1,105 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "api",
+      "kind": "route",
+      "ref": "GET market/v1/stock",
+      "file": "src/Controllers/KettleController.cs",
+      "line": 15,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "api"
+    },
+    {
+      "id": "n2",
+      "repo": "api",
+      "kind": "action",
+      "ref": "KettleController.GetStock",
+      "file": "src/Controllers/KettleController.cs",
+      "line": 15,
+      "via": "literal",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "KettleController",
+      "method": "GetStock",
+      "homeRepo": "api",
+      "methodDepth": 0
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "literal"
+    }
+  ],
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "unknown",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "suite",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 1,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "api",
+        "kind": "route",
+        "ref": "GET market/v1/stock",
+        "file": "src/Controllers/KettleController.cs",
+        "line": 15
+      },
+      "mode": "full",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": true,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {
+      "provider-unavailable": 1
+    },
+    "frontier": [
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "KettleController.GetStock",
+        "caller": {
+          "ref": "GET market/v1/stock",
+          "file": "src/Controllers/KettleController.cs",
+          "line": 15
+        },
+        "callSite": {
+          "file": "src/Controllers/KettleController.cs",
+          "line": 15
+        },
+        "via": "literal",
+        "remaining": 0,
+        "raisedBy": null
+      }
+    ],
+    "identity": "sha256:00819444feaa860b7cb161edd2952037c3c18f0eaf7e99e5619383820f677539"
+  }
+}

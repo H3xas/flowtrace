@@ -1,0 +1,105 @@
+{
+  "nodes": [
+    {
+      "id": "n1",
+      "repo": "api",
+      "kind": "route",
+      "ref": "GET market/v1/prices",
+      "file": "src/Controllers/KettleController.cs",
+      "line": 9,
+      "via": "start",
+      "hops": 0,
+      "homeRepo": "api"
+    },
+    {
+      "id": "n2",
+      "repo": "api",
+      "kind": "action",
+      "ref": "KettleController.GetPrices",
+      "file": "src/Controllers/KettleController.cs",
+      "line": 9,
+      "via": "literal",
+      "hops": 1,
+      "graph": "unavailable",
+      "class": "KettleController",
+      "method": "GetPrices",
+      "homeRepo": "api",
+      "methodDepth": 0
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "via": "literal"
+    }
+  ],
+  "status": {
+    "schemaVersion": 1,
+    "traversal": "unknown",
+    "freshness": "unknown",
+    "factSets": [
+      {
+        "repo": "api",
+        "freshness": "no-witness"
+      },
+      {
+        "repo": "suite",
+        "freshness": "no-witness"
+      }
+    ],
+    "evidence": {
+      "source-supported": 1,
+      "inferred": 0,
+      "runtime": "not supplied"
+    },
+    "scope": {
+      "start": {
+        "repo": "api",
+        "kind": "route",
+        "ref": "GET market/v1/prices",
+        "file": "src/Controllers/KettleController.cs",
+        "line": 9
+      },
+      "mode": "full",
+      "fromHandler": null,
+      "unscoped": false,
+      "graph": true,
+      "seeds": false,
+      "entries": false
+    },
+    "limits": {
+      "depth": 6,
+      "maxNodes": 1500,
+      "seedCap": 64,
+      "interfaceFanOut": 16,
+      "graphFanOut": 8
+    },
+    "schedule": {
+      "order": "depth-first"
+    },
+    "stops": {
+      "provider-unavailable": 1
+    },
+    "frontier": [
+      {
+        "reason": "provider-unavailable",
+        "repo": "api",
+        "target": "KettleController.GetPrices",
+        "caller": {
+          "ref": "GET market/v1/prices",
+          "file": "src/Controllers/KettleController.cs",
+          "line": 9
+        },
+        "callSite": {
+          "file": "src/Controllers/KettleController.cs",
+          "line": 9
+        },
+        "via": "literal",
+        "remaining": 0,
+        "raisedBy": null
+      }
+    ],
+    "identity": "sha256:125c0a7baa041fce99481887b5948186e4b4b2ce420f19a7f9fba899daf4a431"
+  }
+}
