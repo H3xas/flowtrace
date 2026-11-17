@@ -53,6 +53,12 @@
   declaration line of the test that holds the call, or `null` outside a test. Two tests with the
   same title in one spec now have different owner lines. Facts extracted again have a new facts
   digest, so the `trace` status identity and the export identities change once.
+- The new fact kinds and fields of this release change the status identity in the same way. The
+  kinds are `cypress_backend`, `pw_visit`, `cypress_visit`, `email_read`, `email_template` and
+  `email_sender`. The fields are `testLine` and the `handler` of a `cypress_intercept`. The `tests/`
+  stubs are new facts of an old kind. The status identity is a digest of the fact sets that a walk
+  reads. So after an extract, a walk that reads such a fact set has another `status.identity`.
+  No other field of a `trace` answer changes. A route key does not change.
 - Both Cypress readers give `cypress_intercept` the optional field `handler`, with the words
   `pw_stub` uses. The reader supports a closed list of handler forms. No handler gives `spy`. A
   string, template or array literal gives `fulfill`. A static response object of plain
