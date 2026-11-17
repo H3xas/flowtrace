@@ -346,7 +346,11 @@ call sits in its body. The `source-flow` view reads these fields and falls back 
 unknown-order group when it cannot read them.
 
 `column` is the 1-based column of the same offset the fact's `line` comes from. Two calls on
-one line then have two columns.
+one line then have two columns. A service-locator call with a member chained on it, such as
+`provider.GetService<T>().Run(x)`, gives two calls: the locator call has the site of
+`provider`, and the chained call has the site of `Run`, on its own line when the chain
+continues on a later line. The `control` of the chained call is the `control` of the locator
+call, so an `await` that heads the chain stays on it.
 
 `control` is an object, or `null` when the extractor could not read the body.
 

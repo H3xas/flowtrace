@@ -19,6 +19,12 @@
   its component. The match is by the declared selector, so a native tag that has the same
   name as a declared plain selector also matches. The facts of a mobile repository that
   binds a plain tag change, and its facts `digest` and `status.identity` change with them.
+- A call that is chained on a service-locator call, such as `provider.GetService<T>().Run(x)`,
+  now has the line and the column of its member, as `docs/fact-schema.md` states. Before, it
+  shared the site of the locator call, so the two calls on one line had one column. A chain
+  that continues on a later line moves its line with its column. The `control` of the chained
+  call does not change. The facts of a backend repository that has such a chain change, and its
+  facts `digest` and `status.identity` change with them.
 
 ### Repository
 
