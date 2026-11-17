@@ -190,12 +190,12 @@ details.arms > summary { color: var(--muted); }
 <h1>flowtrace span · <span class="route">WatcherNotesPanel</span></h1>
 <p class="sub">Resolved through component → entry → handler or body → action_dispatch → effect_handler → gateway_call → route. Every arm below is traceable to the fact it was read from — an arm the join could not resolve prints as a gap, never a guess.</p>
 
-<div class="plain"><b>Result status.</b><pre class="status">start: WatcherNotesPanel (component, web src/zones/notes/WatcherNotesPanel.tsx:16)
+<div class="plain"><b>Result status.</b><pre class="status">start: WatcherNotesPanel (component, web)
 scope: to-routes
 limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
 status: traversal unknown, freshness matching
 evidence: 30 source-supported, 0 inferred, runtime not supplied
-stops: unresolved-target 7; frontier 7</pre><details><summary>7 stopped places</summary><ul><li>unresolved-target  web  WatcherNotesPanel.useNoteDraft@19:31  src/zones/notes/WatcherNotesPanel.tsx:19  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li><li>unresolved-target  web  WATCHERS_LOADED  src/actions/watchers.ts:11  via dispatch  caller Watchers.loadWatchers src/actions/watchers.ts:8  detail no-effect  remaining 0</li><li>unresolved-target  web  READINGS_LOADED  src/actions/zoneReadings.ts:10  via dispatch  caller ZoneReadings.loadZoneReadings src/actions/zoneReadings.ts:7  detail no-effect  remaining 0</li><li>unresolved-target  web  WatcherNotesPanel.useEffect@38:3  src/zones/notes/WatcherNotesPanel.tsx:38  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li><li>unresolved-target  web  WATCHERS_LOADED  src/actions/watchers.ts:11  via dispatch  caller Watchers.loadWatchers src/actions/watchers.ts:8  detail no-effect  remaining 0</li><li>unresolved-target  web  READINGS_LOADED  src/actions/zoneReadings.ts:10  via dispatch  caller ZoneReadings.loadZoneReadings src/actions/zoneReadings.ts:7  detail no-effect  remaining 0</li><li>unresolved-target  web  WatcherNotesPanel.useNoteDraft@48:3  src/zones/notes/WatcherNotesPanel.tsx:48  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li></ul></details></div>
+stops: unresolved-target 7; frontier 7</pre><details class="where"><summary>where the walk starts</summary><div class="where-body"><div class="where-site">src/zones/notes/WatcherNotesPanel.tsx:16</div></div></details><details><summary>7 stopped places</summary><ul><li>unresolved-target  web  WatcherNotesPanel.useNoteDraft@19:31  src/zones/notes/WatcherNotesPanel.tsx:19  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li><li>unresolved-target  web  WATCHERS_LOADED  src/actions/watchers.ts:11  via dispatch  caller Watchers.loadWatchers src/actions/watchers.ts:8  detail no-effect  remaining 0</li><li>unresolved-target  web  READINGS_LOADED  src/actions/zoneReadings.ts:10  via dispatch  caller ZoneReadings.loadZoneReadings src/actions/zoneReadings.ts:7  detail no-effect  remaining 0</li><li>unresolved-target  web  WatcherNotesPanel.useEffect@38:3  src/zones/notes/WatcherNotesPanel.tsx:38  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li><li>unresolved-target  web  WATCHERS_LOADED  src/actions/watchers.ts:11  via dispatch  caller Watchers.loadWatchers src/actions/watchers.ts:8  detail no-effect  remaining 0</li><li>unresolved-target  web  READINGS_LOADED  src/actions/zoneReadings.ts:10  via dispatch  caller ZoneReadings.loadZoneReadings src/actions/zoneReadings.ts:7  detail no-effect  remaining 0</li><li>unresolved-target  web  WatcherNotesPanel.useNoteDraft@48:3  src/zones/notes/WatcherNotesPanel.tsx:48  via entry  caller WatcherNotesPanel src/zones/notes/WatcherNotesPanel.tsx:16  detail entry-unresolved  remaining unknown</li></ul></details></div>
 
 <div class="strip"><div class="cell"><span class="k">component</span><span class="v">WatcherNotesPanel</span></div><div class="cell"><span class="k">kind</span><span class="v">component</span></div><div class="cell"><span class="k">repository</span><span class="v">web</span></div><div class="cell"><span class="k">declared at</span><span class="v">src/zones/notes/WatcherNotesPanel.tsx:16</span></div><div class="cell"><span class="k">entries</span><span class="v">10</span></div><div class="cell"><span class="k">routes resolved</span><span class="v">2</span></div><div class="cell"><span class="k">arms resolved</span><span class="v">4</span></div><div class="cell"><span class="k">arms unresolved</span><span class="v warn">7</span></div></div>
 
@@ -272,12 +272,12 @@ stops: unresolved-target 7; frontier 7</pre><details><summary>7 stopped places</
 <h1>flowtrace span · <span class="route">GET glasshouse/v1/zones/*/readings</span></h1>
 <p class="sub">What this endpoint can do that somebody could observe, and which of those a test already pins. Code sits behind the expanders. <a href="#honesty">What this page cannot know →</a></p>
 
-<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/readings (route, backend src/Controllers/ZoneReadingsController.cs:19)
+<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/readings (route, backend)
 scope: full
 limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
 status: traversal complete, freshness matching
 evidence: 6 source-supported, 0 inferred, runtime not supplied
-stops: none; frontier 0</pre></div>
+stops: none; frontier 0</pre><details class="where"><summary>where the walk starts</summary><div class="where-body"><div class="where-site">src/Controllers/ZoneReadingsController.cs:19</div></div></details></div>
 
 <div class="strip"><div class="cell"><span class="k">route</span><span class="v">GET glasshouse/v1/zones/*/readings</span></div><div class="cell"><span class="k">owning action</span><span class="v">ZoneReadingsController.GetReadings</span></div><div class="cell"><span class="k">outcomes</span><span class="v">2</span></div><div class="cell"><span class="k">tested</span><span class="v off">0</span></div><div class="cell"><span class="k">inherited only</span><span class="v off">0</span></div><div class="cell"><span class="k">untested</span><span class="v warn">2</span></div><div class="cell"><span class="k">route evidence tier</span><span class="v">none</span></div><div class="cell"><span class="k">reconciles with cover</span><span class="v">2/2 seeds</span></div></div>
 
@@ -398,12 +398,12 @@ reachable only behind a state-changing verb, is absent from the section rather t
 <h1>flowtrace span · <span class="route">GET glasshouse/v1/zones/*/watchers</span></h1>
 <p class="sub">What this endpoint can do that somebody could observe, and which of those a test already pins. Code sits behind the expanders. <a href="#honesty">What this page cannot know →</a></p>
 
-<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/watchers (route, backend src/Controllers/ZoneWatchersController.cs:22)
+<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/watchers (route, backend)
 scope: full
 limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
 status: traversal complete, freshness matching
 evidence: 8 source-supported, 4 inferred, runtime not supplied
-stops: none; frontier 0</pre></div>
+stops: none; frontier 0</pre><details class="where"><summary>where the walk starts</summary><div class="where-body"><div class="where-site">src/Controllers/ZoneWatchersController.cs:22</div></div></details></div>
 
 <div class="strip"><div class="cell"><span class="k">route</span><span class="v">GET glasshouse/v1/zones/*/watchers</span></div><div class="cell"><span class="k">owning action</span><span class="v">ZoneWatchersController.GetWatchers</span></div><div class="cell"><span class="k">outcomes</span><span class="v">2</span></div><div class="cell"><span class="k">tested</span><span class="v ok">1</span></div><div class="cell"><span class="k">inherited only</span><span class="v warn">1</span></div><div class="cell"><span class="k">untested</span><span class="v ok">0</span></div><div class="cell"><span class="k">route evidence tier</span><span class="v">asserted</span></div><div class="cell"><span class="k">reconciles with cover</span><span class="v">2/2 seeds</span></div></div>
 

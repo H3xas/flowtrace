@@ -170,12 +170,12 @@ ul.obs li.off { font-family: var(--sans); color: var(--off); }
 <h1>flowtrace span · <span class="route">GET glasshouse/v1/zones/{zoneId}/watchers</span></h1>
 <p class="sub">What this endpoint can do that somebody could observe, and which of those a test already pins. Code sits behind the expanders. <a href="#honesty">What this page cannot know →</a></p>
 
-<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/watchers (route, backend src/Controllers/ZoneWatchersController.cs:22)
+<div class="plain"><b>Result status.</b><pre class="status">start: GET glasshouse/v1/zones/*/watchers (route, backend)
 scope: full
 limits: depth 6, node budget 1500, seed cap 64, interface fan-out 16, graph fan-out 8
 status: traversal complete, freshness matching
 evidence: 8 source-supported, 4 inferred, runtime not supplied
-stops: none; frontier 0</pre></div>
+stops: none; frontier 0</pre><details class="where"><summary>where the walk starts</summary><div class="where-body"><div class="where-site">src/Controllers/ZoneWatchersController.cs:22</div></div></details></div>
 
 <div class="strip"><div class="cell"><span class="k">route</span><span class="v">GET glasshouse/v1/zones/{zoneId}/watchers</span></div><div class="cell"><span class="k">owning action</span><span class="v">ZoneWatchersController.GetWatchers</span></div><div class="cell"><span class="k">outcomes</span><span class="v">2</span></div><div class="cell"><span class="k">tested</span><span class="v off">0</span></div><div class="cell"><span class="k">inherited only</span><span class="v off">0</span></div><div class="cell"><span class="k">untested</span><span class="v warn">2</span></div><div class="cell"><span class="k">route evidence tier</span><span class="v">none</span></div><div class="cell"><span class="k">reconciles with cover</span><span class="v">2/2 seeds</span></div></div>
 
