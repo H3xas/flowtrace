@@ -7,8 +7,10 @@
  * `caller_gate` record removed. The walk's status identity hashes the facts it read, so it
  * differs between the two by design.
  */
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -689,6 +691,86 @@ test('Caller gates AC-13: seeds and every reader stay as they were', (t) => {
     return doc;
   };
   assert.deepEqual(drift(gated), drift(plain), 'join --against, apart from the fact-set identities');
+});
+
+const BUOY = join(HERE, 'corpus', 'buoy-signals');
+const BUOY_CONFIG = 'harbor.scout.config.json';
+const BUOY_PIN = join(BUOY, 'expected', 'trace-area', 'stdout');
+const RELEASE_ANSWER = join(HERE, 'corpus', 'release-answers', 'buoy-signals-trace-area.stdout');
+const BUOY_ROUTES = [
+  'GET glasshouse/v1/zones/*/watchers',
+  'GET glasshouse/v1/zones/*/readings',
+  'POST glasshouse/v1/zones/*/harvest-plan',
+];
+// The identity of a walk hashes the fixture's head commit, so the commit is fixed.
+const FIXTURE_COMMIT = {
+  GIT_AUTHOR_NAME: 'flowtrace selftest',
+  GIT_AUTHOR_EMAIL: 'selftest@example.invalid',
+  GIT_AUTHOR_DATE: '2026-01-01T00:00:00Z',
+  GIT_COMMITTER_NAME: 'flowtrace selftest',
+  GIT_COMMITTER_EMAIL: 'selftest@example.invalid',
+  GIT_COMMITTER_DATE: '2026-01-01T00:00:00Z',
+};
+
+/** The `buoy-signals` area trace, run from fact sets that keep or lose their gate records. */
+function buoyAreaTrace(t, { gates }) {
+  const dir = mkdtempSync(join(tmpdir(), 'flowtrace-buoy-gates-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  cpSync(BUOY, dir, { recursive: true, filter: (source) => !source.includes(`${BUOY}/expected`) });
+  const git = (...args) => {
+    const result = spawnSync('git', ['-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=/dev/null', ...args], {
+      cwd: dir, encoding: 'utf8', env: { ...process.env, ...FIXTURE_COMMIT },
+    });
+    assert.equal(result.status, 0, `git ${args[0]}: ${result.stderr}`);
+  };
+  git('init', '-q');
+  git('add', '-A');
+  git('commit', '-q', '-m', 'fixture');
+  const run = (...args) => {
+    const result = runCli([...args, '--config', BUOY_CONFIG], { cwd: dir });
+    assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}`);
+    return result.stdout;
+  };
+  run('extract');
+  const factsDir = join(dir, 'out', 'facts');
+  let records = 0;
+  for (const name of readdirSync(factsDir).filter((file) => file.endsWith('.json'))) {
+    const set = JSON.parse(readFileSync(join(factsDir, name), 'utf8'));
+    records += set.facts.filter((item) => item.type === 'caller_gate').length;
+    if (!gates) writeFileSync(join(factsDir, name), JSON.stringify({ ...set, facts: set.facts.filter((item) => item.type !== 'caller_gate') }, null, 2));
+  }
+  run('join');
+  const stdout = run('trace', '--area', 'harbor.area.txt');
+  return { records, stdout: stdout.split(dir).join('<ROOT>').split(resolve(dir)).join('<ROOT>') };
+}
+
+test('Caller gates AC-13: the buoy-signals area trace changes its status identity and nothing else', (t) => {
+  const pin = readFileSync(BUOY_PIN, 'utf8');
+  const release = readFileSync(RELEASE_ANSWER, 'utf8');
+  const walks = (text) => JSON.parse(text);
+  const identities = (text) => walks(text).map((doc) => doc.status.identity);
+  const withoutIdentity = (text) => walks(text).map((doc) => ({ ...doc, status: { ...doc.status, identity: null } }));
+
+  // The pin and the release answer differ in the three status identities and in no other byte.
+  assert.deepEqual(walks(release).map((doc) => doc.root.ref), BUOY_ROUTES);
+  assert.deepEqual(withoutIdentity(pin), withoutIdentity(release));
+  const moved = identities(pin);
+  const released = identities(release);
+  moved.forEach((identity, at) => assert.notEqual(identity, released[at], `${BUOY_ROUTES[at]} gets a new status identity`));
+  assert.equal(moved.reduce((text, identity, at) => text.replace(identity, released[at]), pin), release);
+
+  const gated = buoyAreaTrace(t, { gates: true });
+  const plain = buoyAreaTrace(t, { gates: false });
+  assert.equal(gated.records, 6, 'the web fact set holds six gate records');
+  assert.equal(plain.records, 6, 'the same six records are removed from the plain run');
+  assert.equal(gated.stdout, pin, 'the walk with gate records gives the pin');
+  assert.equal(plain.stdout, release, 'the walk without gate records gives the release answer, identity included');
+  for (const doc of walks(gated.stdout)) {
+    assert.equal(doc.view, 'dependency');
+    assert.equal(doc.root.kind, 'route');
+    assert.equal(doc.callerCases, undefined, `${doc.root.ref} lists no caller case`);
+    assert.ok(doc.nodes.every((node) => node.callerGates === undefined), `${doc.root.ref} holds no gate`);
+  }
 });
 
 test('Caller gates AC-15: both extractors write gate records from the one shared module', (t) => {

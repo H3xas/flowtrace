@@ -22,7 +22,9 @@
   hop with different gates are the alternatives of one step, `one of (A | B)` in the text and
   `anyOf` in `--json`. A case lists at most 32 paths and counts the rest in `pathsTruncated`.
   Gates change no seed and no other reader. `--view source-flow`, `--graph` and `--mermaid`
-  show none.
+  show none. A walk that reads fact sets with gate records has a new `status.identity`.
+  The identity is a digest of the fact sets that the walk read. No other field of the
+  answer changes.
 
 ### Decisions
 
