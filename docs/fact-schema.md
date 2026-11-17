@@ -266,7 +266,8 @@ The forms of a `display_condition` are these:
 A `client_transfer` has `form`. The template forms are `property` for `[x]`, `two-way` for
 `[(x)]`, and `attr`, `class` or `style` for `[attr.x]`, `[class.x]` and `[style.x]`. The JSX
 forms are `jsx` for `x={…}` and `spread` for `{...x}`. If one component declares the child tag or the imported name, the fact has
-`targetComponent` and `targetFile`. A JSX attribute whose value is an element gives a
+`targetComponent` and `targetFile`. A tag with no `-`, such as `glow`, is a declared tag
+like any other, and the match is by the declared selector only. A JSX attribute whose value is an element gives a
 transfer with no read.
 
 A `client_read` has `negated` and `traces`. If an odd number of `!` holds the read, `negated`
