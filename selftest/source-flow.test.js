@@ -239,14 +239,12 @@ test('Source flow AC-2: the dependency view keeps its bytes and says it is not c
   assert.equal(written.status, 0, written.stderr);
   const page = readFileSync(html, 'utf8');
   const pageLines = pageLinesOf(page);
-  assert.equal(pageLines[0], DEPENDENCY_LABEL);
-  // The status lines stand between the label and the tree, on the terminal and in the page's
-  // own status block. The tree itself must be the same text on both.
-  const pageTree = pageLines.slice(1);
-  const terminalLines = withoutLabel.split('\n');
-  const treeStart = terminalLines.indexOf(pageTree[0]);
-  assert.ok(treeStart >= 0, 'the page tree starts at the terminal tree');
-  assert.deepEqual(terminalLines.slice(treeStart, treeStart + pageTree.length), pageTree);
+  // The status lines and the frontier lines come first on the terminal and in the page's tree
+  // block, and the label opens the tree under them. The block is the terminal text, line for
+  // line, from its first line to its last tree line.
+  assert.equal(pageLines.indexOf(DEPENDENCY_LABEL), labelAt, 'the label has the same index on the page');
+  assert.equal(pageLines[labelAt - 1], '', 'the label follows the empty line that ends the header');
+  assert.deepEqual(dependencyLines.slice(0, pageLines.length), pageLines);
 
   const goldens = await checkGoldens();
   assert.equal(goldens.ok, true, goldens.problems.join('\n'));

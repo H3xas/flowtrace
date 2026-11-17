@@ -72,6 +72,43 @@ function statusOf(dir, start, ...flags) {
   return JSON.parse(run.stdout).status;
 }
 
+test('Tree page fidelity AC-6: a stopped walk strips back to the terminal tree, with and without a cover overlay', (t) => {
+  const dir = corpus(t);
+  const terminal = terminalTree(dir, PLAN, '--max-nodes', '20');
+  const header = terminal.split('\n');
+  assert.match(header[0], /^start: /, 'the terminal tree opens with the status lines');
+  assert.ok(header.some((line) => /^frontier: 3 stopped places$/.test(line)), 'the frontier is in the terminal header');
+
+  for (const [name, overlay] of [['plain.html', []], ['overlay.html', ['--cover-overlay']]]) {
+    const page = treePage(dir, name, PLAN, '--max-nodes', '20', ...overlay);
+    assert.equal(treeText(page), terminal, `${name}: the page differs from the terminal tree`);
+    assert.match(page, /<b>Result status\.<\/b>/, `${name}: the status note stays on the page`);
+    assert.match(page, /<summary>3 stopped places<\/summary>/, `${name}: the frontier expander stays on the page`);
+  }
+});
+
+test('Tree page fidelity AC-6: a complete walk strips back to the terminal tree, with and without a cover overlay', (t) => {
+  const dir = corpus(t);
+  const terminal = terminalTree(dir, ROUTE);
+  for (const [name, overlay] of [['plain.html', []], ['overlay.html', ['--cover-overlay']]]) {
+    const page = treePage(dir, name, ROUTE, ...overlay);
+    assert.equal(treeText(page), terminal, `${name}: the page differs from the terminal tree`);
+    assert.match(page, /<b>Result status\.<\/b>/, `${name}: the status note stays on the page`);
+  }
+});
+
+test('Tree page fidelity AC-6: the status lines, the frontier lines and the label are tree text on the page', (t) => {
+  const dir = corpus(t);
+  const status = statusOf(dir, PLAN, '--max-nodes', '20');
+  const page = treePage(dir, 'plain.html', PLAN, '--max-nodes', '20');
+  const text = treeText(page).split('\n');
+  assert.deepEqual(text.slice(0, statusLines(status).length), statusLines(status), 'the status lines lead the tree text');
+  const label = text.findIndex((line) => line.startsWith('dependency view: '));
+  assert.ok(label > 0, 'the label is tree text');
+  assert.equal(text[label - 1], '', 'the label follows the empty line that ends the header');
+  assert.match(page, /<span class="tt c-dim">dependency view: /, 'the label keeps the dim colour of the terminal');
+});
+
 test('Span page expanders AC-7: the status stays visible and its start location sits in an expander', (t) => {
   const dir = corpus(t);
   const status = statusOf(dir, PLAN, '--max-nodes', '20');
