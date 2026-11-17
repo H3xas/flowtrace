@@ -171,3 +171,12 @@ test('Span page expanders AC-7: a start with no location gets no start expander'
   assert.equal(statusLines(status)[0], 'start: GET widgets/v1/ping (route, api -)', 'the default line is unchanged');
 });
 
+test('Span page expanders AC-7: the help text and docs/cli.md state both page rules', () => {
+  const help = runCli(['--help']).stdout;
+  const doc = readFileSync(join(HERE, '..', 'docs', 'cli.md'), 'utf8');
+  for (const [name, source] of [['help', help], ['docs/cli.md', doc]]) {
+    const text = source.replace(/\s+/g, ' ');
+    assert.match(text, /That text opens with the status lines and the frontier, then the dependency label/, `${name}: tree page rule`);
+    assert.match(text, /The result status stays visible, and its start file:line sits behind an expander/, `${name}: span page rule`);
+  }
+});
