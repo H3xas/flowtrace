@@ -298,16 +298,13 @@ test('Source flow AC-4: every C# and web call carries a column and its control e
     }
   }
 
-  // The functions of a module-level object are filed under one module body. Each one runs
-  // when something calls it, so each is a callback with unknown scheduling, never one
-  // sequence with its siblings.
-  const gateway = json(env, 'HttpClient.HttpClient', ['--view', 'source-flow']).sourceFlow;
-  assert.ok(!allSteps(gateway).some((step) => step.kind === 'unordered'), 'the module body is read');
-  const members = gateway.root.body.steps.filter((step) => step.kind === 'callback');
-  assert.equal(members.length, 2, 'get and post are two callbacks');
-  for (const member of members) {
-    assert.equal(member.scheduling, 'unknown');
-    assert.deepEqual(member.steps.map((step) => step.kind), ['invocation']);
+  // Each function of a module-level object is its own span, and a call in it to a
+  // module-level function of the same file resolves to that function's span.
+  for (const start of ['gateway.get', 'gateway.post']) {
+    const member = json(env, start, ['--view', 'source-flow']).sourceFlow;
+    assert.ok(!allSteps(member).some((step) => step.kind === 'unordered'), `${start} is read`);
+    assert.deepEqual(member.root.body.steps.map((step) => step.kind), ['invocation']);
+    assert.equal(member.root.body.steps[0].declaration.ref, 'HttpClient.request');
   }
 
   // A member written as an async block keeps its guard and its awaits.
@@ -320,9 +317,7 @@ test('Source flow AC-4: every C# and web call carries a column and its control e
     ),
   );
   assert.equal(env.cli(['extract']).status, 0);
-  const blockMember = json(env, 'HttpClient.HttpClient', ['--view', 'source-flow']).sourceFlow.root.body.steps.find(
-    (step) => step.kind === 'callback',
-  );
+  const blockMember = json(env, 'gateway.get', ['--view', 'source-flow']).sourceFlow.root.body;
   assert.deepEqual(blockMember.steps.map((step) => step.kind), ['branch', 'invocation']);
   assert.equal(blockMember.steps[0].arms[0].steps[0].await, true);
   assert.equal(blockMember.steps[1].await, true);

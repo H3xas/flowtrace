@@ -162,3 +162,34 @@ affected routes that hold *no* evidence at all, at the moment of the diff.
 Widening is always a printed rung, never a silent one. If the selection is too large a
 share of the suite, if a fact set is stale, if a changed file sits under no known project,
 flowtrace refuses the narrow answer and says to run everything, with the reason on stderr.
+
+The walk runs from a route into the backend, so it never reaches a web caller. Thus a changed
+web source file that holds a `gateway_call` also selects each route of the universe that
+`join` matches the call to, with the configured aliases. The route row names the web file.
+
+`affected` reads the diff at the top level of the git checkout that holds the backend root.
+Each changed path goes to the configured repository with the longest root that holds it. A
+`web` repository whose root is in another git checkout is read there too, one read for each
+such checkout, in the same mode and with the same range text. Only a path that a `web`
+repository owns counts. If git cannot read that checkout, the reason line
+`checkout-not-read [<repo id>]: <cause>` names each `web` repository of it, and nothing else
+changes.
+
+A path under no configured root selects no route, also when the backend holds a file at the
+same relative path. It keeps each whole-suite answer of a backend file: `no-facts`,
+`config-only` for a configuration or generated file, `unindexed` for a controller file, and
+`out-of-scope` with `--dotnet-filter` for a `.cs` file. Otherwise it gets the reason line
+`unmapped: <path> — no configured root holds this path, so it selects nothing`. Two answers
+change, because each removes a false owner. A spec file under no configured root is no changed
+spec, so the run exits 3, not 0. With `--dotnet-filter`, a `.cs` file of another configured
+repository is not `out-of-scope`, because the filter reads only the backend repository.
+
+The `unindexed` rung and the `shared-dependency` lines match a changed file by its repository
+and its path, as the route walk does. So a route fact of one repository never hides a changed
+controller of another at the same relative path: that controller gets `unindexed` for its own
+repository and exit 4. A class that a file of one repository declares gives no
+`shared-dependency` line for a changed file of another. The injectors of a changed class still
+count by its name in every repository, because a library and its consumer bind and inject
+across repositories. These two answers change in each layout. They are the one exception to the
+rule that a run with the backend root at the top level of its checkout keeps its earlier
+report.

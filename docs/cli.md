@@ -159,7 +159,8 @@ trace --area <file> [--require-complete]
   the view and, under source-flow, a sourceFlow member carrying the same invocations.
   --graph and --mermaid have no source-flow view and exit 2 with it.
   <start> is a mobile class or selector, a route key ("POST orders/v1/checkout"),
-  a backend Class.Method, a backend class, a web component name, or a web page path
+  a backend Class.Method, a backend class, a web component name, a web module-level
+  function (name or Owner.name, when nothing else matches), or a web page path
   ("/catalog/collections/:collectionId", or a concrete "/catalog/collections/42"). A page
   path is composed from the <Route> declarations the facts record: JSX-nested routes, a
   component's own <Routes> under the route that renders it, a route array that component
@@ -699,6 +700,34 @@ affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo
   fallbacks, widened }. Affected routes holding no evidence at all are printed as
   "uncovered-change" — the signal no coverage report gives at the moment of the diff.
 
+  A changed web source file that holds a gateway call also selects each route of the
+  universe that join matches the call to, with the configured aliases. The route row
+  names the web file. A web repository whose root is in another git checkout is read
+  there too, one read for each such checkout, with the same --diff range, the index or
+  the working tree. Only a path that a web repository owns counts. If git cannot read
+  that checkout, the reason line "checkout-not-read [<repo id>]: <cause>" names each web
+  repository of it, and nothing else changes.
+
+  The diff is read at the top level of the git checkout that holds the backend root, and
+  each path goes to the configured repository with the longest root that holds it. A path
+  under no configured root selects no route, also when the backend holds a file at the
+  same relative path. It keeps each whole-suite answer: no-facts, config-only for a
+  configuration or generated file, unindexed for a controller file, and the
+  --dotnet-filter out-of-scope answer for a .cs file. Otherwise it gets the reason line
+  "unmapped: <path> — no configured root holds this path, so it selects nothing". Two
+  answers change. A spec file under no configured root is no changed spec, so the run
+  exits 3, not 0. With --dotnet-filter, a .cs file of another configured repository is
+  not out-of-scope, because the filter reads only the backend repository.
+
+  The unindexed rung and the shared-dependency lines match a changed file by its
+  repository and its path, as the route walk does. So a route fact of one repository
+  never hides a changed controller of another at the same relative path: that controller
+  gets unindexed for its own repository and exit 4. A class that a file of one
+  repository declares gives no shared-dependency line for a changed file of another.
+  The injectors of a changed class still count by its name in every repository. These
+  two answers change in each layout. They are the one exception to the rule that a run
+  with the backend root at the top level of its checkout keeps its earlier report.
+
   --dotnet-filter prints the one expression `dotnet test --filter` takes instead of a
   spec list: the C# test classes whose files reference a changed (or widened) type,
   as "FullyQualifiedName~A|FullyQualifiedName~B", deduplicated and sorted. The index
@@ -708,6 +737,8 @@ affected [--diff <range>] [--staged] [--area <file|name>] [--all-routes] [--repo
   is how `dotnet test` is asked to run everything — printed with its reason on stderr
   when an interface was braked, a changed file sits under no project of the solution,
   or the selection is above --max-share (0.3 of the suite's classes by default here).
+  A changed `.cs` file under no configured root counts as a file under no project of the
+  solution.
   --json carries the same answer as dotnetFilter: { classes, expression, fallback,
   reason, source, suite, share, notes }.
 
